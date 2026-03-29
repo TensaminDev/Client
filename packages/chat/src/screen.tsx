@@ -62,26 +62,7 @@ export default function Screen() {
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: (index) => {
-      const message = messages[index];
-
-      if (!message) {
-        return 56;
-      }
-
-      let decodedContent = message.content;
-      try {
-        decodedContent = atob(message.content);
-      } catch {
-        /* noop */
-      }
-
-      const lineCount = decodedContent.split("\n").length;
-      const wrappedLineCount = Math.ceil(decodedContent.length / 42);
-      const fileCount = message.files?.length ?? 0;
-
-      return 28 + Math.max(lineCount, wrappedLineCount) * 20 + fileCount * 20;
-    },
+    estimateSize: (index) => messages[index].height,
     overscan: 6,
   });
 

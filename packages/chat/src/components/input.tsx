@@ -10,11 +10,6 @@ import { useSocket } from "@tensamin/ttp/context";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 
-/**
- * Executes InputComponent.
- * @param none This function has no parameters.
- * @returns unknown.
- */
 export default function InputComponent() {
   const [value, setValue] = React.useState("");
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
@@ -49,12 +44,14 @@ export default function InputComponent() {
     }
 
     if (!currentSharedSecret) {
-      toast("error", "Conversation key not ready yet");
+      toast("error", "Still getting shared secret...");
       return;
     }
 
+    const height = currentValue.split("\n").length * 24 + 16; // 24px per line + 16px padding
+
     const reference = addLiveMessage({
-      height: 0,
+      height,
       not_encrypted: true,
       timestamp: time,
       content: currentValue,
@@ -64,7 +61,7 @@ export default function InputComponent() {
     const encryptedContext = await encrypt(currentSharedSecret, currentValue);
 
     send("message_send", {
-      height: 0,
+      height,
       content: encryptedContext,
       receiver_id: currentUserId,
       send_time: time,
