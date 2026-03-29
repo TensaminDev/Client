@@ -5,6 +5,7 @@ import { useConversation } from "../context";
 import Switch from "./switch";
 import ConversationModal from "../modal/conversation";
 import CommunityModal from "../modal/community";
+import { Loader2 } from "lucide-react";
 
 /**
  * Executes List.
@@ -22,7 +23,9 @@ export default function List() {
 
   const virtualizer = useVirtualizer({
     count:
-      category === "conversations" ? conversations.length : communities.length,
+      category === "conversations"
+        ? conversations?.length || 0
+        : communities?.length || 0,
     estimateSize: () => 60,
     getScrollElement: () => scrollRef.current,
   });
@@ -41,32 +44,45 @@ export default function List() {
             height: `${virtualizer.getTotalSize()}px`,
           }}
         >
-          {virtualizer.getVirtualItems().map((virtualItem) => {
-            const itemKey = `${category}-${virtualItem.index}`;
+          {communities === null || conversations === null ? (
+            <div className="flex items-center justify-center h-full pt-5">
+              <p className="text-foreground/45 flex gap-1 items-center justify-center">
+                <Loader2 size={18} className="animate-spin" />
+                Loading...
+              </p>
+            </div>
+          ) : null}
 
-            return (
-              <div
-                key={itemKey}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
-              >
-                {category === "conversations" ? (
-                  conversations[virtualItem.index] ? (
-                    <ConversationModal
-                      userId={conversations[virtualItem.index].user_id}
+          {communities &&
+            conversations &&
+            virtualizer.getVirtualItems().map((virtualItem) => {
+              const itemKey = `${category}-${virtualItem.index}`;
+
+              return (
+                <div
+                  key={itemKey}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  {category === "conversations" ? (
+                    conversations[virtualItem.index] ? (
+                      <ConversationModal
+                        userId={conversations[virtualItem.index].user_id}
+                      />
+                    ) : null
+                  ) : communities[virtualItem.index] ? (
+                    <CommunityModal
+                      community={communities[virtualItem.index]}
                     />
-                  ) : null
-                ) : communities[virtualItem.index] ? (
-                  <CommunityModal community={communities[virtualItem.index]} />
-                ) : null}
-              </div>
-            );
-          })}
+                  ) : null}
+                </div>
+              );
+            })}
         </div>
       </div>
     </div>

@@ -8,8 +8,8 @@ import type {
 } from "@tensamin/shared/features/conversation/schema";
 
 interface contextValue {
-  conversations: Conversation[];
-  communities: Community[];
+  conversations: Conversation[] | null;
+  communities: Community[] | null;
 }
 
 const ConversationContext = React.createContext<contextValue | undefined>(
@@ -24,8 +24,12 @@ const ConversationContext = React.createContext<contextValue | undefined>(
 export default function ConversationProvider(props: {
   children: React.ReactNode;
 }) {
-  const [conversations, setConversations] = React.useState<Conversation[]>([]);
-  const [communities, setCommunities] = React.useState<Community[]>([]);
+  const [conversations, setConversations] = React.useState<
+    Conversation[] | null
+  >(null);
+  const [communities, setCommunities] = React.useState<Community[] | null>(
+    null,
+  );
 
   const { send } = useSocket();
 
@@ -39,6 +43,12 @@ export default function ConversationProvider(props: {
         }
       })
       .catch(() => {
+        setConversations([
+          {
+            last_message_at: 0,
+            user_id: 0,
+          },
+        ]);
         toast("error", "Failed to load conversations");
       });
 
@@ -49,6 +59,13 @@ export default function ConversationProvider(props: {
         }
       })
       .catch(() => {
+        setCommunities([
+          {
+            community_address: "none",
+            community_title: "Failed",
+            position: "",
+          },
+        ]);
         toast("error", "Failed to load communities");
       });
 
@@ -57,13 +74,13 @@ export default function ConversationProvider(props: {
     };
   }, [send]);
 
-  const value = React.useMemo(
-    () => ({ conversations, communities }),
-    [communities, conversations],
-  );
-
   return (
-    <ConversationContext.Provider value={value}>
+    <ConversationContext.Provider
+      value={{
+        conversations,
+        communities,
+      }}
+    >
       {props.children}
     </ConversationContext.Provider>
   );

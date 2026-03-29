@@ -21,7 +21,7 @@ export default function Navbar() {
   const { pathname } = useLocation();
   const { id } = useSearch({ strict: false });
 
-  const currentCalls = id ? conversations[id]?.calls || [] : [];
+  const currentCalls = id ? conversations?.[id]?.calls || [] : [];
 
   return (
     <div className="w-full h-13.5 flex items-center justify-center">

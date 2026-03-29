@@ -6,7 +6,7 @@ import { useChat } from "./context";
 import InputComponent from "./components/input";
 import Message from "./components/message";
 
-const PAGE_SIZE = 50;
+import { PAGE_SIZE } from "./values";
 
 /**
  * Renders the chat screen with virtualized history and live message updates.
@@ -179,8 +179,8 @@ export default function Screen() {
 
   if (!hasValidChatUser) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
-        Select a conversation to start chatting.
+      <div className="w-full h-full flex items-center justify-center text-xl text-foreground/80">
+        Invalid user
       </div>
     );
   }

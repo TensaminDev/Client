@@ -22,7 +22,7 @@ const message = z.object({
 });
 
 export const failedUser = {
-  display: "Failed to load user",
+  display: "Failed",
   iota_id: 0,
   omikron_connections: [],
   online_status: "user_borked",

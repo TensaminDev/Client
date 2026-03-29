@@ -11,3 +11,5 @@ export type LiveMessage = RawMessage & {
   failed?: boolean;
   localId: string;
 };
+
+export const PAGE_SIZE = 25;
