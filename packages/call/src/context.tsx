@@ -14,6 +14,8 @@ export default function Provider(props: { children: React.ReactNode }) {
   const [callId, setCallId] = useState<string | null>(null);
   const [callSecret, setCallSecret] = useState<string | null>(null);
 
+  console.log(callId, callSecret);
+
   function connect(callId: string, callSecret: string) {
     setState("connecting");
     setCallId(callId);
