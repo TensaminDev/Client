@@ -1,5 +1,11 @@
-import * as React from "react";
 import { useSocket } from "@tensamin/ttp/context";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { toast } from "@tensamin/shared/log";
 import type {
@@ -12,28 +18,22 @@ interface contextValue {
   communities: Community[] | null;
 }
 
-const ConversationContext = React.createContext<contextValue | undefined>(
-  undefined,
-);
+const ConversationContext = createContext<contextValue | undefined>(undefined);
 
 /**
  * Executes ConversationProvider.
  * @param props Parameter props.
  * @returns unknown.
  */
-export default function ConversationProvider(props: {
-  children: React.ReactNode;
-}) {
-  const [conversations, setConversations] = React.useState<
-    Conversation[] | null
-  >(null);
-  const [communities, setCommunities] = React.useState<Community[] | null>(
+export default function ConversationProvider(props: { children: ReactNode }) {
+  const [conversations, setConversations] = useState<Conversation[] | null>(
     null,
   );
+  const [communities, setCommunities] = useState<Community[] | null>(null);
 
   const { send } = useSocket();
 
-  React.useEffect(() => {
+  useEffect(() => {
     let active = true;
 
     send("get_conversations", {})
@@ -92,7 +92,7 @@ export default function ConversationProvider(props: {
  * @returns contextValue.
  */
 export function useConversation(): contextValue {
-  const context = React.useContext(ConversationContext);
+  const context = useContext(ConversationContext);
   if (!context) {
     throw new Error(
       "useConversation must be used within a ConversationProvider",

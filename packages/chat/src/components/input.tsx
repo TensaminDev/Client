@@ -56,6 +56,7 @@ export default function InputComponent() {
       timestamp: time,
       content: currentValue,
       sent_by_self: true,
+      message_state: "awaiting",
     });
 
     const encryptedContext = await encrypt(currentSharedSecret, currentValue);
@@ -89,16 +90,16 @@ export default function InputComponent() {
           onSubmit={handleSubmit}
           invertEnterBehavior={invertEnterBehavior}
         />
-        <div className="w-full flex justify-between gap-2 p-2 pt-0">
-          <div className="flex gap-2">
+        <div className="w-full flex justify-between gap-1 p-1 pt-0">
+          <div className="flex gap-1">
             <Button className="w-9 h-9 p-0" variant="ghost">
               <Plus size={20} />
             </Button>
-            <div className="w-auto flex">
+            <div className="w-auto flex text-red-500">
               <p>Files list</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <Button className="w-9 h-9 p-0" variant="ghost">
               <Laugh size={20} />
             </Button>

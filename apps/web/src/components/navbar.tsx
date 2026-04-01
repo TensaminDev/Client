@@ -7,11 +7,12 @@ import { Skeleton } from "@tensamin/ui/cmp/skeleton";
 import { useConversation } from "@/features/conversation/context";
 import {
   Select,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
 } from "@tensamin/ui/cmp/select";
 import { displayCallId } from "@tensamin/call/utils";
+import { useState } from "react";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -22,6 +23,9 @@ export default function Navbar() {
   const { id } = useSearch({ strict: false });
 
   const currentCalls = id ? conversations?.[id]?.calls || [] : [];
+  //const currentCalls = ["leck", "schleck", "und", "eck"];
+
+  const [selectOpen, setSelectOpen] = useState(false);
 
   return (
     <div className="w-full h-13.5 flex items-center justify-center">
@@ -32,7 +36,7 @@ export default function Navbar() {
       >
         <House className="size-4.5" />
       </Button>
-      {pathname === "/app/chat" && (
+      {pathname === "/chat" && (
         <Wrapper
           userId={id}
           component={(user) => (
@@ -42,9 +46,9 @@ export default function Navbar() {
         />
       )}
       <div className="w-full" />
-      {pathname === "/app/chat" && id && (
+      {pathname === "/chat" && id && (
         <>
-          {currentCalls.length > 0 ? (
+          {currentCalls.length === 0 ? (
             <Button
               disabled={state !== "closed"}
               onClick={() => {
@@ -66,27 +70,30 @@ export default function Navbar() {
               <Phone />
             </Button>
           ) : (
-            <Select>
-              <SelectTrigger
-                render={
-                  <Button className="w-9 h-9 aspect-square rounded-lg mr-2">
-                    <Phone />
-                  </Button>
-                }
-              />
-              <SelectContent>
-                {currentCalls.map((callId) => (
-                  <SelectItem
-                    key={callId}
-                    onSelect={() => {
-                      joinCall(id, callId);
-                    }}
-                  >
-                    {displayCallId(callId)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <>
+              <Button
+                onClick={() => setSelectOpen((prev) => !prev)}
+                className="w-9! h-9! aspect-square rounded-lg mr-2"
+              >
+                <Phone />
+              </Button>
+              <Select onOpenChange={setSelectOpen} open={selectOpen}>
+                <SelectTrigger hidden />
+                <SelectContent>
+                  {currentCalls.map((callId) => (
+                    <SelectItem
+                      value={callId}
+                      key={callId}
+                      onSelect={() => {
+                        joinCall(id, callId);
+                      }}
+                    >
+                      {displayCallId(callId)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
           )}
         </>
       )}

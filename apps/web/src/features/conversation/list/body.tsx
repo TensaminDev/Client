@@ -38,21 +38,20 @@ export default function List() {
         id="conversation-list"
         className="overflow-y-auto flex-1 h-full"
       >
+        {communities === null || conversations === null ? (
+          <div className="flex items-center justify-center pt-5">
+            <p className="text-foreground/45 flex gap-1 items-center justify-center">
+              <Loader2 size={18} className="animate-spin" />
+              Loading...
+            </p>
+          </div>
+        ) : null}
         <div
           className="relative w-full flex flex-col"
           style={{
             height: `${virtualizer.getTotalSize()}px`,
           }}
         >
-          {communities === null || conversations === null ? (
-            <div className="flex items-center justify-center h-full pt-5">
-              <p className="text-foreground/45 flex gap-1 items-center justify-center">
-                <Loader2 size={18} className="animate-spin" />
-                Loading...
-              </p>
-            </div>
-          ) : null}
-
           {communities &&
             conversations &&
             virtualizer.getVirtualItems().map((virtualItem) => {

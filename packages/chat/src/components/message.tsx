@@ -4,7 +4,7 @@ import { useChat } from "../context";
 import type { RawMessage } from "../values";
 import { log } from "@tensamin/shared/log";
 import Text from "@tensamin/markdown/text";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 
 import {
   Tooltip,
@@ -77,7 +77,7 @@ export default function Message(props: {
 
   return (
     <div
-      className={`w-full flex justify-start ${props.message.failed && "opacity-50"}`}
+      className={`w-full flex justify-start ${(props.message.failed || props.message.message_state === "awaiting") && "opacity-50"}`}
     >
       <div
         className={`flex gap-1 items-center justify-center animate-in fade-in duration-200 max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap wrap-break-word ${
@@ -91,9 +91,13 @@ export default function Message(props: {
             <TooltipContent>
               <p>Failed to send message</p>
             </TooltipContent>
-            <TooltipTrigger render={<AlertTriangle size={17} />} />
+            <TooltipTrigger asChild>
+              <AlertTriangle size={17} />
+            </TooltipTrigger>
           </Tooltip>
         )}
+        {props.message.message_state === "awaiting" &&
+          !props.message.failed && <Clock size={17} />}
         {isReady ? <Text value={decodedContent} /> : null}
       </div>
     </div>

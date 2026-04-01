@@ -19,6 +19,7 @@ const message = z.object({
   tint: z.string().length(7).startsWith("#").optional(),
   avatar: z.boolean().optional(),
   display: z.boolean().optional(),
+  message_state: z.enum(["read", "received", "sent", "sending", "awaiting"]),
 });
 
 export const failedUser = {

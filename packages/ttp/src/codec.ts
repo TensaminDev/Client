@@ -196,7 +196,8 @@ const DATA_TYPES = [
 	"timeout",
 	"has_admin",
 	"last_message_at",
-	"height"
+	"height",
+	"sent_by_self"
 ] as const;
 
 const COMMUNICATION_TYPE_BY_NAME = createIndexMap(COMMUNICATION_TYPES);
@@ -296,6 +297,7 @@ registerDataKinds("bool", [
 	"accepted",
 	"has_admin",
 	"screen_share",
+	"sent_by_self",
 ]);
 
 registerDataKinds({ array: "string" }, ["user_states"]);
