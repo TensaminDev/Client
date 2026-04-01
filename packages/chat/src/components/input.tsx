@@ -65,13 +65,13 @@ export default function InputComponent() {
       height,
       content: encryptedContext,
       receiver_id: currentUserId,
-      send_time: time,
+      timestamp: time,
     }).catch((e) => {
       log(0, "Chat", "red", "Failed to send message", e, {
         content: currentValue,
         encryptedContext,
         receiver_id: currentUserId,
-        send_time: time,
+        timestamp: time,
       });
       reference.setFailed(true);
       toast("error", "Failed to send message");

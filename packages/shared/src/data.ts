@@ -117,7 +117,7 @@ export const socket = {
     request: z.object({}),
     response: z.object({
       sender_id: z.number(),
-      send_time: z.number(),
+      timestamp: z.number(),
       message,
     }),
   },
@@ -136,7 +136,7 @@ export const socket = {
       height: z.number(),
       content: z.base64(),
       receiver_id: z.number(),
-      send_time: z.number(),
+      timestamp: z.number(),
       files: z.array(fileFromMessage).optional(),
     }),
     response: z.object({}),
