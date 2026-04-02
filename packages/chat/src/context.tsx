@@ -22,7 +22,9 @@ export default function Provider(props: { children: React.ReactNode }) {
   const { load } = useStorage();
   const { send } = useSocket();
 
-  const [liveMessagesState, setLiveMessagesState] = React.useState<LiveMessage[]>([]);
+  const [liveMessagesState, setLiveMessagesState] = React.useState<
+    LiveMessage[]
+  >([]);
   const [currentSharedSecret, setCurrentSharedSecret] = React.useState("");
 
   const locationSearch = useRouterState({

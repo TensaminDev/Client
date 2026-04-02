@@ -26,7 +26,7 @@ export function log(
     blue: "\x1b[34m",
   };
   const resetCode = "\x1b[0m";
-  console.log(`${colorCodes[color]}[${logger}]${resetCode}`, ...args);
+  console.log(`${colorCodes[color]}${logger}${resetCode}`, ...args);
 }
 
 const size = 20;

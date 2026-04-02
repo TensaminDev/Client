@@ -199,7 +199,7 @@ export function createTransportClient<T extends SchemaMap>(
    */
   const handleIncomingMessage = (message: TypedMessage) => {
     if (message.type !== "pong") {
-      log(2, "Socket", "blue", "Received:", message.type, message.data, {
+      log(2, "ttp", "blue", "Received:", message.type, message.data, {
         id: message.id,
       });
     }
@@ -233,7 +233,7 @@ export function createTransportClient<T extends SchemaMap>(
 
         log(
           0,
-          "Socket",
+          "ttp",
           "red",
           `Response validation failed for "${message.type}"`,
           result.error,
@@ -254,7 +254,7 @@ export function createTransportClient<T extends SchemaMap>(
       if (!result.success) {
         log(
           0,
-          "Socket",
+          "ttp",
           "red",
           `Push-event validation failed for "${message.type}"`,
           result.error,
@@ -282,7 +282,7 @@ export function createTransportClient<T extends SchemaMap>(
   const handleRecoverableDecodeFailure = (
     error: RecoverableMessageDecodeError,
   ) => {
-    log(1, "Socket", "yellow", "Recoverable message decode failure", {
+    log(1, "ttp", "yellow", "Recoverable message decode failure", {
       id: error.messageId,
       type: error.messageType,
       error: error.message,
@@ -359,13 +359,7 @@ export function createTransportClient<T extends SchemaMap>(
                 shouldDiscardFrames,
               );
             } catch (error) {
-              log(
-                0,
-                "Socket",
-                "red",
-                "Incoming transport stream failed",
-                error,
-              );
+              log(0, "ttp", "red", "Incoming transport stream failed", error);
               handleConnectionFailure(connection, error);
             }
           })();
@@ -387,7 +381,7 @@ export function createTransportClient<T extends SchemaMap>(
           );
         }
       } catch (error) {
-        log(0, "Socket", "red", "Incoming stream accept loop failed", error);
+        log(0, "ttp", "red", "Incoming stream accept loop failed", error);
         handleConnectionFailure(connection, error);
       } finally {
         connection.streamReader?.releaseLock();
@@ -456,11 +450,11 @@ export function createTransportClient<T extends SchemaMap>(
         return;
       }
 
-      log(1, "Socket", "green", "Connected");
+      log(1, "ttp", "green", "Connected");
       setReadyState(READY_STATE.OPEN);
       startIncomingLoop(connection);
     } catch (error) {
-      log(0, "Socket", "red", "WebTransport connection failed", error);
+      log(0, "ttp", "red", "WebTransport connection failed", error);
       handleConnectionFailure(connection, error);
       throw error;
     }
@@ -494,7 +488,7 @@ export function createTransportClient<T extends SchemaMap>(
     try {
       await writeCloseFrame(connection.transport);
     } catch (error) {
-      log(1, "Socket", "yellow", "Failed to send close sentinel", error);
+      log(1, "ttp", "yellow", "Failed to send close sentinel", error);
     }
 
     try {
@@ -544,7 +538,7 @@ export function createTransportClient<T extends SchemaMap>(
         if (!result.success) {
           log(
             0,
-            "Socket",
+            "ttp",
             "red",
             `Request validation failed for "${type}"`,
             result.error,
@@ -569,7 +563,7 @@ export function createTransportClient<T extends SchemaMap>(
       }
 
       if (type !== "ping") {
-        log(2, "Socket", "purple", "Sent:", type, payload, { id: options.id });
+        log(2, "ttp", "purple", "Sent:", type, payload, { id: options.id });
       }
 
       const expectsResponse = !options?.noResponse;
@@ -704,10 +698,7 @@ function logBinaryMessage(
     return;
   }
 
-  console.log(
-    `[Socket] ${direction} binary message (${payload.byteLength} bytes)`,
-    payload,
-  );
+  log(3, "ttp", "yellow", `${direction} ${payload.byteLength} bytes:`, payload);
 }
 
 /**

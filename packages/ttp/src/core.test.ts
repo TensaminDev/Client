@@ -1,8 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import {
-  createTransportClient,
-  type SchemaMap,
-} from "./core";
+import { createTransportClient, type SchemaMap } from "./core";
 import {
   decodeCommunicationMessage,
   encodeCommunicationMessage,

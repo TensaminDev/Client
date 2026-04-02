@@ -77,7 +77,6 @@ function Chat() {
 }
 
 const rootRoute = createRootRoute({
-  
   component: RootShell,
 });
 
@@ -99,7 +98,7 @@ const chatRoute = createRoute({
   component: Chat,
   validateSearch: z.object({
     id: z.number().optional(),
-  })
+  }),
 });
 
 const callRoute = createRoute({

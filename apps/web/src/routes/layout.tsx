@@ -8,6 +8,9 @@ import LegalWrapper from "@/features/legal/screen";
 import { Toaster } from "@tensamin/ui/cmp/sonner";
 import { TooltipProvider } from "@tensamin/ui/cmp/tooltip";
 
+import { useStorage } from "@tensamin/storage/context";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+
 /**
  * Executes Layout.
  * @param props Parameter props.
@@ -45,11 +48,52 @@ export default function Layout(props: { children: ReactNode }) {
       <Toaster />
       <TooltipProvider>
         <Storage>
-          <LegalWrapper>
-            <Crypto>{props.children}</Crypto>
-          </LegalWrapper>
+          <LoginWrapper>
+            <LegalWrapper>
+              <Crypto>{props.children}</Crypto>
+            </LegalWrapper>
+          </LoginWrapper>
         </Storage>
       </TooltipProvider>
     </>
   );
+}
+
+function LoginWrapper({ children }: { children: ReactNode }) {
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+
+  const { load } = useStorage();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    let active = true;
+
+    load("user_id").then((userId) => {
+      if (!active) {
+        return;
+      }
+
+      if (userId !== 0) {
+        setLoggedIn(true);
+        return;
+      }
+
+      setLoggedIn(false);
+      navigate({
+        to: "/login",
+      });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [load, navigate, location.pathname]);
+
+  if (loggedIn !== true && location.pathname !== "/login") {
+    return null;
+  }
+
+  return children;
 }
