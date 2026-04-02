@@ -51,104 +51,94 @@ export default function Screen(props: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    const shouldBlockRender = userId === undefined || userId === 0;
-
-    if (shouldBlockRender) {
-      setLoading(true);
-    }
+    setLoading(true);
 
     setError("");
     setErrorDescription("");
 
-    void load("user_id").then(async (id) => {
-      if (!active) {
-        return;
-      }
-
-      setUserId(id);
-
-      if (id === 0) {
-        if (shouldBlockRender) {
-          setLoading(false);
+    void (async () => {
+      try {
+        const id = await load("user_id");
+        if (!active) {
+          return;
         }
-        return;
-      }
 
-      const current = await fetch("https://legal.tensamin.net/api/current")
-        .then((res) => res.json())
-        .catch((err) => {
-          if (!active) {
+        setUserId(id);
+
+        if (id === 0) {
+          return;
+        }
+
+        const current = await fetch("https://legal.tensamin.net/api/current")
+          .then((res) => res.json())
+          .catch((err) => {
+            if (!active) {
+              return undefined;
+            }
+
+            setError("Failed to load legal documents");
+            setErrorDescription(
+              "An error occurred while fetching the legal documents from the server. Please try again later.",
+            );
+            log(0, "Legal", "red", "Failed to fetch legal documents", err);
             return undefined;
-          }
+          });
 
+        if (!active || current === undefined) {
+          return;
+        }
+
+        const safeCurrent = legalDocsSchema.safeParse(current);
+        if (!safeCurrent.success) {
           setError("Failed to load legal documents");
           setErrorDescription(
-            "An error occurred while fetching the legal documents from the server. Please try again later.",
+            "The legal documents data received from the server is invalid. Please try again later.",
           );
-          log(0, "Legal", "red", "Failed to fetch legal documents", err);
-          return undefined;
-        });
+          log(
+            0,
+            "Legal",
+            "red",
+            "Invalid legal documents data",
+            safeCurrent.error,
+          );
+          return;
+        }
 
-      if (!active || current === undefined) {
-        return;
-      }
+        setRemoteDocs(safeCurrent.data);
 
-      const safeCurrent = legalDocsSchema.safeParse(current);
-      if (!safeCurrent.success) {
-        setError("Failed to load legal documents");
-        setErrorDescription(
-          "The legal documents data received from the server is invalid. Please try again later.",
+        const currentLocalDocs = await load("legal_docs");
+        setLocalDocs(currentLocalDocs);
+
+        const [loadedAcceptedPP, loadedAcceptedTOS] = await Promise.all([
+          load("accepted_privacy_policy"),
+          load("accepted_terms_of_service"),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        acceptPP(
+          loadedAcceptedPP &&
+            !!currentLocalDocs &&
+            currentLocalDocs.pp.hash === safeCurrent.data.pp.hash,
         );
-        log(
-          0,
-          "Legal",
-          "red",
-          "Invalid legal documents data",
-          safeCurrent.error,
+        acceptTOS(
+          loadedAcceptedTOS &&
+            !!currentLocalDocs &&
+            currentLocalDocs.tos.hash === safeCurrent.data.tos.hash,
         );
-        return;
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-
-      setRemoteDocs(safeCurrent.data);
-
-      const currentLocalDocs = await load("legal_docs");
-      setLocalDocs(currentLocalDocs);
-
-      const [loadedAcceptedPP, loadedAcceptedTOS] = await Promise.all([
-        load("accepted_privacy_policy"),
-        load("accepted_terms_of_service"),
-      ]);
-
-      if (!active) {
-        return;
-      }
-
-      acceptPP(loadedAcceptedPP);
-      acceptTOS(loadedAcceptedTOS);
-
-      if (
-        !currentLocalDocs ||
-        currentLocalDocs.pp.hash !== safeCurrent.data.pp.hash
-      ) {
-        acceptPP(false);
-      }
-
-      if (
-        !currentLocalDocs ||
-        currentLocalDocs.tos.hash !== safeCurrent.data.tos.hash
-      ) {
-        acceptTOS(false);
-      }
-
-      if (shouldBlockRender) {
-        setLoading(false);
-      }
-    });
+    })();
 
     return () => {
       active = false;
     };
-  }, [load, location.pathname, userId]);
+  }, [load, location.pathname]);
 
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;
