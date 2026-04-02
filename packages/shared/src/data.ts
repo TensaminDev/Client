@@ -19,7 +19,7 @@ const message = z.object({
   tint: z.string().length(7).startsWith("#").optional(),
   avatar: z.boolean().optional(),
   display: z.boolean().optional(),
-  message_state: z.enum(["read", "received", "sent", "sending", "awaiting"]),
+  message_state: z.enum(["read", "received", "sent", "sending", "awaiting"]), // awaiting for 'internal' use
 });
 
 export const failedUser = {
@@ -147,6 +147,18 @@ export const socket = {
       chat_partner_name: z.string().min(1).max(15).optional(),
     }),
     response: z.object({}),
+  },
+  message_state: {
+    request: z.object({
+      chat_partner_id: z.number(),
+      timestamp: z.number(),
+      message_state: message.shape.message_state,
+    }),
+    response: z.object({
+      chat_partner_id: z.number(),
+      message_state: message.shape.message_state,
+      timestamp: z.number(),
+    }),
   },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;
 

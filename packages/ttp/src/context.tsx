@@ -12,6 +12,7 @@ import { useCrypto } from "@tensamin/crypto/context";
 import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 import { createTransportClient, READY_STATE, type BoundSendFn } from "./core";
+import type { PushHandler } from "./core";
 import {
   PING_INTERVAL,
   RECONNECT_RESET,
@@ -132,6 +133,7 @@ function getProtocolErrorDetails(error: unknown) {
 
 type ContextType = {
   send: BoundSendFn<Schemas>;
+  subscribePush: (handler: PushHandler) => () => void;
   readyState: () => number;
   ownPing: () => number;
   iotaPing: () => number;
@@ -201,6 +203,21 @@ export default function Provider(props: {
     }) as BoundSendFn<Schemas>,
     [],
   );
+
+  /**
+   * Subscribes to unsolicited push events from the active transport client.
+   * @param handler Callback invoked for each push message.
+   * @returns Unsubscribe function.
+   */
+  const subscribePush = useCallback((handler: PushHandler) => {
+    const client = clientRef.current;
+
+    if (!client) {
+      return () => {};
+    }
+
+    return client.subscribePush(handler);
+  }, []);
 
   useEffect(() => {
     if (!connected || !identified) {
@@ -536,12 +553,13 @@ export default function Provider(props: {
   const contextValue = useMemo<ContextType>(
     () => ({
       send,
+      subscribePush,
       readyState: () => readyState,
       ownPing: () => ownPing,
       iotaPing: () => iotaPing,
       identified: () => identified,
     }),
-    [identified, iotaPing, ownPing, readyState, send],
+    [identified, iotaPing, ownPing, readyState, send, subscribePush],
   );
 
   if (error !== "" && errorDescription !== "") {

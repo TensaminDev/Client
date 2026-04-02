@@ -1,13 +1,22 @@
-import * as React from "react";
+import {
+  createContext,
+  useMemo,
+  useEffect,
+  useCallback,
+  useState,
+  useContext,
+  type ReactNode,
+} from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
+import type { InfiniteData } from "@tanstack/react-query";
 import type { LiveMessage, RawMessage, RawMessages } from "./values";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useSocket } from "@tensamin/ttp/context";
 
-export const context = React.createContext<contextType | undefined>(undefined);
+export const context = createContext<contextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 
@@ -16,27 +25,25 @@ const queryClient = new QueryClient();
  * @param props Parameter props.
  * @returns unknown.
  */
-export default function Provider(props: { children: React.ReactNode }) {
+export default function Provider(props: { children: ReactNode }) {
   const { getSharedSecret } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
-  const { send } = useSocket();
+  const { send, subscribePush } = useSocket();
 
-  const [liveMessagesState, setLiveMessagesState] = React.useState<
-    LiveMessage[]
-  >([]);
-  const [currentSharedSecret, setCurrentSharedSecret] = React.useState("");
+  const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
+  const [currentSharedSecret, setCurrentSharedSecret] = useState("");
 
   const locationSearch = useRouterState({
     select: (state) => state.location.search,
   });
 
-  const userIdValue = React.useMemo(() => {
+  const userIdValue = useMemo(() => {
     const rawId = (locationSearch as unknown as { id?: unknown })?.id;
     return Number(rawId ?? 0);
   }, [locationSearch]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const recipientId = userIdValue;
 
     if (!recipientId) {
@@ -73,7 +80,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     };
   }, [get, getSharedSecret, load, userIdValue]);
 
-  const customGetMessages = React.useCallback(
+  const customGetMessages = useCallback(
     async (amount: number, offset: number) => {
       const messages = await send("messages_get", {
         amount,
@@ -92,7 +99,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     [send, userIdValue],
   );
 
-  const addLiveMessage = React.useCallback((message: RawMessage) => {
+  const addLiveMessage = useCallback((message: RawMessage) => {
     const localId =
       globalThis.crypto?.randomUUID?.() ??
       `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -119,11 +126,91 @@ export default function Provider(props: { children: React.ReactNode }) {
     };
   }, []);
 
-  const clearLiveMessages = React.useCallback(() => {
+  const clearLiveMessages = useCallback(() => {
     setLiveMessagesState([]);
   }, []);
 
-  const value = React.useMemo<contextType>(
+  // Get live updates for message states
+  useEffect(() => {
+    return subscribePush((message) => {
+      if (message.type !== "message_state") {
+        return;
+      }
+
+      const nextState = message.data as {
+        chat_partner_id: number;
+        timestamp: number;
+        message_state: RawMessage["message_state"];
+      };
+
+      if (nextState.chat_partner_id !== userIdValue) {
+        return;
+      }
+
+      setLiveMessagesState((prev) => {
+        let updated = false;
+
+        const mapped = prev.map((liveMessage) => {
+          if (liveMessage.timestamp !== nextState.timestamp) {
+            return liveMessage;
+          }
+
+          if (liveMessage.message_state === nextState.message_state) {
+            return liveMessage;
+          }
+
+          updated = true;
+          return {
+            ...liveMessage,
+            message_state: nextState.message_state,
+          };
+        });
+
+        return updated ? mapped : prev;
+      });
+
+      const queryKey = ["chat-messages", String(userIdValue)] as const;
+      queryClient.setQueryData<InfiniteData<RawMessages>>(
+        queryKey,
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          let updated = false;
+
+          const pages = current.pages.map((page) =>
+            page.map((historicalMessage) => {
+              if (historicalMessage.timestamp !== nextState.timestamp) {
+                return historicalMessage;
+              }
+
+              if (historicalMessage.message_state === nextState.message_state) {
+                return historicalMessage;
+              }
+
+              updated = true;
+              return {
+                ...historicalMessage,
+                message_state: nextState.message_state,
+              };
+            }),
+          );
+
+          if (!updated) {
+            return current;
+          }
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    });
+  }, [subscribePush, userIdValue]);
+
+  const value = useMemo<contextType>(
     () => ({
       getMessages: customGetMessages,
       liveMessages: () => liveMessagesState,
@@ -166,7 +253,7 @@ type contextType = {
  * @returns contextType.
  */
 export function useChat(): contextType {
-  const ctx = React.useContext(context);
+  const ctx = useContext(context);
   if (!ctx) {
     throw new Error("useChat must be used within a ChatProvider");
   }

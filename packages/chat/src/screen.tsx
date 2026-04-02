@@ -188,7 +188,7 @@ export default function Screen() {
 
             return (
               <div
-                key={virtualRow.key}
+                key={message.timestamp}
                 data-index={virtualRow.index}
                 ref={virtualizer.measureElement}
                 style={{
