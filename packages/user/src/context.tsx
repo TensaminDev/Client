@@ -1,7 +1,7 @@
 import * as React from "react";
-import { useSocket } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp/context";
 
-import { socket as schemas } from "@tensamin/shared/data";
+import { ttp as schemas } from "@tensamin/shared/data";
 import type z from "zod";
 
 export type User = z.infer<typeof schemas.get_user_data.response>;
@@ -20,7 +20,7 @@ const UserContext = React.createContext<contextValue | undefined>(undefined);
 export default function UserProvider(props: { children: React.ReactNode }) {
   const storageRef = React.useRef<Record<number, User>>({});
 
-  const { send } = useSocket();
+  const { send } = useTTP();
 
   /**
    * Executes get.

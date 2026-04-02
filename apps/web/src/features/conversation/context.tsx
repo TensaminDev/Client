@@ -1,4 +1,4 @@
-import { useSocket } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp/context";
 import {
   createContext,
   useContext,
@@ -31,7 +31,7 @@ export default function ConversationProvider(props: { children: ReactNode }) {
   );
   const [communities, setCommunities] = useState<Community[] | null>(null);
 
-  const { send } = useSocket();
+  const { send } = useTTP();
 
   useEffect(() => {
     let active = true;

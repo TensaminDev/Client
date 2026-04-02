@@ -11,7 +11,7 @@ import {
 } from "@tensamin/ui/cmp/dialog";
 import z from "zod";
 import { toast } from "@tensamin/shared/log";
-import { useSocket } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp/context";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -27,7 +27,7 @@ export default function Page() {
 
 // Add Conversation Button Component
 function AddConversationButton() {
-  const { send } = useSocket();
+  const { send } = useTTP();
   const [loading, setLoading] = useState(false);
 
   function submit(username: string | null) {

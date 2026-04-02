@@ -199,7 +199,7 @@ export function createTransportClient<T extends SchemaMap>(
    */
   const handleIncomingMessage = (message: TypedMessage) => {
     if (message.type !== "pong") {
-      log(2, "ttp", "blue", "Received:", message.type, message.data, {
+      log(2, "ttp", "cyan", "Received:", message.type, message.data, {
         id: message.id,
       });
     }
@@ -563,7 +563,7 @@ export function createTransportClient<T extends SchemaMap>(
       }
 
       if (type !== "ping") {
-        log(2, "ttp", "purple", "Sent:", type, payload, { id: options.id });
+        log(2, "ttp", "gray", "Sent:", type, payload, { id: options.id });
       }
 
       const expectsResponse = !options?.noResponse;

@@ -148,7 +148,7 @@ export default function Screen(props: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [load, location.pathname]);
+  }, [load, location.pathname, userId]);
 
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;

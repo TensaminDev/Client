@@ -6,7 +6,7 @@ import { Button } from "@tensamin/ui/cmp/button";
 
 import { Plus, Laugh, Clapperboard } from "lucide-react";
 import { useChat } from "../context";
-import { useSocket } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp/context";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 
@@ -15,7 +15,7 @@ export default function InputComponent() {
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
 
   const { encrypt } = useCrypto();
-  const { send } = useSocket();
+  const { send } = useTTP();
   const { addLiveMessage, sharedSecret, userId } = useChat();
   const { load } = useStorage();
 

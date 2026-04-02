@@ -11,7 +11,16 @@ import { Ban, Check, Info, TriangleAlert } from "lucide-react";
 export function log(
   logLevel: number,
   logger: string,
-  color: "red" | "green" | "yellow" | "purple" | "blue",
+  color:
+    | "red"
+    | "green"
+    | "yellow"
+    | "purple"
+    | "blue"
+    | "cyan"
+    | "white"
+    | "black"
+    | "gray",
   ...args: unknown[]
 ) {
   const currentLogLevel = Number(localStorage.getItem("log_level") || 0);
@@ -24,6 +33,10 @@ export function log(
     yellow: "\x1b[33m",
     purple: "\x1b[35m",
     blue: "\x1b[34m",
+    cyan: "\x1b[36m",
+    white: "\x1b[37m",
+    black: "\x1b[30m",
+    gray: "\x1b[90m",
   };
   const resetCode = "\x1b[0m";
   console.log(`${colorCodes[color]}${logger}${resetCode}`, ...args);

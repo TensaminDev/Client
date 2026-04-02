@@ -21,8 +21,8 @@ import {
   TRANSPORT_URL,
 } from "./values";
 import {
-  socket as schemas,
-  type Socket as Schemas,
+  ttp as schemas,
+  type TTP as Schemas,
 } from "@tensamin/shared/data";
 import Loading from "@tensamin/ui/screens/loading";
 import ErrorScreen from "@tensamin/ui/screens/error";
@@ -140,10 +140,10 @@ type ContextType = {
   identified: () => boolean;
 };
 
-const socketContext = createContext<ContextType | undefined>(undefined);
+const TTPContext = createContext<ContextType | undefined>(undefined);
 
 /**
- * Provides socket transport state and authenticated send operations to children.
+ * Provides ttp transport state and authenticated send operations to children.
  * @param props Component props with children.
  * @returns Loading, error, or provider-wrapped JSX.
  */
@@ -186,7 +186,7 @@ export default function Provider(props: {
       const client = clientRef.current;
 
       if (!client) {
-        return Promise.reject(new Error("Socket is not connected"));
+        return Promise.reject(new Error("ttp is not connected"));
       }
 
       if (options?.noResponse) {
@@ -240,7 +240,7 @@ export default function Provider(props: {
           setIotaPing(remotePing);
         }
       } catch (intervalError) {
-        log(1, "Socket", "yellow", "Ping failed", intervalError);
+        log(1, "ttp", "yellow", "Ping failed", intervalError);
       }
     }, PING_INTERVAL);
 
@@ -310,7 +310,7 @@ export default function Provider(props: {
         setErrorDescription(
           "Unable to connect to the server after multiple attempts. Please check your internet connection or try again later.",
         );
-        log(0, "Socket", "red", "Reconnection attempts exhausted", reason);
+        log(0, "ttp", "red", "Reconnection attempts exhausted", reason);
         return;
       }
 
@@ -355,7 +355,7 @@ export default function Provider(props: {
               return;
             }
 
-            log(0, "Socket", "red", "Disconnected", closeError, {
+            log(0, "ttp", "red", "Disconnected", closeError, {
               stopSending: isStopSendingError(closeError),
             });
             scheduleReconnect(closeError);
@@ -381,7 +381,7 @@ export default function Provider(props: {
           return;
         }
 
-        log(0, "Socket", "red", "Connection attempt failed", connectError);
+        log(0, "ttp", "red", "Connection attempt failed", connectError);
         scheduleReconnect(connectError);
       }
     }
@@ -490,7 +490,7 @@ export default function Provider(props: {
 
         log(
           isFatal ? 0 : 1,
-          "Socket",
+          "ttp",
           isFatal ? "red" : "yellow",
           "Identification handshake failed",
           protocolErrorDetails ?? identificationError,
@@ -578,20 +578,20 @@ export default function Provider(props: {
   }
 
   return (
-    <socketContext.Provider value={contextValue}>
+    <TTPContext.Provider value={contextValue}>
       {props.children}
-    </socketContext.Provider>
+    </TTPContext.Provider>
   );
 }
 
 /**
- * Returns the active socket context and enforces provider usage.
- * @returns Socket context API for transport operations and connection state.
+ * Returns the active ttp context and enforces provider usage.
+ * @returns ttp context API for transport operations and connection state.
  */
-export function useSocket(): ContextType {
-  const context = useContext(socketContext);
+export function useTTP(): ContextType {
+  const context = useContext(TTPContext);
   if (!context) {
-    throw new Error("useSocket must be used within a SocketProvider");
+    throw new Error("useTTP must be used within a TTPProvider");
   }
   return context;
 }

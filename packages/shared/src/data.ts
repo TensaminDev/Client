@@ -32,10 +32,10 @@ export const failedUser = {
   sub_level: 0,
   user_id: 0,
   username: "unknown",
-} as z.infer<typeof socket.get_user_data.response>;
+} as z.infer<typeof ttp.get_user_data.response>;
 
-// Socket
-export const socket = {
+// TTP
+export const ttp = {
   identification: {
     request: z
       .object({
@@ -162,7 +162,7 @@ export const socket = {
   },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;
 
-export type Socket = typeof socket;
+export type TTP = typeof ttp;
 
 // Storage
 export interface Storage {

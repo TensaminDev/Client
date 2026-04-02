@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { socket } from "@tensamin/shared/data";
+import { ttp } from "@tensamin/shared/data";
 
 export type RawMessages = z.infer<
-  typeof socket.messages_get.response
+  typeof ttp.messages_get.response
 >["messages"];
 
 export type RawMessage = RawMessages[number];
