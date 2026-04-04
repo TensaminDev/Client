@@ -1,5 +1,5 @@
 import { Button } from "@tensamin/ui/cmp/button";
-import { House, Phone } from "lucide-react";
+import { House, Phone, User } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/context";
 import Wrapper from "@tensamin/user/wrapper";
@@ -13,6 +13,7 @@ import {
 } from "@tensamin/ui/cmp/select";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
+import { SidebarTrigger, useSidebar } from "@tensamin/ui/cmp/sidebar";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function Navbar() {
   const [selectOpen, setSelectOpen] = useState(false);
 
   return (
-    <div className="w-full h-13.5 flex items-center justify-center">
+    <div className="w-full gap-2 h-13.5 flex items-center justify-center">
       <Button
         onClick={() => navigate({ to: "/" })}
         className="w-9 h-9 aspect-square rounded-lg"
@@ -40,7 +41,7 @@ export default function Navbar() {
         <Wrapper
           userId={id}
           component={(user) => (
-            <p className="font-medium pl-3 text-md">{user?.display}</p>
+            <p className="font-medium text-md">{user?.display}</p>
           )}
           loading={<Skeleton className="ml-3 w-40 h-5" />}
         />
@@ -97,6 +98,32 @@ export default function Navbar() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+export function MobileNavbar() {
+  const navigate = useNavigate();
+  const { setOpenMobile } = useSidebar();
+
+  return (
+    <div className="z-100 w-full h-16 flex justify-center items-center gap-8 bg-card border-t">
+      <SidebarTrigger
+        className="text-foreground w-12! h-12! aspect-square rounded-xl"
+        variant="link"
+      >
+        <User className="size-5.5" />
+      </SidebarTrigger>
+      <Button
+        onClick={() => {
+          navigate({ to: "/" });
+          setOpenMobile(false);
+        }}
+        className="text-foreground w-12 h-12 aspect-square rounded-xl"
+        variant="link"
+      >
+        <House className="size-5.5" />
+      </Button>
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import { type ReactNode } from "react";
 
 import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
+import Navbar, { MobileNavbar } from "@/components/navbar";
+
+import { SidebarProvider } from "@tensamin/ui/cmp/sidebar";
+import { useIsMobile, cn } from "@tensamin/ui/utils";
 
 import { motion } from "framer-motion";
 
@@ -11,6 +14,8 @@ import { motion } from "framer-motion";
  * @returns unknown.
  */
 export default function Layout(props: { children: ReactNode }) {
+  const isMobile = useIsMobile();
+
   return (
     <motion.div
       className="w-full h-full flex bg-sidebar"
@@ -26,13 +31,21 @@ export default function Layout(props: { children: ReactNode }) {
         },
       }}
     >
-      <Sidebar />
-      <div className="w-full h-full flex flex-col">
-        <Navbar />
-        <div className="bg-background h-full w-full rounded-tl-3xl border-t border-l">
-          {props.children}
+      <SidebarProvider>
+        <Sidebar />
+        <div className="w-full h-full flex flex-col">
+          {!isMobile && <Navbar />}
+          <div
+            className={cn(
+              "bg-background h-full w-full",
+              !isMobile && "rounded-tl-3xl border-t border-l",
+            )}
+          >
+            {props.children}
+          </div>
+          {isMobile && <MobileNavbar />}
         </div>
-      </div>
+      </SidebarProvider>
     </motion.div>
   );
 }

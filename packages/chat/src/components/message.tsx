@@ -25,6 +25,7 @@ export default function Message(props: {
 }) {
   const { sharedSecret } = useChat();
   const { decrypt } = useCrypto();
+  const sharedSecretValue = sharedSecret();
 
   const [decodedContent, setDecodedContent] = React.useState("");
   const [isReady, setIsReady] = React.useState(false);
@@ -37,15 +38,13 @@ export default function Message(props: {
     }
 
     const content = props.message.content;
-    const secret = sharedSecret();
+    const secret = sharedSecretValue;
     let active = true;
 
     if (!secret) {
       setIsReady(false);
       return;
     }
-
-    setIsReady(false);
 
     decrypt(secret, content)
       .then((value) => {
@@ -73,14 +72,14 @@ export default function Message(props: {
     return () => {
       active = false;
     };
-  }, [decrypt, props.message.content, props.notEncrypted, sharedSecret]);
+  }, [decrypt, props.message.content, props.notEncrypted, sharedSecretValue]);
 
   return (
     <div
-      className={`w-full flex justify-start ${(props.message.failed || props.message.message_state === "awaiting") && "opacity-50"}`}
+      className={`w-full flex justify-start transition-opacity duration-150 ${(props.message.failed || props.message.message_state === "awaiting") && "opacity-50"}`}
     >
       <div
-        className={`flex gap-1 items-center justify-center animate-in fade-in duration-200 max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap wrap-break-word ${
+        className={`flex gap-1 items-center justify-center max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap wrap-break-word ${
           props.message.sent_by_self
             ? "bg-primary text-primary-foreground"
             : "bg-muted"
@@ -91,9 +90,7 @@ export default function Message(props: {
             <TooltipContent>
               <p>Failed to send message</p>
             </TooltipContent>
-            <TooltipTrigger asChild>
-              <AlertTriangle size={17} />
-            </TooltipTrigger>
+            <TooltipTrigger render={<AlertTriangle size={17} />} />
           </Tooltip>
         )}
         {props.message.message_state === "awaiting" &&

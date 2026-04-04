@@ -20,10 +20,7 @@ import {
   RETRY_INTERVAL,
   TRANSPORT_URL,
 } from "./values";
-import {
-  ttp as schemas,
-  type TTP as Schemas,
-} from "@tensamin/shared/data";
+import { ttp as schemas, type TTP as Schemas } from "@tensamin/shared/data";
 import Loading from "@tensamin/ui/screens/loading";
 import ErrorScreen from "@tensamin/ui/screens/error";
 

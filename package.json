@@ -12,7 +12,9 @@
     "build:packages": "bun scripts/build-packages.ts",
     "install:packages": "bun scripts/install-packages.ts",
     "dev:web": "cd apps/web && bun dev",
-    "build:web": "cd apps/web && bun run build"
+    "build:web": "cd apps/web && bun run build",
+    "dev:mobile": "cd apps/mobile && bun dev",
+    "build:mobile": "cd apps/mobile && bun run build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

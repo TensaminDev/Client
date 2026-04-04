@@ -20,6 +20,33 @@ export const context = createContext<contextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 
+function updateMessageStateByTimestamp<
+  T extends { timestamp: number; message_state: RawMessage["message_state"] },
+>(
+  messages: T[],
+  timestamp: number,
+  messageState: RawMessage["message_state"],
+): { next: T[]; updated: boolean } {
+  let updated = false;
+
+  const next = messages.map((item) => {
+    if (item.timestamp !== timestamp || item.message_state === messageState) {
+      return item;
+    }
+
+    updated = true;
+    return {
+      ...item,
+      message_state: messageState,
+    };
+  });
+
+  return {
+    next,
+    updated,
+  };
+}
+
 /**
  * Executes Provider.
  * @param props Parameter props.
@@ -94,6 +121,19 @@ export default function Provider(props: { children: ReactNode }) {
 
       const rawMessages = messages.data.messages;
       const sorted = [...rawMessages].sort((a, b) => a.timestamp - b.timestamp);
+
+      if (sorted.length > 0) {
+        const fetchedTimestamps = new Set(sorted.map((item) => item.timestamp));
+
+        setLiveMessagesState((prev) => {
+          const filtered = prev.filter(
+            (liveMessage) => !fetchedTimestamps.has(liveMessage.timestamp),
+          );
+
+          return filtered.length === prev.length ? prev : filtered;
+        });
+      }
+
       return sorted;
     },
     [send, userIdValue],
@@ -137,36 +177,36 @@ export default function Provider(props: { children: ReactNode }) {
         return;
       }
 
-      const nextState = message.data as {
-        chat_partner_id: number;
-        timestamp: number;
+      const rawData = message.data as {
+        chat_partner_id: unknown;
+        timestamp: unknown;
         message_state: RawMessage["message_state"];
       };
+
+      const nextState = {
+        chat_partner_id: Number(rawData.chat_partner_id),
+        timestamp: Number(rawData.timestamp),
+        message_state: rawData.message_state,
+      };
+
+      if (
+        !Number.isFinite(nextState.chat_partner_id) ||
+        !Number.isFinite(nextState.timestamp)
+      ) {
+        return;
+      }
 
       if (nextState.chat_partner_id !== userIdValue) {
         return;
       }
 
       setLiveMessagesState((prev) => {
-        let updated = false;
-
-        const mapped = prev.map((liveMessage) => {
-          if (liveMessage.timestamp !== nextState.timestamp) {
-            return liveMessage;
-          }
-
-          if (liveMessage.message_state === nextState.message_state) {
-            return liveMessage;
-          }
-
-          updated = true;
-          return {
-            ...liveMessage,
-            message_state: nextState.message_state,
-          };
-        });
-
-        return updated ? mapped : prev;
+        const { next, updated } = updateMessageStateByTimestamp(
+          prev,
+          nextState.timestamp,
+          nextState.message_state,
+        );
+        return updated ? next : prev;
       });
 
       const queryKey = ["chat-messages", String(userIdValue)] as const;
@@ -179,23 +219,19 @@ export default function Provider(props: { children: ReactNode }) {
 
           let updated = false;
 
-          const pages = current.pages.map((page) =>
-            page.map((historicalMessage) => {
-              if (historicalMessage.timestamp !== nextState.timestamp) {
-                return historicalMessage;
-              }
+          const pages = current.pages.map((page) => {
+            const nextPage = updateMessageStateByTimestamp(
+              page,
+              nextState.timestamp,
+              nextState.message_state,
+            );
 
-              if (historicalMessage.message_state === nextState.message_state) {
-                return historicalMessage;
-              }
-
+            if (nextPage.updated) {
               updated = true;
-              return {
-                ...historicalMessage,
-                message_state: nextState.message_state,
-              };
-            }),
-          );
+            }
+
+            return nextPage.next;
+          });
 
           if (!updated) {
             return current;

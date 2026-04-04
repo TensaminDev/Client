@@ -1,0 +1,23 @@
+{
+  "name": "@tensamin/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx"
+  },
+  "scripts": {
+    "dev:raw": "tauri android dev",
+    "build:raw": "tauri android build",
+    "dev": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:raw; else bun dev:raw; fi",
+    "build": "if command -v nix >/dev/null 2>&1; then nix develop --command bun build:raw; else bun build:raw; fi",
+    "gen-icons": "tauri icon ./logo.png"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

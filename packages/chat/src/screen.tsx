@@ -54,10 +54,22 @@ export default function Screen() {
     setPrependAnchor(null);
   }, [chatUserId, clearLiveMessages]);
 
-  const messages = React.useMemo(
-    () => [...historicalMessages, ...liveMessages()],
-    [historicalMessages, liveMessages],
-  );
+  const liveMessagesSnapshot = liveMessages();
+
+  const messages = React.useMemo(() => {
+    if (historicalMessages.length === 0) {
+      return liveMessagesSnapshot;
+    }
+
+    const historicalTimestamps = new Set(
+      historicalMessages.map((message) => message.timestamp),
+    );
+    const liveWithoutDuplicates = liveMessagesSnapshot.filter(
+      (message) => !historicalTimestamps.has(message.timestamp),
+    );
+
+    return [...historicalMessages, ...liveWithoutDuplicates];
+  }, [historicalMessages, liveMessagesSnapshot]);
 
   const virtualizer = useVirtualizer({
     count: messages.length,
@@ -91,7 +103,7 @@ export default function Screen() {
     await messagesQuery.fetchNextPage();
   }, [messagesQuery, virtualizer]);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (
       !scrollRef.current ||
       hasScrolledToBottomInitially ||
@@ -100,37 +112,25 @@ export default function Screen() {
       return;
     }
 
-    queueMicrotask(() => {
-      if (!scrollRef.current) {
-        return;
-      }
-
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      setHasScrolledToBottomInitially(true);
-    });
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    setHasScrolledToBottomInitially(true);
   }, [hasScrolledToBottomInitially, messages]);
 
-  React.useEffect(() => {
-    const count = liveMessages().length;
+  React.useLayoutEffect(() => {
+    const count = liveMessagesSnapshot.length;
 
     if (!scrollRef.current) {
       return;
     }
 
     if (count > lastLiveMessageCount) {
-      queueMicrotask(() => {
-        if (!scrollRef.current) {
-          return;
-        }
-
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      });
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
 
     setLastLiveMessageCount(count);
-  }, [lastLiveMessageCount, liveMessages]);
+  }, [lastLiveMessageCount, liveMessagesSnapshot.length]);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (
       !scrollRef.current ||
       !prependAnchor ||
@@ -139,15 +139,9 @@ export default function Screen() {
       return;
     }
 
-    queueMicrotask(() => {
-      if (!scrollRef.current) {
-        return;
-      }
-
-      const delta = virtualizer.getTotalSize() - prependAnchor.totalSize;
-      scrollRef.current.scrollTop = prependAnchor.scrollTop + delta;
-      setPrependAnchor(null);
-    });
+    const delta = virtualizer.getTotalSize() - prependAnchor.totalSize;
+    scrollRef.current.scrollTop = prependAnchor.scrollTop + delta;
+    setPrependAnchor(null);
   }, [messagesQuery.isFetchingNextPage, prependAnchor, virtualizer]);
 
   /**

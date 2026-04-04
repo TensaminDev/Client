@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import Storage from "@tensamin/storage/context";
 import Crypto from "@tensamin/crypto/context";
+import Mobile from "@tensamin/mobile/context";
 
 import LegalWrapper from "@/features/legal/screen";
 
@@ -10,6 +11,7 @@ import { TooltipProvider } from "@tensamin/ui/cmp/tooltip";
 
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useIsMobile } from "@tensamin/ui/utils";
 
 /**
  * Executes Layout.
@@ -19,6 +21,8 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 export default function Layout(props: { children: ReactNode }) {
   const [pixelRatio, setPixelRatio] = useState(devicePixelRatio);
   const [visible, setVisible] = useState(false);
+
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleResize = () => {
@@ -35,7 +39,9 @@ export default function Layout(props: { children: ReactNode }) {
     <>
       <div className="fixed top-0 left-0 z-100 w-screen h-screen flex flex-col justify-center items-center pointer-events-none select-none">
         {visible && (
-          <div className="bg-card border p-1 text-xs">{pixelRatio}</div>
+          <div className="bg-card border p-1 text-xs">
+            {Math.round(pixelRatio)}
+          </div>
         )}
 
         {/* Todo: Make this nicer */}
@@ -45,12 +51,14 @@ export default function Layout(props: { children: ReactNode }) {
           </div>
         )}
       </div>
-      <Toaster />
+      <Toaster position={isMobile ? "top-center" : "bottom-right"} />
       <TooltipProvider>
         <Storage>
           <LoginWrapper>
             <LegalWrapper>
-              <Crypto>{props.children}</Crypto>
+              <Crypto>
+                <Mobile>{props.children}</Mobile>
+              </Crypto>
             </LegalWrapper>
           </LoginWrapper>
         </Storage>

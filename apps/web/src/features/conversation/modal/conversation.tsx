@@ -14,18 +14,20 @@ export default function ConversationModal({ userId }: { userId: number }) {
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div
-          className="select-none cursor-pointer"
-          onClick={() => navigate({ to: "/chat", search: { id: userId } })}
-        >
-          <Wrapper
-            loading={<Loading />}
-            userId={userId}
-            component={(user) => <Basic user={user} />}
-          />
-        </div>
-      </ContextMenuTrigger>
+      <ContextMenuTrigger
+        render={
+          <div
+            className="select-none cursor-pointer"
+            onClick={() => navigate({ to: "/chat", search: { id: userId } })}
+          >
+            <Wrapper
+              loading={<Loading />}
+              userId={userId}
+              component={(user) => <Basic user={user} />}
+            />
+          </div>
+        }
+      />
       <ContextMenuContent>
         <ContextMenuGroup>
           <ContextMenuItem>Test</ContextMenuItem>

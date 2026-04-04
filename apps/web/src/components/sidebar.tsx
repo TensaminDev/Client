@@ -4,6 +4,11 @@ import * as React from "react";
 import { Basic, Loading } from "./modals/basic";
 import List from "@/features/conversation/list/body";
 
+import {
+  Sidebar as SidebarRoot,
+  SidebarContent,
+} from "@tensamin/ui/cmp/sidebar";
+
 /**
  * Renders the conversation sidebar with account summary and conversation list.
  * @returns Sidebar JSX.
@@ -17,17 +22,21 @@ export default function Sidebar() {
   }, [load]);
 
   return (
-    <div className="w-65 h-full flex flex-col gap-3 p-2">
-      <div>
-        <Wrapper
-          loading={<Loading />}
-          userId={userId}
-          component={(user) => <Basic user={user} />}
-        />
-      </div>
-      <div className="h-full">
-        <List />
-      </div>
-    </div>
+    <SidebarRoot>
+      <SidebarContent>
+        <div className="h-full w-full flex flex-col gap-3 p-2">
+          <div>
+            <Wrapper
+              loading={<Loading />}
+              userId={userId}
+              component={(user) => <Basic user={user} />}
+            />
+          </div>
+          <div className="h-full">
+            <List />
+          </div>
+        </div>
+      </SidebarContent>
+    </SidebarRoot>
   );
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "format": "bunx prettier --write .",
     "lint": "eslint src",
-    "dev": "vite --port 3000",
+    "dev": "vite --port 3000 --host 0.0.0.0",
     "test": "bun test --pass-with-no-tests",
     "build": "bun run test && tsc -b && vite build",
     "preview": "cd dist && nix-shell -p python3 --run 'python3 -m http.server 3000' && cd .."
@@ -25,6 +25,7 @@
     "@tensamin/ttp": "workspace:*",
     "@tensamin/ui": "workspace:*",
     "@tensamin/user": "workspace:*",
+    "@tensamin/mobile": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "comlink": "^4.4.2",

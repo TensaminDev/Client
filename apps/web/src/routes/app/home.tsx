@@ -70,9 +70,7 @@ function AddConversationButton() {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button>Add Conversation</Button>
-      </DialogTrigger>
+      <DialogTrigger render={<Button>Add Conversation</Button>} />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New Conversation</DialogTitle>
@@ -98,9 +96,7 @@ function AddConversationButton() {
             placeholder="Enter username..."
           />
           <div className="flex w-full justify-end gap-1">
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
+            <DialogClose render={<Button variant="outline">Cancel</Button>} />
             <Button disabled={loading} type="submit">
               {loading && <Loader2 className="animate-spin" />} Continue
             </Button>
