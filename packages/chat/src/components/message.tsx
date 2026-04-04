@@ -80,7 +80,9 @@ export default function Message(props: {
       <div
         className={`flex gap-1 items-center justify-center max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap wrap-break-word ${
           props.message.sent_by_self
-            ? "bg-primary text-primary-foreground"
+            ? props.message.failed
+              ? "bg-destructive/75 text-destructive-foreground"
+              : "bg-primary text-primary-foreground"
             : "bg-muted"
         } ${!isReady && "animate-pulse"}`}
       >
