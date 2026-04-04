@@ -14,13 +14,17 @@ import { toast } from "@tensamin/shared/log";
 import { useTTP } from "@tensamin/ttp/context";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { isTauri } from "@tauri-apps/api/core";
 
 // The page
 export default function Page() {
   return (
-    <div className="p-3 flex gap-2">
+    <div className={`px-3 flex gap-2 ${!isTauri() && "pt-3"}`}>
       <AddConversationButton />
       <Button disabled>Add Community</Button>
+      <Button variant="outline" onClick={() => location.reload()}>
+        Reload
+      </Button>
     </div>
   );
 }

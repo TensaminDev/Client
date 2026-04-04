@@ -7,6 +7,8 @@ import { SidebarProvider } from "@tensamin/ui/cmp/sidebar";
 import { useIsMobile, cn } from "@tensamin/ui/utils";
 
 import { motion } from "framer-motion";
+import { isTauri } from "@tauri-apps/api/core";
+import { useLocation } from "@tanstack/react-router";
 
 /**
  * Executes Layout.
@@ -15,6 +17,7 @@ import { motion } from "framer-motion";
  */
 export default function Layout(props: { children: ReactNode }) {
   const isMobile = useIsMobile();
+  const location = useLocation();
 
   return (
     <motion.div
@@ -33,8 +36,17 @@ export default function Layout(props: { children: ReactNode }) {
     >
       <SidebarProvider>
         <Sidebar />
-        <div className="w-full h-full flex flex-col">
-          {!isMobile && <Navbar />}
+        <div
+          className={cn(
+            "w-full h-full flex flex-col",
+            isTauri() && "pt-[env(safe-area-inset-top)]",
+          )}
+        >
+          {!isMobile && <Navbar forMobile={false} />}
+          {isMobile && location.pathname === "/chat" && (
+            <Navbar forMobile={true} />
+          )}
+
           <div
             className={cn(
               "bg-background h-full w-full",
@@ -43,7 +55,7 @@ export default function Layout(props: { children: ReactNode }) {
           >
             {props.children}
           </div>
-          {isMobile && <MobileNavbar />}
+          {isMobile && location.pathname !== "/chat" && <MobileNavbar />}
         </div>
       </SidebarProvider>
     </motion.div>

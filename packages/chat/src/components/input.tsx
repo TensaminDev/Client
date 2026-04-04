@@ -10,8 +10,13 @@ import { useTTP } from "@tensamin/ttp/context";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 
-export default function InputComponent() {
-  const [value, setValue] = React.useState("");
+export default function InputComponent({
+  value,
+  setValue,
+}: {
+  value: string;
+  setValue: (value: string) => void;
+}) {
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
 
   const { encrypt } = useCrypto();
@@ -35,15 +40,13 @@ export default function InputComponent() {
 
     const time = Date.now();
     const currentValue = value;
-    const currentUserId = userId();
-    const currentSharedSecret = sharedSecret();
 
-    if (!Number.isSafeInteger(currentUserId) || currentUserId <= 0) {
+    if (!Number.isSafeInteger(userId) || userId <= 0) {
       toast("error", "No conversation selected");
       return;
     }
 
-    if (!currentSharedSecret) {
+    if (!sharedSecret) {
       toast("error", "Still getting shared secret...");
       return;
     }
@@ -59,18 +62,18 @@ export default function InputComponent() {
       message_state: "awaiting",
     });
 
-    const encryptedContext = await encrypt(currentSharedSecret, currentValue);
+    const encryptedContext = await encrypt(sharedSecret, currentValue);
 
     send("message_send", {
       height,
       content: encryptedContext,
-      receiver_id: currentUserId,
+      receiver_id: userId,
       timestamp: time,
     }).catch((e) => {
       log(0, "Chat", "red", "Failed to send message", e, {
         content: currentValue,
         encryptedContext,
-        receiver_id: currentUserId,
+        receiver_id: userId,
         timestamp: time,
       });
       reference.setFailed(true);
@@ -81,7 +84,7 @@ export default function InputComponent() {
   }
 
   return (
-    <Card className="rounded-none rounded-t-xl border-b-0 pt-0">
+    <Card className="rounded-none rounded-t-xl border-b-0 pt-0 pb-[env(safe-area-inset-bottom)]">
       <CardHeader className="p-0 flex flex-col">
         <Input
           placeholder="Send a message..."

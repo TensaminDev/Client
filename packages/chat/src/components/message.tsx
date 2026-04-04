@@ -25,7 +25,6 @@ export default function Message(props: {
 }) {
   const { sharedSecret } = useChat();
   const { decrypt } = useCrypto();
-  const sharedSecretValue = sharedSecret();
 
   const [decodedContent, setDecodedContent] = React.useState("");
   const [isReady, setIsReady] = React.useState(false);
@@ -38,7 +37,7 @@ export default function Message(props: {
     }
 
     const content = props.message.content;
-    const secret = sharedSecretValue;
+    const secret = sharedSecret;
     let active = true;
 
     if (!secret) {
@@ -72,7 +71,7 @@ export default function Message(props: {
     return () => {
       active = false;
     };
-  }, [decrypt, props.message.content, props.notEncrypted, sharedSecretValue]);
+  }, [decrypt, props.message.content, props.notEncrypted, sharedSecret]);
 
   return (
     <div
@@ -83,9 +82,9 @@ export default function Message(props: {
           props.message.sent_by_self
             ? "bg-primary text-primary-foreground"
             : "bg-muted"
-        }`}
+        } ${!isReady && "animate-pulse"}`}
       >
-        {props.message.failed && (
+        {props.message.failed && props.message.message_state === "awaiting" && (
           <Tooltip>
             <TooltipContent>
               <p>Failed to send message</p>
@@ -93,9 +92,18 @@ export default function Message(props: {
             <TooltipTrigger render={<AlertTriangle size={17} />} />
           </Tooltip>
         )}
-        {props.message.message_state === "awaiting" &&
-          !props.message.failed && <Clock size={17} />}
-        {isReady ? <Text value={decodedContent} /> : null}
+        {!props.message.failed &&
+          props.message.message_state === "awaiting" && <Clock size={17} />}
+        {isReady ? (
+          <Text value={decodedContent} />
+        ) : (
+          <div
+            className="h-8"
+            style={{
+              width: Math.random() * 100 + 50 + "px",
+            }}
+          />
+        )}
       </div>
     </div>
   );

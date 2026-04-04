@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "tensamin",
+        "title": "Tensamin",
         "width": 800,
         "height": 600
       }

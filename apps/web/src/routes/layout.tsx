@@ -12,6 +12,7 @@ import { TooltipProvider } from "@tensamin/ui/cmp/tooltip";
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile } from "@tensamin/ui/utils";
+import { isTauri } from "@tauri-apps/api/core";
 
 /**
  * Executes Layout.
@@ -51,7 +52,16 @@ export default function Layout(props: { children: ReactNode }) {
           </div>
         )}
       </div>
-      <Toaster position={isMobile ? "top-center" : "bottom-right"} />
+      <Toaster
+        position={isMobile ? "top-center" : "bottom-right"}
+        {...(isTauri()
+          ? {
+              mobileOffset: {
+                top: "env(safe-area-inset-top)",
+              },
+            }
+          : {})}
+      />
       <TooltipProvider>
         <Storage>
           <LoginWrapper>

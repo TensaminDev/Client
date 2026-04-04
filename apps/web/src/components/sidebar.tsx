@@ -8,6 +8,7 @@ import {
   Sidebar as SidebarRoot,
   SidebarContent,
 } from "@tensamin/ui/cmp/sidebar";
+import { isTauri } from "@tauri-apps/api/core";
 
 /**
  * Renders the conversation sidebar with account summary and conversation list.
@@ -23,8 +24,8 @@ export default function Sidebar() {
 
   return (
     <SidebarRoot>
-      <SidebarContent>
-        <div className="h-full w-full flex flex-col gap-3 p-2">
+      <SidebarContent className={isTauri() ? "pt-[env(safe-area-inset-top)]" : "pt-2"}>
+        <div className="h-full w-full flex flex-col gap-3 p-2 pt-0!">
           <div>
             <Wrapper
               loading={<Loading />}

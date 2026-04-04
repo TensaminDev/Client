@@ -7,6 +7,7 @@ import InputComponent from "./components/input";
 import Message from "./components/message";
 
 import { PAGE_SIZE } from "./values";
+import { useLayoutEffect } from "react";
 
 /**
  * Renders the chat screen with virtualized history and live message updates.
@@ -15,6 +16,7 @@ import { PAGE_SIZE } from "./values";
 export default function Screen() {
   const { getMessages, liveMessages, clearLiveMessages, userId } = useChat();
 
+  const inputBoxRef = React.useRef<HTMLDivElement | null>(null);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
   const [hasScrolledToBottomInitially, setHasScrolledToBottomInitially] =
@@ -25,11 +27,10 @@ export default function Screen() {
     scrollTop: number;
   } | null>(null);
 
-  const chatUserId = userId();
-  const hasValidChatUser = Number.isSafeInteger(chatUserId) && chatUserId > 0;
+  const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: ["chat-messages", String(chatUserId)],
+    queryKey: ["chat-messages", String(userId)],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
     enabled: hasValidChatUser,
@@ -52,7 +53,7 @@ export default function Screen() {
     setHasScrolledToBottomInitially(false);
     setLastLiveMessageCount(0);
     setPrependAnchor(null);
-  }, [chatUserId, clearLiveMessages]);
+  }, [userId, clearLiveMessages]);
 
   const liveMessagesSnapshot = liveMessages();
 
@@ -152,6 +153,28 @@ export default function Screen() {
     void onScroll();
   }, [onScroll]);
 
+  /**
+   * Input box height changes & state
+   */
+  const [value, setValue] = React.useState("");
+
+  useLayoutEffect(() => {
+    const el = inputBoxRef.current;
+    const host = scrollRef.current;
+    if (!host || !el) return;
+
+    host.style.maxHeight = `calc(100vh - ${el.scrollHeight + 50}px)`;
+  }, [value]);
+
+  React.useEffect(() => {
+    const el = inputBoxRef.current;
+    const host = scrollRef.current;
+    if (!host || !el) return;
+
+    host.style.maxHeight = `calc(100vh - ${el.scrollHeight + 50}px)`;
+  }, []);
+
+  // Render
   if (!hasValidChatUser) {
     return (
       <div className="w-full h-full flex items-center justify-center text-xl text-foreground/80">
@@ -161,11 +184,11 @@ export default function Screen() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden px-2">
+    <div className="w-full h-full flex flex-col px-2">
       <div
         ref={scrollRef}
         id="chat_container"
-        className="flex-1 max-h-[calc(100vh-151px)] overflow-y-auto px-2.5"
+        className="flex-1 overflow-y-auto px-2.5"
         onScroll={handleContainerScroll}
       >
         <div
@@ -203,7 +226,9 @@ export default function Screen() {
           })}
         </div>
       </div>
-      <InputComponent />
+      <div ref={inputBoxRef}>
+        <InputComponent setValue={setValue} value={value} />
+      </div>
     </div>
   );
 }

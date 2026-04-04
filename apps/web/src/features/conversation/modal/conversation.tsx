@@ -8,9 +8,11 @@ import {
   ContextMenuTrigger,
 } from "@tensamin/ui/cmp/context-menu";
 import { useNavigate } from "@tanstack/react-router";
+import { useSidebar } from "@tensamin/ui/cmp/sidebar";
 
 export default function ConversationModal({ userId }: { userId: number }) {
   const navigate = useNavigate();
+  const { setOpenMobile } = useSidebar();
 
   return (
     <ContextMenu>
@@ -18,7 +20,10 @@ export default function ConversationModal({ userId }: { userId: number }) {
         render={
           <div
             className="select-none cursor-pointer"
-            onClick={() => navigate({ to: "/chat", search: { id: userId } })}
+            onClick={() => {
+              navigate({ to: "/chat", search: { id: userId } });
+              setOpenMobile(false);
+            }}
           >
             <Wrapper
               loading={<Loading />}

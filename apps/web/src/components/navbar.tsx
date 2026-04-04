@@ -1,5 +1,5 @@
 import { Button } from "@tensamin/ui/cmp/button";
-import { House, Phone, User } from "lucide-react";
+import { ArrowLeft, House, Phone, User } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/context";
 import Wrapper from "@tensamin/user/wrapper";
@@ -15,7 +15,7 @@ import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui/cmp/sidebar";
 
-export default function Navbar() {
+export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
   const { joinCall, state } = useCall();
   const { conversations } = useConversation();
@@ -29,14 +29,25 @@ export default function Navbar() {
   const [selectOpen, setSelectOpen] = useState(false);
 
   return (
-    <div className="w-full gap-2 h-13.5 flex items-center justify-center">
-      <Button
-        onClick={() => navigate({ to: "/" })}
-        className="w-9 h-9 aspect-square rounded-lg"
-        variant="outline"
-      >
-        <House className="size-4.5" />
-      </Button>
+    <div
+      className={`${forMobile && "border-b"} w-full gap-2 h-13.5 flex items-center justify-center`}
+    >
+      {forMobile ? (
+        <SidebarTrigger
+          className="w-9 h-9 aspect-square rounded-lg ml-2"
+          variant="outline"
+        >
+          <ArrowLeft className="size-4.5" />
+        </SidebarTrigger>
+      ) : (
+        <Button
+          onClick={() => navigate({ to: "/" })}
+          className="w-9 h-9 aspect-square rounded-lg"
+          variant="outline"
+        >
+          <House className="size-4.5" />
+        </Button>
+      )}
       {pathname === "/chat" && (
         <Wrapper
           userId={id}
@@ -107,23 +118,25 @@ export function MobileNavbar() {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <div className="z-100 w-full h-16 flex justify-center items-center gap-8 bg-card border-t">
-      <SidebarTrigger
-        className="text-foreground w-12! h-12! aspect-square rounded-xl"
-        variant="link"
-      >
-        <User className="size-5.5" />
-      </SidebarTrigger>
-      <Button
-        onClick={() => {
-          navigate({ to: "/" });
-          setOpenMobile(false);
-        }}
-        className="text-foreground w-12 h-12 aspect-square rounded-xl"
-        variant="link"
-      >
-        <House className="size-5.5" />
-      </Button>
+    <div className="z-100 w-full pb-[env(safe-area-inset-bottom)] bg-card border-t">
+      <div className="z-100 w-full h-14 flex justify-center items-center gap-8">
+        <SidebarTrigger
+          className="text-foreground w-12! h-12! aspect-square rounded-xl"
+          variant="link"
+        >
+          <User className="size-5.5" />
+        </SidebarTrigger>
+        <Button
+          onClick={() => {
+            navigate({ to: "/" });
+            setOpenMobile(false);
+          }}
+          className="text-foreground w-12 h-12 aspect-square rounded-xl"
+          variant="link"
+        >
+          <House className="size-5.5" />
+        </Button>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   useState,
   useContext,
   type ReactNode,
+  useRef,
 } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
@@ -15,6 +16,7 @@ import { useCrypto } from "@tensamin/crypto/context";
 import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useTTP } from "@tensamin/ttp/context";
+import { log } from "@tensamin/shared/log";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -61,28 +63,38 @@ export default function Provider(props: { children: ReactNode }) {
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
   const [currentSharedSecret, setCurrentSharedSecret] = useState("");
 
+  const inputBoxRef = useRef<HTMLDivElement>(null);
+
   const locationSearch = useRouterState({
     select: (state) => state.location.search,
   });
 
+  // User ID compare to clear shared secret
   const userIdValue = useMemo(() => {
     const rawId = (locationSearch as unknown as { id?: unknown })?.id;
     return Number(rawId ?? 0);
   }, [locationSearch]);
 
-  useEffect(() => {
-    const recipientId = userIdValue;
+  const userIdValueFromLastRender = useRef(userIdValue);
 
-    if (!recipientId) {
-      setCurrentSharedSecret("");
+  useEffect(() => {
+    if (userIdValue === userIdValueFromLastRender.current) {
       return;
     }
+
+    userIdValueFromLastRender.current = userIdValue;
+    setCurrentSharedSecret("");
+  }, [userIdValue]);
+
+  // Load shared secret
+  useEffect(() => {
+    if (!userIdValue) return;
 
     let active = true;
 
     void (async () => {
       try {
-        const recipientData = await get(recipientId);
+        const recipientData = await get(userIdValue);
         const ownId = await load("user_id");
         const privateKey = await load("private_key");
         const ownData = await get(ownId);
@@ -193,10 +205,26 @@ export default function Provider(props: { children: ReactNode }) {
         !Number.isFinite(nextState.chat_partner_id) ||
         !Number.isFinite(nextState.timestamp)
       ) {
+        log(
+          3,
+          "chat",
+          "yellow",
+          "Cancel message state update due to invalid data",
+        );
         return;
       }
 
       if (nextState.chat_partner_id !== userIdValue) {
+        log(
+          3,
+          "chat",
+          "yellow",
+          "Cancel message state update due to user ID mismatch",
+          {
+            expected: userIdValue,
+            received: nextState.chat_partner_id,
+          }
+        );
         return;
       }
 
@@ -246,28 +274,21 @@ export default function Provider(props: { children: ReactNode }) {
     });
   }, [subscribePush, userIdValue]);
 
-  const value = useMemo<contextType>(
-    () => ({
-      getMessages: customGetMessages,
-      liveMessages: () => liveMessagesState,
-      addLiveMessage,
-      clearLiveMessages,
-      sharedSecret: () => currentSharedSecret,
-      userId: () => userIdValue,
-    }),
-    [
-      addLiveMessage,
-      clearLiveMessages,
-      currentSharedSecret,
-      customGetMessages,
-      liveMessagesState,
-      userIdValue,
-    ],
-  );
-
   return (
     <QueryClientProvider client={queryClient}>
-      <context.Provider value={value}>{props.children}</context.Provider>
+      <context.Provider
+        value={{
+          getMessages: customGetMessages,
+          liveMessages: () => liveMessagesState,
+          addLiveMessage,
+          clearLiveMessages,
+          sharedSecret: currentSharedSecret,
+          userId: userIdValue,
+          inputBoxRef,
+        }}
+      >
+        {props.children}
+      </context.Provider>
     </QueryClientProvider>
   );
 }
@@ -279,8 +300,9 @@ type contextType = {
     setFailed: (failed: boolean) => void;
   };
   clearLiveMessages: () => void;
-  sharedSecret: () => string;
-  userId: () => number;
+  sharedSecret: string;
+  userId: number;
+  inputBoxRef: React.RefObject<HTMLDivElement | null>;
 };
 
 /**
