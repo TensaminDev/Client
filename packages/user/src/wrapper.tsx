@@ -13,7 +13,7 @@ export default function Wrapper(props: {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    if (!props.userId) {
+    if (props.userId == null) {
       setUser(failedUser);
       return;
     }

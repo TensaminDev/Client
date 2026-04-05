@@ -19,6 +19,9 @@ const UserContext = React.createContext<contextValue | undefined>(undefined);
  */
 export default function UserProvider(props: { children: React.ReactNode }) {
   const storageRef = React.useRef<Record<number, User>>({});
+  const pendingRef = React.useRef<Record<number, Promise<User> | undefined>>(
+    {},
+  );
 
   const { send } = useTTP();
 
@@ -27,21 +30,45 @@ export default function UserProvider(props: { children: React.ReactNode }) {
    * @param userId Parameter userId.
    * @returns Promise<User>.
    */
-  async function get(userId: number): Promise<User> {
-    if (storageRef.current[userId] === undefined) {
-      const userData = await send("get_user_data", { user_id: userId });
+  const get = React.useCallback(
+    async (userId: number): Promise<User> => {
+      if (userId == null) {
+        throw new Error("userId is required");
+      }
 
-      // Temp, add base64 stuff
-      userData.data.avatar = userData.data.avatar
-        ? `data:image/png;base64,${userData.data.avatar}`
-        : undefined;
-      // Temp end
+      const cachedUser = storageRef.current[userId];
+      if (cachedUser !== undefined) {
+        return cachedUser;
+      }
 
-      storageRef.current[userId] = userData.data;
-    }
+      const pendingUser = pendingRef.current[userId];
+      if (pendingUser !== undefined) {
+        return pendingUser;
+      }
 
-    return storageRef.current[userId];
-  }
+      const request = (async () => {
+        const userData = await send("get_user_data", { user_id: userId });
+        const user = {
+          ...userData.data,
+          avatar: userData.data.avatar
+            ? `data:image/png;base64,${userData.data.avatar}`
+            : undefined,
+        };
+
+        storageRef.current[userId] = user;
+        return user;
+      })();
+
+      pendingRef.current[userId] = request;
+
+      try {
+        return await request;
+      } finally {
+        delete pendingRef.current[userId];
+      }
+    },
+    [send],
+  );
 
   return (
     <UserContext.Provider value={{ get }}>
