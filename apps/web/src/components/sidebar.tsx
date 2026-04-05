@@ -7,8 +7,12 @@ import List from "@/features/conversation/list/body";
 import {
   Sidebar as SidebarRoot,
   SidebarContent,
+  SidebarFooter,
 } from "@tensamin/ui/cmp/sidebar";
 import { isTauri } from "@tauri-apps/api/core";
+import { useIsMobile } from "@tensamin/ui/utils";
+import { MobileNavbar } from "./navbar";
+import { useLocation } from "@tanstack/react-router";
 
 /**
  * Renders the conversation sidebar with account summary and conversation list.
@@ -17,14 +21,19 @@ import { isTauri } from "@tauri-apps/api/core";
 export default function Sidebar() {
   const [userId, setUserId] = React.useState<undefined | number>(undefined);
   const { load } = useStorage();
+  const isMobile = useIsMobile();
 
   React.useEffect(() => {
     load("user_id").then(setUserId);
   }, [load]);
 
+  const location = useLocation();
+
   return (
     <SidebarRoot>
-      <SidebarContent className={isTauri() ? "pt-[env(safe-area-inset-top)]" : "pt-2"}>
+      <SidebarContent
+        className={isTauri() ? "pt-[env(safe-area-inset-top)]" : "pt-2"}
+      >
         <div className="h-full w-full flex flex-col gap-3 p-2 pt-0!">
           <div>
             <Wrapper
@@ -38,6 +47,11 @@ export default function Sidebar() {
           </div>
         </div>
       </SidebarContent>
+      {isMobile && location.pathname === "/chat" && (
+        <SidebarFooter className="p-0!">
+          <MobileNavbar />
+        </SidebarFooter>
+      )}
     </SidebarRoot>
   );
 }

@@ -15,15 +15,24 @@ import { useTTP } from "@tensamin/ttp/context";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
+import { useStorage } from "@tensamin/storage/context";
 
 // The page
 export default function Page() {
+  const { clear } = useStorage();
+
   return (
     <div className={`px-3 flex gap-2 ${!isTauri() && "pt-3"}`}>
       <AddConversationButton />
       <Button disabled>Add Community</Button>
       <Button variant="outline" onClick={() => location.reload()}>
         Reload
+      </Button>
+      <Button
+        variant="destructive"
+        onClick={() => clear().then(() => location.reload())}
+      >
+        Logout
       </Button>
     </div>
   );

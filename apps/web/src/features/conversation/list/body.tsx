@@ -18,14 +18,12 @@ export default function List() {
   >("conversations");
 
   const { conversations, communities } = useConversation();
+  const items = category === "conversations" ? conversations : communities;
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
   const virtualizer = useVirtualizer({
-    count:
-      category === "conversations"
-        ? conversations?.length || 0
-        : communities?.length || 0,
+    count: items?.length || 0,
     estimateSize: () => 60,
     getScrollElement: () => scrollRef.current,
   });
@@ -38,7 +36,7 @@ export default function List() {
         id="conversation-list"
         className="overflow-y-auto flex-1 h-full"
       >
-        {communities === null || conversations === null ? (
+        {items === null ? (
           <div className="flex items-center justify-center pt-5">
             <p className="text-foreground/45 flex gap-1 items-center justify-center">
               <Loader2 size={18} className="animate-spin" />
@@ -52,8 +50,7 @@ export default function List() {
             height: `${virtualizer.getTotalSize()}px`,
           }}
         >
-          {communities &&
-            conversations &&
+          {items &&
             virtualizer.getVirtualItems().map((virtualItem) => {
               const itemKey = `${category}-${virtualItem.index}`;
 
@@ -69,12 +66,12 @@ export default function List() {
                   }}
                 >
                   {category === "conversations" ? (
-                    conversations[virtualItem.index] ? (
+                    conversations?.[virtualItem.index] ? (
                       <ConversationModal
                         userId={conversations[virtualItem.index].user_id}
                       />
                     ) : null
-                  ) : communities[virtualItem.index] ? (
+                  ) : communities?.[virtualItem.index] ? (
                     <CommunityModal
                       community={communities[virtualItem.index]}
                     />

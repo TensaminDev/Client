@@ -162,7 +162,7 @@ export default function Screen(props: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-full flex items-center justify-center py-15">
       <div className="h-full flex flex-col gap-15 p-10 md:p-40 w-full lg:w-2/3">
         <h1 className="text-3xl md:text-4xl font-bold">
           Privacy Policy & ToS
@@ -173,11 +173,13 @@ export default function Screen(props: { children: React.ReactNode }) {
         <div className="w-full h-full flex flex-col items-center justify-center gap-5">
           <div className="justify-start items-start flex flex-col gap-2">
             <BigCheckbox
+              id="acceptPP"
               checked={acceptedPP}
               onChange={acceptPP}
               label="I agree to the Privacy Policy"
             />
             <BigCheckbox
+              id="acceptTOS"
               checked={acceptedTOS}
               onChange={acceptTOS}
               label="I agree to the Terms of Service"
@@ -225,10 +227,12 @@ function ContinueButton({
 }
 
 export function BigCheckbox({
+  id,
   label,
   checked,
   onChange,
 }: {
+  id: string;
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -236,11 +240,14 @@ export function BigCheckbox({
   return (
     <div className="flex items-center space-x-2">
       <Checkbox
+        id={id}
         checked={checked}
         onCheckedChange={onChange}
         className="size-5.5 rounded-md flex items-center justify-center"
       />
-      <Label className="text-lg">{label}</Label>
+      <Label htmlFor={id} className="text-lg">
+        {label}
+      </Label>
     </div>
   );
 }

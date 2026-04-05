@@ -107,18 +107,23 @@ export default function Form() {
         const response = await fetch(
           `https://omega.tensamin.net/api/get/id/${inputParse.data.username}`,
         );
-        const data = await response.json();
-        const parse = fetchedUser.safeParse(data);
+        const rawData = await response.arrayBuffer();
+
+        const bytes = new Uint8Array(rawData);
+        const jsonString = new TextDecoder().decode(bytes);
+        const data = JSON.parse(jsonString);
+
+        const parse = fetchedUser.shape.data.safeParse(data);
 
         if (!parse.success) {
-          log(0, "Login", "red", "Invalid response from server");
+          log(0, "Login", "red", "Invalid response from server", parse.error);
           toast("error", "Invalid response from server");
           return;
         }
 
         const user = parse.data;
 
-        await save("user_id", user.data.user_id);
+        await save("user_id", user.user_id);
         await save("private_key", inputParse.data.private_key);
 
         navigate({ to: "/" });
@@ -131,7 +136,7 @@ export default function Form() {
   );
 
   return (
-    <div className="flex gap-15">
+    <div className="flex md:flex-row flex-col gap-15">
       <div
         onClick={() => uploadRef.current?.click()}
         className="flex flex-col gap-3 cursor-pointer w-55 aspect-square bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-3 items-center justify-center rounded-lg"

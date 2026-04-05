@@ -171,7 +171,7 @@ export default function Screen() {
     const host = scrollRef.current;
     if (!host || !el) return;
 
-    host.style.maxHeight = `calc(100vh - ${el.scrollHeight + 50}px)`;
+    host.style.maxHeight = `calc(100vh - ${el.scrollHeight + 50}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
   }, []);
 
   // Render

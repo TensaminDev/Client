@@ -11,8 +11,8 @@ export default function Page() {
       <Form />
       <div className="flex">
         <a target="_blank" href="https://docs.tensamin.net/installation/#iota">
-          <p className="text-sm underline text-foreground/75">
-            Don't have an account yet? Click here to get help setting up an
+          <p className="text-sm underline text-foreground/75 text-center whitespace-pre-wrap">
+            Don't have an account yet?{"\n"}Click here to get help setting up an
             Iota.
           </p>
         </a>

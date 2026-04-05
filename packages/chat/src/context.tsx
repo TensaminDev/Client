@@ -223,7 +223,7 @@ export default function Provider(props: { children: ReactNode }) {
           {
             expected: userIdValue,
             received: nextState.chat_partner_id,
-          }
+          },
         );
         return;
       }
