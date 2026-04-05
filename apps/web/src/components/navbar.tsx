@@ -4,7 +4,6 @@ import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/context";
 import Wrapper from "@tensamin/user/wrapper";
 import { Skeleton } from "@tensamin/ui/cmp/skeleton";
-import { useConversation } from "@/features/conversation/context";
 import {
   Select,
   SelectContent,
@@ -14,16 +13,17 @@ import {
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui/cmp/sidebar";
+import { useTTP } from "@tensamin/ttp/context";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
   const { joinCall, state } = useCall();
-  const { conversations } = useConversation();
+  const { contacts } = useTTP();
 
   const { pathname } = useLocation();
   const { id } = useSearch({ strict: false });
 
-  const currentCalls = id ? conversations?.[id]?.calls || [] : [];
+  const currentCalls = id ? contacts?.[id]?.calls || [] : [];
   //const currentCalls = ["leck", "schleck", "und", "eck"];
 
   const [selectOpen, setSelectOpen] = useState(false);

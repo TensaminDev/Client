@@ -20,9 +20,16 @@ import {
   RETRY_INTERVAL,
   TRANSPORT_URL,
 } from "./values";
-import { ttp as schemas, type TTP as Schemas } from "@tensamin/shared/data";
+import {
+  ttp as schemas,
+  ttp,
+  type TTP as Schemas,
+} from "@tensamin/shared/data";
 import Loading from "@tensamin/ui/screens/loading";
 import ErrorScreen from "@tensamin/ui/screens/error";
+
+import { version } from "../../../package.json";
+import z from "zod";
 
 const FATAL_IDENTIFICATION_ERROR_TYPES = new Set([
   "error",
@@ -131,10 +138,14 @@ function getProtocolErrorDetails(error: unknown) {
 type ContextType = {
   send: BoundSendFn<Schemas>;
   subscribePush: (handler: PushHandler) => () => void;
-  readyState: () => number;
-  ownPing: () => number;
-  iotaPing: () => number;
-  identified: () => boolean;
+  readyState: number;
+  ownPing: number;
+  iotaPing: number;
+  identified: boolean;
+  contacts: z.infer<typeof ttp.challenge_response.response.shape.contacts>;
+  communities: z.infer<
+    typeof ttp.challenge_response.response.shape.communities
+  >;
 };
 
 const TTPContext = createContext<ContextType | undefined>(undefined);
@@ -161,6 +172,13 @@ export default function Provider(props: {
 
   const [error, setError] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
+
+  const [communities, setCommunities] = useState<
+    z.infer<typeof ttp.challenge_response.response.shape.communities>
+  >([]);
+  const [contacts, setContacts] = useState<
+    z.infer<typeof ttp.challenge_response.response.shape.contacts>
+  >([]);
 
   const clientRef = useRef<ReturnType<
     typeof createTransportClient<Schemas>
@@ -352,9 +370,7 @@ export default function Provider(props: {
               return;
             }
 
-            log(0, "ttp", "red", "Disconnected", closeError, {
-              stopSending: isStopSendingError(closeError),
-            });
+            log(0, "ttp", "red", "Disconnected", closeError);
             scheduleReconnect(closeError);
           },
         })
@@ -426,40 +442,69 @@ export default function Provider(props: {
      */
     const identify = async () => {
       try {
+        const sessionId = await load("session_id");
         const userId = await load("user_id");
         const privateKey = await load("private_key");
 
-        if (!Number.isSafeInteger(userId) || userId <= 0) {
-          throw new Error("Missing or invalid user id for identification");
+        if (
+          !Number.isSafeInteger(userId) ||
+          userId <= 0 ||
+          privateKey.trim() === "" ||
+          !Number.isSafeInteger(sessionId) ||
+          sessionId <= 0
+        ) {
+          throw new Error("Invalid credentials");
         }
 
-        if (privateKey.trim() === "") {
-          throw new Error("Missing private key for identification");
-        }
-
+        // Challenge Request
         const challengeEnvelope = await send("identification", {
+          version,
+          session_id: sessionId,
           user_id: userId,
+        }).catch((challengeError) => {
+          throw new Error(
+            "Failed to obtain identification challenge from server",
+            challengeError,
+          );
         });
 
+        // Shared Secret
         const sharedSecret = await getSharedSecret(
           privateKey,
           "",
           challengeEnvelope.data.public_key,
-        );
+        ).catch((secretError) => {
+          throw new Error(
+            "Failed to derive shared secret for identification",
+            secretError,
+          );
+        });
 
+        // Challenge Decryption
         const decryptedChallenge = await decrypt(
           sharedSecret,
           challengeEnvelope.data.challenge,
-        );
-
-        const verification = await send("challenge_response", {
-          challenge: decryptedChallenge,
+        ).catch((decryptionError) => {
+          throw new Error(
+            "Failed to decrypt identification challenge",
+            decryptionError,
+          );
         });
 
-        if (verification.data.accepted !== true) {
-          throw new Error("Identification challenge was rejected");
-        }
+        // Challenge Response
+        const finalResponse = await send("challenge_response", {
+          challenge: decryptedChallenge,
+        }).catch((error) => {
+          setError("Identification Failed");
+          setErrorDescription(
+            "Unable to complete secure identification. Please verify your credentials and try again.",
+          );
+          throw error;
+        });
 
+        // Data handling
+        setContacts(finalResponse.data.contacts);
+        setCommunities(finalResponse.data.communities);
         if (cancelled) {
           return;
         }
@@ -547,18 +592,6 @@ export default function Provider(props: {
     return undefined;
   }, [connected, identified, identifying, readyState]);
 
-  const contextValue = useMemo<ContextType>(
-    () => ({
-      send,
-      subscribePush,
-      readyState: () => readyState,
-      ownPing: () => ownPing,
-      iotaPing: () => iotaPing,
-      identified: () => identified,
-    }),
-    [identified, iotaPing, ownPing, readyState, send, subscribePush],
-  );
-
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;
   }
@@ -575,7 +608,18 @@ export default function Provider(props: {
   }
 
   return (
-    <TTPContext.Provider value={contextValue}>
+    <TTPContext.Provider
+      value={{
+        send,
+        subscribePush,
+        readyState,
+        ownPing,
+        iotaPing,
+        identified,
+        contacts,
+        communities,
+      }}
+    >
       {props.children}
     </TTPContext.Provider>
   );

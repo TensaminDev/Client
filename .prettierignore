@@ -5,3 +5,4 @@ coverage
 *.tsbuildinfo
 bun.lock
 apps/desktop/build
+apps/mobile/src-tauri

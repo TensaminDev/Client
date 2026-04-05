@@ -19,7 +19,6 @@ import CallScreen from "@tensamin/call/screen";
 import Login from "@/routes/screens/login";
 import Signup from "@/routes/screens/signup";
 
-import ConversationContext from "@/features/conversation/context";
 import ChatContext from "@tensamin/chat/context";
 import CallContext from "@tensamin/call/context";
 import SocketContext from "@tensamin/ttp/context";
@@ -57,11 +56,9 @@ function AppShell() {
     <SocketContext>
       <UserContext>
         <CallContext>
-          <ConversationContext>
-            <AppLayout>
-              <Outlet />
-            </AppLayout>
-          </ConversationContext>
+          <AppLayout>
+            <Outlet />
+          </AppLayout>
         </CallContext>
       </UserContext>
     </SocketContext>

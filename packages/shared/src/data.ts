@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { legalDocsSchema } from "./features/legal/schema";
-import { community, conversation } from "./features/conversation/schema";
 
 const fileFromMessage = z.object({
   name: z.string(),
@@ -37,22 +36,36 @@ export const failedUser = {
 // TTP
 export const ttp = {
   identification: {
-    request: z
-      .object({
-        user_id: z.number().optional(),
-        iota_id: z.number().optional(),
-      })
-      .refine(
-        (value) =>
-          (typeof value.user_id === "number") !==
-          (typeof value.iota_id === "number"),
-        {
-          message: "Either user_id or iota_id must be provided",
-        },
-      ),
+    request: z.object({
+      version: z.string(),
+      session_id: z.number(),
+      user_id: z.number(),
+    }),
     response: z.object({
       challenge: z.string(),
       public_key: z.base64(),
+    }),
+  },
+  challenge_response: {
+    request: z.object({
+      challenge: z.base64(),
+    }),
+    response: z.object({
+      communities: z.array(z.object({})).optional(),
+      contacts: z.array(
+        z.object({
+          calls: z.array(z.uuidv4()).optional(),
+          last_message_at: z.number(),
+          user_id: z.number(),
+          last_message: z
+            .object({
+              content: z.base64(),
+              sender_id: z.number(),
+            })
+            .optional(),
+          messages: z.array(message),
+        }),
+      ),
     }),
   },
   get_user_data: {
@@ -85,32 +98,12 @@ export const ttp = {
       username: z.string().max(15),
     }),
   },
-  challenge_response: {
-    request: z.object({
-      challenge: z.base64(),
-    }),
-    response: z.object({
-      accepted: z.boolean(),
-    }),
-  },
   ping: {
     request: z.object({
       last_ping: z.number(),
     }),
     response: z.object({
       ping_iota: z.number(),
-    }),
-  },
-  get_conversations: {
-    request: z.object({}),
-    response: z.object({
-      user_ids: z.array(conversation),
-    }),
-  },
-  get_communities: {
-    request: z.object({}),
-    response: z.object({
-      communities: z.array(community),
     }),
   },
   message_live: {
@@ -166,6 +159,7 @@ export type TTP = typeof ttp;
 
 // Storage
 export interface Storage {
+  session_id: number;
   user_id: number;
   private_key: string;
   ppandtos_done: boolean;
@@ -179,6 +173,7 @@ export interface Storage {
 }
 
 export const storageDefaults: Storage = {
+  session_id: 0,
   user_id: 0,
   private_key: "",
   ppandtos_done: false,

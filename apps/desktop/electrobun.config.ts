@@ -1,6 +1,6 @@
 import type { ElectrobunConfig } from "electrobun";
 
-import { version } from "@tensamin/shared/package.json";
+import { version } from "../../package.json";
 
 export default {
   app: {

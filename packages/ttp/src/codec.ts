@@ -15,189 +15,193 @@ type DataKind =
   | { array: PrimitiveDataKind | "container" | "null" };
 
 const COMMUNICATION_TYPES = [
-  "error",
-  "error_protocol",
-  "error_anonymous",
-  "error_internal",
-  "error_invalid_data",
-  "error_invalid_user_id",
-  "error_invalid_omikron_id",
-  "error_not_found",
-  "error_not_authenticated",
-  "error_no_iota",
-  "error_invalid_challenge",
-  "error_invalid_secret",
-  "error_invalid_private_key",
-  "error_invalid_public_key",
-  "error_no_user_id",
-  "error_no_call_id",
-  "error_invalid_call_id",
-  "success",
-  "shorten_link",
-  "settings_save",
-  "settings_load",
-  "settings_list",
-  "message",
-  "message_state",
-  "message_send",
-  "message_live",
-  "message_other_iota",
-  "message_chunk",
-  "messages_get",
-  "push_notification",
-  "read_notification",
-  "get_notifications",
-  "change_confirm",
-  "confirm_receive",
-  "confirm_read",
-  "get_conversations",
-  "get_states",
-  "add_community",
-  "remove_community",
-  "get_communities",
-  "challenge",
-  "challenge_response",
-  "register",
-  "register_response",
-  "identification",
-  "identification_response",
-  "register_iota",
-  "register_iota_success",
-  "ping",
-  "pong",
-  "add_conversation",
-  "send_chat",
-  "client_changed",
-  "client_connected",
-  "client_disconnected",
-  "client_closed",
-  "public_key",
-  "private_key",
-  "webrtc_sdp",
-  "webrtc_ice",
-  "start_stream",
-  "end_stream",
-  "watch_stream",
-  "call_token",
-  "call_invite",
-  "call_disconnect_user",
-  "call_timeout_user",
-  "call_set_anonymous_joining",
-  "end_call",
-  "function",
-  "update",
-  "create_user",
-  "rho_update",
-  "user_connected",
-  "user_disconnected",
-  "iota_connected",
-  "iota_disconnected",
-  "sync_client_iota_status",
-  "get_user_data",
-  "get_iota_data",
-  "iota_user_data",
-  "change_user_data",
-  "change_iota_data",
-  "get_register",
-  "complete_register_user",
-  "complete_register_iota",
-  "delete_user",
-  "delete_iota",
-  "start_register",
-  "complete_register",
+  "error", // 0
+  "error_protocol", // 1
+  "error_anonymous", // 2
+  "error_internal", // 3
+  "error_invalid_data", // 4
+  "error_invalid_user_id", // 5
+  "error_invalid_omikron_id", // 6
+  "error_not_found", // 7
+  "error_not_authenticated", // 8
+  "error_no_iota", // 9
+  "error_invalid_challenge", // 10
+  "error_invalid_secret", // 11
+  "error_invalid_private_key", // 12
+  "error_invalid_public_key", // 13
+  "error_no_user_id", // 14
+  "error_no_call_id", // 15
+  "error_invalid_call_id", // 16
+  "success", // 17
+  "shorten_link", // 18
+  "settings_save", // 19
+  "settings_load", // 20
+  "settings_list", // 21
+  "message", // 22
+  "message_state", // 23
+  "message_send", // 24
+  "message_live", // 25
+  "message_other_iota", // 26
+  "message_chunk", // 27
+  "messages_get", // 28
+  "push_notification", // 29
+  "read_notification", // 30
+  "get_notifications", // 31
+  "change_confirm", // 32
+  "confirm_receive", // 33
+  "confirm_read", // 34
+  "get_conversations", // 35
+  "get_states", // 36
+  "add_community", // 37
+  "remove_community", // 38
+  "get_communities", // 39
+  "challenge", // 40
+  "challenge_response", // 41
+  "register", // 42
+  "register_response", // 43
+  "identification", // 44
+  "identification_response", // 45
+  "register_iota", // 46
+  "register_iota_success", // 47
+  "ping", // 48
+  "pong", // 49
+  "add_conversation", // 50
+  "send_chat", // 51
+  "client_changed", // 52
+  "client_connected", // 53
+  "client_disconnected", // 54
+  "client_closed", // 55
+  "public_key", // 56
+  "private_key", // 57
+  "webrtc_sdp", // 58
+  "webrtc_ice", // 59
+  "start_stream", // 60
+  "end_stream", // 61
+  "watch_stream", // 62
+  "call_token", // 63
+  "call_invite", // 64
+  "call_disconnect_user", // 65
+  "call_timeout_user", // 66
+  "call_set_anonymous_joining", // 67
+  "end_call", // 68
+  "function", // 69
+  "update", // 70
+  "create_user", // 71
+  "rho_update", // 72
+  "user_connected", // 73
+  "user_disconnected", // 74
+  "iota_connected", // 75
+  "iota_disconnected", // 76
+  "sync_client_iota_status", // 77
+  "get_user_data", // 78
+  "get_iota_data", // 79
+  "iota_user_data", // 80
+  "change_user_data", // 81
+  "change_iota_data", // 82
+  "get_register", // 83
+  "complete_register_user", // 84
+  "complete_register_iota", // 85
+  "delete_user", // 86
+  "delete_iota", // 87
+  "start_register", // 88
+  "complete_register", // 89
 ] as const;
 
 const DATA_TYPES = [
-  "error_type",
-  "error_protocol",
-  "accepted_ids",
-  "uuid",
-  "register_id",
-  "link",
-  "settings",
-  "settings_name",
-  "chat_partner_id",
-  "chat_partner_name",
-  "iota_id",
-  "user_id",
-  "user_ids",
-  "iota_ids",
-  "user_state",
-  "user_states",
-  "user_pings",
-  "call_state",
-  "screen_share",
-  "private_key_hash",
-  "accepted",
-  "accepted_profiles",
-  "denied_profiles",
-  "content",
-  "messages",
-  "notifications",
-  "timestamp",
-  "get_time",
-  "get_variant",
-  "shared_secret_own",
-  "shared_secret_other",
-  "shared_secret_sign",
-  "shared_secret",
-  "call_id",
-  "call_token",
-  "untill",
-  "enabled",
-  "start_date",
-  "end_date",
-  "receiver_id",
-  "sender_id",
-  "signature",
-  "signed",
-  "message",
-  "message_state",
-  "last_ping",
-  "ping_iota",
-  "ping_clients",
-  "matches",
-  "omikron",
-  "offset",
-  "amount",
-  "position",
-  "name",
-  "path",
-  "codec",
-  "function",
-  "payload",
-  "result",
-  "interactables",
-  "want_to_watch",
-  "watcher",
-  "created_at",
-  "username",
-  "display",
-  "avatar",
-  "about",
-  "status",
-  "public_key",
-  "sub_level",
-  "sub_end",
-  "community_address",
-  "challenge",
-  "community_title",
-  "communities",
-  "rho_connections",
-  "user",
-  "online_status",
-  "omikron_id",
-  "omikron_connections",
-  "reset_token",
-  "new_token",
-  "call_invited",
-  "call_members",
-  "calls",
-  "timeout",
-  "has_admin",
-  "last_message_at",
-  "height",
-  "sent_by_self",
+  "error_type", // 0
+  "error_protocol", // 1
+  "accepted_ids", // 2
+  "uuid", // 3
+  "register_id", // 4
+  "link", // 5
+  "settings", // 6
+  "settings_name", // 7
+  "chat_partner_id", // 8
+  "chat_partner_name", // 9
+  "iota_id", // 10
+  "user_id", // 11
+  "user_ids", // 12
+  "iota_ids", // 13
+  "user_state", // 14
+  "user_states", // 15
+  "user_pings", // 16
+  "call_state", // 17
+  "screen_share", // 18
+  "private_key_hash", // 19
+  "accepted", // 20
+  "accepted_profiles", // 21
+  "denied_profiles", // 22
+  "content", // 23
+  "messages", // 24
+  "notifications", // 25
+  "timestamp", // 26
+  "get_time", // 27
+  "get_variant", // 28
+  "shared_secret_own", // 29
+  "shared_secret_other", // 30
+  "shared_secret_sign", // 31
+  "shared_secret", // 32
+  "call_id", // 33
+  "call_token", // 34
+  "untill", // 35
+  "enabled", // 36
+  "start_date", // 37
+  "end_date", // 38
+  "receiver_id", // 39
+  "sender_id", // 40
+  "signature", // 41
+  "signed", // 42
+  "message", // 43
+  "message_state", // 44
+  "last_ping", // 45
+  "ping_iota", // 46
+  "ping_clients", // 47
+  "matches", // 48
+  "omikron", // 49
+  "offset", // 50
+  "amount", // 51
+  "position", // 52
+  "name", // 53
+  "path", // 54
+  "codec", // 55
+  "function", // 56
+  "payload", // 57
+  "result", // 58
+  "interactables", // 59
+  "want_to_watch", // 60
+  "watcher", // 61
+  "created_at", // 62
+  "username", // 63
+  "display", // 64
+  "avatar", // 65
+  "about", // 66
+  "status", // 67
+  "public_key", // 68
+  "sub_level", // 69
+  "sub_end", // 70
+  "community_address", // 71
+  "challenge", // 72
+  "community_title", // 73
+  "communities", // 74
+  "rho_connections", // 75
+  "user", // 76
+  "online_status", // 77
+  "omikron_id", // 78
+  "omikron_connections", // 79
+  "reset_token", // 80
+  "new_token", // 81
+  "call_invited", // 82
+  "call_members", // 83
+  "calls", // 84
+  "timeout", // 85
+  "has_admin", // 86
+  "last_message_at", // 87
+  "height", // 88
+  "sent_by_self", // 89
+  "session_id", // 90
+  "contacts", // 91
+  "last_message", // 92
+  "version", // 93
 ] as const;
 
 const COMMUNICATION_TYPE_BY_NAME = createIndexMap(COMMUNICATION_TYPES);
@@ -227,6 +231,7 @@ registerDataKinds("number", [
   "sub_end",
   "last_message_at",
   "height",
+  "session_id",
 ]);
 
 registerDataKinds("string", [
@@ -260,6 +265,7 @@ registerDataKinds("string", [
   "call_token",
   "challenge",
   "online_status",
+  "version",
 ]);
 
 registerDataKinds({ array: "container" }, [
@@ -269,6 +275,7 @@ registerDataKinds({ array: "container" }, [
   "matches",
   "get_conversations",
   "get_communities",
+  "contacts",
 ]);
 
 registerDataKinds({ array: "number" }, [
@@ -289,6 +296,7 @@ registerDataKinds("container", [
   "result",
   "ping_clients",
   "user_pings",
+  "last_message",
 ]);
 
 registerDataKinds("bool", [

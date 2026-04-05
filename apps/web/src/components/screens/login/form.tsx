@@ -3,7 +3,6 @@ import { Input } from "@tensamin/ui/cmp/input";
 import { Label } from "@tensamin/ui/cmp/label";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
-import { useNavigate } from "@tanstack/react-router";
 import { Upload } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
@@ -55,7 +54,6 @@ function parseTuFileContent(rawFileContent: string): {
 export default function Form() {
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const { save } = useStorage();
-  const navigate = useNavigate();
 
   /**
    * Handles uploaded .tu files and stores resolved credentials.
@@ -73,16 +71,17 @@ export default function Form() {
         const raw = await file.text();
         const parsed = parseTuFileContent(raw);
 
+        await save("session_id", Date.now());
         await save("user_id", parsed.userId);
         await save("private_key", parsed.privateKey);
 
-        void navigate({ to: "/" });
+        location.href = "/";
       } catch (error) {
         log(0, "Login", "red", error);
         toast("error", "Failed to load file");
       }
     },
-    [navigate, save],
+    [save],
   );
 
   /**
@@ -123,16 +122,17 @@ export default function Form() {
 
         const user = parse.data;
 
+        await save("session_id", Date.now());
         await save("user_id", user.user_id);
         await save("private_key", inputParse.data.private_key);
 
-        navigate({ to: "/" });
+        location.href = "/";
       } catch (error) {
         log(0, "Login", "red", error);
         toast("error", "Failed to fetch user data");
       }
     },
-    [navigate, save],
+    [save],
   );
 
   return (

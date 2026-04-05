@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useConversation } from "../context";
+import { useTTP } from "@tensamin/ttp/context";
 
 import Switch from "./switch";
 import ConversationModal from "../modal/conversation";
@@ -17,8 +17,8 @@ export default function List() {
     "conversations" | "communities"
   >("conversations");
 
-  const { conversations, communities } = useConversation();
-  const items = category === "conversations" ? conversations : communities;
+  const { contacts, communities } = useTTP();
+  const items = category === "conversations" ? contacts : communities;
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -66,14 +66,14 @@ export default function List() {
                   }}
                 >
                   {category === "conversations" ? (
-                    conversations?.[virtualItem.index] ? (
+                    contacts?.[virtualItem.index] ? (
                       <ConversationModal
-                        userId={conversations[virtualItem.index].user_id}
+                        userId={contacts[virtualItem.index].user_id}
                       />
                     ) : null
                   ) : communities?.[virtualItem.index] ? (
                     <CommunityModal
-                      community={communities[virtualItem.index]}
+                    //community={communities[virtualItem.index]}
                     />
                   ) : null}
                 </div>
