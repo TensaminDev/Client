@@ -9,6 +9,7 @@ import { useChat } from "../context";
 import { useTTP } from "@tensamin/ttp/context";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
+import Message from "./message";
 
 export default function InputComponent({
   value,
@@ -18,6 +19,7 @@ export default function InputComponent({
   setValue: (value: string) => void;
 }) {
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
+  const measurementRef = React.useRef<HTMLDivElement | null>(null);
 
   const { encrypt } = useCrypto();
   const { send } = useTTP();
@@ -29,6 +31,21 @@ export default function InputComponent({
       setInvertEnterBehavior(shouldInvert);
     });
   }, [load]);
+
+  const getRenderedHeight = React.useCallback(() => {
+    const measuredHeight =
+      measurementRef.current?.getBoundingClientRect().height;
+
+    if (
+      typeof measuredHeight === "number" &&
+      Number.isFinite(measuredHeight) &&
+      measuredHeight > 0
+    ) {
+      return Math.ceil(measuredHeight);
+    }
+
+    return 40;
+  }, []);
 
   /**
    * Executes handleSubmit.
@@ -51,7 +68,7 @@ export default function InputComponent({
       return;
     }
 
-    const height = currentValue.split("\n").length * 24 + 16; // 24px per line + 16px padding
+    const height = getRenderedHeight();
 
     const reference = addLiveMessage({
       height,
@@ -85,7 +102,25 @@ export default function InputComponent({
 
   return (
     <Card className="rounded-none rounded-t-xl border-b-0 pt-0 pb-[env(safe-area-inset-bottom)]">
-      <CardHeader className="p-0 flex flex-col">
+      <CardHeader className="relative p-0 flex flex-col">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0 top-0 w-full opacity-0"
+          style={{ visibility: "hidden" }}
+        >
+          <Message
+            measureRef={measurementRef}
+            message={{
+              height: 0,
+              not_encrypted: true,
+              timestamp: 0,
+              content: value,
+              sent_by_self: true,
+              message_state: "awaiting",
+            }}
+            notEncrypted
+          />
+        </div>
         <Input
           placeholder="Send a message..."
           value={value}

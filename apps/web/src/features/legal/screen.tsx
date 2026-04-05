@@ -10,12 +10,10 @@ import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import { log } from "@tensamin/shared/log";
 import Link from "@tensamin/ui/link";
 import { Label } from "@tensamin/ui/cmp/label";
-import { useLocation } from "@tanstack/react-router";
 
 // Prevents the user from using Tensamin without accepting the privacy policy and terms of service.
 export default function Screen(props: { children: React.ReactNode }) {
   const { load, save } = useStorage();
-  const location = useLocation();
 
   const [error, setError] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
@@ -138,7 +136,7 @@ export default function Screen(props: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [load, location.pathname]);
+  }, [load]);
 
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;

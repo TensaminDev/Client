@@ -79,7 +79,7 @@ function LoginWrapper({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [load, navigate, location.pathname]);
+  }, [load, navigate]);
 
   if (loggedIn !== true && location.pathname !== "/login") {
     return null;

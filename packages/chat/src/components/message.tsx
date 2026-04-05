@@ -11,6 +11,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@tensamin/ui/cmp/tooltip";
+import { useIsMobile } from "@tensamin/ui/utils";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@tensamin/ui/cmp/context-menu";
+
+function generateFixedLoadingSize(size: number, height: number) {
+  return size * 3 - (height / 20) * 11;
+}
 
 /**
  * Executes Message.
@@ -22,9 +33,12 @@ export default function Message(props: {
     failed?: boolean;
   };
   notEncrypted?: boolean;
+  measureRef?: React.Ref<HTMLDivElement>;
 }) {
   const { sharedSecret } = useChat();
   const { decrypt } = useCrypto();
+
+  const isMobile = useIsMobile();
 
   const [decodedContent, setDecodedContent] = React.useState("");
   const [isReady, setIsReady] = React.useState(false);
@@ -75,38 +89,57 @@ export default function Message(props: {
 
   return (
     <div
+      ref={props.measureRef}
       className={`w-full flex justify-start transition-opacity duration-150 ${(props.message.failed || props.message.message_state === "awaiting") && "opacity-50"}`}
     >
-      <div
-        className={`flex gap-1 items-center justify-center max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap wrap-break-word ${
-          props.message.sent_by_self
-            ? props.message.failed
-              ? "bg-destructive/75 text-destructive-foreground"
-              : "bg-primary text-primary-foreground"
-            : "bg-muted"
-        } ${!isReady && "animate-pulse"}`}
-      >
-        {props.message.failed && props.message.message_state === "awaiting" && (
-          <Tooltip>
-            <TooltipContent>
-              <p>Failed to send message</p>
-            </TooltipContent>
-            <TooltipTrigger render={<AlertTriangle size={17} />} />
-          </Tooltip>
-        )}
-        {!props.message.failed &&
-          props.message.message_state === "awaiting" && <Clock size={17} />}
-        {isReady ? (
-          <Text value={decodedContent} />
-        ) : (
-          <div
-            className="h-8"
-            style={{
-              width: Math.random() * 100 + 50 + "px",
-            }}
-          />
-        )}
-      </div>
+      <ContextMenu>
+        <ContextMenuTrigger
+          render={
+            <div
+              className={`selection-foreground flex gap-1 items-center justify-center max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap break-all ${
+                props.message.sent_by_self
+                  ? props.message.failed
+                    ? "bg-destructive/75 text-destructive-foreground"
+                    : "bg-primary text-primary-foreground"
+                  : "bg-muted"
+              } ${!isReady && "animate-pulse"} ${isMobile && "select-none"}`}
+            >
+              {props.message.failed &&
+                props.message.message_state === "awaiting" && (
+                  <Tooltip>
+                    <TooltipContent>
+                      <p>Failed to send message</p>
+                    </TooltipContent>
+                    <TooltipTrigger render={<AlertTriangle size={17} />} />
+                  </Tooltip>
+                )}
+              {!props.message.failed &&
+                props.message.message_state === "awaiting" && (
+                  <Clock size={17} />
+                )}
+              {isReady ? (
+                <Text value={decodedContent} />
+              ) : (
+                <div
+                  className="h-8"
+                  style={{
+                    width: generateFixedLoadingSize(
+                      props.message.content.length,
+                      props.message.height,
+                    ),
+                    height: props.message.height,
+                  }}
+                />
+              )}
+            </div>
+          }
+        />
+        <ContextMenuContent>
+          <ContextMenuItem>
+            <Text value={decodedContent} />
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
     </div>
   );
 }

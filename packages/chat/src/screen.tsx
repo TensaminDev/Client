@@ -167,7 +167,7 @@ export default function Screen() {
       window.innerHeight,
       window.visualViewport?.height ?? 0,
     );
-    const inputHeight = el.scrollHeight + 50;
+    const inputHeight = el.scrollHeight + 56;
 
     host.style.maxHeight = `calc(${viewportHeight}px - ${inputHeight}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
   }, []);

@@ -637,8 +637,7 @@ function readTable(
 }
 
 export const markdownStyles = `
-.tm-md-root { color: var(--foreground); line-height: 1.55; font-size: 0.95rem; }
-.tm-md-root * { box-sizing: border-box; }
+.tm-md-root { color: hsl(var(--foreground)); line-height: 1.55; font-size: 0.95rem; }
 .tm-md-heading { margin: 0.2rem 0 0.35rem; font-weight: 700; line-height: 1.25; }
 .tm-md-h1 { font-size: 1.65rem; }
 .tm-md-h2 { font-size: 1.45rem; }
@@ -647,33 +646,33 @@ export const markdownStyles = `
 .tm-md-h5 { font-size: 1rem; }
 .tm-md-h6 { font-size: 0.95rem; opacity: 0.9; }
 .tm-md-p { margin: 0.25rem 0; }
-.tm-md-blockquote { margin: 0.45rem 0; padding-left: 0.75rem; border-left: 2px solid var(--border); opacity: 0.95; }
+.tm-md-blockquote { margin: 0.45rem 0; padding-left: 0.75rem; opacity: 0.95; }
 .tm-md-blockquote p { margin: 0.2rem 0; }
-.tm-md-pre { margin: 0.45rem 0; padding: 0.65rem 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--muted); overflow-x: auto; }
+.tm-md-pre { margin: 0.45rem 0; padding: 0.65rem 0.75rem; border-radius: 0.5rem; background: hsl(var(--muted)); overflow-x: auto; }
 .tm-md-code, .tm-md-codeblock { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-.tm-md-code { padding: 0.08rem 0.32rem; border-radius: 0.28rem; background: var(--muted); }
+.tm-md-code { padding: 0.08rem 0.32rem; border-radius: 0.28rem; background: hsl(var(--muted)); }
 .tm-md-strong { font-weight: 700; }
 .tm-md-em { font-style: italic; }
 .tm-md-del { text-decoration: line-through; }
-.tm-md-link { color: var(--primary); text-decoration: underline; text-underline-offset: 0.14rem; }
+.tm-md-link { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 0.14rem; }
 .tm-md-image { display: block; max-width: 100%; border-radius: 0.4rem; margin: 0.5rem 0; }
 .tm-md-ul, .tm-md-ol { margin: 0.3rem 0 0.35rem 1.2rem; padding: 0; }
 .tm-md-li { margin: 0.2rem 0; }
 .tm-md-checkbox { margin-right: 0.5rem; vertical-align: middle; }
 .tm-md-table-wrap { overflow-x: auto; margin: 0.45rem 0; }
 .tm-md-table { border-collapse: collapse; width: 100%; min-width: 16rem; }
-.tm-md-table th, .tm-md-table td { border: 1px solid var(--border); padding: 0.4rem 0.5rem; text-align: left; }
-.tm-md-table th { background: var(--muted); font-weight: 600; }
-.tm-md-hr { border: 0; border-top: 1px solid var(--border); margin: 0.55rem 0; }
+.tm-md-table th, .tm-md-table td { padding: 0.4rem 0.5rem; text-align: left; }
+.tm-md-table th { background: hsl(var(--muted)); font-weight: 600; }
+.tm-md-hr { margin: 0.55rem 0; }
 
-.cm-editor.tm-md-editor { border: 1px solid var(--border); border-radius: 0.65rem; background: var(--card); }
-.cm-editor.tm-md-editor.cm-focused { outline: 2px solid var(--ring); outline-offset: 1px; }
+.cm-editor.tm-md-editor { border-radius: 0.65rem; background: hsl(var(--card)); caret-color: var(--foreground); }
+.cm-editor.tm-md-editor.cm-focused { outline: none; box-shadow: none; }
 .cm-editor.tm-md-editor .cm-scroller { font-family: inherit; line-height: 1.55; max-height: 30vh; overflow-y: auto; overflow-x: hidden; }
-.cm-editor.tm-md-editor .cm-content { caret-color: var(--text); }
+.cm-editor.tm-md-editor .cm-content { caret-color: var(--foreground); }
 .cm-editor.tm-md-editor .cm-content { padding: 0.7rem 0.85rem; min-height: 2.75rem; }
-.cm-editor.tm-md-editor .cm-line { padding: 0 1px; color: var(--text); }
+.cm-editor.tm-md-editor .cm-line { padding: 0 1px; color: hsl(var(--foreground)); }
 .cm-editor.tm-md-editor .tm-md-hidden-token { color: transparent; opacity: 0; font-size: inherit; }
-.cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: var(--muted); border-radius: 0.3rem; }
+.cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: hsl(var(--muted)); border-radius: 0.3rem; }
 `;
 
 /**
