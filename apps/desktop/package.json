@@ -5,7 +5,7 @@
   "scripts": {
     "format": "bunx prettier --write .",
     "lint": "echo desktop lint skipped",
-    "build": "echo desktop build skipped",
+    "build": "electrobun build",
     "start": "electrobun dev",
     "dev": "electrobun dev --watch"
   },

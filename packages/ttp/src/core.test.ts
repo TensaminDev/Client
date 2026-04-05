@@ -27,9 +27,7 @@ type MockTransportInstance = {
   ready: Promise<void>;
   closed: Promise<void>;
   createUnidirectionalStream: () => Promise<MockStream>;
-  incomingUnidirectionalStreams: {
-    getReader: () => MockReader;
-  };
+  incomingUnidirectionalStreams: ReadableStream<ReadableStream<Uint8Array>>;
   close: () => void;
 };
 
@@ -69,6 +67,10 @@ function createMockWebTransport() {
 
   let readyResolve!: () => void;
   let closedResolve!: () => void;
+  let incomingController:
+    | ReadableStreamDefaultController<ReadableStream<Uint8Array>>
+    | null = null;
+  const outgoingMessages: TypedMessage[] = [];
 
   const ready = new Promise<void>((resolve) => {
     readyResolve = resolve;
@@ -87,17 +89,19 @@ function createMockWebTransport() {
     getWriter: () => writer,
   };
 
+  const incomingUnidirectionalStreams = new ReadableStream<
+    ReadableStream<Uint8Array>
+  >({
+    start(controller) {
+      incomingController = controller;
+    },
+  });
+
   const transport: MockTransportInstance = {
     ready,
     closed,
     createUnidirectionalStream: async () => stream,
-    incomingUnidirectionalStreams: {
-      getReader: () => ({
-        read: async () => ({ done: true }),
-        releaseLock: () => {},
-        cancel: async () => {},
-      }),
-    },
+    incomingUnidirectionalStreams,
     close: () => {},
   };
 
@@ -109,10 +113,32 @@ function createMockWebTransport() {
     close = transport.close;
   }
 
+  const pushIncomingMessage = (message: TypedMessage) => {
+    if (!incomingController) {
+      throw new Error("Incoming stream controller is not ready");
+    }
+
+    const frame = wrapForDecode(encodeCommunicationMessage(message));
+    const incomingStream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(frame);
+        controller.close();
+      },
+    });
+
+    incomingController.enqueue(incomingStream);
+  };
+
+  writer.write = async (chunk: Uint8Array) => {
+    outgoingMessages.push(decodeCommunicationMessage(chunk));
+  };
+
   return {
     readyResolve,
     closedResolve,
     MockWebTransport,
+    outgoingMessages,
+    pushIncomingMessage,
   };
 }
 
@@ -377,6 +403,61 @@ describe("Core Protocol", () => {
       await closePromise;
 
       await expectRejection(sendPromise);
+    });
+
+    it("queues sends until the active request receives a response", async () => {
+      const {
+        readyResolve,
+        pushIncomingMessage,
+        outgoingMessages,
+        MockWebTransport,
+      } = createMockWebTransport();
+      const globalWithWebTransport = globalThis as unknown as {
+        WebTransport?: new (url: string) => MockTransportInstance;
+      };
+      globalWithWebTransport.WebTransport = MockWebTransport;
+
+      const schemas: SchemaMap = {
+        ping: {
+          request: z.object({}),
+          response: z.object({}),
+        },
+      };
+
+      const client = createTransportClient(schemas);
+      const connectPromise = client.connect("http://localhost:8000");
+      readyResolve();
+      await connectPromise;
+
+      const firstSend = client.send("ping", {});
+      const secondSend = client.send("ping", {});
+
+      for (let attempt = 0; attempt < 10 && outgoingMessages.length === 0; attempt += 1) {
+        await Promise.resolve();
+      }
+
+      expect(outgoingMessages.length).toBe(1);
+
+      pushIncomingMessage({
+        id: outgoingMessages[0].id,
+        type: "ping",
+        data: {},
+      });
+
+      await firstSend;
+      for (let attempt = 0; attempt < 10 && outgoingMessages.length === 1; attempt += 1) {
+        await Promise.resolve();
+      }
+
+      expect(outgoingMessages.length).toBe(2);
+
+      pushIncomingMessage({
+        id: outgoingMessages[1].id,
+        type: "ping",
+        data: {},
+      });
+
+      await secondSend;
     });
   });
 

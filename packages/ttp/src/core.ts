@@ -69,20 +69,13 @@ export type SchemaMap = Record<
 
 type SendOptions = {
   id?: number;
-  noResponse?: boolean;
 };
 
 export type BoundSendFn<T extends SchemaMap> = {
   <K extends keyof T & string>(
     type: K,
     data: z.input<T[K]["request"]>,
-    options: { id?: number; noResponse: true },
-  ): Promise<void>;
-
-  <K extends keyof T & string>(
-    type: K,
-    data: z.input<T[K]["request"]>,
-    options?: { id?: number; noResponse?: false },
+    options?: { id?: number },
   ): Promise<TypedMessage<z.output<T[K]["response"]>>>;
 };
 
@@ -125,6 +118,7 @@ export function createTransportClient<T extends SchemaMap>(
   let currentConnection: ActiveConnection | null = null;
   let currentReadyState: number = READY_STATE.CLOSED;
   let nextRequestId = 1;
+  let sendQueueTail: Promise<void> = Promise.resolve();
   let configuredUrl = options.url;
 
   /**
@@ -190,6 +184,20 @@ export function createTransportClient<T extends SchemaMap>(
     }
 
     notifyClosed(connection, error);
+  };
+
+  /**
+   * Serializes outbound send work so only one request is active at a time.
+   * @param task Request task to run in queue order.
+   * @returns Promise for the task result.
+   */
+  const enqueueSend = <T>(task: () => Promise<T>) => {
+    const queuedTask = sendQueueTail.then(task, task);
+    sendQueueTail = queuedTask.then(
+      () => undefined,
+      () => undefined,
+    );
+    return queuedTask;
   };
 
   /**
@@ -515,8 +523,8 @@ export function createTransportClient<T extends SchemaMap>(
    * Sends a typed protocol request over the current connection.
    * @param type Protocol message type.
    * @param input Optional request payload.
-   * @param options Optional id and response behavior.
-   * @returns Promise for response message or void when no response is expected.
+    * @param options Optional request id.
+    * @returns Promise for the typed response message.
    */
   const send: BoundSendFn<T> = ((
     type: string,
@@ -526,8 +534,6 @@ export function createTransportClient<T extends SchemaMap>(
     if (!currentConnection || currentReadyState !== READY_STATE.OPEN) {
       return Promise.reject(new Error("Transport is not connected"));
     }
-
-    const connection = currentConnection;
 
     try {
       const schema = schemas[type];
@@ -555,69 +561,66 @@ export function createTransportClient<T extends SchemaMap>(
         payload = coercePayload(input ?? {});
       }
 
-      if (!options?.id && !options?.noResponse) {
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        options = options ?? {};
-        options.id = array[0];
-      }
+      const requestOptions = options ? { ...options } : {};
+      const enqueuedConnection = currentConnection;
 
-      if (type !== "ping") {
-        log(2, "ttp", "gray", "Sent:", type, payload, { id: options.id });
-      }
+      return enqueueSend(() => {
+        if (
+          !enqueuedConnection ||
+          currentConnection !== enqueuedConnection ||
+          currentReadyState !== READY_STATE.OPEN ||
+          enqueuedConnection.closeNotified
+        ) {
+          return Promise.reject(new Error("Transport is not connected"));
+        }
 
-      const expectsResponse = !options?.noResponse;
-      const requestId = resolveRequestId(
-        options.id,
-        expectsResponse,
-        pending,
-        () => {
-          const current = nextRequestId;
-          nextRequestId = current >= MAX_REQUEST_ID ? 1 : current + 1;
-          return current;
-        },
-      );
-
-      const messageBytes = encodeCommunicationMessage({
-        id: requestId,
-        type,
-        data: payload,
-      });
-
-      if (!expectsResponse) {
-        return writeMessageOnPersistentStream(connection, messageBytes).catch(
-          (error) => {
-            handleConnectionFailure(connection, error);
-            throw error;
+        const requestId = resolveRequestId(
+          requestOptions.id,
+          true,
+          pending,
+          () => {
+            const current = nextRequestId;
+            nextRequestId = current >= MAX_REQUEST_ID ? 1 : current + 1;
+            return current;
           },
         );
-      }
 
-      return new Promise<TypedMessage>((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          pending.delete(requestId);
-          reject(
-            new Error(
-              `Request "${type}" timed out after ${RESPONSE_TIMEOUT}ms`,
-            ),
-          );
-        }, RESPONSE_TIMEOUT);
+        if (type !== "ping") {
+          log(2, "ttp", "gray", "Sent:", type, payload, { id: requestId });
+        }
 
-        pending.set(requestId, {
-          requestType: type,
-          resolve,
-          reject,
-          timeoutId,
+        const messageBytes = encodeCommunicationMessage({
+          id: requestId,
+          type,
+          data: payload,
         });
 
-        void writeMessageOnPersistentStream(connection, messageBytes).catch(
-          (error) => {
-            handleConnectionFailure(connection, error);
-            clearTimeout(timeoutId);
+        return new Promise<TypedMessage>((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
             pending.delete(requestId);
-            reject(error);
-          },
-        );
+            reject(
+              new Error(
+                `Request "${type}" timed out after ${RESPONSE_TIMEOUT}ms`,
+              ),
+            );
+          }, RESPONSE_TIMEOUT);
+
+          pending.set(requestId, {
+            requestType: type,
+            resolve,
+            reject,
+            timeoutId,
+          });
+
+          void writeMessageOnPersistentStream(enqueuedConnection, messageBytes).catch(
+            (error) => {
+              handleConnectionFailure(enqueuedConnection, error);
+              clearTimeout(timeoutId);
+              pending.delete(requestId);
+              reject(error);
+            },
+          );
+        });
       });
     } catch (error) {
       return Promise.reject(error);

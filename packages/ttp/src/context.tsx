@@ -189,14 +189,14 @@ export default function Provider(props: {
    * Sends typed protocol messages through the active transport client.
    * @param type Protocol message type.
    * @param data Optional request payload.
-   * @param options Optional request id and response mode.
-   * @returns A promise for either void (no response) or typed message payload.
+    * @param options Optional request id.
+    * @returns A promise for the typed message payload.
    */
   const send = useCallback<BoundSendFn<Schemas>>(
     ((
       type: string,
       data?: Record<string, unknown>,
-      options?: { id?: number; noResponse?: boolean },
+      options?: { id?: number },
     ) => {
       const client = clientRef.current;
 
@@ -204,16 +204,8 @@ export default function Provider(props: {
         return Promise.reject(new Error("ttp is not connected"));
       }
 
-      if (options?.noResponse) {
-        return client.send(type as keyof Schemas & string, data as never, {
-          ...options,
-          noResponse: true,
-        });
-      }
-
       return client.send(type as keyof Schemas & string, data as never, {
         ...options,
-        noResponse: false,
       });
     }) as BoundSendFn<Schemas>,
     [],

@@ -1,6 +1,4 @@
-import { useStorage } from "@tensamin/storage/context";
 import Wrapper from "@tensamin/user/wrapper";
-import * as React from "react";
 import { Basic, Loading } from "./modals/basic";
 import List from "@/features/conversation/list/body";
 
@@ -19,14 +17,7 @@ import { useLocation } from "@tanstack/react-router";
  * @returns Sidebar JSX.
  */
 export default function Sidebar() {
-  const [userId, setUserId] = React.useState<undefined | number>(undefined);
-  const { load } = useStorage();
   const isMobile = useIsMobile();
-
-  React.useEffect(() => {
-    load("user_id").then(setUserId);
-  }, [load]);
-
   const location = useLocation();
 
   return (
@@ -38,7 +29,7 @@ export default function Sidebar() {
           <div>
             <Wrapper
               loading={<Loading />}
-              userId={userId}
+              userId={"own"}
               component={(user) => <Basic user={user} />}
             />
           </div>
