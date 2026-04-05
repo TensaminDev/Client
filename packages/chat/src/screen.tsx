@@ -158,21 +158,53 @@ export default function Screen() {
    */
   const [value, setValue] = React.useState("");
 
-  useLayoutEffect(() => {
+  const updateMaxHeight = React.useCallback(() => {
     const el = inputBoxRef.current;
     const host = scrollRef.current;
-    if (!host || !el) return;
+    if (!host || !el || typeof window === "undefined") return;
 
-    host.style.maxHeight = `calc(100vh - ${el.scrollHeight + 50}px)`;
-  }, [value]);
+    const viewportHeight = Math.max(
+      window.innerHeight,
+      window.visualViewport?.height ?? 0,
+    );
+    const inputHeight = el.scrollHeight + 50;
+
+    host.style.maxHeight = `calc(${viewportHeight}px - ${inputHeight}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
+  }, []);
+
+  useLayoutEffect(() => {
+    updateMaxHeight();
+  }, [value, updateMaxHeight]);
 
   React.useEffect(() => {
-    const el = inputBoxRef.current;
-    const host = scrollRef.current;
-    if (!host || !el) return;
+    updateMaxHeight();
 
-    host.style.maxHeight = `calc(100vh - ${el.scrollHeight + 50}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
-  }, []);
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleViewportChange = () => {
+      updateMaxHeight();
+    };
+
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", handleViewportChange);
+    window.addEventListener("resize", handleViewportChange);
+
+    const input = inputBoxRef.current;
+    const resizeObserver = input
+      ? new ResizeObserver(handleViewportChange)
+      : null;
+    if (input) {
+      resizeObserver?.observe(input);
+    }
+
+    return () => {
+      viewport?.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("resize", handleViewportChange);
+      resizeObserver?.disconnect();
+    };
+  }, [updateMaxHeight]);
 
   // Render
   if (!hasValidChatUser) {
