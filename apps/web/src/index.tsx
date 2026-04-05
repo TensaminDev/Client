@@ -33,6 +33,13 @@ if (!wrapper) {
   throw new Error("Missing root element");
 }
 
+if (localStorage.getItem("log_level") === null) {
+  console.log(
+    "%cDo not paste anything in here, there is a 101.1% chance you're being scammed.",
+    "color: red; font-size: 24px; font-weight: bold; background: #220000; padding: 8px 12px; border: 3px solid red;",
+  );
+}
+
 // @ts-expect-error Declare global function
 window.setLogLevelToMax = () => {
   localStorage.setItem("log_level", String(1000));
