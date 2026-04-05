@@ -1,4 +1,4 @@
-package net.tensamin.app
+package net.tensamin.client
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

@@ -118,8 +118,8 @@ export function MobileNavbar() {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <div className="z-100 w-full pb-[env(safe-area-inset-bottom)] bg-card border-t">
-      <div className="z-100 w-full h-14 flex justify-center items-center gap-8">
+    <div className="z-51 w-full pb-[env(safe-area-inset-bottom)] bg-card border-t">
+      <div className="z-51 w-full h-14 flex justify-center items-center gap-8">
         <SidebarTrigger
           className="text-foreground w-12! h-12! aspect-square rounded-xl"
           variant="link"
