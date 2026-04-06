@@ -27,6 +27,7 @@ export function log(
 
   if (logLevel > currentLogLevel) return;
 
+  const resetCode = "\x1b[0m";
   const colorCodes: Record<typeof color, string> = {
     red: "\x1b[31m",
     green: "\x1b[32m",
@@ -38,8 +39,20 @@ export function log(
     black: "\x1b[30m",
     gray: "\x1b[90m",
   };
-  const resetCode = "\x1b[0m";
-  console.log(`${colorCodes[color]}${logger}${resetCode}`, ...args);
+
+  if (args.length === 1) {
+    console.log(`${colorCodes[color]}${logger}${resetCode} ${args[0]}`);
+    return;
+  }
+
+  console.groupCollapsed(`${colorCodes[color]}${logger}${resetCode} ${args[0]}`);
+  try {
+    for (const arg of args.slice(1)) {
+      console.log(arg);
+    }
+  } finally {
+    console.groupEnd();
+  }
 }
 
 const size = 20;
