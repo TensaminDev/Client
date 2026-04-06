@@ -5,9 +5,9 @@
   "mainBinaryName": "tensamin",
   "identifier": "net.tensamin.client",
   "build": {
-    "beforeDevCommand": "cd ../web && bun run dev && cd -",
+    "beforeDevCommand": "cd ../web && bun run dev && cd ../tauri",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "cd ../web && bun run build && cd -",
+    "beforeBuildCommand": "cd ../web && bun run build && cd ../tauri",
     "frontendDist": "../../web/dist"
   },
   "app": {
