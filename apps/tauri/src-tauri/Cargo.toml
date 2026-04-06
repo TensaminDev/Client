@@ -29,8 +29,8 @@ default-features = true
 
 [target.'cfg(not(target_os = "android"))'.dependencies.tauri]
 version = "2"
-features = ["cef"]
-default-features = true
+features = ["cef", "compression", "common-controls-v6", "dynamic-acl", "x11"]
+default-features = false
 
 [patch.crates-io.tauri]
 git = "https://github.com/tauri-apps/tauri"
