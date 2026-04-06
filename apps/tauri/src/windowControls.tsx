@@ -1,5 +1,5 @@
 import { Maximize, Minus, X } from "lucide-react";
-import { Button, buttonVariants } from "@tensamin/ui/cmp/button";
+import { Button } from "@tensamin/ui/cmp/button";
 
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";

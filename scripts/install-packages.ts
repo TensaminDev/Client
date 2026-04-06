@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, statSync } from "fs";
-import { join } from "path";
+import { join, relative } from "path";
 import { execSync } from "child_process";
 
 import { fileURLToPath } from "node:url";
@@ -7,7 +7,8 @@ import { dirname } from "node:path";
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 
-const packagesDir = join(_dirname, "..", "packages");
+const rootDir = join(_dirname, "..");
+const targetDirs = [join(rootDir, "packages"), join(rootDir, "apps")];
 
 function getPackageDirs(dir: string): string[] {
   const entries = readdirSync(dir);
@@ -28,17 +29,19 @@ function getPackageDirs(dir: string): string[] {
   return dirs;
 }
 
-const packageDirs = getPackageDirs(packagesDir);
+for (const targetDir of targetDirs) {
+  const packageDirs = getPackageDirs(targetDir);
 
-for (const fullPath of packageDirs) {
-  const entry = fullPath.replace(packagesDir + "/", "");
-  console.log(`Installing ${entry}...`);
-  try {
-    execSync("bun install", { cwd: fullPath, stdio: "inherit" });
-    console.log(`${entry} intalled successfully.`);
-  } catch {
-    console.error(`Failed to install ${entry}.`);
-    process.exit(1);
+  for (const fullPath of packageDirs) {
+    const entry = relative(rootDir, fullPath);
+    console.log(`Installing ${entry}...`);
+    try {
+      execSync("bun install", { cwd: fullPath, stdio: "inherit" });
+      console.log(`${entry} intalled successfully.`);
+    } catch {
+      console.error(`Failed to install ${entry}.`);
+      process.exit(1);
+    }
   }
 }
 

@@ -12,6 +12,8 @@ import { useIsMobile } from "@tensamin/ui/utils";
 import { MobileNavbar } from "./navbar";
 import { useLocation } from "@tanstack/react-router";
 
+import SidebarBox from "@tensamin/call/sidebarBox";
+
 /**
  * Renders the conversation sidebar with account summary and conversation list.
  * @returns Sidebar JSX.
@@ -43,6 +45,11 @@ export default function Sidebar() {
       {isMobile && location.pathname === "/chat" && (
         <SidebarFooter className="p-0!">
           <MobileNavbar />
+        </SidebarFooter>
+      )}
+      {!isMobile && (
+        <SidebarFooter>
+          <SidebarBox />
         </SidebarFooter>
       )}
     </SidebarRoot>

@@ -153,6 +153,16 @@ export const ttp = {
       timestamp: z.number(),
     }),
   },
+
+  // Calls
+  get_call_data: {
+    request: z.object({
+      call_id: z.string(),
+    }),
+    response: z.object({
+      someInfo: z.string(),
+    }),
+  },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;
 
 export type TTP = typeof ttp;

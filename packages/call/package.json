@@ -6,7 +6,8 @@
   "exports": {
     "./context": "./src/context.tsx",
     "./screen": "./src/screen.tsx",
-    "./utils": "./src/utils.ts"
+    "./utils": "./src/utils.ts",
+    "./sidebarBox": "./src/components/sidebarBox.tsx"
   },
   "scripts": {
     "format": "bunx prettier --write .",
@@ -14,16 +15,18 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.20",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
     "@tanstack/react-virtual": "^3.0.0",
     "@tensamin/crypto": "workspace:*",
-    "@tensamin/ttp": "workspace:*",
-    "@tensamin/storage": "workspace:*",
-    "@tensamin/user": "workspace:*",
     "@tensamin/markdown": "workspace:*",
     "@tensamin/shared": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "@tensamin/ttp": "workspace:*",
     "@tensamin/ui": "workspace:*",
+    "@tensamin/user": "workspace:*",
+    "livekit-client": "^2.18.1",
     "lucide-react": "^0.564.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
