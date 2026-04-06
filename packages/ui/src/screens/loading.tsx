@@ -1,4 +1,5 @@
 import * as React from "react";
+import CreateScreen from "./util";
 
 const DELAY = 250;
 
@@ -58,14 +59,8 @@ export default function Screen(props: ScreenProps) {
     };
   }, [props.progress]);
 
-  const wrapperClass = props.fullscreen
-    ? "fixed inset-0 z-50 bg-background"
-    : "bg-background w-full h-screen";
-
   return (
-    <div
-      className={`${wrapperClass} flex flex-col justify-center items-center px-6`}
-    >
+    <CreateScreen>
       <h2 className="text-base font-semibold text-foreground">
         {props.title ?? "Loading"}
       </h2>
@@ -84,6 +79,6 @@ export default function Screen(props: ScreenProps) {
           }}
         />
       </div>
-    </div>
+    </CreateScreen>
   );
 }

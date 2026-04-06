@@ -523,8 +523,8 @@ export function createTransportClient<T extends SchemaMap>(
    * Sends a typed protocol request over the current connection.
    * @param type Protocol message type.
    * @param input Optional request payload.
-    * @param options Optional request id.
-    * @returns Promise for the typed response message.
+   * @param options Optional request id.
+   * @returns Promise for the typed response message.
    */
   const send: BoundSendFn<T> = ((
     type: string,
@@ -612,14 +612,15 @@ export function createTransportClient<T extends SchemaMap>(
             timeoutId,
           });
 
-          void writeMessageOnPersistentStream(enqueuedConnection, messageBytes).catch(
-            (error) => {
-              handleConnectionFailure(enqueuedConnection, error);
-              clearTimeout(timeoutId);
-              pending.delete(requestId);
-              reject(error);
-            },
-          );
+          void writeMessageOnPersistentStream(
+            enqueuedConnection,
+            messageBytes,
+          ).catch((error) => {
+            handleConnectionFailure(enqueuedConnection, error);
+            clearTimeout(timeoutId);
+            pending.delete(requestId);
+            reject(error);
+          });
         });
       });
     } catch (error) {

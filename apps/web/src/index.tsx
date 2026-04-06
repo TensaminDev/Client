@@ -17,7 +17,6 @@ import Home from "@/routes/app/home";
 import ChatScreen from "@tensamin/chat/screen";
 import CallScreen from "@tensamin/call/screen";
 import Login from "@/routes/screens/login";
-import Signup from "@/routes/screens/signup";
 
 import ChatContext from "@tensamin/chat/context";
 import CallContext from "@tensamin/call/context";
@@ -117,16 +116,9 @@ const loginRoute = createRoute({
   component: Login,
 });
 
-const signupRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "signup",
-  component: Signup,
-});
-
 const routeTree = rootRoute.addChildren([
   appRoute.addChildren([homeRoute, chatRoute, callRoute]),
   loginRoute,
-  signupRoute,
 ]);
 
 const router = createRouter({

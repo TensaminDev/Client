@@ -61,9 +61,9 @@ function createMockWebTransport() {
 
   let readyResolve!: () => void;
   let closedResolve!: () => void;
-  let incomingController:
-    | ReadableStreamDefaultController<ReadableStream<Uint8Array>>
-    | null = null;
+  let incomingController: ReadableStreamDefaultController<
+    ReadableStream<Uint8Array>
+  > | null = null;
   const outgoingMessages: TypedMessage[] = [];
 
   const ready = new Promise<void>((resolve) => {
@@ -426,7 +426,11 @@ describe("Core Protocol", () => {
       const firstSend = client.send("ping", {});
       const secondSend = client.send("ping", {});
 
-      for (let attempt = 0; attempt < 10 && outgoingMessages.length === 0; attempt += 1) {
+      for (
+        let attempt = 0;
+        attempt < 10 && outgoingMessages.length === 0;
+        attempt += 1
+      ) {
         await Promise.resolve();
       }
 
@@ -439,7 +443,11 @@ describe("Core Protocol", () => {
       });
 
       await firstSend;
-      for (let attempt = 0; attempt < 10 && outgoingMessages.length === 1; attempt += 1) {
+      for (
+        let attempt = 0;
+        attempt < 10 && outgoingMessages.length === 1;
+        attempt += 1
+      ) {
         await Promise.resolve();
       }
 

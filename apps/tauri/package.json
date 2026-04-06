@@ -4,24 +4,25 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./context": "./src/context.tsx"
+    "./context": "./src/context.tsx",
+    "./controls": "./src/windowControls.tsx"
   },
   "scripts": {
     "dev:mobile:raw": "tauri android dev",
     "build:mobile:raw": "tauri android build",
     "dev:mobile": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:mobile:raw; else bun dev:mobile:raw; fi",
     "build:mobile": "if command -v nix >/dev/null 2>&1; then nix develop --command bun build:mobile:raw; else bun build:mobile:raw; fi",
-
     "dev:desktop:raw": "tauri dev",
     "build:desktop:raw": "tauri build",
     "dev:desktop": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:desktop:raw; else bun dev:desktop:raw; fi",
     "build:desktop": "if command -v nix >/dev/null 2>&1; then nix develop --command bun build:desktop:raw; else bun build:desktop:raw; fi",
-
     "gen-icons": "tauri icon ./logo.png"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tensamin/ui": "workspace:*",
+    "lucide-react": "^1.7.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

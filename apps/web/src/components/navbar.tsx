@@ -14,6 +14,7 @@ import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui/cmp/sidebar";
 import { useTTP } from "@tensamin/ttp/context";
+import Controls from "@tensamin/tauri/controls";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
@@ -30,7 +31,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
 
   return (
     <div
-      className={`${forMobile && "border-b"} w-full gap-2 h-13.5 flex items-center justify-center`}
+      data-tauri-drag-region
+      className={`${forMobile && "border-b"} w-full gap-2 h-13.5 flex items-center justify-between`}
     >
       {forMobile ? (
         <SidebarTrigger
@@ -57,7 +59,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           loading={<Skeleton className="ml-3 w-40 h-5" />}
         />
       )}
-      <div className="w-full" />
+      {/* Empty space */}
       {pathname === "/chat" && id && (
         <>
           {currentCalls.length === 0 ? (
@@ -77,7 +79,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               onClick={() => {
                 joinCall(id, currentCalls[0]);
               }}
-              className="w-9 h-9 aspect-square rounded-lg mr-2"
+              className="w-9 h-9 aspect-square rounded-lg"
             >
               <Phone />
             </Button>
@@ -85,7 +87,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             <>
               <Button
                 onClick={() => setSelectOpen((prev) => !prev)}
-                className="w-9! h-9! aspect-square rounded-lg mr-2"
+                className="w-9! h-9! aspect-square rounded-lg"
               >
                 <Phone />
               </Button>
@@ -109,6 +111,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           )}
         </>
       )}
+      <Controls className="mr-2 ring-border" notPresentClassName="mr-2" />
     </div>
   );
 }

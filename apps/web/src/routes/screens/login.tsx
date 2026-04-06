@@ -1,4 +1,5 @@
 import Form from "@/components/screens/login/form";
+import CreateScreen from "@tensamin/ui/screens/util";
 
 /**
  * Executes Page.
@@ -7,7 +8,7 @@ import Form from "@/components/screens/login/form";
  */
 export default function Page() {
   return (
-    <div className="w-full h-full flex flex-col gap-10 items-center justify-center">
+    <CreateScreen>
       <Form />
       <div className="flex">
         <a target="_blank" href="https://docs.tensamin.net/installation/#iota">
@@ -17,6 +18,6 @@ export default function Page() {
           </p>
         </a>
       </div>
-    </div>
+    </CreateScreen>
   );
 }

@@ -189,8 +189,8 @@ export default function Provider(props: {
    * Sends typed protocol messages through the active transport client.
    * @param type Protocol message type.
    * @param data Optional request payload.
-    * @param options Optional request id.
-    * @returns A promise for the typed message payload.
+   * @param options Optional request id.
+   * @returns A promise for the typed message payload.
    */
   const send = useCallback<BoundSendFn<Schemas>>(
     ((

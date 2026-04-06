@@ -23,7 +23,9 @@ export default function Sidebar() {
   return (
     <SidebarRoot>
       <SidebarContent
-        className={isTauri() && isMobile ? "pt-[env(safe-area-inset-top)]" : "pt-2"}
+        className={
+          isTauri() && isMobile ? "pt-[env(safe-area-inset-top)]" : "pt-2"
+        }
       >
         <div className="h-full w-full flex flex-col gap-3 p-2 pt-0!">
           <div>

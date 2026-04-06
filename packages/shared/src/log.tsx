@@ -45,7 +45,9 @@ export function log(
     return;
   }
 
-  console.groupCollapsed(`${colorCodes[color]}${logger}${resetCode} ${args[0]}`);
+  console.groupCollapsed(
+    `${colorCodes[color]}${logger}${resetCode} ${args[0]}`,
+  );
   try {
     for (const arg of args.slice(1)) {
       console.log(arg);
