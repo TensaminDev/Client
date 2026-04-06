@@ -27,9 +27,19 @@ version = "2"
 features = []
 default-features = true
 
-[target.'cfg(not(target_os = "android"))'.dependencies.tauri]
+[target.'cfg(target_os = "windows")'.dependencies.tauri]
 version = "2"
-features = ["cef", "compression", "common-controls-v6", "dynamic-acl", "x11"]
+features = ["compression", "common-controls-v6", "dynamic-acl"]
+default-features = true
+
+[target.'cfg(target_os = "linux")'.dependencies.tauri]
+version = "2"
+features = ["common-controls-v6", "cef", "compression", "dynamic-acl", "x11"]
+default-features = false
+
+[target.'cfg(target_os = "macos")'.dependencies.tauri]
+version = "2"
+features = ["x11", "common-controls-v6", "cef", "compression", "dynamic-acl"]
 default-features = false
 
 [patch.crates-io.tauri]
