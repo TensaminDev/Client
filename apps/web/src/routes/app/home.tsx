@@ -16,13 +16,15 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
 import { useStorage } from "@tensamin/storage/context";
+import { useIsMobile } from "@tensamin/ui/utils";
 
 // The page
 export default function Page() {
   const { clear } = useStorage();
+  const isMobile = useIsMobile();
 
   return (
-    <div className={`px-3 flex gap-2 ${!isTauri() && "pt-3"}`}>
+    <div className={`px-3 flex gap-2 ${!(isTauri() && isMobile) && "pt-3"}`}>
       <AddConversationButton />
       <Button disabled>Add Community</Button>
       <Button variant="outline" onClick={() => location.reload()}>

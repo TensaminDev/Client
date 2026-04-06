@@ -25,7 +25,7 @@
     "@tensamin/ttp": "workspace:*",
     "@tensamin/ui": "workspace:*",
     "@tensamin/user": "workspace:*",
-    "@tensamin/mobile": "workspace:*",
+    "@tensamin/tauri": "workspace:*",
     "@tauri-apps/api": "^2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

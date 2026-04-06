@@ -17,12 +17,6 @@ type MockStream = {
   getWriter: () => MockStreamWriter;
 };
 
-type MockReader = {
-  read: () => Promise<{ done: boolean; value?: Uint8Array }>;
-  releaseLock: () => void;
-  cancel: () => Promise<void>;
-};
-
 type MockTransportInstance = {
   ready: Promise<void>;
   closed: Promise<void>;

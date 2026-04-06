@@ -39,7 +39,7 @@ export default function Layout(props: { children: ReactNode }) {
         <div
           className={cn(
             "w-full h-full flex flex-col",
-            isTauri() && "pt-[env(safe-area-inset-top)]",
+            isTauri() && isMobile && "pt-[env(safe-area-inset-top)]",
           )}
         >
           {!isMobile && <Navbar forMobile={false} />}

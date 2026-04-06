@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import Storage from "@tensamin/storage/context";
 import Crypto from "@tensamin/crypto/context";
-import Mobile from "@tensamin/mobile/context";
+import Mobile from "@tensamin/tauri/context";
 
 import LegalWrapper from "@/features/legal/screen";
 
@@ -26,7 +26,7 @@ export default function Layout(props: { children: ReactNode }) {
     <>
       <Toaster
         position={isMobile ? "top-center" : "bottom-right"}
-        {...(isTauri()
+        {...(isTauri() && isMobile
           ? {
               mobileOffset: {
                 top: "env(safe-area-inset-top)",

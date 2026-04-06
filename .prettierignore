@@ -4,5 +4,4 @@ coverage
 .tmp
 *.tsbuildinfo
 bun.lock
-apps/desktop/build
-apps/mobile/src-tauri
+apps/tauri/src-tauri

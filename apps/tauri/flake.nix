@@ -1,5 +1,5 @@
 {
-  description = "Tauri Android development environment";
+  description = "Tauri development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -7,10 +7,15 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        overlays = [ (import rust-overlay) ];
+  outputs = {
+    self,
+    nixpkgs,
+    rust-overlay,
+    flake-utils,
+  }:
+    flake-utils.lib.eachDefaultSystem (
+      system: let
+        overlays = [(import rust-overlay)];
         pkgs = import nixpkgs {
           inherit system overlays;
           config = {
@@ -28,17 +33,17 @@
           cmdLineToolsVersion = "8.0";
           toolsVersion = "26.1.1";
           platformToolsVersion = "35.0.2";
-          buildToolsVersions = [ "35.0.0" ];
-          platformVersions = [ "35" "36" ];
+          buildToolsVersions = ["35.0.0"];
+          platformVersions = ["35" "36"];
           includeSources = false;
           includeSystemImages = false;
           includeNDK = true;
-          ndkVersions = [ ndkVersion ];
+          ndkVersions = [ndkVersion];
           useGoogleAPIs = false;
         };
 
         rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rust-analyzer" ];
+          extensions = ["rust-src" "rust-analyzer"];
           targets = [
             "aarch64-linux-android"
             "armv7-linux-androideabi"
@@ -48,21 +53,53 @@
           ];
         };
 
+        desktopRuntimeLibs = with pkgs; [
+          glib
+          gtk3
+          gdk-pixbuf
+          pango
+          cairo
+          atk
+          at-spi2-atk
+          alsa-lib
+          dbus
+          cups
+          expat
+          libdrm
+          libgbm
+          libglvnd
+          mesa
+          libxkbcommon
+          libx11
+          libxcomposite
+          libxdamage
+          libxext
+          libxfixes
+          libxrandr
+          libxcb
+          systemd
+          nspr
+          nss
+        ];
       in {
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            jdk17
-            rustToolchain
-            gradle
-            nodejs
-            android.androidsdk
-            pkgs.android-studio-tools
-          ];
+          buildInputs = with pkgs;
+            [
+              jdk17
+              rustToolchain
+              gradle
+              nodejs
+              pkg-config
+            ]
+            ++ desktopRuntimeLibs
+            ++ [
+              android.androidsdk
+              pkgs.android-studio-tools
+            ];
 
           shellHook = ''
             sdkSource="${android.androidsdk}/libexec/android-sdk"
 
-            # Build a Tauri-compatible SDK layout in a writable local directory.
             mkdir -p "${androidHome}"
             if [ -L "${sdkRoot}" ]; then
               rm -f "${sdkRoot}"
@@ -93,8 +130,7 @@
             export NDK_HOME="$ANDROID_NDK_ROOT"
             export NDK_PATH="$ANDROID_NDK_ROOT"
             export JAVA_HOME="${pkgs.jdk17}"
-
-            echo "Android development environment ready!"
+            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath desktopRuntimeLibs}:$LD_LIBRARY_PATH"
           '';
         };
       }

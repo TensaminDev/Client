@@ -10,12 +10,15 @@
   "scripts": {
     "format": "bunx prettier --write .",
     "lint": "bun scripts/lint-packages.ts",
+    "build:all": "bun run build:packages && bun run build:web && bun run build:mobile && bun run build:desktop",
     "build:packages": "bun scripts/build-packages.ts",
     "install:packages": "bun scripts/install-packages.ts",
     "dev:web": "cd apps/web && bun dev",
     "build:web": "cd apps/web && bun run build",
-    "dev:mobile": "cd apps/mobile && bun dev",
-    "build:mobile": "cd apps/mobile && bun run build"
+    "dev:mobile": "cd apps/tauri && bun dev:mobile",
+    "build:mobile": "cd apps/tauri && bun run build:mobile",
+    "dev:desktop": "cd apps/tauri && bun dev:desktop",
+    "build:desktop": "cd apps/tauri && bun run build:desktop"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
