@@ -6,7 +6,6 @@ import Navbar, { MobileNavbar } from "@/components/navbar";
 import { SidebarProvider } from "@tensamin/ui/cmp/sidebar";
 import { useIsMobile, cn } from "@tensamin/ui/utils";
 
-import { motion } from "framer-motion";
 import { isTauri } from "@tauri-apps/api/core";
 import { useLocation } from "@tanstack/react-router";
 
@@ -20,20 +19,7 @@ export default function Layout(props: { children: ReactNode }) {
   const location = useLocation();
 
   return (
-    <motion.div
-      className="w-full h-full flex bg-sidebar"
-      initial={{ y: -40, scale: 0.95, borderRadius: "1rem" }}
-      animate={{ y: 0, scale: 1, borderRadius: 0 }}
-      transition={{
-        borderRadius: { duration: animationTiming.first, ease: "easeOut" },
-        y: { duration: animationTiming.first, ease: "easeOut" },
-        scale: {
-          delay: animationTiming.first,
-          duration: animationTiming.second,
-          ease: "easeOut",
-        },
-      }}
-    >
+    <div className="w-full h-full flex bg-sidebar">
       <SidebarProvider>
         <Sidebar />
         <div
@@ -58,11 +44,6 @@ export default function Layout(props: { children: ReactNode }) {
           {isMobile && location.pathname !== "/chat" && <MobileNavbar />}
         </div>
       </SidebarProvider>
-    </motion.div>
+    </div>
   );
 }
-
-const animationTiming = {
-  first: 0.18,
-  second: 0.1,
-};

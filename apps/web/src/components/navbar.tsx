@@ -34,84 +34,88 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
       data-tauri-drag-region
       className={`${forMobile && "border-b"} w-full gap-2 h-13.5 flex items-center justify-between`}
     >
-      {forMobile ? (
-        <SidebarTrigger
-          className="w-9 h-9 aspect-square rounded-lg ml-2"
-          variant="outline"
-        >
-          <ArrowLeft className="size-4.5" />
-        </SidebarTrigger>
-      ) : (
-        <Button
-          onClick={() => navigate({ to: "/" })}
-          className="w-9 h-9 aspect-square rounded-lg"
-          variant="outline"
-        >
-          <House className="size-4.5" />
-        </Button>
-      )}
-      {pathname === "/chat" && (
-        <Wrapper
-          userId={id}
-          component={(user) => (
-            <p className="font-medium text-md">{user?.display}</p>
-          )}
-          loading={<Skeleton className="ml-3 w-40 h-5" />}
-        />
-      )}
+      <div className="flex items-center justify-center gap-2">
+        {forMobile ? (
+          <SidebarTrigger
+            className="w-9 h-9 aspect-square rounded-lg ml-2"
+            variant="outline"
+          >
+            <ArrowLeft className="size-4.5" />
+          </SidebarTrigger>
+        ) : (
+          <Button
+            onClick={() => navigate({ to: "/" })}
+            className="w-9 h-9 aspect-square rounded-lg"
+            variant="outline"
+          >
+            <House className="size-4.5" />
+          </Button>
+        )}
+        {pathname === "/chat" && (
+          <Wrapper
+            userId={id}
+            component={(user) => (
+              <p className="font-medium text-md">{user?.display}</p>
+            )}
+            loading={<Skeleton className="ml-3 w-40 h-5" />}
+          />
+        )}
+      </div>
       {/* Empty space */}
-      {pathname === "/chat" && id && (
-        <>
-          {currentCalls.length === 0 ? (
-            <Button
-              disabled={state !== "closed"}
-              onClick={() => {
-                joinCall(id);
-              }}
-              className="w-9 h-9 aspect-square rounded-lg mr-2"
-              variant="outline"
-            >
-              <Phone />
-            </Button>
-          ) : currentCalls.length === 1 ? (
-            <Button
-              disabled={state !== "closed"}
-              onClick={() => {
-                joinCall(id, currentCalls[0]);
-              }}
-              className="w-9 h-9 aspect-square rounded-lg"
-            >
-              <Phone />
-            </Button>
-          ) : (
-            <>
+      <div className="flex items-center justify-center gap-2">
+        {pathname === "/chat" && id && (
+          <>
+            {currentCalls.length === 0 ? (
               <Button
-                onClick={() => setSelectOpen((prev) => !prev)}
-                className="w-9! h-9! aspect-square rounded-lg"
+                disabled={state !== "closed"}
+                onClick={() => {
+                  joinCall(id);
+                }}
+                className="w-9 h-9 aspect-square rounded-lg"
+                variant="outline"
               >
                 <Phone />
               </Button>
-              <Select onOpenChange={setSelectOpen} open={selectOpen}>
-                <SelectTrigger hidden />
-                <SelectContent>
-                  {currentCalls.map((callId) => (
-                    <SelectItem
-                      value={callId}
-                      key={callId}
-                      onSelect={() => {
-                        joinCall(id, callId);
-                      }}
-                    >
-                      {displayCallId(callId)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          )}
-        </>
-      )}
-      <Controls className="mr-2 ring-border" notPresentClassName="mr-2" />
+            ) : currentCalls.length === 1 ? (
+              <Button
+                disabled={state !== "closed"}
+                onClick={() => {
+                  joinCall(id, currentCalls[0]);
+                }}
+                className="w-9 h-9 aspect-square rounded-lg"
+              >
+                <Phone />
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={() => setSelectOpen((prev) => !prev)}
+                  className="w-9! h-9! aspect-square rounded-lg"
+                >
+                  <Phone />
+                </Button>
+                <Select onOpenChange={setSelectOpen} open={selectOpen}>
+                  <SelectTrigger hidden />
+                  <SelectContent>
+                    {currentCalls.map((callId) => (
+                      <SelectItem
+                        value={callId}
+                        key={callId}
+                        onSelect={() => {
+                          joinCall(id, callId);
+                        }}
+                      >
+                        {displayCallId(callId)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+          </>
+        )}
+        <Controls className="mr-2 ring-border" />
+      </div>
     </div>
   );
 }
