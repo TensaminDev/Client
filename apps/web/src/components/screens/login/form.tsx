@@ -3,7 +3,7 @@ import { Input } from "@tensamin/ui/cmp/input";
 import { Label } from "@tensamin/ui/cmp/label";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
-import { Upload } from "lucide-react";
+import { File } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
 
@@ -34,7 +34,17 @@ function parseTuFileContent(rawFileContent: string): {
   userId: number;
   privateKey: string;
 } {
-  if (rawFileContent.length !== 92 || !rawFileContent.includes("::")) {
+  if (rawFileContent.trim().length === 0) {
+    throw new Error("File is empty");
+  } else if (!rawFileContent.includes("::")) {
+    throw new Error("Invalid file");
+  } else if (rawFileContent.split("::").length !== 2) {
+    throw new Error("Invalid file");
+  } else if (rawFileContent.split("::")[0].length === 0) {
+    throw new Error("Invalid file");
+  } else if (rawFileContent.split("::")[1].length === 0) {
+    throw new Error("Invalid file");
+  } else if (isNaN(Number(rawFileContent.split("::")[0]))) {
     throw new Error("Invalid file");
   }
 
@@ -77,7 +87,7 @@ export default function Form() {
 
         location.href = "/";
       } catch (error) {
-        log(0, "Login", "red", error);
+        log(0, "login", "red", error);
         toast("error", "Failed to load file");
       }
     },
@@ -115,7 +125,7 @@ export default function Form() {
         const parse = fetchedUser.shape.data.safeParse(data);
 
         if (!parse.success) {
-          log(0, "Login", "red", "Invalid response from server", parse.error);
+          log(0, "login", "red", "Invalid response from server", parse.error);
           toast("error", "Invalid response from server");
           return;
         }
@@ -128,7 +138,7 @@ export default function Form() {
 
         location.href = "/";
       } catch (error) {
-        log(0, "Login", "red", error);
+        log(0, "login", "red", error);
         toast("error", "Failed to fetch user data");
       }
     },
@@ -141,8 +151,8 @@ export default function Form() {
         onClick={() => uploadRef.current?.click()}
         className="flex flex-col gap-3 cursor-pointer w-55 aspect-square bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-3 items-center justify-center rounded-lg"
       >
-        <Upload className="text-foreground" size={27} />
-        <p className="text-md">Upload .tu file</p>
+        <File className="text-foreground" size={27} />
+        <p className="text-md">Select .tu file</p>
       </div>
       <input
         accept=".tu"

@@ -1,5 +1,5 @@
 import Link from "../link";
-import CreateScreen from "./util";
+import CreateScreen, { StorageDestoryer } from "./util";
 
 /**
  * Executes Screen.
@@ -14,6 +14,7 @@ export default function Screen(props: { error: string; description: string }) {
         {props.description}
       </p>
       <Link label="status.tensamin.net" link="https://status.tensamin.net" />
+      <StorageDestoryer />
     </CreateScreen>
   );
 }

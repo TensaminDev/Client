@@ -8,7 +8,7 @@ import CreateScreen from "@tensamin/ui/screens/util";
  */
 export default function Page() {
   return (
-    <CreateScreen>
+    <CreateScreen className="gap-5">
       <Form />
       <div className="flex">
         <a target="_blank" href="https://docs.tensamin.net/installation/#iota">
