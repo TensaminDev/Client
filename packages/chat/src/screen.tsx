@@ -169,7 +169,7 @@ export default function Screen() {
     );
     const inputHeight = el.scrollHeight + 56;
 
-    host.style.maxHeight = `calc(${viewportHeight}px - ${inputHeight}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
+    host.style.maxHeight = `calc(${viewportHeight}px - ${inputHeight - 62}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
   }, []);
 
   useLayoutEffect(() => {
