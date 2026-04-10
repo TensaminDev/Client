@@ -2,17 +2,25 @@ import { Button } from "@tensamin/ui/cmp/button";
 
 import options from "@tensamin/shared/settings";
 import { cn, useIsMobile } from "@tensamin/ui/utils";
-import { Outlet, useNavigate } from "@tanstack/react-router";
+import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 
 export default function Screen() {
   const isMobile = useIsMobile();
+  const location = useLocation();
 
   return (
     <div className="flex h-full w-full">
       {!isMobile && <SettingsSidebar />}
 
       {/* Page */}
-      <div className="bg-background w-full h-full p-3">
+      <div className="bg-background w-full h-full p-3 flex flex-col gap-3">
+        <h1 className="text-xl font-semibold">
+          {location.pathname
+            .split("/")
+            .pop()
+            ?.replace(/-/g, " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase())}
+        </h1>
         <Outlet />
       </div>
     </div>

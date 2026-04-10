@@ -71,41 +71,44 @@ function QrCodeLogin() {
   const [qrCodeVisible, setQrCodeVisible] = useState(false);
 
   return (
-    <div className="relative rounded-lg w-50 border-3 aspect-square overflow-hidden">
-      {qrCodeBase64 && (
-        <img className="w-full h-full" src={qrCodeBase64} alt="QR Code" />
-      )}
-      {!qrCodeVisible && (
-        <>
-          <div className="absolute top-0 left-0 w-full h-full backdrop-blur-sm bg-background/50" />
-          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-            <AlertDialog>
-              <AlertDialogTrigger render={<Button>Show QR Code</Button>} />
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will expose your private key! This is the same as
-                    sharing the .tu file! It's very tedious to change the
-                    private key, so only do this if you are sure no one can
-                    steal it!
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    render={
-                      <Button onClick={() => setQrCodeVisible(true)}>
-                        Show QR Code
-                      </Button>
-                    }
-                  />
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </>
-      )}
+    <div className="flex flex-col gap-1 pl-2">
+      <p>Login QR Code</p>
+      <div className="relative rounded-lg w-50 border-3 aspect-square overflow-hidden">
+        {qrCodeBase64 && (
+          <img className="w-full h-full" src={qrCodeBase64} alt="QR Code" />
+        )}
+        {!qrCodeVisible && (
+          <>
+            <div className="absolute top-0 left-0 w-full h-full backdrop-blur-sm bg-background/50" />
+            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+              <AlertDialog>
+                <AlertDialogTrigger render={<Button>Show QR Code</Button>} />
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Exposing this QR code is the same as sharing your .tu
+                      file. Since changing your private key is quite tedious,
+                      only do this when you're confident the key won't be
+                      compromised.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      render={
+                        <Button onClick={() => setQrCodeVisible(true)}>
+                          Show QR Code
+                        </Button>
+                      }
+                    />
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
