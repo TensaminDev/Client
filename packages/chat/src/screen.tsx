@@ -258,7 +258,13 @@ export default function Screen() {
           })}
         </div>
       </div>
-      <div ref={inputBoxRef}>
+      <div
+        ref={inputBoxRef}
+        className="fixed -bottom-15 pb-15"
+        style={{
+          width: "calc(100vw - 277px)",
+        }}
+      >
         <InputComponent setValue={setValue} value={value} />
       </div>
     </div>

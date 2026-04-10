@@ -10,9 +10,9 @@ import {
 import { isTauri } from "@tauri-apps/api/core";
 import { useIsMobile } from "@tensamin/ui/utils";
 import { MobileNavbar } from "./navbar";
-import { useLocation } from "@tanstack/react-router";
 
 import SidebarBox from "@tensamin/call/sidebarBox";
+import { useShowMobileNavbar } from "@/routes/app/layout";
 
 /**
  * Renders the conversation sidebar with account summary and conversation list.
@@ -20,7 +20,7 @@ import SidebarBox from "@tensamin/call/sidebarBox";
  */
 export default function Sidebar() {
   const isMobile = useIsMobile();
-  const location = useLocation();
+  const showMobileNavbar = useShowMobileNavbar();
 
   return (
     <SidebarRoot>
@@ -42,7 +42,7 @@ export default function Sidebar() {
           </div>
         </div>
       </SidebarContent>
-      {isMobile && location.pathname === "/chat" && (
+      {isMobile && !showMobileNavbar && (
         <SidebarFooter className="p-0!">
           <MobileNavbar />
         </SidebarFooter>

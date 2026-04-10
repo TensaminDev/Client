@@ -6,6 +6,8 @@ import { log, toast } from "@tensamin/shared/log";
 import { File } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
+import { isTauri } from "@tauri-apps/api/core";
+import QrCodeScanner from "@tensamin/tauri/qrCodeScanner";
 
 const fetchedUser = z.object({
   id: z.uuidv4(),
@@ -145,15 +147,46 @@ export default function Form() {
     [save],
   );
 
+  const isTauriEnv = isTauri();
+
   return (
     <div className="flex md:flex-row flex-col gap-15">
-      <div
-        onClick={() => uploadRef.current?.click()}
-        className="flex flex-col gap-3 cursor-pointer w-55 aspect-square bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-3 items-center justify-center rounded-lg"
-      >
-        <File className="text-foreground" size={27} />
-        <p className="text-md">Select .tu file</p>
-      </div>
+      {isTauriEnv ? (
+        <>
+          <QrCodeScanner
+            onData={(data) => {
+              if (!data.startsWith("tensamin://tu::")) {
+                toast("error", "Invalid QR code");
+                return;
+              } else {
+                const decoded = data.replace("tensamin://tu::", "");
+
+                try {
+                  const { userId, privateKey } = parseTuFileContent(decoded);
+                  save("session_id", Date.now());
+                  save("user_id", userId);
+                  save("private_key", privateKey);
+                  location.href = "/";
+                } catch (error) {
+                  log(0, "login", "red", error);
+                  toast("error", "Failed to parse QR code data");
+                }
+              }
+            }}
+          />
+          <Button onClick={() => uploadRef.current?.click()}>
+            Select .tu file
+          </Button>
+        </>
+      ) : (
+        <div
+          onClick={() => uploadRef.current?.click()}
+          className="flex flex-col gap-3 cursor-pointer w-55 aspect-square bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-3 items-center justify-center rounded-lg"
+        >
+          <File className="text-foreground" size={27} />
+          <p className="text-md">Select .tu file</p>
+        </div>
+      )}
       <input
         accept=".tu"
         onChange={handleFileInputChange}

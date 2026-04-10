@@ -1,5 +1,5 @@
 import { Button } from "@tensamin/ui/cmp/button";
-import { ArrowLeft, House, Phone, User } from "lucide-react";
+import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/context";
 import Wrapper from "@tensamin/user/wrapper";
@@ -22,6 +22,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const { contacts } = useTTP();
 
   const { pathname } = useLocation();
+
   const { id } = useSearch({ strict: false });
 
   const currentCalls = id ? contacts?.[id]?.calls || [] : [];
@@ -43,13 +44,23 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             <ArrowLeft className="size-4.5" />
           </SidebarTrigger>
         ) : (
-          <Button
-            onClick={() => navigate({ to: "/" })}
-            className="w-9 h-9 aspect-square rounded-lg"
-            variant="outline"
-          >
-            <House className="size-4.5" />
-          </Button>
+          <>
+            <Button
+              onClick={() => navigate({ to: "/" })}
+              className="w-9 h-9 aspect-square rounded-lg"
+              variant="outline"
+            >
+              <House className="size-4.5" />
+            </Button>
+            <Button
+              // @ts-expect-error TanStack router doesn't properly detect the settings route
+              onClick={() => navigate({ to: "/settings" })}
+              className="w-9 h-9 aspect-square rounded-lg"
+              variant="outline"
+            >
+              <Settings className="size-4.5" />
+            </Button>
+          </>
         )}
         {pathname === "/chat" && (
           <Wrapper
@@ -126,22 +137,36 @@ export function MobileNavbar() {
 
   return (
     <div className="z-51 w-full pb-[env(safe-area-inset-bottom)] bg-card border-t">
-      <div className="z-51 w-full h-14 flex justify-center items-center gap-8">
+      <div className="z-51 w-full h-15 grid grid-cols-3 items-center place-items-center px-5">
         <SidebarTrigger
-          className="text-foreground w-12! h-12! aspect-square rounded-xl"
+          className="text-foreground w-12! h-12! aspect-square rounded-xl flex flex-col gap-1"
           variant="link"
         >
-          <User className="size-5.5" />
+          <User className="size-4.5" />
+          <p className="text-xs">Chats</p>
         </SidebarTrigger>
         <Button
           onClick={() => {
             navigate({ to: "/" });
             setOpenMobile(false);
           }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl"
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1"
           variant="link"
         >
-          <House className="size-5.5" />
+          <House className="size-4.5" />
+          <p className="text-xs">Home</p>
+        </Button>
+        <Button
+          onClick={() => {
+            // @ts-expect-error TanStack router doesn't properly detect the settings route
+            navigate({ to: "/settings" });
+            setOpenMobile(false);
+          }}
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1"
+          variant="link"
+        >
+          <Settings className="size-4.5" />
+          <p className="text-xs">Settings</p>
         </Button>
       </div>
     </div>

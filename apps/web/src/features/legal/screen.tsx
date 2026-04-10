@@ -162,7 +162,7 @@ export default function Screen(props: { children: React.ReactNode }) {
 
   return (
     <CreateScreen>
-      <div className="h-full flex flex-col gap-15 p-10 md:p-40 w-full lg:w-2/3">
+      <div className="h-full flex flex-col gap-15 p-10 py-20 md:p-40 w-full lg:w-2/3">
         <h1 className="text-3xl md:text-4xl font-bold">
           Privacy Policy & ToS
           <p className="text-muted-foreground text-[20px] font-normal pt-3">

@@ -6,6 +6,7 @@
   "exports": {
     "./data": "./src/data.ts",
     "./log": "./src/log.tsx",
+    "./settings": "./src/settings.ts",
     "./features/legal/schema": "./src/features/legal/schema.ts",
     "./features/conversation/schema": "./src/features/conversation/schema.ts"
   },

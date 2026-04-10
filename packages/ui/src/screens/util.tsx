@@ -1,5 +1,6 @@
 import { cn } from "../lib/utils";
 import Controls from "@tensamin/tauri/controls";
+import { isTauri } from "@tauri-apps/api/core";
 
 export default function CreateScreen({
   children,
@@ -41,7 +42,13 @@ import { useIsMobile } from "../lib/utils";
 export function StorageDestoryer() {
   const isMobile = useIsMobile();
   return (
-    <div className={cn("fixed p-5 bottom-0", isMobile ? "w-full" : "right-0")}>
+    <div
+      className={cn(
+        "fixed p-5 bottom-0",
+        isMobile ? "w-full" : "right-0",
+        isTauri() ? "py-10" : "",
+      )}
+    >
       <AlertDialog>
         <AlertDialogTrigger
           render={

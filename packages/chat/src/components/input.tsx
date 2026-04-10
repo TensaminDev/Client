@@ -10,6 +10,7 @@ import { useTTP } from "@tensamin/ttp/context";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 import Message from "./message";
+import { cn, useIsMobile } from "@tensamin/ui/utils";
 
 export default function InputComponent({
   value,
@@ -27,7 +28,7 @@ export default function InputComponent({
   const { load } = useStorage();
 
   React.useEffect(() => {
-    void load("chat_invert_enter_behaviour").then((shouldInvert) => {
+    void load("settings.reverse_enter_behavior").then((shouldInvert) => {
       setInvertEnterBehavior(shouldInvert);
     });
   }, [load]);
@@ -100,8 +101,17 @@ export default function InputComponent({
     setValue("");
   }
 
+  const isMobile = useIsMobile();
+
   return (
-    <Card className="rounded-none rounded-t-xl border-b-0 pt-0 pb-[env(safe-area-inset-bottom)]">
+    <Card
+      className={cn(
+        "rounded-none border-b-0 pt-0 pb-[env(safe-area-inset-bottom)]",
+        isMobile
+          ? "border-0 border-t-1 fixed w-full bottom-0 left-0 px-2"
+          : "rounded-t-xl",
+      )}
+    >
       <CardHeader className="relative p-0 flex flex-col">
         <div
           aria-hidden="true"

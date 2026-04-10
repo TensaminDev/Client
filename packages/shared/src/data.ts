@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { legalDocsSchema } from "./features/legal/schema";
+import { settingsStorageDefaults, type SettingsStorageDefaults } from "./settings";
 
 const fileFromMessage = z.object({
   name: z.string(),
@@ -168,7 +169,7 @@ export const ttp = {
 export type TTP = typeof ttp;
 
 // Storage
-export interface Storage {
+export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   private_key: string;
@@ -179,7 +180,6 @@ export interface Storage {
   analytics_usage_data: boolean;
   analytics_done: boolean;
   legal_docs: z.infer<typeof legalDocsSchema>;
-  chat_invert_enter_behaviour: boolean;
 }
 
 export const storageDefaults: Storage = {
@@ -192,6 +192,7 @@ export const storageDefaults: Storage = {
   analytics_crash_reports: true,
   analytics_usage_data: true,
   analytics_done: false,
+  ...settingsStorageDefaults,
   legal_docs: {
     eula: {
       version: "0.0",
@@ -209,5 +210,4 @@ export const storageDefaults: Storage = {
       unix: 0,
     },
   },
-  chat_invert_enter_behaviour: false,
 };
