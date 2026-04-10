@@ -115,7 +115,7 @@ export default function InputComponent({
       <CardHeader className="relative p-0 flex flex-col">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 w-full opacity-0"
+          className="pointer-events-none absolute left-0 top-0 w-full px-2.5 opacity-0"
           style={{ visibility: "hidden" }}
         >
           <Message

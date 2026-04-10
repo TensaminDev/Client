@@ -8,6 +8,11 @@ import Message from "./components/message";
 
 import { PAGE_SIZE } from "./values";
 import { useLayoutEffect } from "react";
+import { useIsMobile } from "@tensamin/ui/utils";
+
+function getDistanceFromBottom(element: HTMLDivElement) {
+  return element.scrollHeight - (element.scrollTop + element.clientHeight);
+}
 
 /**
  * Renders the chat screen with virtualized history and live message updates.
@@ -18,6 +23,8 @@ export default function Screen() {
 
   const inputBoxRef = React.useRef<HTMLDivElement | null>(null);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const isMobile = useIsMobile();
+  const stickyBottomThreshold = isMobile ? 220 : 140;
 
   const [hasScrolledToBottomInitially, setHasScrolledToBottomInitially] =
     React.useState(false);
@@ -72,11 +79,22 @@ export default function Screen() {
     return [...historicalMessages, ...liveWithoutDuplicates];
   }, [historicalMessages, liveMessagesSnapshot]);
 
+  const messagesRef = React.useRef(messages);
+
+  React.useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  const getItemKey = React.useCallback((index: number) => {
+    return messagesRef.current[index]?.timestamp ?? index;
+  }, []);
+
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => scrollRef.current,
+    getItemKey,
     estimateSize: (index) => messages[index].height,
-    overscan: 6,
+    overscan: isMobile ? 10 : 6,
   });
 
   /**
@@ -125,11 +143,16 @@ export default function Screen() {
     }
 
     if (count > lastLiveMessageCount) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const shouldStickToBottom =
+        getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
+
+      if (shouldStickToBottom) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
     }
 
     setLastLiveMessageCount(count);
-  }, [lastLiveMessageCount, liveMessagesSnapshot.length]);
+  }, [lastLiveMessageCount, liveMessagesSnapshot.length, stickyBottomThreshold]);
 
   React.useLayoutEffect(() => {
     if (
@@ -163,6 +186,9 @@ export default function Screen() {
     const host = scrollRef.current;
     if (!host || !el || typeof window === "undefined") return;
 
+    const shouldStickToBottom =
+      getDistanceFromBottom(host) <= stickyBottomThreshold;
+
     const viewportHeight = Math.max(
       window.innerHeight,
       window.visualViewport?.height ?? 0,
@@ -170,7 +196,17 @@ export default function Screen() {
     const inputHeight = el.scrollHeight + 56;
 
     host.style.maxHeight = `calc(${viewportHeight}px - ${inputHeight - 62}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
-  }, []);
+
+    if (shouldStickToBottom) {
+      requestAnimationFrame(() => {
+        if (!scrollRef.current) {
+          return;
+        }
+
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      });
+    }
+  }, [stickyBottomThreshold]);
 
   useLayoutEffect(() => {
     updateMaxHeight();
@@ -221,6 +257,9 @@ export default function Screen() {
         ref={scrollRef}
         id="chat_container"
         className="flex-1 overflow-y-auto px-2.5"
+        style={{
+          overflowAnchor: "none",
+        }}
         onScroll={handleContainerScroll}
       >
         <div

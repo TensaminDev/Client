@@ -28,7 +28,7 @@ function generateFixedLoadingSize(size: number, height: number) {
  * @param props Parameter props.
  * @returns unknown.
  */
-export default function Message(props: {
+function MessageComponent(props: {
   message: RawMessage & {
     failed?: boolean;
   };
@@ -143,3 +143,16 @@ export default function Message(props: {
     </div>
   );
 }
+
+export default React.memo(MessageComponent, (prev, next) => {
+  return (
+    prev.notEncrypted === next.notEncrypted &&
+    prev.measureRef === next.measureRef &&
+    prev.message.timestamp === next.message.timestamp &&
+    prev.message.content === next.message.content &&
+    prev.message.height === next.message.height &&
+    prev.message.sent_by_self === next.message.sent_by_self &&
+    prev.message.message_state === next.message.message_state &&
+    prev.message.failed === next.message.failed
+  );
+});

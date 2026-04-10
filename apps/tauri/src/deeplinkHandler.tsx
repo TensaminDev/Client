@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
+import { isTauri } from "@tauri-apps/api/core";
 
 type DeeplinkContextValue = {
   deeplinks: readonly string[];
@@ -30,8 +31,11 @@ export default function DeeplinkProvider({
   children: ReactNode;
 }) {
   const [deeplinks, setDeeplinks] = useState<string[]>([]);
+  const isTauriEnv = isTauri();
 
   useEffect(() => {
+    if (!isTauriEnv) return;
+
     let mounted = true;
     let unlisten: (() => void) | undefined;
 
@@ -53,7 +57,7 @@ export default function DeeplinkProvider({
       mounted = false;
       unlisten?.();
     };
-  }, []);
+  }, [isTauriEnv]);
 
   useEffect(() => {
     console.log(deeplinks);
