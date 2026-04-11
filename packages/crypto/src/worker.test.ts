@@ -8,8 +8,27 @@ import { decrypt, encrypt, getSharedSecret } from "./worker";
  * @returns Base64url string.
  */
 function bytesToB64u(value: Uint8Array): string {
-  const b64 = Buffer.from(value).toString("base64");
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  const alphabet =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+  let output = "";
+
+  for (let index = 0; index < value.length; index += 3) {
+    const first = value[index] ?? 0;
+    const second = value[index + 1] ?? 0;
+    const third = value[index + 2] ?? 0;
+    const chunk = (first << 16) | (second << 8) | third;
+
+    output += alphabet[(chunk >> 18) & 63];
+    output += alphabet[(chunk >> 12) & 63];
+    output += index + 1 < value.length ? alphabet[(chunk >> 6) & 63] : "=";
+    output += index + 2 < value.length ? alphabet[chunk & 63] : "=";
+  }
+
+  return output
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 /**
