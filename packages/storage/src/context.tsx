@@ -4,7 +4,7 @@ import {
   storageDefaults as defaults,
 } from "@tensamin/shared/data";
 import { getEntry, setEntry, deleteEntry } from "./indexed-db";
-import ErrorScreen from "@tensamin/ui/screens/error";
+import { ErrorScreen } from "@tensamin/ui";
 import { log } from "@tensamin/shared/log";
 
 interface StorageContextValue {

@@ -6,9 +6,9 @@ import {
   Sidebar as SidebarRoot,
   SidebarContent,
   SidebarFooter,
-} from "@tensamin/ui/cmp/sidebar";
+} from "@tensamin/ui";
 import { isTauri } from "@tauri-apps/api/core";
-import { useIsMobile } from "@tensamin/ui/utils";
+import { useIsMobile } from "@tensamin/ui";
 import { MobileNavbar } from "./navbar";
 
 import SidebarBox from "@tensamin/call/sidebarBox";

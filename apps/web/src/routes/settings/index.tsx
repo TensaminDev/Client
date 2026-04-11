@@ -1,5 +1,5 @@
 import { SettingsSidebar } from "@/features/settings/layout";
-import { useIsMobile } from "@tensamin/ui/utils";
+import { useIsMobile } from "@tensamin/ui";
 
 export default function Page() {
   const isMobile = useIsMobile();

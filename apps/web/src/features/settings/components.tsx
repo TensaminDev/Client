@@ -1,5 +1,5 @@
-import { Label } from "@tensamin/ui/cmp/label";
-import { Switch as UISwitch } from "@tensamin/ui/cmp/switch";
+import { Label } from "@tensamin/ui";
+import { Switch as UISwitch } from "@tensamin/ui";
 import { useEffect, useState } from "react";
 
 import { settingsStorageDefaults } from "@tensamin/shared/settings";

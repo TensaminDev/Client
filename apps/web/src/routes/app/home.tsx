@@ -1,5 +1,3 @@
-import { Input } from "@tensamin/ui/cmp/input";
-import { Button } from "@tensamin/ui/cmp/button";
 import {
   Dialog,
   DialogClose,
@@ -8,7 +6,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@tensamin/ui/cmp/dialog";
+  Input, Button,
+  useIsMobile
+} from "@tensamin/ui";
 import z from "zod";
 import { toast } from "@tensamin/shared/log";
 import { useTTP } from "@tensamin/ttp/context";
@@ -16,7 +16,6 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
 import { useStorage } from "@tensamin/storage/context";
-import { useIsMobile } from "@tensamin/ui/utils";
 
 // The page
 export default function Page() {

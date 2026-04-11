@@ -1,5 +1,5 @@
 import Form from "@/components/screens/login/form";
-import CreateScreen from "@tensamin/ui/screens/util";
+import {CreateScreen} from "@tensamin/ui";
 
 /**
  * Executes Page.

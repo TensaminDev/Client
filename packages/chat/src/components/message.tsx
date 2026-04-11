@@ -10,17 +10,25 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@tensamin/ui/cmp/tooltip";
-import { useIsMobile } from "@tensamin/ui/utils";
+} from "@tensamin/ui";
+import { useIsMobile } from "@tensamin/ui";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@tensamin/ui/cmp/context-menu";
+} from "@tensamin/ui";
 
 function generateFixedLoadingSize(size: number, height: number) {
   return size * 3 - (height / 20) * 11;
+}
+
+function getSafeMessageHeight(height: number | undefined) {
+  if (typeof height === "number" && Number.isFinite(height) && height > 0) {
+    return Math.ceil(height);
+  }
+
+  return 40;
 }
 
 /**
@@ -42,6 +50,7 @@ function MessageComponent(props: {
 
   const [decodedContent, setDecodedContent] = React.useState("");
   const [isReady, setIsReady] = React.useState(false);
+  const safeMessageHeight = getSafeMessageHeight(props.message.height);
 
   React.useEffect(() => {
     if (props.notEncrypted) {
@@ -121,13 +130,13 @@ function MessageComponent(props: {
                 <Text value={decodedContent} />
               ) : (
                 <div
-                  className="h-8"
+                  className="block rounded-sm"
                   style={{
                     width: generateFixedLoadingSize(
                       props.message.content.length,
-                      props.message.height,
+                      safeMessageHeight,
                     ),
-                    height: props.message.height,
+                    minHeight: safeMessageHeight,
                   }}
                 />
               )}

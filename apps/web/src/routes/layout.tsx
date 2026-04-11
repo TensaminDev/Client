@@ -6,12 +6,9 @@ import Mobile from "@tensamin/tauri/context";
 
 import LegalWrapper from "@/features/legal/screen";
 
-import { Toaster } from "@tensamin/ui/cmp/sonner";
-import { TooltipProvider } from "@tensamin/ui/cmp/tooltip";
-
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useIsMobile } from "@tensamin/ui/utils";
+import { useIsMobile, Toaster, TooltipProvider } from "@tensamin/ui";
 import { isTauri } from "@tauri-apps/api/core";
 
 /**

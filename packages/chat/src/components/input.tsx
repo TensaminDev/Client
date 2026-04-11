@@ -1,8 +1,8 @@
 import Input from "@tensamin/markdown/input";
-import { Card, CardHeader } from "@tensamin/ui/cmp/card";
+import { Card, CardHeader } from "@tensamin/ui";
 import { useStorage } from "@tensamin/storage/context";
 import * as React from "react";
-import { Button } from "@tensamin/ui/cmp/button";
+import { Button } from "@tensamin/ui";
 
 import { Plus, Laugh, Clapperboard } from "lucide-react";
 import { useChat } from "../context";
@@ -10,7 +10,7 @@ import { useTTP } from "@tensamin/ttp/context";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 import Message from "./message";
-import { cn, useIsMobile } from "@tensamin/ui/utils";
+import { cn, useIsMobile } from "@tensamin/ui";
 
 export default function InputComponent({
   value,

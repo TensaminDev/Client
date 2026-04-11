@@ -6,9 +6,9 @@ import {
   ContextMenuGroup,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@tensamin/ui/cmp/context-menu";
+} from "@tensamin/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useSidebar } from "@tensamin/ui/cmp/sidebar";
+import { useSidebar } from "@tensamin/ui";
 
 export default function ConversationModal({ userId }: { userId: number }) {
   const navigate = useNavigate();

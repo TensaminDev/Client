@@ -8,10 +8,21 @@ import Message from "./components/message";
 
 import { PAGE_SIZE } from "./values";
 import { useLayoutEffect } from "react";
-import { useIsMobile } from "@tensamin/ui/utils";
+import { useIsMobile } from "@tensamin/ui";
 
 function getDistanceFromBottom(element: HTMLDivElement) {
   return element.scrollHeight - (element.scrollTop + element.clientHeight);
+}
+
+const FALLBACK_MESSAGE_HEIGHT = 40;
+const ROW_VERTICAL_PADDING = 8;
+
+function getSafeMessageHeight(height: number | undefined) {
+  if (typeof height === "number" && Number.isFinite(height) && height > 0) {
+    return Math.ceil(height);
+  }
+
+  return FALLBACK_MESSAGE_HEIGHT;
 }
 
 /**
@@ -93,7 +104,10 @@ export default function Screen() {
     count: messages.length,
     getScrollElement: () => scrollRef.current,
     getItemKey,
-    estimateSize: (index) => messages[index].height,
+    estimateSize: (index) => {
+      const message = messages[index];
+      return getSafeMessageHeight(message?.height) + ROW_VERTICAL_PADDING;
+    },
     overscan: isMobile ? 10 : 6,
   });
 

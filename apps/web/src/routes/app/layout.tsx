@@ -3,8 +3,7 @@ import { type ReactNode } from "react";
 import Sidebar from "@/components/sidebar";
 import Navbar, { MobileNavbar } from "@/components/navbar";
 
-import { SidebarProvider } from "@tensamin/ui/cmp/sidebar";
-import { useIsMobile, cn } from "@tensamin/ui/utils";
+import { useIsMobile, cn, SidebarProvider } from "@tensamin/ui";
 
 import { isTauri } from "@tauri-apps/api/core";
 import { useLocation, useMatches } from "@tanstack/react-router";

@@ -11,8 +11,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@tensamin/ui/cmp/alert-dialog";
-import { Button } from "@tensamin/ui/cmp/button";
+  Button
+} from "@tensamin/ui";
 
 export default function Page() {
   return (

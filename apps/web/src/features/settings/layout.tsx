@@ -1,7 +1,7 @@
-import { Button } from "@tensamin/ui/cmp/button";
+import { Button } from "@tensamin/ui";
 
 import options from "@tensamin/shared/settings";
-import { cn, useIsMobile } from "@tensamin/ui/utils";
+import { cn, useIsMobile } from "@tensamin/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 
 export default function Screen() {

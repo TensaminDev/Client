@@ -1,20 +1,20 @@
-import { Button } from "@tensamin/ui/cmp/button";
+import { Button } from "@tensamin/ui";
 import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/context";
 import Wrapper from "@tensamin/user/wrapper";
-import { Skeleton } from "@tensamin/ui/cmp/skeleton";
+import { Skeleton } from "@tensamin/ui";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from "@tensamin/ui/cmp/select";
+} from "@tensamin/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
-import { SidebarTrigger, useSidebar } from "@tensamin/ui/cmp/sidebar";
+import { SidebarTrigger, useSidebar } from "@tensamin/ui";
 import { useTTP } from "@tensamin/ttp/context";
-import Controls from "@tensamin/tauri/controls";
+import { WindowControls as Controls } from "@tensamin/ui";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();

@@ -25,8 +25,8 @@ import {
   ttp,
   type TTP as Schemas,
 } from "@tensamin/shared/data";
-import Loading from "@tensamin/ui/screens/loading";
-import ErrorScreen from "@tensamin/ui/screens/error";
+import { LoadingScreen as Loading } from "@tensamin/ui";
+import { ErrorScreen } from "@tensamin/ui";
 
 import { version } from "../../../package.json";
 import z from "zod";

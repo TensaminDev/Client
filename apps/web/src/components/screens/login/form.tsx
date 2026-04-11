@@ -1,6 +1,6 @@
-import { Button } from "@tensamin/ui/cmp/button";
-import { Input } from "@tensamin/ui/cmp/input";
-import { Label } from "@tensamin/ui/cmp/label";
+import { Button } from "@tensamin/ui";
+import { Input } from "@tensamin/ui";
+import { Label } from "@tensamin/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
 import { File } from "lucide-react";

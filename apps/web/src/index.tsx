@@ -6,7 +6,9 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
+
 import "./index.css";
+import "@tensamin/ui/index.css";
 
 import NotFound from "@/routes/404";
 
@@ -25,7 +27,7 @@ import SocketContext from "@tensamin/ttp/context";
 import UserContext from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 
-import { ThemeProvider } from "@tensamin/ui/theme";
+import { ThemeProvider } from "@tensamin/ui";
 import z from "zod";
 
 const wrapper = document.getElementById("root");

@@ -12,7 +12,6 @@
     "lint": "bun scripts/lint-packages.ts",
     "build:all": "bun run build:packages && bun run build:web && bun run build:mobile && bun run build:desktop",
     "build:packages": "bun scripts/build-packages.ts",
-    "install:packages": "bun scripts/install-packages.ts",
     "dev:web": "cd apps/web && bun dev",
     "build:web": "cd apps/web && bun run build",
     "dev:mobile": "cd apps/tauri && bun dev:mobile",
@@ -22,15 +21,21 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^25.4.0",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
-    "@typescript-eslint/parser": "^8.57.0",
-    "eslint": "^10.0.3",
-    "eslint-plugin-react-hooks": "^5.2.0",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/parser": "^8.58.1",
+    "eslint": "^10.2.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^17.4.0",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.0"
+    "prettier": "^3.8.2",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.1"
+  },
+  "overrides": {
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.20.tar.gz"
+  },
+  "dependencies": {
+    "@tensamin/ui": "*"
   }
 }

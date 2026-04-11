@@ -24,7 +24,7 @@
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "@tensamin/ttp": "workspace:*",
-    "@tensamin/ui": "workspace:*",
+    "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
     "livekit-client": "^2.18.1",
     "lucide-react": "^0.564.0",

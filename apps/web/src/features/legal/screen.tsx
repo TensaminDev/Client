@@ -1,16 +1,16 @@
 import { useState, useCallback, useEffect } from "react";
 import { useStorage } from "@tensamin/storage/context";
-import { Button } from "@tensamin/ui/cmp/button";
-import { Checkbox } from "@tensamin/ui/cmp/checkbox";
+import { Button } from "@tensamin/ui";
+import { Checkbox } from "@tensamin/ui";
 import { z } from "zod";
 
-import ErrorScreen from "@tensamin/ui/screens/error";
+import { ErrorScreen } from "@tensamin/ui";
 
 import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import { log } from "@tensamin/shared/log";
-import Link from "@tensamin/ui/link";
-import { Label } from "@tensamin/ui/cmp/label";
-import CreateScreen from "@tensamin/ui/screens/util";
+import { Link } from "@tensamin/ui";
+import { Label } from "@tensamin/ui";
+import { CreateScreen } from "@tensamin/ui";
 
 // Prevents the user from using Tensamin without accepting the privacy policy and terms of service.
 export default function Screen(props: { children: React.ReactNode }) {

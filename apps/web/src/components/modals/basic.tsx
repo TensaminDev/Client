@@ -1,8 +1,8 @@
 import type { User } from "@tensamin/user/context";
-import { Avatar, AvatarImage, AvatarFallback } from "@tensamin/ui/cmp/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@tensamin/ui";
 import { reduceDisplay } from "./utils";
-import { Card, CardHeader } from "@tensamin/ui/cmp/card";
-import { Skeleton } from "@tensamin/ui/cmp/skeleton";
+import { Card, CardHeader } from "@tensamin/ui";
+import { Skeleton } from "@tensamin/ui";
 
 export function Basic(props: { user: User }) {
   return (
