@@ -6,7 +6,7 @@ import { useStorage } from "@tensamin/storage/context";
 
 // Wrapper function to pass user data to some component
 export default function Wrapper(props: {
-  userId?: number | "own";
+  userId: number | "own";
   loading: React.ReactNode;
   component: (user: User) => React.ReactNode;
 }) {
@@ -15,40 +15,34 @@ export default function Wrapper(props: {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    if (props.userId == null) {
-      setUser(failedUser);
-      return;
-    }
+    if (props.userId == null) return;
 
     let active = true;
 
-    if (props.userId === "own") {
-      load("user_id")
-        .then((id) => {
-          get(id)
-            .then((user) => (active ? setUser(user) : null))
-            .catch(() => setUser(failedUser));
-        })
-        .catch(() => setUser(failedUser));
-      return;
-    }
+    void (async () => {
+      try {
+        const userId =
+          props.userId === "own" ? await load("user_id") : props.userId;
+        const value = await get(userId);
 
-    get(props.userId)
-      .then((value) => {
         if (active) {
           setUser(value);
         }
-      })
-      .catch(() => {
+      } catch {
         if (active) {
           setUser(failedUser);
         }
-      });
+      }
+    })();
 
     return () => {
       active = false;
     };
   }, [load, get, props.userId]);
+
+  if (props.userId == null) {
+    return <>{props.component(failedUser)}</>;
+  }
 
   return <>{user ? props.component(user) : props.loading}</>;
 }

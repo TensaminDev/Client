@@ -62,7 +62,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             </Button>
           </>
         )}
-        {pathname === "/chat" && (
+        {pathname === "/chat" && id && (
           <Wrapper
             userId={id}
             component={(user) => (

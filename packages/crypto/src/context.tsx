@@ -33,8 +33,28 @@ export const context = React.createContext<CryptoContextType | undefined>(
 export default function Provider(props: { children: React.ReactNode }) {
   const apiRef = React.useRef<ApiRef | null>(null);
 
-  const value = React.useMemo(
-    () => createCryptoActions(() => apiRef.current),
+  const value = React.useMemo<CryptoContextType>(
+    () => ({
+      encrypt: async (secret, plaintext) => {
+        const api = apiRef.current;
+        if (!api) throw new Error("API not initialized");
+        return await api.encrypt(secret, plaintext);
+      },
+      decrypt: async (secret, ciphertext) => {
+        const api = apiRef.current;
+        if (!api) throw new Error("API not initialized");
+        return await api.decrypt(secret, ciphertext);
+      },
+      getSharedSecret: async (ownPrivateKey, ownPublicKey, otherPublicKey) => {
+        const api = apiRef.current;
+        if (!api) throw new Error("API not initialized");
+        return await api.getSharedSecret(
+          ownPrivateKey,
+          ownPublicKey,
+          otherPublicKey,
+        );
+      },
+    }),
     [],
   );
 
@@ -56,11 +76,11 @@ export default function Provider(props: { children: React.ReactNode }) {
 
 /**
  * Creates crypto action functions that safely delegate to the worker API.
- * @param getApiRef Function that returns worker API reference when initialized.
+ * @param apiRef Worker API reference object.
  * @returns Typed crypto action functions.
  */
 export function createCryptoActions(
-  getApiRef: () => ApiRef | null,
+  apiRef: React.RefObject<ApiRef | null>,
 ): CryptoContextType {
   /**
    * Encrypts plaintext by delegating to the crypto worker API.
@@ -72,9 +92,9 @@ export function createCryptoActions(
     secret: string,
     plaintext: string,
   ): Promise<string> => {
-    const apiRef = getApiRef();
-    if (!apiRef) throw new Error("API not initialized");
-    return await apiRef.encrypt(secret, plaintext);
+    const api = apiRef.current;
+    if (!api) throw new Error("API not initialized");
+    return await api.encrypt(secret, plaintext);
   };
 
   /**
@@ -87,9 +107,9 @@ export function createCryptoActions(
     secret: string,
     ciphertext: string,
   ): Promise<string> => {
-    const apiRef = getApiRef();
-    if (!apiRef) throw new Error("API not initialized");
-    return await apiRef.decrypt(secret, ciphertext);
+    const api = apiRef.current;
+    if (!api) throw new Error("API not initialized");
+    return await api.decrypt(secret, ciphertext);
   };
 
   /**
@@ -104,9 +124,9 @@ export function createCryptoActions(
     ownPublicKey: string,
     otherPublicKey: string,
   ): Promise<string> => {
-    const apiRef = getApiRef();
-    if (!apiRef) throw new Error("API not initialized");
-    return await apiRef.getSharedSecret(
+    const api = apiRef.current;
+    if (!api) throw new Error("API not initialized");
+    return await api.getSharedSecret(
       ownPrivateKey,
       ownPublicKey,
       otherPublicKey,

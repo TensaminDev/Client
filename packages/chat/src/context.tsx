@@ -61,7 +61,13 @@ export default function Provider(props: { children: ReactNode }) {
   const { send, subscribePush } = useTTP();
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
-  const [currentSharedSecret, setCurrentSharedSecret] = useState("");
+  const [currentSharedSecretState, setCurrentSharedSecretState] = useState<{
+    userId: number;
+    value: string;
+  }>({
+    userId: 0,
+    value: "",
+  });
 
   const inputBoxRef = useRef<HTMLDivElement>(null);
 
@@ -75,16 +81,13 @@ export default function Provider(props: { children: ReactNode }) {
     return Number(rawId ?? 0);
   }, [locationSearch]);
 
-  const userIdValueFromLastRender = useRef(userIdValue);
-
-  useEffect(() => {
-    if (userIdValue === userIdValueFromLastRender.current) {
-      return;
+  const currentSharedSecret = useMemo(() => {
+    if (currentSharedSecretState.userId !== userIdValue) {
+      return "";
     }
 
-    userIdValueFromLastRender.current = userIdValue;
-    setCurrentSharedSecret("");
-  }, [userIdValue]);
+    return currentSharedSecretState.value;
+  }, [currentSharedSecretState, userIdValue]);
 
   // Load shared secret
   useEffect(() => {
@@ -105,11 +108,17 @@ export default function Provider(props: { children: ReactNode }) {
         );
 
         if (active) {
-          setCurrentSharedSecret(sharedSecret);
+          setCurrentSharedSecretState({
+            userId: userIdValue,
+            value: sharedSecret,
+          });
         }
       } catch {
         if (active) {
-          setCurrentSharedSecret("");
+          setCurrentSharedSecretState({
+            userId: userIdValue,
+            value: "",
+          });
         }
       }
     })();

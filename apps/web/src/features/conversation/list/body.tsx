@@ -22,6 +22,8 @@ export default function List() {
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
+  // TanStack Virtual is intentionally used here; React Compiler memoization is skipped.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: items?.length || 0,
     estimateSize: () => 60,

@@ -100,6 +100,7 @@ export default function Screen() {
     return messagesRef.current[index]?.timestamp ?? index;
   }, []);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => scrollRef.current,

@@ -36,7 +36,7 @@ function getSafeMessageHeight(height: number | undefined) {
  * @param props Parameter props.
  * @returns unknown.
  */
-function MessageComponent(props: {
+function MessageComponent({ message, notEncrypted, measureRef }: {
   message: RawMessage & {
     failed?: boolean;
   };
@@ -50,16 +50,16 @@ function MessageComponent(props: {
 
   const [decodedContent, setDecodedContent] = React.useState("");
   const [isReady, setIsReady] = React.useState(false);
-  const safeMessageHeight = getSafeMessageHeight(props.message.height);
+  const safeMessageHeight = getSafeMessageHeight(message.height);
 
   React.useEffect(() => {
-    if (props.notEncrypted) {
-      setDecodedContent(props.message.content);
+    if (notEncrypted) {
+      setDecodedContent(message.content);
       setIsReady(true);
       return;
     }
 
-    const content = props.message.content;
+    const content = message.content;
     const secret = sharedSecret;
     let active = true;
 
@@ -94,27 +94,27 @@ function MessageComponent(props: {
     return () => {
       active = false;
     };
-  }, [decrypt, props.message.content, props.notEncrypted, sharedSecret]);
+  }, [decrypt, message.content, notEncrypted, sharedSecret]);
 
   return (
     <div
-      ref={props.measureRef}
-      className={`w-full flex justify-start transition-opacity duration-150 ${(props.message.failed || props.message.message_state === "awaiting") && "opacity-50"}`}
+      ref={measureRef}
+      className={`w-full flex justify-start transition-opacity duration-150 ${(message.failed || message.message_state === "awaiting") && "opacity-50"}`}
     >
       <ContextMenu>
         <ContextMenuTrigger
           render={
             <div
               className={`selection-foreground flex gap-1 items-center justify-center max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap break-all ${
-                props.message.sent_by_self
-                  ? props.message.failed
+                message.sent_by_self
+                  ? message.failed
                     ? "bg-destructive/75 text-destructive-foreground"
                     : "bg-primary text-primary-foreground"
                   : "bg-muted"
               } ${!isReady && "animate-pulse"} ${isMobile && "select-none"}`}
             >
-              {props.message.failed &&
-                props.message.message_state === "awaiting" && (
+              {message.failed &&
+                message.message_state === "awaiting" && (
                   <Tooltip>
                     <TooltipContent>
                       <p>Failed to send message</p>
@@ -122,8 +122,8 @@ function MessageComponent(props: {
                     <TooltipTrigger render={<AlertTriangle size={17} />} />
                   </Tooltip>
                 )}
-              {!props.message.failed &&
-                props.message.message_state === "awaiting" && (
+              {!message.failed &&
+                message.message_state === "awaiting" && (
                   <Clock size={17} />
                 )}
               {isReady ? (
@@ -133,7 +133,7 @@ function MessageComponent(props: {
                   className="block rounded-sm"
                   style={{
                     width: generateFixedLoadingSize(
-                      props.message.content.length,
+                      message.content.length,
                       safeMessageHeight,
                     ),
                     minHeight: safeMessageHeight,
