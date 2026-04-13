@@ -49,10 +49,11 @@ type BooleanSettingNames<T extends SettingsSchema> = {
 export type SettingsStorageKey<T extends SettingsSchema = typeof settings> =
   `settings.${BooleanSettingNames<T>}`;
 
-export type SettingsStorageDefaults<T extends SettingsSchema = typeof settings> =
-  {
-    [K in SettingsStorageKey<T>]: boolean;
-  };
+export type SettingsStorageDefaults<
+  T extends SettingsSchema = typeof settings,
+> = {
+  [K in SettingsStorageKey<T>]: boolean;
+};
 
 function buildSettingsStorageDefaults<T extends SettingsSchema>(
   schema: T,
@@ -62,7 +63,10 @@ function buildSettingsStorageDefaults<T extends SettingsSchema>(
   for (const category of Object.values(schema)) {
     for (const page of Object.values(category)) {
       for (const [settingName, setting] of Object.entries(page)) {
-        if (setting.type === "boolean" && typeof setting.default === "boolean") {
+        if (
+          setting.type === "boolean" &&
+          typeof setting.default === "boolean"
+        ) {
           const key = `settings.${settingName}` as SettingsStorageKey<T>;
           defaults[key] = setting.default;
         }

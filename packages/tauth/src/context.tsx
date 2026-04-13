@@ -16,77 +16,128 @@ import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import { useTTP } from "@tensamin/ttp";
 import { log, toast } from "@tensamin/shared/log";
 import { Loader2 } from "lucide-react";
+import { isTauri } from "@tauri-apps/api/core";
 
 export default function Wrapper({ children }: { children: ReactNode }) {
-  const { getSharedSecret } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
   const { send } = useTTP();
-  const { decrypt } = useCrypto();
+  const { decrypt, getSharedSecret } = useCrypto();
   const { searchStr } = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [identifier, setIdentifier] = useState<string | null>(null);
   const [redirect, setRedirect] = useState<string | null>(null);
+  const [challenge, setChallenge] = useState<string | null>(null);
+  const [allowChildern, setAllowChildern] = useState(false);
 
   const { deeplinks } = useDeeplinks();
 
   const authorizeApp = async () => {
-    if (!identifier || !redirect) return;
+    if (!identifier || !redirect || !challenge) return;
 
     try {
       // Get Data
       const user = await get(await load("user_id"));
-      const app = await send("get_app", {
-        app_identifier: identifier,
+      const {
+        data: { content: appPublicKey },
+      } = await send("load_txt_record", {
+        path: "tauth." + identifier,
       });
+
+      // Get Shared Secret
       const sharedSecret = await getSharedSecret(
         await load("private_key"),
         user.public_key,
-        app.data.app_public_key,
-      );
-
-      // Get Challenge
-      const res = await send("authenticate_app", {
-        app_identifier: identifier,
+        appPublicKey,
+      ).catch((err) => {
+        log(1, "tauth", "red", "Failed to get shared secret", err, {
+          appPublicKey,
+        });
+        throw new Error("Failed to get shared secret");
       });
-      const challenge = res.data.challenge;
 
       // Solve Challenge
-      const solvedChallenge = await decrypt(sharedSecret, challenge);
+      const solvedChallenge = await decrypt(sharedSecret, challenge).catch(
+        (err) => {
+          log(1, "tauth", "red", "Failed to solve challenge", err, {
+            challenge,
+          });
+          throw new Error("Failed to solve challenge");
+        },
+      );
 
       // Craft Redirect URL
       const finalUrl = new URL(redirect);
+      finalUrl.searchParams.set("userId", String(await load("user_id")));
       finalUrl.searchParams.set("challenge", solvedChallenge);
+      finalUrl.searchParams.set("originalChallenge", challenge);
 
-      const session = crypto.randomUUID();
-      finalUrl.searchParams.set("session", session);
+      const session = Date.now();
+      finalUrl.searchParams.set("sessionId", String(session));
+
+      // Save Session
+      await send("create_app", {
+        app_public_key: appPublicKey,
+        app_identifier: identifier,
+      });
 
       // Open Redirect URL
-      window.open(finalUrl.toString(), "_blank");
+      if (isTauri()) {
+        window.open(finalUrl.toString(), "_blank");
+        setLoading(false);
+        setDialogOpen(false);
+        setIdentifier(null);
+        setRedirect(null);
+        setChallenge(null);
+
+        toast("success", "App authorized successfully");
+        return;
+      } else {
+        window.location.href = finalUrl.toString();
+        return;
+      }
     } catch (err) {
       toast("error", "Failed to authorize app");
       log(1, "tauth", "red", "Failed to authorize app", err);
-    } finally {
-      setDialogOpen(false);
+
       setLoading(false);
+      setDialogOpen(false);
       setIdentifier(null);
       setRedirect(null);
+      setChallenge(null);
     }
   };
+
+  function hexToBase64(hex: string): string {
+    const bytes = hex.match(/.{2}/g)?.map((byte) => parseInt(byte, 16)) ?? [];
+    const binaryString = String.fromCharCode(...bytes);
+    return btoa(binaryString);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(searchStr);
     const identifier = params.get("identifier");
     const redirect = params.get("redirect");
+    const challenge = params.get("challenge");
     if (!identifier || !redirect) return;
 
-    // @eslint-disable-next-line react-hooks/exhaustive-deps
-    setIdentifier(identifier);
-    setRedirect(redirect);
-    setDialogOpen(true);
-  }, [searchStr]);
+    load("user_id").then((userId) => {
+      if (!challenge) {
+        const newUrl = new URL(redirect);
+        newUrl.searchParams.set("userId", String(userId));
+        window.location.href = newUrl.toString();
+        return;
+      }
+
+      setAllowChildern(true);
+      setIdentifier(identifier);
+      setRedirect(redirect);
+      setChallenge(hexToBase64(challenge || ""));
+      setDialogOpen(true);
+    });
+  }, [searchStr, load]);
 
   useEffect(() => {
     deeplinks.forEach((link) => {
@@ -98,6 +149,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
         if (identifier && redirect) {
           setIdentifier(identifier);
           setRedirect(redirect);
+          setChallenge(hexToBase64(url.searchParams.get("challenge") || ""));
           setDialogOpen(true);
         }
       }
@@ -113,6 +165,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
           if (!value) {
             setIdentifier(null);
             setRedirect(null);
+            setChallenge(null);
           }
         }}
       >
@@ -147,6 +200,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
                 setDialogOpen(false);
                 setIdentifier(null);
                 setRedirect(null);
+                setChallenge(null);
               }}
             >
               Deny
@@ -154,7 +208,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {children}
+      {allowChildern && children}
     </>
   );
 }

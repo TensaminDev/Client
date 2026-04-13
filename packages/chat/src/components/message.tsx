@@ -6,11 +6,7 @@ import { log } from "@tensamin/shared/log";
 import Text from "@tensamin/markdown/text";
 import { AlertTriangle, Clock } from "lucide-react";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@tensamin/ui";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
 import { useIsMobile } from "@tensamin/ui";
 import {
   ContextMenu,
@@ -36,7 +32,11 @@ function getSafeMessageHeight(height: number | undefined) {
  * @param props Parameter props.
  * @returns unknown.
  */
-function MessageComponent({ message, notEncrypted, measureRef }: {
+function MessageComponent({
+  message,
+  notEncrypted,
+  measureRef,
+}: {
   message: RawMessage & {
     failed?: boolean;
   };
@@ -113,19 +113,17 @@ function MessageComponent({ message, notEncrypted, measureRef }: {
                   : "bg-muted"
               } ${!isReady && "animate-pulse"} ${isMobile && "select-none"}`}
             >
-              {message.failed &&
-                message.message_state === "awaiting" && (
-                  <Tooltip>
-                    <TooltipContent>
-                      <p>Failed to send message</p>
-                    </TooltipContent>
-                    <TooltipTrigger render={<AlertTriangle size={17} />} />
-                  </Tooltip>
-                )}
-              {!message.failed &&
-                message.message_state === "awaiting" && (
-                  <Clock size={17} />
-                )}
+              {message.failed && message.message_state === "awaiting" && (
+                <Tooltip>
+                  <TooltipContent>
+                    <p>Failed to send message</p>
+                  </TooltipContent>
+                  <TooltipTrigger render={<AlertTriangle size={17} />} />
+                </Tooltip>
+              )}
+              {!message.failed && message.message_state === "awaiting" && (
+                <Clock size={17} />
+              )}
               {isReady ? (
                 <Text value={decodedContent} />
               ) : (

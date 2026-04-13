@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import { legalDocsSchema } from "./features/legal/schema";
-import { settingsStorageDefaults, type SettingsStorageDefaults } from "./settings";
+import {
+  settingsStorageDefaults,
+  type SettingsStorageDefaults,
+} from "./settings";
 
 const fileFromMessage = z.object({
   name: z.string(),
@@ -155,6 +158,14 @@ export const ttp = {
     }),
   },
 
+  load_txt_record: {
+    request: z.object({
+      path: z.string(),
+    }),
+    response: z.object({
+      content: z.string(),
+    }),
+  },
   authenticate_app: {
     request: z.object({
       app_identifier: z.string(),
@@ -163,13 +174,12 @@ export const ttp = {
       challenge: z.base64(),
     }),
   },
-  get_app: {
+  create_app: {
     request: z.object({
+      app_public_key: z.base64(),
       app_identifier: z.string(),
     }),
-    response: z.object({
-      app_public_key: z.base64(),
-    }),
+    response: z.object({}),
   },
 
   // Calls

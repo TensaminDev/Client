@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-  Button
+  Button,
 } from "@tensamin/ui";
 
 export default function Page() {

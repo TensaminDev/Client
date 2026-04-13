@@ -4,12 +4,7 @@ import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/context";
 import Wrapper from "@tensamin/user/wrapper";
 import { Skeleton } from "@tensamin/ui";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@tensamin/ui";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@tensamin/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui";

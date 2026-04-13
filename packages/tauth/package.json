@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@tanstack/react-router": "^1.0.0",
+    "@tauri-apps/api": "^2.10.1",
     "@tensamin/crypto": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",

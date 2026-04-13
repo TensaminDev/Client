@@ -25,10 +25,7 @@ function bytesToB64u(value: Uint8Array): string {
     output += index + 2 < value.length ? alphabet[chunk & 63] : "=";
   }
 
-  return output
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  return output.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 /**

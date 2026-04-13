@@ -192,6 +192,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@tanstack/react-router": "^1.0.0",
+        "@tauri-apps/api": "^2.10.1",
         "@tensamin/crypto": "workspace:*",
         "@tensamin/shared": "workspace:*",
         "@tensamin/storage": "workspace:*",
@@ -238,7 +239,7 @@
     },
   },
   "overrides": {
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.4.tar.gz",
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.9.tar.gz",
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.25.tar.gz",
   },
   "packages": {
@@ -690,7 +691,7 @@
 
     "@tensamin/ttp": ["@tensamin/ttp@workspace:packages/ttp"],
 
-    "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.4.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@typescript-eslint/parser": "^8.58.1", "globals": "^17.5.0", "typescript": "^6.0.2", "typescript-eslint": "^8.58.1", "zod": "^4.3.6" } }, "sha512-FVtxXH9DBwHz2GpuFZFO2KifWefBOoK4/dv6yH4xyvDIS0PIVRc7UrBAgf2HQ3+N9jWaDw9FwyJkZJCAdVCNJQ=="],
+    "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.9.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@typescript-eslint/parser": "^8.58.1", "@webtransport-bun/webtransport": "^0.3.0", "globals": "^17.5.0", "typescript": "^6.0.2", "typescript-eslint": "^8.58.1", "zod": "^4.3.6" } }, "sha512-V9EK/t/tcBe1oNqzUMxtn41wc3UIS0mkLvGeR1mGfZaKn4d9bwwWQ2VmSmRSxodPYiQUJkziJV4fZvdzGjnzFw=="],
 
     "@tensamin/ui": ["@tensamin/ui@https://git.methanium.net/tensamin/ui/archive/0.0.25.tar.gz", { "dependencies": { "@base-ui/react": "^1.3.0", "@fontsource-variable/inter": "^5.2.6", "@tauri-apps/api": "^2", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "lucide-react": "^1.8.0", "next-themes": "^0.4.6", "react-day-picker": "^9.14.0", "react-resizable-panels": "^4.10.0", "recharts": "3.8.0", "shadcn": "^3.5.0", "sonner": "^2.0.7", "tailwind-merge": "^3.5.0", "tw-animate-css": "^1.3.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" } }, "sha512-pYkl4quhAhV/l/j1Yy5m4DDV5fh42H4G8v+FE6qEMCcJIOeA1LU7brIG7X9zURe7F4gyn1LQxMf2yABuV/NsMQ=="],
 
@@ -769,6 +770,8 @@
     "@typescript-eslint/visitor-keys": ["@typescript-eslint/visitor-keys@8.58.1", "", { "dependencies": { "@typescript-eslint/types": "8.58.1", "eslint-visitor-keys": "^5.0.0" } }, "sha512-y+vH7QE8ycjoa0bWciFg7OpFcipUuem1ujhrdLtq1gByKwfbC7bPeKsiny9e0urg93DqwGcHey+bGRKCnF1nZQ=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@5.2.0", "", { "dependencies": { "@babel/core": "^7.29.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-rc.3", "@types/babel__core": "^7.20.5", "react-refresh": "^0.18.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-YmKkfhOAi3wsB1PhJq5Scj3GXMn3WvtQ/JC0xoopuHoXSdmtdStOpFrYaT1kie2YgFBcIe64ROzMYRjCrYOdYw=="],
+
+    "@webtransport-bun/webtransport": ["@webtransport-bun/webtransport@0.3.0", "", { "os": [ "linux", "win32", "darwin", ], "cpu": [ "x64", "arm64", ] }, "sha512-/OX/TCgBD64n/0BjMNytObq5NK2pAM0KOoXBEw49l3sTmbVXNTPP1ZRPIdIyV43agM+mKtZBaV3Er3k3YoB6sw=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
 

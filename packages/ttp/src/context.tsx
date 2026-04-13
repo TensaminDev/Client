@@ -11,7 +11,11 @@ import {
 import { useCrypto } from "@tensamin/crypto/context";
 import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
-import { createTransportClient, READY_STATE, type BoundSendFn } from "@tensamin/ttp-core";
+import {
+  createTransportClient,
+  READY_STATE,
+  type BoundSendFn,
+} from "@tensamin/ttp-core";
 import type { PushHandler } from "@tensamin/ttp-core";
 import {
   PING_INTERVAL,
