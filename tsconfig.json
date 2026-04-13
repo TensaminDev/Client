@@ -1,9 +1,0 @@
-{
-  "compilerOptions": {
-    "module": "esnext",
-    "baseUrl": ".",
-    "paths": {
-      "@app/*": ["packages/*/src", "apps/*/src"]
-    }
-  }
-}

@@ -155,7 +155,7 @@ const TTPContext = createContext<ContextType | undefined>(undefined);
  * @param props Component props with children.
  * @returns Loading, error, or provider-wrapped JSX.
  */
-export default function Provider(props: {
+export function Provider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {

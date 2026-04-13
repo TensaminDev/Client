@@ -74,7 +74,7 @@ export default function InputComponent({
     const reference = addLiveMessage({
       height,
       not_encrypted: true,
-      timestamp: time,
+      send_time: time,
       content: currentValue,
       sent_by_self: true,
       message_state: "awaiting",
@@ -86,13 +86,13 @@ export default function InputComponent({
       height,
       content: encryptedContext,
       receiver_id: userId,
-      timestamp: time,
+      send_time: time,
     }).catch((e) => {
       log(0, "Chat", "red", "Failed to send message", e, {
         content: currentValue,
         encryptedContext,
         receiver_id: userId,
-        timestamp: time,
+        send_time: time,
       });
       reference.setFailed(true);
       toast("error", "Failed to send message");
@@ -108,7 +108,7 @@ export default function InputComponent({
       className={cn(
         "rounded-none border-b-0 pt-0 pb-[env(safe-area-inset-bottom)]",
         isMobile
-          ? "border-0 border-t-1 fixed w-full bottom-0 left-0 px-2"
+          ? "border-0 border-t fixed w-full bottom-0 left-0 px-2"
           : "rounded-t-xl",
       )}
     >
@@ -123,7 +123,7 @@ export default function InputComponent({
             message={{
               height: 0,
               not_encrypted: true,
-              timestamp: 0,
+              send_time: 0,
               content: value,
               sent_by_self: true,
               message_state: "awaiting",

@@ -13,7 +13,7 @@ const message = z.object({
   height: z.number(),
   not_encrypted: z.boolean().optional(),
   sent_by_self: z.boolean(),
-  timestamp: z.number(),
+  send_time: z.number(),
   content: z.base64(),
   files: z.array(fileFromMessage).optional(),
   tint: z.string().length(7).startsWith("#").optional(),
@@ -111,7 +111,7 @@ export const ttp = {
     request: z.object({}),
     response: z.object({
       sender_id: z.number(),
-      timestamp: z.number(),
+      send_time: z.number(),
       message,
     }),
   },
@@ -130,7 +130,7 @@ export const ttp = {
       height: z.number(),
       content: z.base64(),
       receiver_id: z.number(),
-      timestamp: z.number(),
+      send_time: z.number(),
       files: z.array(fileFromMessage).optional(),
     }),
     response: z.object({}),
@@ -145,13 +145,13 @@ export const ttp = {
   message_state: {
     request: z.object({
       chat_partner_id: z.number(),
-      timestamp: z.number(),
+      send_time: z.number(),
       message_state: message.shape.message_state,
     }),
     response: z.object({
       chat_partner_id: z.number(),
       message_state: message.shape.message_state,
-      timestamp: z.number(),
+      send_time: z.number(),
     }),
   },
 

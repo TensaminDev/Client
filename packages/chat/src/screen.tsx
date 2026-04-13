@@ -80,11 +80,11 @@ export default function Screen() {
       return liveMessagesSnapshot;
     }
 
-    const historicalTimestamps = new Set(
-      historicalMessages.map((message) => message.timestamp),
+    const historicalSendTimes = new Set(
+      historicalMessages.map((message) => message.send_time),
     );
     const liveWithoutDuplicates = liveMessagesSnapshot.filter(
-      (message) => !historicalTimestamps.has(message.timestamp),
+      (message) => !historicalSendTimes.has(message.send_time),
     );
 
     return [...historicalMessages, ...liveWithoutDuplicates];
@@ -97,7 +97,7 @@ export default function Screen() {
   }, [messages]);
 
   const getItemKey = React.useCallback((index: number) => {
-    return messagesRef.current[index]?.timestamp ?? index;
+    return messagesRef.current[index]?.send_time ?? index;
   }, []);
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -167,7 +167,11 @@ export default function Screen() {
     }
 
     setLastLiveMessageCount(count);
-  }, [lastLiveMessageCount, liveMessagesSnapshot.length, stickyBottomThreshold]);
+  }, [
+    lastLiveMessageCount,
+    liveMessagesSnapshot.length,
+    stickyBottomThreshold,
+  ]);
 
   React.useLayoutEffect(() => {
     if (
@@ -291,7 +295,7 @@ export default function Screen() {
 
             return (
               <div
-                key={message.timestamp}
+                key={message.send_time}
                 data-index={virtualRow.index}
                 ref={virtualizer.measureElement}
                 style={{

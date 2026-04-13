@@ -22,17 +22,17 @@ export const context = createContext<contextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 
-function updateMessageStateByTimestamp<
-  T extends { timestamp: number; message_state: RawMessage["message_state"] },
+function updateMessageStateBySendTime<
+  T extends { send_time: number; message_state: RawMessage["message_state"] },
 >(
   messages: T[],
-  timestamp: number,
+  sendTime: number,
   messageState: RawMessage["message_state"],
 ): { next: T[]; updated: boolean } {
   let updated = false;
 
   const next = messages.map((item) => {
-    if (item.timestamp !== timestamp || item.message_state === messageState) {
+    if (item.send_time !== sendTime || item.message_state === messageState) {
       return item;
     }
 
@@ -54,7 +54,7 @@ function updateMessageStateByTimestamp<
  * @param props Parameter props.
  * @returns unknown.
  */
-export function Provider(props: { children: ReactNode }) {
+export default function Provider(props: { children: ReactNode }) {
   const { getSharedSecret } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
@@ -141,14 +141,14 @@ export function Provider(props: { children: ReactNode }) {
       }
 
       const rawMessages = messages.data.messages;
-      const sorted = [...rawMessages].sort((a, b) => a.timestamp - b.timestamp);
+      const sorted = [...rawMessages].sort((a, b) => a.send_time - b.send_time);
 
       if (sorted.length > 0) {
-        const fetchedTimestamps = new Set(sorted.map((item) => item.timestamp));
+        const fetchedSendTimes = new Set(sorted.map((item) => item.send_time));
 
         setLiveMessagesState((prev) => {
           const filtered = prev.filter(
-            (liveMessage) => !fetchedTimestamps.has(liveMessage.timestamp),
+            (liveMessage) => !fetchedSendTimes.has(liveMessage.send_time),
           );
 
           return filtered.length === prev.length ? prev : filtered;
@@ -200,19 +200,19 @@ export function Provider(props: { children: ReactNode }) {
 
       const rawData = message.data as {
         chat_partner_id: unknown;
-        timestamp: unknown;
+        send_time: unknown;
         message_state: RawMessage["message_state"];
       };
 
       const nextState = {
         chat_partner_id: Number(rawData.chat_partner_id),
-        timestamp: Number(rawData.timestamp),
+        send_time: Number(rawData.send_time),
         message_state: rawData.message_state,
       };
 
       if (
         !Number.isFinite(nextState.chat_partner_id) ||
-        !Number.isFinite(nextState.timestamp)
+        !Number.isFinite(nextState.send_time)
       ) {
         log(
           3,
@@ -238,9 +238,9 @@ export function Provider(props: { children: ReactNode }) {
       }
 
       setLiveMessagesState((prev) => {
-        const { next, updated } = updateMessageStateByTimestamp(
+        const { next, updated } = updateMessageStateBySendTime(
           prev,
-          nextState.timestamp,
+          nextState.send_time,
           nextState.message_state,
         );
         return updated ? next : prev;
@@ -257,9 +257,9 @@ export function Provider(props: { children: ReactNode }) {
           let updated = false;
 
           const pages = current.pages.map((page) => {
-            const nextPage = updateMessageStateByTimestamp(
+            const nextPage = updateMessageStateBySendTime(
               page,
-              nextState.timestamp,
+              nextState.send_time,
               nextState.message_state,
             );
 

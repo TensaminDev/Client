@@ -3,6 +3,10 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import * as tsParser from "@typescript-eslint/parser";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const tsconfigRootDir = dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
@@ -14,6 +18,9 @@ export default [
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,
+      parserOptions: {
+        tsconfigRootDir,
+      },
       globals: {
         ...globals.browser,
         ...globals.node,

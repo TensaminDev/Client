@@ -157,7 +157,7 @@ export default React.memo(MessageComponent, (prev, next) => {
   return (
     prev.notEncrypted === next.notEncrypted &&
     prev.measureRef === next.measureRef &&
-    prev.message.timestamp === next.message.timestamp &&
+    prev.message.send_time === next.message.send_time &&
     prev.message.content === next.message.content &&
     prev.message.height === next.message.height &&
     prev.message.sent_by_self === next.message.sent_by_self &&
