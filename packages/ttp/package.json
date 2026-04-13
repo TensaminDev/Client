@@ -4,18 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./core": "./src/core.ts",
-    "./context": "./src/context.tsx",
-    "./send": "./src/send.ts",
-    "./values": "./src/values.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "format": "bunx prettier --write .",
     "lint": "eslint src --ext .ts,.tsx",
-    "test": "bun test",
-    "build": "bun run test && tsc -p tsconfig.json --noEmit"
+    "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@tensamin/ttp-core": "*",
     "@tanstack/react-router": "^1.0.0",
     "@tensamin/crypto": "workspace:*",
     "@tensamin/storage": "workspace:*",

@@ -1,4 +1,4 @@
-import { toast as sonnerToast } from "sonner";
+import { toast as sonnerToast } from "@tensamin/ui";
 import { Ban, Check, Info, TriangleAlert } from "lucide-react";
 
 /**

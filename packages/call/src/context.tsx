@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { log, toast } from "@tensamin/shared/log";
 import { useNavigate } from "@tanstack/react-router";
-import { useTTP } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp";
 import z from "zod";
 import { ttp } from "@tensamin/shared/data";
 

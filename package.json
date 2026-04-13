@@ -14,6 +14,7 @@
     "build:packages": "bun scripts/build-packages.ts",
     "dev:web": "cd apps/web && bun dev",
     "build:web": "cd apps/web && bun run build",
+    "preview:web": "cd apps/web && bun run preview",
     "dev:mobile": "cd apps/tauri && bun dev:mobile",
     "build:mobile": "cd apps/tauri && bun run build:mobile",
     "dev:desktop": "cd apps/tauri && bun dev:desktop",
@@ -33,9 +34,11 @@
     "typescript-eslint": "^8.58.1"
   },
   "overrides": {
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.20.tar.gz"
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.25.tar.gz",
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.3.tar.gz"
   },
   "dependencies": {
-    "@tensamin/ui": "*"
+    "@tensamin/ui": "*",
+    "@tensamin/ttp-core": "*"
   }
 }

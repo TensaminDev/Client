@@ -23,7 +23,7 @@ export default function Sidebar() {
   const showMobileNavbar = useShowMobileNavbar();
 
   return (
-    <SidebarRoot>
+    <SidebarRoot className="border-0!">
       <SidebarContent
         className={
           isTauri() && isMobile ? "pt-[env(safe-area-inset-top)]" : "pt-2"

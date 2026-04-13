@@ -155,6 +155,23 @@ export const ttp = {
     }),
   },
 
+  authenticate_app: {
+    request: z.object({
+      app_identifier: z.string(),
+    }),
+    response: z.object({
+      challenge: z.base64(),
+    }),
+  },
+  get_app: {
+    request: z.object({
+      app_identifier: z.string(),
+    }),
+    response: z.object({
+      app_public_key: z.base64(),
+    }),
+  },
+
   // Calls
   get_call_data: {
     request: z.object({

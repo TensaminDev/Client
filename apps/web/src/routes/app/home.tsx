@@ -11,7 +11,7 @@ import {
 } from "@tensamin/ui";
 import z from "zod";
 import { toast } from "@tensamin/shared/log";
-import { useTTP } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";

@@ -15,7 +15,7 @@ import type { LiveMessage, RawMessage, RawMessages } from "./values";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
-import { useTTP } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp";
 import { log } from "@tensamin/shared/log";
 
 export const context = createContext<contextType | undefined>(undefined);
@@ -54,7 +54,7 @@ function updateMessageStateByTimestamp<
  * @param props Parameter props.
  * @returns unknown.
  */
-export default function Provider(props: { children: ReactNode }) {
+export function Provider(props: { children: ReactNode }) {
   const { getSharedSecret } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();

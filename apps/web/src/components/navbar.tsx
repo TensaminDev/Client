@@ -13,7 +13,7 @@ import {
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui";
-import { useTTP } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp";
 import { WindowControls as Controls } from "@tensamin/ui";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {

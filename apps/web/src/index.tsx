@@ -12,7 +12,6 @@ import "@tensamin/ui/index.css";
 
 import NotFound from "@/routes/404";
 
-import RootLayout from "@/routes/layout";
 import AppLayout from "@/routes/app/layout";
 import SettingsLayout from "@/features/settings/layout";
 
@@ -23,12 +22,27 @@ import Login from "@/routes/screens/login";
 
 import ChatContext from "@tensamin/chat/context";
 import CallContext from "@tensamin/call/context";
-import SocketContext from "@tensamin/ttp/context";
+import { Provider as SocketContext } from "@tensamin/ttp";
 import UserContext from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 
+import TAuthWrapper from "@tensamin/tauth/context";
+
 import { ThemeProvider } from "@tensamin/ui";
 import z from "zod";
+
+import { useEffect, useState, type ReactNode } from "react";
+
+import Storage from "@tensamin/storage/context";
+import Crypto from "@tensamin/crypto/context";
+import Mobile from "@tensamin/tauri/context";
+
+import LegalWrapper from "@/features/legal/screen";
+
+import { useStorage } from "@tensamin/storage/context";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useIsMobile, Toaster, TooltipProvider } from "@tensamin/ui";
+import { isTauri } from "@tauri-apps/api/core";
 
 const wrapper = document.getElementById("root");
 
@@ -49,14 +63,75 @@ window.setLogLevelToMax = () => {
   location.reload();
 };
 
+function LoginWrapper({ children }: { children: ReactNode }) {
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+
+  const { load } = useStorage();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    let active = true;
+
+    load("user_id").then((userId) => {
+      if (!active) {
+        return;
+      }
+
+      if (userId !== 0) {
+        setLoggedIn(true);
+        return;
+      }
+
+      setLoggedIn(false);
+      navigate({
+        to: "/login",
+      });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [load, navigate]);
+
+  if (loggedIn !== true && location.pathname !== "/login") {
+    return null;
+  }
+
+  return children;
+}
+
 function RootShell() {
+  const isMobile = useIsMobile();
+
   return (
     <DeeplinkContext>
       <ThemeProvider>
         <div className="w-screen h-screen overflow-hidden">
-          <RootLayout>
-            <Outlet />
-          </RootLayout>
+          <Toaster
+            position={isMobile ? "top-center" : "bottom-right"}
+            {...(isTauri() && isMobile
+              ? {
+                  mobileOffset: {
+                    top: "env(safe-area-inset-top)",
+                  },
+                }
+              : {})}
+          />
+          <TooltipProvider>
+            <Storage>
+              <LoginWrapper>
+                <LegalWrapper>
+                  <Crypto>
+                    <Mobile>
+                      <Outlet />
+                    </Mobile>
+                  </Crypto>
+                </LegalWrapper>
+              </LoginWrapper>
+            </Storage>
+          </TooltipProvider>
         </div>
       </ThemeProvider>
     </DeeplinkContext>
@@ -68,9 +143,11 @@ function AppShell() {
     <SocketContext>
       <UserContext>
         <CallContext>
-          <AppLayout>
-            <Outlet />
-          </AppLayout>
+          <TAuthWrapper>
+            <AppLayout>
+              <Outlet />
+            </AppLayout>
+          </TAuthWrapper>
         </CallContext>
       </UserContext>
     </SocketContext>

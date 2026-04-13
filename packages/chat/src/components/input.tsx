@@ -6,7 +6,7 @@ import { Button } from "@tensamin/ui";
 
 import { Plus, Laugh, Clapperboard } from "lucide-react";
 import { useChat } from "../context";
-import { useTTP } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp";
 import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 import Message from "./message";

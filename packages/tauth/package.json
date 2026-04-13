@@ -1,0 +1,29 @@
+{
+  "name": "@tensamin/tauth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./context": "./src/context.tsx"
+  },
+  "scripts": {
+    "format": "bunx prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.0.0",
+    "@tensamin/crypto": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "@tensamin/tauri": "workspace:*",
+    "@tensamin/ttp": "workspace:*",
+    "@tensamin/ui": "*",
+    "@tensamin/user": "workspace:*",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sonner": "^2.0.7",
+    "zod": "^4.3.6"
+  }
+}

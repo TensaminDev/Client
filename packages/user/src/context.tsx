@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useTTP } from "@tensamin/ttp/context";
+import { useTTP } from "@tensamin/ttp";
 
 import { ttp as schemas } from "@tensamin/shared/data";
 import type z from "zod";
