@@ -1,6 +1,6 @@
 {
   "name": "tensamin",
-  "version": "0.1",
+  "version": "0.0.1",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -10,7 +10,8 @@
   "scripts": {
     "format": "bunx prettier --write .",
     "lint": "bun scripts/lint-packages.ts",
-    "build:all": "bun run build:packages && bun run build:web && bun run build:mobile && bun run build:desktop",
+    "copy-releases": "bun scripts/copy-releases.ts",
+    "build:all": "bun run build:packages && bun run build:web && bun run build:mobile && bun run build:desktop && bun --bun run copy-releases",
     "build:packages": "bun scripts/build-packages.ts",
     "dev:web": "cd apps/web && bun dev",
     "build:web": "bun run build:packages && cd apps/web && bun run build",
@@ -35,7 +36,7 @@
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.25.tar.gz",
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.3.tar.gz"
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.4.tar.gz"
   },
   "dependencies": {
     "@tensamin/ui": "*",
