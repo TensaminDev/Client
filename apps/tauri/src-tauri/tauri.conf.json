@@ -7,7 +7,7 @@
   "build": {
     "beforeDevCommand": "cd ../web && bun run dev && cd ../tauri",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "cd ../web && bun run build && cd ../tauri",
+    "beforeBuildCommand": "cd ../.. && bun run build:web && cd apps/tauri",
     "frontendDist": "../../web/dist"
   },
   "app": {

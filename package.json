@@ -13,7 +13,7 @@
     "build:all": "bun run build:packages && bun run build:web && bun run build:mobile && bun run build:desktop",
     "build:packages": "bun scripts/build-packages.ts",
     "dev:web": "cd apps/web && bun dev",
-    "build:web": "cd apps/web && bun run build",
+    "build:web": "bun run build:packages && cd apps/web && bun run build",
     "preview:web": "cd apps/web && bun run preview",
     "dev:mobile": "cd apps/tauri && bun dev:mobile",
     "build:mobile": "cd apps/tauri && bun run build:mobile",

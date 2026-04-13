@@ -1,4 +1,4 @@
-import type { BoundSendFn } from "@tensamin/ttp/core";
+import type { BoundSendFn } from "@tensamin/ttp";
 import type { TTP } from "@tensamin/shared/data";
 import type { RawMessages } from "../values";
 
