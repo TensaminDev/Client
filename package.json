@@ -35,7 +35,7 @@
     "typescript-eslint": "^8.58.1"
   },
   "overrides": {
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.25.tar.gz",
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.26.tar.gz",
     "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.9.tar.gz"
   },
   "dependencies": {

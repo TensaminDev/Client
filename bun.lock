@@ -240,7 +240,7 @@
   },
   "overrides": {
     "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.9.tar.gz",
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.25.tar.gz",
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.26.tar.gz",
   },
   "packages": {
     "@antfu/ni": ["@antfu/ni@25.0.0", "", { "dependencies": { "ansis": "^4.0.0", "fzf": "^0.5.2", "package-manager-detector": "^1.3.0", "tinyexec": "^1.0.1" }, "bin": { "na": "bin/na.mjs", "ni": "bin/ni.mjs", "nr": "bin/nr.mjs", "nci": "bin/nci.mjs", "nlx": "bin/nlx.mjs", "nun": "bin/nun.mjs", "nup": "bin/nup.mjs" } }, "sha512-9q/yCljni37pkMr4sPrI3G4jqdIk074+iukc5aFJl7kmDCCsiJrbZ6zKxnES1Gwg+i9RcDZwvktl23puGslmvA=="],
@@ -693,7 +693,7 @@
 
     "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.9.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@typescript-eslint/parser": "^8.58.1", "@webtransport-bun/webtransport": "^0.3.0", "globals": "^17.5.0", "typescript": "^6.0.2", "typescript-eslint": "^8.58.1", "zod": "^4.3.6" } }, "sha512-V9EK/t/tcBe1oNqzUMxtn41wc3UIS0mkLvGeR1mGfZaKn4d9bwwWQ2VmSmRSxodPYiQUJkziJV4fZvdzGjnzFw=="],
 
-    "@tensamin/ui": ["@tensamin/ui@https://git.methanium.net/tensamin/ui/archive/0.0.25.tar.gz", { "dependencies": { "@base-ui/react": "^1.3.0", "@fontsource-variable/inter": "^5.2.6", "@tauri-apps/api": "^2", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "lucide-react": "^1.8.0", "next-themes": "^0.4.6", "react-day-picker": "^9.14.0", "react-resizable-panels": "^4.10.0", "recharts": "3.8.0", "shadcn": "^3.5.0", "sonner": "^2.0.7", "tailwind-merge": "^3.5.0", "tw-animate-css": "^1.3.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" } }, "sha512-pYkl4quhAhV/l/j1Yy5m4DDV5fh42H4G8v+FE6qEMCcJIOeA1LU7brIG7X9zURe7F4gyn1LQxMf2yABuV/NsMQ=="],
+    "@tensamin/ui": ["@tensamin/ui@https://git.methanium.net/tensamin/ui/archive/0.0.26.tar.gz", { "dependencies": { "@base-ui/react": "^1.3.0", "@fontsource-variable/inter": "^5.2.6", "@tauri-apps/api": "^2", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "lucide-react": "^1.8.0", "next-themes": "^0.4.6", "react-day-picker": "^9.14.0", "react-resizable-panels": "^4.10.0", "recharts": "3.8.0", "shadcn": "^3.5.0", "sonner": "^2.0.7", "tailwind-merge": "^3.5.0", "tw-animate-css": "^1.3.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" } }, "sha512-SH+voNvmg2TtTjZH561NZC4ekY0ypFQpPvC0u0s5Jt1nGG243TR3ybX3T3WI83Z59ayC+t7YPZOmQPHTHI9+Mw=="],
 
     "@tensamin/user": ["@tensamin/user@workspace:packages/user"],
 

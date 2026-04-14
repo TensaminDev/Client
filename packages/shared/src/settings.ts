@@ -13,6 +13,7 @@ export type SettingsSchema = Record<
 
 const settings = {
   account: {
+    profile: {},
     security: {
       login_qr_code: {
         display: "Login QR Code",

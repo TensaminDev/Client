@@ -121,7 +121,11 @@ export default function Wrapper({ children }: { children: ReactNode }) {
     const identifier = params.get("identifier");
     const redirect = params.get("redirect");
     const challenge = params.get("challenge");
-    if (!identifier || !redirect) return;
+    if (!identifier || !redirect) {
+      // eslint-disable-next-line
+      setAllowChildern(true);
+      return;
+    }
 
     load("user_id").then((userId) => {
       if (!challenge) {

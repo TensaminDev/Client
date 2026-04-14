@@ -39,14 +39,16 @@ export function SettingsSidebar() {
   return (
     <div
       className={cn(
-        isMobile ? "w-full" : "rounded-tl-2xl border-r bg-input/15 w-50",
-        "flex flex-col gap-6 p-3",
+        isMobile
+          ? "w-full p-1"
+          : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
+        "flex flex-col gap-6",
       )}
     >
       {/* Settings */}
       {Object.keys(settingsOptions).map((category) => (
         // Category
-        <div key={category} className="flex flex-col gap-1">
+        <div key={category} className="flex flex-col gap-2">
           <h2 className="font-bold text-xs uppercase">{category}</h2>
           {Object.keys(settingsOptions[category]).map((page) => (
             // Page
