@@ -1,0 +1,748 @@
+{
+  "generatedAt": "2026-04-19T14:27:01.394Z",
+  "packageCount": 57,
+  "packages": [
+    {
+      "name": "@codemirror/commands",
+      "version": "6.10.3",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "git+https://github.com/codemirror/commands.git",
+      "description": "Collection of editing commands for the CodeMirror code editor",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@codemirror_commands@6.10.3",
+      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/commands"
+    },
+    {
+      "name": "@codemirror/lang-markdown",
+      "version": "6.5.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/codemirror/lang-markdown.git",
+      "description": "Markdown language support for the CodeMirror code editor",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@codemirror_lang-markdown@6.5.0",
+      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/lang-markdown"
+    },
+    {
+      "name": "@codemirror/state",
+      "version": "6.6.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "git+https://github.com/codemirror/state.git",
+      "description": "Editor state data structures for the CodeMirror code editor",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@codemirror_state@6.6.0",
+      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/state"
+    },
+    {
+      "name": "@codemirror/view",
+      "version": "6.41.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "git+https://github.com/codemirror/view.git",
+      "description": "DOM view component for the CodeMirror code editor",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@codemirror_view@6.41.0",
+      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/view"
+    },
+    {
+      "name": "@eslint/js",
+      "version": "10.0.1",
+      "license": "MIT",
+      "homepage": "https://eslint.org",
+      "repository": "https://github.com/eslint/eslint.git",
+      "description": "ESLint JavaScript language implementation",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@eslint_js@10.0.1",
+      "sourcePackageDir": "apps/web/node_modules/@eslint/js"
+    },
+    {
+      "name": "@fontsource-variable/inter",
+      "version": "5.2.8",
+      "license": "OFL-1.1",
+      "homepage": "https://fontsource.org/fonts/inter",
+      "repository": "git+https://github.com/fontsource/font-files.git",
+      "description": "Self-host the Inter font in a neatly bundled NPM package.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@fontsource-variable_inter@5.2.8",
+      "sourcePackageDir": "apps/web/node_modules/@fontsource-variable/inter"
+    },
+    {
+      "name": "@livekit/components-react",
+      "version": "2.9.20",
+      "license": "Apache-2.0",
+      "homepage": null,
+      "repository": "https://github.com/livekit/components-js.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@livekit_components-react@2.9.20",
+      "sourcePackageDir": "packages/call/node_modules/@livekit/components-react"
+    },
+    {
+      "name": "@noble/curves",
+      "version": "2.0.1",
+      "license": "MIT",
+      "homepage": "https://paulmillr.com/noble/",
+      "repository": "git+https://github.com/paulmillr/noble-curves.git",
+      "description": "Audited & minimal JS implementation of elliptic curve cryptography",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@noble_curves@2.0.1",
+      "sourcePackageDir": "apps/web/node_modules/@noble/curves"
+    },
+    {
+      "name": "@noble/curves",
+      "version": "2.0.1",
+      "license": "MIT",
+      "homepage": "https://paulmillr.com/noble/",
+      "repository": "git+https://github.com/paulmillr/noble-curves.git",
+      "description": "Audited & minimal JS implementation of elliptic curve cryptography",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@noble_curves@2.0.1",
+      "sourcePackageDir": "apps/web/node_modules/@noble/curves"
+    },
+    {
+      "name": "@tailwindcss/vite",
+      "version": "4.2.2",
+      "license": "MIT",
+      "homepage": "https://tailwindcss.com",
+      "repository": "https://github.com/tailwindlabs/tailwindcss.git",
+      "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tailwindcss_vite@4.2.2",
+      "sourcePackageDir": "apps/web/node_modules/@tailwindcss/vite"
+    },
+    {
+      "name": "@tanstack/react-query",
+      "version": "5.99.0",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/query",
+      "repository": "git+https://github.com/TanStack/query.git",
+      "description": "Hooks for managing, caching and syncing asynchronous and remote data in React",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_react-query@5.99.0",
+      "sourcePackageDir": "packages/call/node_modules/@tanstack/react-query"
+    },
+    {
+      "name": "@tanstack/react-router",
+      "version": "1.168.18",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/router",
+      "repository": "git+https://github.com/TanStack/router.git",
+      "description": "Modern and scalable routing for React applications",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_react-router@1.168.18",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/react-router"
+    },
+    {
+      "name": "@tanstack/react-virtual",
+      "version": "3.13.23",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/virtual",
+      "repository": "git+https://github.com/TanStack/virtual.git",
+      "description": "Headless UI for virtualizing scrollable elements in React",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_react-virtual@3.13.23",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/react-virtual"
+    },
+    {
+      "name": "@tauri-apps/api",
+      "version": "2.10.1",
+      "license": "Apache-2.0 OR MIT",
+      "homepage": "https://github.com/tauri-apps/tauri#readme",
+      "repository": "git+https://github.com/tauri-apps/tauri.git",
+      "description": "Tauri API definitions",
+      "files": [
+        "LICENSE_MIT",
+        "LICENSE_APACHE-2.0"
+      ],
+      "licenseFolder": "licenses/@tauri-apps_api@2.10.1",
+      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/api"
+    },
+    {
+      "name": "@tauri-apps/cli",
+      "version": "2.10.1",
+      "license": "Apache-2.0 OR MIT",
+      "homepage": "https://github.com/tauri-apps/tauri#readme",
+      "repository": "git+https://github.com/tauri-apps/tauri.git",
+      "description": "Command line interface for building Tauri apps",
+      "files": [
+        "LICENSE_MIT",
+        "LICENSE_APACHE-2.0"
+      ],
+      "licenseFolder": "licenses/@tauri-apps_cli@2.10.1",
+      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/cli"
+    },
+    {
+      "name": "@tauri-apps/plugin-barcode-scanner",
+      "version": "2.4.4",
+      "license": "MIT OR Apache-2.0",
+      "homepage": null,
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "description": "Scan QR codes, EAN-13 and other kinds of barcodes on Android and iOS",
+      "files": [
+        "LICENSE.spdx"
+      ],
+      "licenseFolder": "licenses/@tauri-apps_plugin-barcode-scanner@2.4.4",
+      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-barcode-scanner"
+    },
+    {
+      "name": "@tauri-apps/plugin-deep-link",
+      "version": "2.4.8",
+      "license": "MIT OR Apache-2.0",
+      "homepage": null,
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "description": "Set your Tauri application as the default handler for an URL",
+      "files": [
+        "LICENSE.spdx"
+      ],
+      "licenseFolder": "licenses/@tauri-apps_plugin-deep-link@2.4.8",
+      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-deep-link"
+    },
+    {
+      "name": "@tauri-apps/plugin-opener",
+      "version": "2.5.3",
+      "license": "MIT OR Apache-2.0",
+      "homepage": null,
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "description": "Open files and URLs using their default application.",
+      "files": [
+        "LICENSE.spdx"
+      ],
+      "licenseFolder": "licenses/@tauri-apps_plugin-opener@2.5.3",
+      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-opener"
+    },
+    {
+      "name": "@tensamin/ttp-core",
+      "version": "0.0.12",
+      "license": "UNKNOWN",
+      "homepage": null,
+      "repository": null,
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tensamin_ttp-core@0.0.12",
+      "sourcePackageDir": "packages/ttp/node_modules/@tensamin/ttp-core"
+    },
+    {
+      "name": "@tensamin/ui",
+      "version": "0.0.26",
+      "license": "UNKNOWN",
+      "homepage": null,
+      "repository": null,
+      "description": null,
+      "files": [],
+      "licenseFolder": "licenses/@tensamin_ui@0.0.26",
+      "sourcePackageDir": "apps/tauri/node_modules/@tensamin/ui"
+    },
+    {
+      "name": "@types/node",
+      "version": "25.6.0",
+      "license": "MIT",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "description": "TypeScript definitions for node",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@types_node@25.6.0",
+      "sourcePackageDir": "node_modules/@types/node"
+    },
+    {
+      "name": "@types/qrcode",
+      "version": "1.5.6",
+      "license": "MIT",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/qrcode",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "description": "TypeScript definitions for qrcode",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@types_qrcode@1.5.6",
+      "sourcePackageDir": "apps/web/node_modules/@types/qrcode"
+    },
+    {
+      "name": "@types/react",
+      "version": "19.2.14",
+      "license": "MIT",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "description": "TypeScript definitions for react",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@types_react@19.2.14",
+      "sourcePackageDir": "apps/web/node_modules/@types/react"
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "19.2.3",
+      "license": "MIT",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-dom",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "description": "TypeScript definitions for react-dom",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@types_react-dom@19.2.3",
+      "sourcePackageDir": "apps/web/node_modules/@types/react-dom"
+    },
+    {
+      "name": "@typescript-eslint/parser",
+      "version": "8.58.1",
+      "license": "MIT",
+      "homepage": "https://typescript-eslint.io/packages/parser",
+      "repository": "https://github.com/typescript-eslint/typescript-eslint.git",
+      "description": "An ESLint custom parser which leverages TypeScript ESTree",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@typescript-eslint_parser@8.58.1",
+      "sourcePackageDir": "node_modules/@typescript-eslint/parser"
+    },
+    {
+      "name": "@vitejs/plugin-react",
+      "version": "5.2.0",
+      "license": "MIT",
+      "homepage": "https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#readme",
+      "repository": "git+https://github.com/vitejs/vite-plugin-react.git",
+      "description": "The default Vite plugin for React projects",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@vitejs_plugin-react@5.2.0",
+      "sourcePackageDir": "apps/web/node_modules/@vitejs/plugin-react"
+    },
+    {
+      "name": "class-variance-authority",
+      "version": "0.7.1",
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/joe-bell/cva#readme",
+      "repository": "https://github.com/joe-bell/cva.git",
+      "description": "Class Variance Authority 🧬",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/class-variance-authority@0.7.1",
+      "sourcePackageDir": "apps/web/node_modules/class-variance-authority"
+    },
+    {
+      "name": "clsx",
+      "version": "2.1.1",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "lukeed/clsx",
+      "description": "A tiny (239B) utility for constructing className strings conditionally.",
+      "files": [
+        "license"
+      ],
+      "licenseFolder": "licenses/clsx@2.1.1",
+      "sourcePackageDir": "apps/web/node_modules/clsx"
+    },
+    {
+      "name": "comlink",
+      "version": "4.4.2",
+      "license": "Apache-2.0",
+      "homepage": null,
+      "repository": "https://github.com/GoogleChromeLabs/comlink.git",
+      "description": "Comlink makes WebWorkers enjoyable",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/comlink@4.4.2",
+      "sourcePackageDir": "apps/web/node_modules/comlink"
+    },
+    {
+      "name": "deepfilternet3-noise-filter",
+      "version": "1.2.1",
+      "license": "(Apache-2.0 OR MIT)",
+      "homepage": "https://github.com/mezonai/mezon-noise-suppression#readme",
+      "repository": "git+https://github.com/mezonai/mezon-noise-suppression.git",
+      "description": "Custom audio processor with DeepFilterNet3 noise filtering integrated with LiveKit client",
+      "files": [
+        "LICENSE-APACHE",
+        "LICENSE-MIT"
+      ],
+      "licenseFolder": "licenses/deepfilternet3-noise-filter@1.2.1",
+      "sourcePackageDir": "packages/call/node_modules/deepfilternet3-noise-filter"
+    },
+    {
+      "name": "eslint",
+      "version": "10.2.0",
+      "license": "MIT",
+      "homepage": "https://eslint.org",
+      "repository": "eslint/eslint",
+      "description": "An AST-based pattern checker for JavaScript.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/eslint@10.2.0",
+      "sourcePackageDir": "apps/web/node_modules/eslint"
+    },
+    {
+      "name": "eslint-plugin-react-hooks",
+      "version": "7.0.1",
+      "license": "MIT",
+      "homepage": "https://react.dev/",
+      "repository": "https://github.com/facebook/react.git",
+      "description": "ESLint rules for React Hooks",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/eslint-plugin-react-hooks@7.0.1",
+      "sourcePackageDir": "node_modules/eslint-plugin-react-hooks"
+    },
+    {
+      "name": "framer-motion",
+      "version": "12.38.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/motiondivision/motion/",
+      "description": "A simple and powerful JavaScript animation library",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/framer-motion@12.38.0",
+      "sourcePackageDir": "apps/web/node_modules/framer-motion"
+    },
+    {
+      "name": "globals",
+      "version": "17.5.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "sindresorhus/globals",
+      "description": "Global identifiers from different JavaScript environments",
+      "files": [
+        "license"
+      ],
+      "licenseFolder": "licenses/globals@17.5.0",
+      "sourcePackageDir": "apps/web/node_modules/globals"
+    },
+    {
+      "name": "jsonc-parser",
+      "version": "3.3.1",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/microsoft/node-jsonc-parser",
+      "description": "Scanner and parser for JSON with comments.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/jsonc-parser@3.3.1",
+      "sourcePackageDir": "node_modules/jsonc-parser"
+    },
+    {
+      "name": "livekit-client",
+      "version": "2.18.1",
+      "license": "Apache-2.0",
+      "homepage": null,
+      "repository": "git@github.com:livekit/client-sdk-js.git",
+      "description": "JavaScript/TypeScript client SDK for LiveKit",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/livekit-client@2.18.1",
+      "sourcePackageDir": "packages/call/node_modules/livekit-client"
+    },
+    {
+      "name": "lucide-react",
+      "version": "1.8.0",
+      "license": "ISC",
+      "homepage": "https://lucide.dev",
+      "repository": "https://github.com/lucide-icons/lucide.git",
+      "description": "A Lucide icon library package for React applications.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/lucide-react@1.8.0",
+      "sourcePackageDir": "apps/tauri/node_modules/lucide-react"
+    },
+    {
+      "name": "lucide-react",
+      "version": "1.8.0",
+      "license": "ISC",
+      "homepage": "https://lucide.dev",
+      "repository": "https://github.com/lucide-icons/lucide.git",
+      "description": "A Lucide icon library package for React applications.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/lucide-react@1.8.0",
+      "sourcePackageDir": "apps/tauri/node_modules/lucide-react"
+    },
+    {
+      "name": "prettier",
+      "version": "3.8.2",
+      "license": "MIT",
+      "homepage": "https://prettier.io",
+      "repository": "prettier/prettier",
+      "description": "Prettier is an opinionated code formatter",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/prettier@3.8.2",
+      "sourcePackageDir": "node_modules/prettier"
+    },
+    {
+      "name": "qrcode",
+      "version": "1.5.4",
+      "license": "MIT",
+      "homepage": "http://github.com/soldair/node-qrcode",
+      "repository": "git://github.com/soldair/node-qrcode.git",
+      "description": "QRCode / 2d Barcode api with both server side and client side support using canvas",
+      "files": [
+        "license"
+      ],
+      "licenseFolder": "licenses/qrcode@1.5.4",
+      "sourcePackageDir": "apps/web/node_modules/qrcode"
+    },
+    {
+      "name": "react",
+      "version": "19.2.5",
+      "license": "MIT",
+      "homepage": "https://react.dev/",
+      "repository": "https://github.com/facebook/react.git",
+      "description": "React is a JavaScript library for building user interfaces.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/react@19.2.5",
+      "sourcePackageDir": "apps/tauri/node_modules/react"
+    },
+    {
+      "name": "react-dom",
+      "version": "19.2.5",
+      "license": "MIT",
+      "homepage": "https://react.dev/",
+      "repository": "https://github.com/facebook/react.git",
+      "description": "React package for working with the DOM.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/react-dom@19.2.5",
+      "sourcePackageDir": "apps/tauri/node_modules/react-dom"
+    },
+    {
+      "name": "shadcn",
+      "version": "4.2.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/shadcn-ui/ui.git",
+      "description": "Add components to your apps.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/shadcn@4.2.0",
+      "sourcePackageDir": "apps/web/node_modules/shadcn"
+    },
+    {
+      "name": "shadcn",
+      "version": "4.2.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/shadcn-ui/ui.git",
+      "description": "Add components to your apps.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/shadcn@4.2.0",
+      "sourcePackageDir": "apps/web/node_modules/shadcn"
+    },
+    {
+      "name": "sonner",
+      "version": "1.7.4",
+      "license": "MIT",
+      "homepage": "https://sonner.emilkowal.ski/",
+      "repository": "git+https://github.com/emilkowalski/sonner.git",
+      "description": "An opinionated toast component for React.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/sonner@1.7.4",
+      "sourcePackageDir": "apps/web/node_modules/sonner"
+    },
+    {
+      "name": "sonner",
+      "version": "1.7.4",
+      "license": "MIT",
+      "homepage": "https://sonner.emilkowal.ski/",
+      "repository": "git+https://github.com/emilkowalski/sonner.git",
+      "description": "An opinionated toast component for React.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/sonner@1.7.4",
+      "sourcePackageDir": "apps/web/node_modules/sonner"
+    },
+    {
+      "name": "tailwind-merge",
+      "version": "3.5.0",
+      "license": "MIT",
+      "homepage": "https://github.com/dcastil/tailwind-merge",
+      "repository": "https://github.com/dcastil/tailwind-merge.git",
+      "description": "Merge Tailwind CSS classes without style conflicts",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/tailwind-merge@3.5.0",
+      "sourcePackageDir": "apps/web/node_modules/tailwind-merge"
+    },
+    {
+      "name": "tailwind-scrollbar-hide",
+      "version": "4.0.0",
+      "license": "MIT",
+      "homepage": "https://github.com/reslear/tailwind-scrollbar-hide#readme",
+      "repository": "git+https://github.com/reslear/tailwind-scrollbar-hide.git",
+      "description": "tailwindcss plugin for hide scrollbar",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/tailwind-scrollbar-hide@4.0.0",
+      "sourcePackageDir": "apps/web/node_modules/tailwind-scrollbar-hide"
+    },
+    {
+      "name": "tailwindcss",
+      "version": "4.2.2",
+      "license": "MIT",
+      "homepage": "https://tailwindcss.com",
+      "repository": "https://github.com/tailwindlabs/tailwindcss.git",
+      "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/tailwindcss@4.2.2",
+      "sourcePackageDir": "apps/web/node_modules/tailwindcss"
+    },
+    {
+      "name": "tw-animate-css",
+      "version": "1.4.0",
+      "license": "MIT",
+      "homepage": "https://github.com/Wombosvideo/tw-animate-css#readme",
+      "repository": "Wombosvideo/tw-animate-css",
+      "description": "TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/tw-animate-css@1.4.0",
+      "sourcePackageDir": "apps/web/node_modules/tw-animate-css"
+    },
+    {
+      "name": "typescript",
+      "version": "5.9.3",
+      "license": "Apache-2.0",
+      "homepage": "https://www.typescriptlang.org/",
+      "repository": "https://github.com/microsoft/TypeScript.git",
+      "description": "TypeScript is a language for application scale JavaScript development",
+      "files": [
+        "LICENSE.txt"
+      ],
+      "licenseFolder": "licenses/typescript@5.9.3",
+      "sourcePackageDir": "apps/web/node_modules/typescript"
+    },
+    {
+      "name": "typescript",
+      "version": "5.9.3",
+      "license": "Apache-2.0",
+      "homepage": "https://www.typescriptlang.org/",
+      "repository": "https://github.com/microsoft/TypeScript.git",
+      "description": "TypeScript is a language for application scale JavaScript development",
+      "files": [
+        "LICENSE.txt"
+      ],
+      "licenseFolder": "licenses/typescript@5.9.3",
+      "sourcePackageDir": "apps/web/node_modules/typescript"
+    },
+    {
+      "name": "typescript-eslint",
+      "version": "8.58.1",
+      "license": "MIT",
+      "homepage": "https://typescript-eslint.io/packages/typescript-eslint",
+      "repository": "https://github.com/typescript-eslint/typescript-eslint.git",
+      "description": "Tooling which enables you to use TypeScript with ESLint",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/typescript-eslint@8.58.1",
+      "sourcePackageDir": "apps/web/node_modules/typescript-eslint"
+    },
+    {
+      "name": "vite",
+      "version": "7.3.2",
+      "license": "MIT",
+      "homepage": "https://vite.dev",
+      "repository": "git+https://github.com/vitejs/vite.git",
+      "description": "Native-ESM powered web dev build tool",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/vite@7.3.2",
+      "sourcePackageDir": "apps/web/node_modules/vite"
+    },
+    {
+      "name": "vite-tsconfig-paths",
+      "version": "6.1.1",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "aleclarson/vite-tsconfig-paths",
+      "description": "Vite resolver for TypeScript compilerOptions.paths",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/vite-tsconfig-paths@6.1.1",
+      "sourcePackageDir": "apps/web/node_modules/vite-tsconfig-paths"
+    },
+    {
+      "name": "zod",
+      "version": "4.3.6",
+      "license": "MIT",
+      "homepage": "https://zod.dev",
+      "repository": "git+https://github.com/colinhacks/zod.git",
+      "description": "TypeScript-first schema declaration and validation library with static type inference",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/zod@4.3.6",
+      "sourcePackageDir": "apps/web/node_modules/zod"
+    },
+    {
+      "name": "zod",
+      "version": "4.3.6",
+      "license": "MIT",
+      "homepage": "https://zod.dev",
+      "repository": "git+https://github.com/colinhacks/zod.git",
+      "description": "TypeScript-first schema declaration and validation library with static type inference",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/zod@4.3.6",
+      "sourcePackageDir": "apps/web/node_modules/zod"
+    }
+  ]
+}

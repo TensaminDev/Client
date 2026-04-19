@@ -1,0 +1,487 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { parse } from "jsonc-parser";
+
+type BunLock = {
+  lockfileVersion?: number;
+  workspaces?: Record<string, WorkspaceEntry>;
+  packages?: Record<string, unknown>;
+};
+
+type WorkspaceEntry = {
+  name?: string;
+  version?: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
+
+type PackageRecord = {
+  name: string;
+  version: string;
+  packageDir: string;
+  relativePackageDir: string;
+  outDirName: string;
+  copiedFiles: string[];
+  license?: string | string[];
+  description?: string;
+  homepage?: string;
+  repository?: string;
+};
+
+type ResolvedPackage = {
+  name: string;
+  version: string;
+};
+
+const ROOT = process.cwd();
+const LOCKFILE_PATH = path.join(ROOT, "bun.lock");
+const OUTPUT_DIR = path.join(ROOT, "licenses");
+
+const COMPLIANCE_FILE_PATTERNS = [
+  /^license.*$/i,
+  /^licence.*$/i,
+  /^notice.*$/i,
+];
+
+async function main(): Promise<void> {
+  await ensureExists(LOCKFILE_PATH, "Could not find bun.lock in the project root.");
+
+  const lock = await readBunLock();
+  const nodeModulesRoots = await getNodeModulesRoots(lock);
+
+  if (nodeModulesRoots.length === 0) {
+    throw new Error(
+      "Could not find any node_modules directories in the repo root or workspace folders. Run `bun install` first."
+    );
+  }
+
+  await fs.rm(OUTPUT_DIR, { recursive: true, force: true });
+  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+
+  const resolvedPackages = extractResolvedThirdPartyPackages(lock);
+  const records: PackageRecord[] = [];
+
+  for (const resolved of resolvedPackages) {
+    const record = await processInstalledPackage(
+      resolved.name,
+      resolved.version,
+      nodeModulesRoots
+    );
+
+    if (record) {
+      records.push(record);
+    }
+  }
+
+  records.sort((a, b) => {
+    const byName = a.name.localeCompare(b.name);
+    if (byName !== 0) return byName;
+    return a.version.localeCompare(b.version);
+  });
+
+  await writeThirdPartyNotices(records);
+  await writeCreditsJson(records);
+  await writeCycloneDxSbom(records);
+
+  console.log(
+    `Generated ${records.length} third-party package records in ${OUTPUT_DIR}`
+  );
+}
+
+async function readBunLock(): Promise<BunLock> {
+  const raw = await fs.readFile(LOCKFILE_PATH, "utf8");
+  const parsed = parse(raw);
+
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Failed to parse bun.lock");
+  }
+
+  return parsed as BunLock;
+}
+
+async function getNodeModulesRoots(lock: BunLock): Promise<string[]> {
+  const candidates = new Set<string>();
+
+  candidates.add(path.join(ROOT, "node_modules"));
+
+  for (const workspacePath of Object.keys(lock.workspaces ?? {})) {
+    const workspaceDir = workspacePath === "" ? ROOT : path.join(ROOT, workspacePath);
+    candidates.add(path.join(workspaceDir, "node_modules"));
+  }
+
+  const existing: string[] = [];
+  for (const candidate of candidates) {
+    if (await isDirectory(candidate)) {
+      existing.push(candidate);
+    }
+  }
+
+  // Prefer deeper workspace-local installs over root-hoisted installs.
+  existing.sort((a, b) => b.split(path.sep).length - a.split(path.sep).length);
+
+  return existing;
+}
+
+function extractResolvedThirdPartyPackages(lock: BunLock): ResolvedPackage[] {
+  const results = new Map<string, ResolvedPackage>();
+  const packages = lock.packages ?? {};
+
+  for (const rawValue of Object.values(packages)) {
+    if (!Array.isArray(rawValue) || rawValue.length === 0) continue;
+
+    const first = rawValue[0];
+    if (typeof first !== "string") continue;
+
+    // Examples:
+    // react@19.2.0
+    // @types/react@19.2.2
+    // @tensamin/ui@workspace:packages/ui
+    const atIndex = first.lastIndexOf("@");
+    if (atIndex <= 0) continue;
+
+    const name = first.slice(0, atIndex);
+    const version = first.slice(atIndex + 1);
+
+    if (!name || !version) continue;
+    if (version.startsWith("workspace:")) continue;
+
+    const key = `${name}@${version}`;
+    if (!results.has(key)) {
+      results.set(key, { name, version });
+    }
+  }
+
+  return [...results.values()];
+}
+
+async function processInstalledPackage(
+  packageName: string,
+  versionFromLock: string,
+  nodeModulesRoots: string[]
+): Promise<PackageRecord | null> {
+  const packageDir = await findInstalledPackageDir(packageName, nodeModulesRoots);
+  if (!packageDir) return null;
+
+  const packageJsonPath = path.join(packageDir, "package.json");
+
+  try {
+    const pkgJsonRaw = await fs.readFile(packageJsonPath, "utf8");
+    const pkgJson = JSON.parse(pkgJsonRaw) as Record<string, unknown>;
+
+    const actualName =
+      typeof pkgJson.name === "string" ? pkgJson.name : packageName;
+    const actualVersion =
+      typeof pkgJson.version === "string" ? pkgJson.version : versionFromLock;
+
+    const outDirName = sanitizeDirName(`${actualName}@${actualVersion}`);
+    const outDir = path.join(OUTPUT_DIR, outDirName);
+    await fs.mkdir(outDir, { recursive: true });
+
+    const copiedFiles: string[] = [];
+    const fileNames = await safeReadDir(packageDir);
+
+    for (const fileName of fileNames) {
+      if (!matchesComplianceFile(fileName)) continue;
+
+      await copyFileIfExists(
+        path.join(packageDir, fileName),
+        path.join(outDir, fileName),
+        copiedFiles,
+        fileName
+      );
+    }
+
+    return {
+      name: actualName,
+      version: actualVersion,
+      packageDir,
+      relativePackageDir: path.relative(ROOT, packageDir),
+      outDirName,
+      copiedFiles,
+      license: normalizeLicense(pkgJson.license, pkgJson.licenses),
+      description:
+        typeof pkgJson.description === "string" ? pkgJson.description : undefined,
+      homepage:
+        typeof pkgJson.homepage === "string" ? pkgJson.homepage : undefined,
+      repository: normalizeRepository(pkgJson.repository),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function findInstalledPackageDir(
+  packageName: string,
+  nodeModulesRoots: string[]
+): Promise<string | null> {
+  const relativePackagePath = path.join(...packageName.split("/"));
+
+  for (const nodeModulesRoot of nodeModulesRoots) {
+    const candidate = path.join(nodeModulesRoot, relativePackagePath);
+    const packageJsonPath = path.join(candidate, "package.json");
+
+    if (await isFile(packageJsonPath)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function normalizeLicense(
+  license: unknown,
+  licenses: unknown
+): string | string[] | undefined {
+  if (typeof license === "string") return license;
+
+  if (Array.isArray(licenses)) {
+    return licenses
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (
+          item &&
+          typeof item === "object" &&
+          "type" in item &&
+          typeof (item as { type?: unknown }).type === "string"
+        ) {
+          return (item as { type: string }).type;
+        }
+        return null;
+      })
+      .filter((value): value is string => Boolean(value));
+  }
+
+  return undefined;
+}
+
+function normalizeRepository(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+
+  if (
+    value &&
+    typeof value === "object" &&
+    "url" in value &&
+    typeof (value as { url?: unknown }).url === "string"
+  ) {
+    return (value as { url: string }).url;
+  }
+
+  return undefined;
+}
+
+function sanitizeDirName(name: string): string {
+  return Array.from(name, (ch) => {
+    const code = ch.charCodeAt(0);
+    const isControl = code >= 0 && code <= 31;
+    const isForbidden = '<>:"/\\|?*'.includes(ch);
+    return isControl || isForbidden ? "_" : ch;
+  }).join("");
+}
+
+function matchesComplianceFile(fileName: string): boolean {
+  return COMPLIANCE_FILE_PATTERNS.some((pattern) => pattern.test(fileName));
+}
+
+async function copyFileIfExists(
+  src: string,
+  dest: string,
+  copiedFiles: string[],
+  label: string
+): Promise<void> {
+  try {
+    const stat = await fs.stat(src);
+    if (!stat.isFile()) return;
+    await fs.copyFile(src, dest);
+    copiedFiles.push(label);
+  } catch {
+    // ignore missing/unreadable files
+  }
+}
+
+async function safeReadDir(dir: string): Promise<string[]> {
+  try {
+    return await fs.readdir(dir);
+  } catch {
+    return [];
+  }
+}
+
+async function ensureExists(targetPath: string, message: string): Promise<void> {
+  try {
+    await fs.access(targetPath);
+  } catch {
+    throw new Error(message);
+  }
+}
+
+async function isDirectory(targetPath: string): Promise<boolean> {
+  try {
+    const stat = await fs.stat(targetPath);
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+async function isFile(targetPath: string): Promise<boolean> {
+  try {
+    const stat = await fs.stat(targetPath);
+    return stat.isFile();
+  } catch {
+    return false;
+  }
+}
+
+async function writeThirdPartyNotices(records: PackageRecord[]): Promise<void> {
+  const lines: string[] = [];
+
+  lines.push("# Third-Party Notices");
+  lines.push("");
+  lines.push("Generated from bun.lock and installed packages in workspace node_modules folders.");
+  lines.push("");
+
+  for (const record of records) {
+    lines.push(`## ${record.name}@${record.version}`);
+    lines.push("");
+    lines.push(`- License: ${formatLicense(record.license)}`);
+    if (record.homepage) lines.push(`- Homepage: ${record.homepage}`);
+    if (record.repository) lines.push(`- Repository: ${record.repository}`);
+    if (record.description) lines.push(`- Description: ${record.description}`);
+    lines.push(
+      `- Included files: ${
+        record.copiedFiles.length > 0 ? record.copiedFiles.join(", ") : "none found"
+      }`
+    );
+    lines.push(`- Folder: \`licenses/${record.outDirName}\``);
+    lines.push(`- Source package dir: \`${record.relativePackageDir}\``);
+    lines.push("");
+  }
+
+  await fs.writeFile(
+    path.join(OUTPUT_DIR, "THIRD_PARTY_NOTICES.md"),
+    lines.join("\n"),
+    "utf8"
+  );
+}
+
+async function writeCreditsJson(records: PackageRecord[]): Promise<void> {
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    packageCount: records.length,
+    packages: records.map((record) => ({
+      name: record.name,
+      version: record.version,
+      license: formatLicense(record.license),
+      homepage: record.homepage ?? null,
+      repository: record.repository ?? null,
+      description: record.description ?? null,
+      files: record.copiedFiles,
+      licenseFolder: `licenses/${record.outDirName}`,
+      sourcePackageDir: record.relativePackageDir,
+    })),
+  };
+
+  await fs.writeFile(
+    path.join(OUTPUT_DIR, "third-party-credits.json"),
+    JSON.stringify(payload, null, 2),
+    "utf8"
+  );
+}
+
+async function writeCycloneDxSbom(records: PackageRecord[]): Promise<void> {
+  const components = records.map((record) => ({
+    type: "library",
+    bomRef: `pkg:npm/${encodePurlName(record.name)}@${record.version}`,
+    name: record.name,
+    version: record.version,
+    purl: `pkg:npm/${encodePurlName(record.name)}@${record.version}`,
+    description: record.description,
+    licenses: toCycloneDxLicenses(record.license),
+    externalReferences: [
+      ...(record.homepage
+        ? [{ type: "website", url: record.homepage }]
+        : []),
+      ...(record.repository
+        ? [{ type: "vcs", url: record.repository }]
+        : []),
+    ],
+    properties: [
+      {
+        name: "local:licenseFolder",
+        value: `licenses/${record.outDirName}`,
+      },
+      {
+        name: "local:sourcePackageDir",
+        value: record.relativePackageDir,
+      },
+    ],
+  }));
+
+  const sbom = {
+    bomFormat: "CycloneDX",
+    specVersion: "1.5",
+    version: 1,
+    metadata: {
+      timestamp: new Date().toISOString(),
+      tools: [
+        {
+          vendor: "OpenAI",
+          name: "custom bun license generator",
+        },
+      ],
+      component: {
+        type: "application",
+        name: path.basename(ROOT),
+      },
+    },
+    components,
+  };
+
+  await fs.writeFile(
+    path.join(OUTPUT_DIR, "sbom.cyclonedx.json"),
+    JSON.stringify(sbom, null, 2),
+    "utf8"
+  );
+}
+
+function toCycloneDxLicenses(
+  value: string | string[] | undefined
+): Array<{ license: { id?: string; name?: string } }> | undefined {
+  if (!value) return undefined;
+
+  const values = Array.isArray(value) ? value : [value];
+  const filtered = values.map((item) => item.trim()).filter(Boolean);
+
+  if (filtered.length === 0) return undefined;
+
+  return filtered.map((item) => ({
+    license: looksLikeSpdxId(item)
+      ? { id: item }
+      : { name: item },
+  }));
+}
+
+function looksLikeSpdxId(value: string): boolean {
+  return /^[A-Za-z0-9-.+]+$/.test(value);
+}
+
+function encodePurlName(name: string): string {
+  if (name.startsWith("@")) {
+    const [scope, pkg] = name.split("/");
+    return `${encodeURIComponent(scope)}/${encodeURIComponent(pkg)}`;
+  }
+  return encodeURIComponent(name);
+}
+
+function formatLicense(value: string | string[] | undefined): string {
+  if (Array.isArray(value) && value.length > 0) return value.join(", ");
+  if (typeof value === "string" && value.trim()) return value;
+  return "UNKNOWN";
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});

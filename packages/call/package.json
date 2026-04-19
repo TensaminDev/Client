@@ -26,6 +26,7 @@
     "@tensamin/ttp": "workspace:*",
     "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
+    "deepfilternet3-noise-filter": "^1.2.1",
     "livekit-client": "^2.18.1",
     "lucide-react": "^0.564.0",
     "react": "^19.2.0",

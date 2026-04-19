@@ -1,11 +1,13 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { log, toast } from "@tensamin/shared/log";
 import { useNavigate } from "@tanstack/react-router";
 import { useTTP } from "@tensamin/ttp";
 import z from "zod";
 import { ttp } from "@tensamin/shared/data";
 
-import { LiveKitRoom } from "@livekit/components-react";
+import { LiveKitRoom, useLocalParticipant } from "@livekit/components-react";
+import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
+import { LocalAudioTrack } from "livekit-client";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useUser } from "@tensamin/user/context";
@@ -215,11 +217,41 @@ export default function Provider(props: { children: React.ReactNode }) {
             "Error during call encryption. See console for details.",
           );
         }}
+        audio={true}
       >
+        <NoiseFilter />
         {props.children}
       </LiveKitRoom>
     </context.Provider>
   );
+}
+
+function NoiseFilter() {
+  const { microphoneTrack } = useLocalParticipant();
+  const noiseFilter = useMemo(
+    () =>
+      new DeepFilterNoiseFilterProcessor({
+        enabled: true,
+        enableNoiseReduction: true,
+        noiseReductionLevel: 80,
+        sampleRate: 48000,
+        assetConfig: {
+          cdnUrl: "/assets",
+        },
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    const track = microphoneTrack?.track;
+    if (!(track instanceof LocalAudioTrack) || track.getProcessor()) return;
+
+    track.setProcessor(noiseFilter).catch((err) => {
+      log(1, "call", "red", "Failed to enable noise filter", err);
+    });
+  }, [microphoneTrack, noiseFilter]);
+
+  return null;
 }
 
 type contextType = {
