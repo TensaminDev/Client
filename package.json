@@ -11,7 +11,7 @@
     "format": "bunx prettier --write .",
     "lint": "bun scripts/lint-packages.ts",
     "copy-releases": "bun scripts/copy-releases.ts",
-    "build:all": "bun run build:packages && bun run build:web && bun run build:mobile && bun run build:desktop && bun --bun run copy-releases",
+    "build:all": "bun run lint && bun run build:packages && bun run build:web && bun run build:mobile && bun run build:desktop && bun --bun run copy-releases",
     "build:packages": "bun scripts/build-packages.ts",
     "dev:web": "cd apps/web && bun dev",
     "build:web": "bun run build:packages && cd apps/web && bun run build",
@@ -36,7 +36,7 @@
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.26.tar.gz",
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.9.tar.gz"
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.12.tar.gz"
   },
   "dependencies": {
     "@tensamin/ui": "*",

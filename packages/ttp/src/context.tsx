@@ -34,6 +34,7 @@ import { ErrorScreen } from "@tensamin/ui";
 
 import { version } from "../../../package.json";
 import z from "zod";
+import { decryptText } from "@tensamin/crypto/worker";
 
 const FATAL_IDENTIFICATION_ERROR_TYPES = new Set([
   "error",
@@ -477,13 +478,13 @@ export function Provider(props: {
         });
 
         // Challenge Decryption
-        const decryptedChallenge = await decrypt(
+        const decryptedChallenge = await decryptText(
           sharedSecret,
           challengeEnvelope.data.challenge,
         ).catch((decryptionError) => {
           throw new Error(
-            "Failed to decrypt identification challenge",
-            decryptionError,
+            "Failed to decrypt identification challenge: " +
+              String(decryptionError),
           );
         });
 

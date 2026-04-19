@@ -86,7 +86,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <Button
                 disabled={state !== "closed"}
                 onClick={() => {
-                  joinCall(id, currentCalls[0]);
+                  joinCall(id, currentCalls[0].secret, currentCalls[0].id);
                 }}
                 className="w-9 h-9 aspect-square rounded-lg"
               >
@@ -103,15 +103,15 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 <Select onOpenChange={setSelectOpen} open={selectOpen}>
                   <SelectTrigger hidden />
                   <SelectContent>
-                    {currentCalls.map((callId) => (
+                    {currentCalls.map((call) => (
                       <SelectItem
-                        value={callId}
-                        key={callId}
+                        value={call.id}
+                        key={call.id}
                         onSelect={() => {
-                          joinCall(id, callId);
+                          joinCall(id, call.secret, call.id);
                         }}
                       >
-                        {displayCallId(callId)}
+                        {displayCallId(call.id)}
                       </SelectItem>
                     ))}
                   </SelectContent>

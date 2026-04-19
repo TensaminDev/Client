@@ -10,12 +10,15 @@ function getUninitializedApi(): null {
 }
 
 describe("createCryptoActions", () => {
+  const textEncoder = new TextEncoder();
+  const textDecoder = new TextDecoder();
+
   test("throws when API is not initialized", async () => {
     const actions = createCryptoActions(getUninitializedApi);
 
     let failed = false;
     try {
-      await actions.encrypt("ab", "plain");
+      await actions.encrypt("ab", new TextEncoder().encode("plain"));
     } catch (error) {
       failed = (error as Error).message.includes("API not initialized");
     }
@@ -25,10 +28,22 @@ describe("createCryptoActions", () => {
 
   test("delegates encrypt/decrypt/getSharedSecret to API reference", async () => {
     const api = {
-      encrypt: async (secret: string, plaintext: string): Promise<string> =>
+      encrypt: async (
+        secret: string,
+        input: Uint8Array<ArrayBuffer>,
+      ): Promise<Uint8Array<ArrayBuffer>> =>
+        textEncoder.encode(`${secret}:${textDecoder.decode(input)}`),
+      decrypt: async (
+        secret: string,
+        input: Uint8Array<ArrayBuffer>,
+      ): Promise<Uint8Array<ArrayBuffer>> =>
+        textEncoder.encode(`${secret}|${textDecoder.decode(input)}`),
+      encryptText: async (secret: string, plaintext: string): Promise<string> =>
         `${secret}:${plaintext}`,
-      decrypt: async (secret: string, ciphertext: string): Promise<string> =>
-        `${secret}|${ciphertext}`,
+      decryptText: async (
+        secret: string,
+        ciphertext: string,
+      ): Promise<string> => `${secret}|${ciphertext}`,
       getSharedSecret: async (
         ownPrivateKey: string,
         ownPublicKey: string,
@@ -39,8 +54,14 @@ describe("createCryptoActions", () => {
 
     const actions = createCryptoActions(() => api);
 
-    expect(await actions.encrypt("s", "p")).toBe("s:p");
-    expect(await actions.decrypt("s", "c")).toBe("s|c");
+    expect(
+      textDecoder.decode(await actions.encrypt("s", textEncoder.encode("p"))),
+    ).toBe("s:p");
+    expect(
+      textDecoder.decode(await actions.decrypt("s", textEncoder.encode("c"))),
+    ).toBe("s|c");
+    expect(await actions.encryptText("s", "p")).toBe("s:p");
+    expect(await actions.decryptText("s", "c")).toBe("s|c");
     expect(await actions.getSharedSecret("a", "b", "c")).toBe("a.b.c");
   });
 });

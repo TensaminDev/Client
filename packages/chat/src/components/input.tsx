@@ -7,10 +7,10 @@ import { Button } from "@tensamin/ui";
 import { Plus, Laugh, Clapperboard } from "lucide-react";
 import { useChat } from "../context";
 import { useTTP } from "@tensamin/ttp";
-import { useCrypto } from "@tensamin/crypto/context";
 import { log, toast } from "@tensamin/shared/log";
 import Message from "./message";
 import { cn, useIsMobile } from "@tensamin/ui";
+import { encryptText } from "@tensamin/crypto/worker";
 
 export default function InputComponent({
   value,
@@ -22,7 +22,6 @@ export default function InputComponent({
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
   const measurementRef = React.useRef<HTMLDivElement | null>(null);
 
-  const { encrypt } = useCrypto();
   const { send } = useTTP();
   const { addLiveMessage, sharedSecret, userId } = useChat();
   const { load } = useStorage();
@@ -80,7 +79,7 @@ export default function InputComponent({
       message_state: "awaiting",
     });
 
-    const encryptedContext = await encrypt(sharedSecret, currentValue);
+    const encryptedContext = await encryptText(sharedSecret, currentValue);
 
     send("message_send", {
       height,

@@ -6,12 +6,18 @@ import z from "zod";
 import { ttp } from "@tensamin/shared/data";
 
 import { LiveKitRoom } from "@livekit/components-react";
+import { useCrypto } from "@tensamin/crypto/context";
+import { useStorage } from "@tensamin/storage/context";
+import { useUser } from "@tensamin/user/context";
 
 export const context = createContext<contextType | undefined>(undefined);
 
 export default function Provider(props: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { send } = useTTP();
+  const { encrypt, decrypt, getSharedSecret, decryptText } = useCrypto();
+  const { load } = useStorage();
+  const { get } = useUser();
 
   const [state, setState] = useState<
     "closed" | "closing" | "connecting" | "open"
@@ -21,11 +27,22 @@ export default function Provider(props: { children: React.ReactNode }) {
   const [callSecret, setCallSecret] = useState<string | null>(null);
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
 
-  function connect(callId: string, callSecret: string) {
+  const getCallToken = async (callId: string) => {
+    const response = await send("call_token", {
+      call_id: callId,
+    }).catch((err) => {
+      log(1, "call", "red", "Failed to get call secret", err);
+      throw err;
+    });
+    return response.data.call_token;
+  };
+
+  async function connect(callId: string) {
     setState("connecting");
     setCallId(callId);
     setCallSecret(callSecret);
-    log(2, "Call", "purple", "Connecting to call", { callId, callSecret });
+    setLivekitToken(await getCallToken(callId));
+    log(2, "call", "purple", "Connecting to call", { callId, callSecret });
   }
 
   // Master reset function
@@ -37,19 +54,42 @@ export default function Provider(props: { children: React.ReactNode }) {
   }
 
   // Utils
-  function joinCall(userId: number, callId?: string) {
-    // get/generate e2ee secret
-    /// go into convs and find call id
-    /// generate shared secret and decrypt enc call secret
+  async function joinCall(
+    userId: number,
+    callSecret?: string,
+    callId?: string,
+  ) {
+    log(2, "call", "purple", "Call creation initialised");
+    if (callSecret) {
+      try {
+        const sharedSecret = await getSharedSecret(
+          await load("private_key"),
+          await get((await load("user_id")) as number).then(
+            (res) => res.public_key,
+          ),
+          await get(userId).then((res) => res.public_key),
+        );
+        const decryptedSecret = await decryptText(sharedSecret, callSecret);
+        setCallSecret(decryptedSecret);
+      } catch (err) {
+        log(1, "call", "red", "Failed getting call secret", err);
+        disconnect();
+      }
+    } else {
+      setCallSecret(crypto.randomUUID());
+    }
+    try {
+      // check if user is already in call
 
-    // check if user is already in call
+      // connect to call
+      connect(callId || crypto.randomUUID());
+      setView("grid");
 
-    // connect to call
-    connect("", "");
-    setView("grid");
-
-    // navigate to call page
-    navigate({ to: "/call", search: { userId: userId, callId: callId } });
+      // navigate to call page
+      navigate({ to: "/call", search: { userId: userId, callId: callId } });
+    } catch (err) {
+      log(1, "call", "red", "Failed to join call [navbar level]", err);
+    }
   }
 
   // Event listener for incoming calls
@@ -60,14 +100,14 @@ export default function Provider(props: { children: React.ReactNode }) {
    */
   const [view, setView] = useState<"preview" | "focused" | "grid">("preview");
   const [currentCallData, setCurrentCallData] = useState<z.infer<
-    typeof ttp.get_call_data.response
+    typeof ttp.call_data.response
   > | null>(null);
 
   // Get current call information for preview view
   useEffect(() => {
     if (view !== "preview" || !callId) return;
 
-    send("get_call_data", { call_id: callId })
+    send("call_data", { call_id: callId })
       .then((data) => {
         setCurrentCallData(data.data);
       })
@@ -77,7 +117,7 @@ export default function Provider(props: { children: React.ReactNode }) {
           error: err,
         });
         setCurrentCallData({
-          someInfo: "Failed",
+          users: [],
         });
       });
   }, [callId, send, view]);
@@ -98,7 +138,7 @@ export default function Provider(props: { children: React.ReactNode }) {
       <LiveKitRoom
         serverUrl="wss://call.tensamin.net"
         token={livekitToken || ""}
-        connect={state !== "closed"}
+        connect={state !== "closed" && livekitToken !== ""}
         options={{
           encryption: {
             e2eeManager: {
@@ -128,17 +168,17 @@ export default function Provider(props: { children: React.ReactNode }) {
               },
 
               // Encryption
-              encryptData: async (data: Uint8Array) => {
-                console.log(callSecret);
+              encryptData: async (data: Uint8Array<ArrayBuffer>) => {
+                const encrypted = await encrypt(callSecret || "", data);
                 return {
                   uuid: "",
-                  payload: data,
+                  payload: encrypted,
                   iv: new Uint8Array(),
                   keyIndex: 0,
                 };
               },
               handleEncryptedData: async (
-                payload: Uint8Array,
+                payload: Uint8Array<ArrayBuffer>,
                 iv: Uint8Array,
                 participantIdentity: string,
                 keyIndex: number,
@@ -146,18 +186,24 @@ export default function Provider(props: { children: React.ReactNode }) {
                 void iv;
                 void participantIdentity;
                 void keyIndex;
-                console.log(callSecret);
+
+                const decrypted = await decrypt(callSecret || "", payload);
+
                 return {
-                  uuid: crypto.randomUUID(),
-                  payload,
+                  uuid: "",
+                  payload: decrypted,
                 };
               },
             },
           },
+          loggerName: "call",
         }}
         onConnected={() => setState("open")}
         onDisconnected={() => setState("closed")}
-        onError={(error) => log(1, "Call", "red", error.message)}
+        onError={(error) => {
+          log(1, "call", "red", error.message);
+          toast("error", error.message);
+        }}
         onMediaDeviceFailure={(failure, kind) => {
           log(1, "call", "red", "Media device failure", { failure, kind });
           toast("error", "Media device failure. See console for details.");
@@ -182,8 +228,8 @@ type contextType = {
   setView: (view: "preview" | "focused" | "grid") => void;
   connect: (callId: string, callSecret: string) => void;
   disconnect: () => void;
-  joinCall: (userId: number, callId?: string) => void;
-  currentCallData: z.infer<typeof ttp.get_call_data.response> | null;
+  joinCall: (userId: number, callSecret?: string, callId?: string) => void;
+  currentCallData: z.infer<typeof ttp.call_data.response> | null;
 };
 
 export function useCall(): contextType {

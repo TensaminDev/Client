@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { x448 } from "@noble/curves/ed448.js";
-import { decrypt, encrypt, getSharedSecret } from "./worker";
+import {
+  decrypt,
+  decryptText,
+  encrypt,
+  encryptText,
+  getSharedSecret,
+} from "./worker";
 
 /**
  * Encodes bytes to URL-safe base64 without padding.
@@ -55,22 +61,35 @@ function createPrivateKey(seed: number): Uint8Array {
 }
 
 describe("crypto worker", () => {
-  test("encrypt/decrypt round-trip returns original plaintext", async () => {
-    const secret = "a1".repeat(56);
-    const plaintext = "hello encrypted world";
+  const textEncoder = new TextEncoder();
+  const textDecoder = new TextDecoder();
 
-    const ciphertext = await encrypt(secret, plaintext);
-    const decrypted = await decrypt(secret, ciphertext);
+  test("encrypt/decrypt byte round-trip returns original plaintext", async () => {
+    const secret = "0f".repeat(56);
+    const input = "hello encrypted world";
 
-    expect(decrypted).toBe(plaintext);
+    const encryptedContent = await encrypt(secret, textEncoder.encode(input));
+    const decryptedContent = await decrypt(secret, encryptedContent);
+
+    expect(textDecoder.decode(decryptedContent)).toBe(input);
+  });
+
+  test("encryptText/decryptText round-trip returns original plaintext", async () => {
+    const secret = "0f".repeat(56);
+    const input = "hello encrypted world";
+
+    const ciphertext = await encryptText(secret, input);
+    const plaintext = await decryptText(secret, ciphertext);
+
+    expect(plaintext).toBe(input);
   });
 
   test("decrypt fails with wrong shared secret", async () => {
     const secret = "0f".repeat(56);
     const wrongSecret = "f0".repeat(56);
-    const plaintext = "sensitive";
+    const input = "sensitive";
 
-    const ciphertext = await encrypt(secret, plaintext);
+    const ciphertext = await encrypt(secret, textEncoder.encode(input));
 
     let failed = false;
     try {

@@ -2,8 +2,16 @@ import * as React from "react";
 import * as Comlink from "comlink";
 
 type CryptoContextType = {
-  decrypt: (secret: string, ciphertext: string) => Promise<string>;
-  encrypt: (secret: string, plaintext: string) => Promise<string>;
+  decrypt: (
+    secret: string,
+    input: Uint8Array<ArrayBuffer>,
+  ) => Promise<Uint8Array<ArrayBuffer>>;
+  decryptText: (secret: string, ciphertext: string) => Promise<string>;
+  encrypt: (
+    secret: string,
+    input: Uint8Array<ArrayBuffer>,
+  ) => Promise<Uint8Array<ArrayBuffer>>;
+  encryptText: (secret: string, plaintext: string) => Promise<string>;
   getSharedSecret: (
     ownPrivateKey: string,
     ownPublicKey: string,
@@ -12,14 +20,35 @@ type CryptoContextType = {
 };
 
 type ApiRef = {
-  encrypt: (secret: string, plaintext: string) => Promise<string>;
-  decrypt: (secret: string, ciphertext: string) => Promise<string>;
+  encrypt: (
+    secret: string,
+    input: Uint8Array<ArrayBuffer>,
+  ) => Promise<Uint8Array<ArrayBuffer>>;
+  decrypt: (
+    secret: string,
+    input: Uint8Array<ArrayBuffer>,
+  ) => Promise<Uint8Array<ArrayBuffer>>;
+  decryptText: (secret: string, ciphertext: string) => Promise<string>;
+  encryptText: (secret: string, plaintext: string) => Promise<string>;
   getSharedSecret: (
     ownPrivateKey: string,
     ownPublicKey: string,
     otherPublicKey: string,
   ) => Promise<string>;
 };
+
+export function bytesToBase64(bytes: Uint8Array<ArrayBuffer>): string {
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+export function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
 
 export const context = React.createContext<CryptoContextType | undefined>(
   undefined,
@@ -44,6 +73,16 @@ export default function Provider(props: { children: React.ReactNode }) {
         const api = apiRef.current;
         if (!api) throw new Error("API not initialized");
         return await api.decrypt(secret, ciphertext);
+      },
+      encryptText: async (secret, plaintext) => {
+        const api = apiRef.current;
+        if (!api) throw new Error("API not initialized");
+        return await api.encryptText(secret, plaintext);
+      },
+      decryptText: async (secret, ciphertext) => {
+        const api = apiRef.current;
+        if (!api) throw new Error("API not initialized");
+        return await api.decryptText(secret, ciphertext);
       },
       getSharedSecret: async (ownPrivateKey, ownPublicKey, otherPublicKey) => {
         const api = apiRef.current;
@@ -83,33 +122,63 @@ export function createCryptoActions(
   getApiRef: () => ApiRef | null,
 ): CryptoContextType {
   /**
-   * Encrypts plaintext by delegating to the crypto worker API.
+   * Encrypts bytes by delegating to the crypto worker API.
    * @param secret Hex-encoded shared secret.
-   * @param plaintext Plaintext to encrypt.
-   * @returns Encrypted ciphertext.
+   * @param input Plaintext bytes to encrypt.
+   * @returns Ciphertext bytes.
    */
   const encrypt = async (
+    secret: string,
+    input: Uint8Array<ArrayBuffer>,
+  ): Promise<Uint8Array<ArrayBuffer>> => {
+    const api = getApiRef();
+    if (!api) throw new Error("API not initialized");
+    return await api.encrypt(secret, input);
+  };
+
+  /**
+   * Decrypts bytes by delegating to the crypto worker API.
+   * @param secret Hex-encoded shared secret.
+   * @param input Ciphertext bytes to decrypt.
+   * @returns Plaintext bytes.
+   */
+  const decrypt = async (
+    secret: string,
+    input: Uint8Array<ArrayBuffer>,
+  ): Promise<Uint8Array<ArrayBuffer>> => {
+    const api = getApiRef();
+    if (!api) throw new Error("API not initialized");
+    return await api.decrypt(secret, input);
+  };
+
+  /**
+   * Encrypts plaintext text by delegating to the crypto worker API.
+   * @param secret Hex-encoded shared secret.
+   * @param plaintext Plaintext to encrypt.
+   * @returns Base64 ciphertext.
+   */
+  const encryptText = async (
     secret: string,
     plaintext: string,
   ): Promise<string> => {
     const api = getApiRef();
     if (!api) throw new Error("API not initialized");
-    return await api.encrypt(secret, plaintext);
+    return await api.encryptText(secret, plaintext);
   };
 
   /**
-   * Decrypts ciphertext by delegating to the crypto worker API.
+   * Decrypts base64 ciphertext text by delegating to the crypto worker API.
    * @param secret Hex-encoded shared secret.
-   * @param ciphertext Ciphertext to decrypt.
+   * @param ciphertext Base64 ciphertext to decrypt.
    * @returns Decrypted plaintext.
    */
-  const decrypt = async (
+  const decryptText = async (
     secret: string,
     ciphertext: string,
   ): Promise<string> => {
     const api = getApiRef();
     if (!api) throw new Error("API not initialized");
-    return await api.decrypt(secret, ciphertext);
+    return await api.decryptText(secret, ciphertext);
   };
 
   /**
@@ -133,7 +202,7 @@ export function createCryptoActions(
     );
   };
 
-  return { encrypt, decrypt, getSharedSecret };
+  return { encrypt, decrypt, encryptText, decryptText, getSharedSecret };
 }
 
 /**

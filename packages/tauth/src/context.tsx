@@ -17,12 +17,13 @@ import { useTTP } from "@tensamin/ttp";
 import { log, toast } from "@tensamin/shared/log";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
+import { decryptText } from "@tensamin/crypto/worker";
 
 export default function Wrapper({ children }: { children: ReactNode }) {
   const { get } = useUser();
   const { load } = useStorage();
   const { send } = useTTP();
-  const { decrypt, getSharedSecret } = useCrypto();
+  const { getSharedSecret } = useCrypto();
   const { searchStr } = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
       });
 
       // Solve Challenge
-      const solvedChallenge = await decrypt(sharedSecret, challenge).catch(
+      const solvedChallenge = await decryptText(sharedSecret, challenge).catch(
         (err) => {
           log(1, "tauth", "red", "Failed to solve challenge", err, {
             challenge,

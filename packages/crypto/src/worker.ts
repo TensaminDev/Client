@@ -10,18 +10,44 @@ type JWK = {
 };
 
 const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 const crypto = globalThis.crypto;
 
 /**
- * Encrypts plaintext with a symmetric key derived from a hex shared secret.
+ * Encodes bytes as standard base64 text.
+ * @param bytes Bytes to encode.
+ * @returns Base64 string.
+ */
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+/**
+ * Decodes standard base64 text into bytes.
+ * @param base64 Base64 string.
+ * @returns Decoded bytes.
+ */
+function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+/**
+ * Encrypts bytes with a symmetric key derived from a hex shared secret.
  * @param secret Hex-encoded shared secret.
- * @param plaintext UTF-8 plaintext to encrypt.
- * @returns Base64-encoded ciphertext.
+ * @param input Plaintext bytes to encrypt.
+ * @returns Ciphertext bytes.
  */
 export async function encrypt(
   secret: string,
-  plaintext: string,
-): Promise<string> {
+  input: Uint8Array<ArrayBuffer>,
+): Promise<Uint8Array<ArrayBuffer>> {
   const sharedSecret = new Uint8Array(
     secret.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
   );
@@ -60,28 +86,24 @@ export async function encrypt(
   const encryptedBuffer = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce },
     aesKey,
-    textEncoder.encode(plaintext),
+    input,
   );
 
-  return btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
+  return new Uint8Array(encryptedBuffer);
 }
 
 /**
- * Decrypts base64 ciphertext with a symmetric key derived from a hex shared secret.
+ * Decrypts bytes with a symmetric key derived from a hex shared secret.
  * @param secret Hex-encoded shared secret.
- * @param ciphertext Base64 ciphertext to decrypt.
- * @returns Decrypted UTF-8 plaintext.
+ * @param input Ciphertext bytes to decrypt.
+ * @returns Plaintext bytes.
  */
 export async function decrypt(
   secret: string,
-  ciphertext: Base64URLString | string,
-): Promise<string> {
+  input: Uint8Array<ArrayBuffer>,
+): Promise<Uint8Array<ArrayBuffer>> {
   const sharedSecret = new Uint8Array(
     secret.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
-  );
-
-  const ciphertextBytes = Uint8Array.from(atob(ciphertext), (c) =>
-    c.charCodeAt(0),
   );
 
   const hkdfKey = await crypto.subtle.importKey(
@@ -121,10 +143,38 @@ export async function decrypt(
       iv: nonce,
     },
     aesKey,
-    ciphertextBytes,
+    input,
   );
 
-  return new TextDecoder().decode(decryptedBuffer);
+  return new Uint8Array(decryptedBuffer);
+}
+
+/**
+ * Encrypts UTF-8 text and returns base64 ciphertext for easy transport/storage.
+ * @param secret Hex-encoded shared secret.
+ * @param plaintext Text to encrypt.
+ * @returns Base64 ciphertext.
+ */
+export async function encryptText(
+  secret: string,
+  plaintext: string,
+): Promise<string> {
+  const encrypted = await encrypt(secret, textEncoder.encode(plaintext));
+  return bytesToBase64(encrypted);
+}
+
+/**
+ * Decrypts base64 ciphertext into UTF-8 text.
+ * @param secret Hex-encoded shared secret.
+ * @param ciphertext Base64 ciphertext.
+ * @returns Decrypted text.
+ */
+export async function decryptText(
+  secret: string,
+  ciphertext: string,
+): Promise<string> {
+  const decrypted = await decrypt(secret, base64ToBytes(ciphertext));
+  return textDecoder.decode(decrypted);
 }
 
 /**
@@ -462,6 +512,8 @@ if (isWorkerRuntime()) {
   Comlink.expose({
     encrypt,
     decrypt,
+    encryptText,
+    decryptText,
     getSharedSecret,
   });
 }

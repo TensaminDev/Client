@@ -14,6 +14,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@tensamin/ui";
+import { decryptText } from "@tensamin/crypto/worker";
 
 function generateFixedLoadingSize(size: number, height: number) {
   return size * 3 - (height / 20) * 11;
@@ -68,7 +69,7 @@ function MessageComponent({
       return;
     }
 
-    decrypt(secret, content)
+    decryptText(secret, content)
       .then((value) => {
         if (!active) {
           return;

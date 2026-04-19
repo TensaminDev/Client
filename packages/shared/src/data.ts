@@ -58,7 +58,9 @@ export const ttp = {
       communities: z.array(z.object({})).optional(),
       contacts: z.array(
         z.object({
-          calls: z.array(z.uuidv4()).optional(),
+          calls: z
+            .array(z.object({ id: z.uuidv4(), secret: z.base64() }))
+            .optional(),
           last_message_at: z.number(),
           user_id: z.number(),
           last_message: z
@@ -183,12 +185,20 @@ export const ttp = {
   },
 
   // Calls
-  get_call_data: {
+  call_token: {
     request: z.object({
       call_id: z.string(),
     }),
     response: z.object({
-      someInfo: z.string(),
+      call_token: z.string(),
+    }),
+  },
+  call_data: {
+    request: z.object({
+      call_id: z.string(),
+    }),
+    response: z.object({
+      users: z.array(z.number()),
     }),
   },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;
