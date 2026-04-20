@@ -1,8 +1,9 @@
-import { realpathSync } from "node:fs";
+import { createReadStream, realpathSync, statSync } from "node:fs";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
@@ -13,6 +14,41 @@ const markdownPackageDir = resolve(appDir, "../../packages/markdown");
 
 function resolveMarkdownDependency(packageName: string): string {
   return realpathSync(resolve(markdownPackageDir, "node_modules", packageName));
+}
+
+function deepFilterAssetHeaders(rootDir: string): Plugin {
+  const serveModel = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    next: () => void,
+  ) => {
+    const url = req.url ? new URL(req.url, "http://localhost") : null;
+    if (url?.pathname !== "/assets/v2/models/DeepFilterNet3_onnx.tar.gz") {
+      next();
+      return;
+    }
+
+    const modelPath = resolve(
+      rootDir,
+      "assets/v2/models/DeepFilterNet3_onnx.tar.gz",
+    );
+    const stat = statSync(modelPath);
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/gzip");
+    res.setHeader("Content-Length", stat.size.toString());
+    res.setHeader("Cache-Control", "no-cache");
+    createReadStream(modelPath).pipe(res);
+  };
+
+  return {
+    name: "deepfilter-asset-headers",
+    configureServer(server) {
+      server.middlewares.use(serveModel);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(serveModel);
+    },
+  };
 }
 
 export default defineConfig({
@@ -63,7 +99,12 @@ export default defineConfig({
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
-  plugins: [react(), tsconfigPaths(), tailwindcss()],
+  plugins: [
+    deepFilterAssetHeaders(resolve(appDir, "public")),
+    react(),
+    tsconfigPaths(),
+    tailwindcss(),
+  ],
   worker: {
     format: "es",
   },

@@ -5,3 +5,4 @@ coverage
 *.tsbuildinfo
 bun.lock
 apps/tauri/src-tauri
+licenses

@@ -46,14 +46,17 @@ const COMPLIANCE_FILE_PATTERNS = [
 ];
 
 async function main(): Promise<void> {
-  await ensureExists(LOCKFILE_PATH, "Could not find bun.lock in the project root.");
+  await ensureExists(
+    LOCKFILE_PATH,
+    "Could not find bun.lock in the project root.",
+  );
 
   const lock = await readBunLock();
   const nodeModulesRoots = await getNodeModulesRoots(lock);
 
   if (nodeModulesRoots.length === 0) {
     throw new Error(
-      "Could not find any node_modules directories in the repo root or workspace folders. Run `bun install` first."
+      "Could not find any node_modules directories in the repo root or workspace folders. Run `bun install` first.",
     );
   }
 
@@ -67,7 +70,7 @@ async function main(): Promise<void> {
     const record = await processInstalledPackage(
       resolved.name,
       resolved.version,
-      nodeModulesRoots
+      nodeModulesRoots,
     );
 
     if (record) {
@@ -86,7 +89,7 @@ async function main(): Promise<void> {
   await writeCycloneDxSbom(records);
 
   console.log(
-    `Generated ${records.length} third-party package records in ${OUTPUT_DIR}`
+    `Generated ${records.length} third-party package records in ${OUTPUT_DIR}`,
   );
 }
 
@@ -107,7 +110,8 @@ async function getNodeModulesRoots(lock: BunLock): Promise<string[]> {
   candidates.add(path.join(ROOT, "node_modules"));
 
   for (const workspacePath of Object.keys(lock.workspaces ?? {})) {
-    const workspaceDir = workspacePath === "" ? ROOT : path.join(ROOT, workspacePath);
+    const workspaceDir =
+      workspacePath === "" ? ROOT : path.join(ROOT, workspacePath);
     candidates.add(path.join(workspaceDir, "node_modules"));
   }
 
@@ -159,9 +163,12 @@ function extractResolvedThirdPartyPackages(lock: BunLock): ResolvedPackage[] {
 async function processInstalledPackage(
   packageName: string,
   versionFromLock: string,
-  nodeModulesRoots: string[]
+  nodeModulesRoots: string[],
 ): Promise<PackageRecord | null> {
-  const packageDir = await findInstalledPackageDir(packageName, nodeModulesRoots);
+  const packageDir = await findInstalledPackageDir(
+    packageName,
+    nodeModulesRoots,
+  );
   if (!packageDir) return null;
 
   const packageJsonPath = path.join(packageDir, "package.json");
@@ -189,7 +196,7 @@ async function processInstalledPackage(
         path.join(packageDir, fileName),
         path.join(outDir, fileName),
         copiedFiles,
-        fileName
+        fileName,
       );
     }
 
@@ -202,7 +209,9 @@ async function processInstalledPackage(
       copiedFiles,
       license: normalizeLicense(pkgJson.license, pkgJson.licenses),
       description:
-        typeof pkgJson.description === "string" ? pkgJson.description : undefined,
+        typeof pkgJson.description === "string"
+          ? pkgJson.description
+          : undefined,
       homepage:
         typeof pkgJson.homepage === "string" ? pkgJson.homepage : undefined,
       repository: normalizeRepository(pkgJson.repository),
@@ -214,7 +223,7 @@ async function processInstalledPackage(
 
 async function findInstalledPackageDir(
   packageName: string,
-  nodeModulesRoots: string[]
+  nodeModulesRoots: string[],
 ): Promise<string | null> {
   const relativePackagePath = path.join(...packageName.split("/"));
 
@@ -232,7 +241,7 @@ async function findInstalledPackageDir(
 
 function normalizeLicense(
   license: unknown,
-  licenses: unknown
+  licenses: unknown,
 ): string | string[] | undefined {
   if (typeof license === "string") return license;
 
@@ -288,7 +297,7 @@ async function copyFileIfExists(
   src: string,
   dest: string,
   copiedFiles: string[],
-  label: string
+  label: string,
 ): Promise<void> {
   try {
     const stat = await fs.stat(src);
@@ -308,7 +317,10 @@ async function safeReadDir(dir: string): Promise<string[]> {
   }
 }
 
-async function ensureExists(targetPath: string, message: string): Promise<void> {
+async function ensureExists(
+  targetPath: string,
+  message: string,
+): Promise<void> {
   try {
     await fs.access(targetPath);
   } catch {
@@ -339,7 +351,9 @@ async function writeThirdPartyNotices(records: PackageRecord[]): Promise<void> {
 
   lines.push("# Third-Party Notices");
   lines.push("");
-  lines.push("Generated from bun.lock and installed packages in workspace node_modules folders.");
+  lines.push(
+    "Generated from bun.lock and installed packages in workspace node_modules folders.",
+  );
   lines.push("");
 
   for (const record of records) {
@@ -351,8 +365,10 @@ async function writeThirdPartyNotices(records: PackageRecord[]): Promise<void> {
     if (record.description) lines.push(`- Description: ${record.description}`);
     lines.push(
       `- Included files: ${
-        record.copiedFiles.length > 0 ? record.copiedFiles.join(", ") : "none found"
-      }`
+        record.copiedFiles.length > 0
+          ? record.copiedFiles.join(", ")
+          : "none found"
+      }`,
     );
     lines.push(`- Folder: \`licenses/${record.outDirName}\``);
     lines.push(`- Source package dir: \`${record.relativePackageDir}\``);
@@ -362,7 +378,7 @@ async function writeThirdPartyNotices(records: PackageRecord[]): Promise<void> {
   await fs.writeFile(
     path.join(OUTPUT_DIR, "THIRD_PARTY_NOTICES.md"),
     lines.join("\n"),
-    "utf8"
+    "utf8",
   );
 }
 
@@ -386,7 +402,7 @@ async function writeCreditsJson(records: PackageRecord[]): Promise<void> {
   await fs.writeFile(
     path.join(OUTPUT_DIR, "third-party-credits.json"),
     JSON.stringify(payload, null, 2),
-    "utf8"
+    "utf8",
   );
 }
 
@@ -400,12 +416,8 @@ async function writeCycloneDxSbom(records: PackageRecord[]): Promise<void> {
     description: record.description,
     licenses: toCycloneDxLicenses(record.license),
     externalReferences: [
-      ...(record.homepage
-        ? [{ type: "website", url: record.homepage }]
-        : []),
-      ...(record.repository
-        ? [{ type: "vcs", url: record.repository }]
-        : []),
+      ...(record.homepage ? [{ type: "website", url: record.homepage }] : []),
+      ...(record.repository ? [{ type: "vcs", url: record.repository }] : []),
     ],
     properties: [
       {
@@ -442,12 +454,12 @@ async function writeCycloneDxSbom(records: PackageRecord[]): Promise<void> {
   await fs.writeFile(
     path.join(OUTPUT_DIR, "sbom.cyclonedx.json"),
     JSON.stringify(sbom, null, 2),
-    "utf8"
+    "utf8",
   );
 }
 
 function toCycloneDxLicenses(
-  value: string | string[] | undefined
+  value: string | string[] | undefined,
 ): Array<{ license: { id?: string; name?: string } }> | undefined {
   if (!value) return undefined;
 
@@ -457,9 +469,7 @@ function toCycloneDxLicenses(
   if (filtered.length === 0) return undefined;
 
   return filtered.map((item) => ({
-    license: looksLikeSpdxId(item)
-      ? { id: item }
-      : { name: item },
+    license: looksLikeSpdxId(item) ? { id: item } : { name: item },
   }));
 }
 

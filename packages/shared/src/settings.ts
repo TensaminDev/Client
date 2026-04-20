@@ -30,6 +30,9 @@ const settings = {
       },
     },
   },
+  application: {
+    licenses: {},
+  },
 } as const satisfies SettingsSchema;
 
 export default settings;
