@@ -116,6 +116,17 @@ export default function Provider(props: { children: React.ReactNode }) {
     typeof ttp.call_data.response
   > | null>(null);
 
+  const [deaf, setDeaf] = useState(false);
+
+  const toggleDeaf = () => {
+    setDeaf((wasDeaf) => {
+      room.remoteParticipants.forEach((participant) => {
+        participant.setVolume(wasDeaf ? 100 : 0);
+      });
+      return !wasDeaf;
+    });
+  };
+
   const openCallPage = (callId: string) =>
     navigate({ to: "/call", search: { id: callId } });
 
@@ -165,6 +176,9 @@ export default function Provider(props: { children: React.ReactNode }) {
 
         callId,
         openCallPage,
+
+        deaf,
+        toggleDeaf,
 
         disconnect,
         joinCall,
@@ -252,6 +266,8 @@ type contextType = {
   room: Room;
   openCallPage: (callId: string) => Promise<void>;
   callId: string | null;
+  deaf: boolean;
+  toggleDeaf: () => void;
 };
 
 export function useCall(): contextType {
