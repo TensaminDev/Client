@@ -180,11 +180,11 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@tensamin_ttp-core@0.0.12`
 - Source package dir: `packages/ttp/node_modules/@tensamin/ttp-core`
 
-## @tensamin/ui@0.0.26
+## @tensamin/ui@0.0.30
 
 - License: UNKNOWN
 - Included files: none found
-- Folder: `licenses/@tensamin_ui@0.0.26`
+- Folder: `licenses/@tensamin_ui@0.0.30`
 - Source package dir: `apps/tauri/node_modules/@tensamin/ui`
 
 ## @types/node@25.6.0

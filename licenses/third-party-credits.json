@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T14:27:01.394Z",
+  "generatedAt": "2026-04-28T17:49:46.477Z",
   "packageCount": 57,
   "packages": [
     {
@@ -253,13 +253,13 @@
     },
     {
       "name": "@tensamin/ui",
-      "version": "0.0.26",
+      "version": "0.0.30",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
       "description": null,
       "files": [],
-      "licenseFolder": "licenses/@tensamin_ui@0.0.26",
+      "licenseFolder": "licenses/@tensamin_ui@0.0.30",
       "sourcePackageDir": "apps/tauri/node_modules/@tensamin/ui"
     },
     {
