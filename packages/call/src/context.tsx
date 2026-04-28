@@ -7,7 +7,7 @@ import { ttp } from "@tensamin/shared/data";
 
 import { LiveKitRoom, useLocalParticipant } from "@livekit/components-react";
 import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
-import { LocalAudioTrack } from "livekit-client";
+import { ExternalE2EEKeyProvider, LocalAudioTrack, Room } from "livekit-client";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useUser } from "@tensamin/user/context";
@@ -17,12 +17,12 @@ export const context = createContext<contextType | undefined>(undefined);
 export default function Provider(props: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { send } = useTTP();
-  const { encrypt, decrypt, getSharedSecret, decryptText } = useCrypto();
+  const { getSharedSecret, decryptText } = useCrypto();
   const { load } = useStorage();
   const { get } = useUser();
 
   const [state, setState] = useState<
-    "closed" | "closing" | "connecting" | "open"
+    "closed" | "closing" | "connecting" | "open" | "encrypting"
   >("closed");
 
   const [callId, setCallId] = useState<string | null>(null);
@@ -53,6 +53,8 @@ export default function Provider(props: { children: React.ReactNode }) {
     setCallId(null);
     setCallSecret(null);
     setLivekitToken(null);
+    room.disconnect();
+    e2eeWorker.terminate();
   }
 
   // Utils
@@ -124,12 +126,37 @@ export default function Provider(props: { children: React.ReactNode }) {
       });
   }, [callId, send, view]);
 
+  // Room & Encryption
+  const [keyProvider] = useState(() => new ExternalE2EEKeyProvider());
+  const [e2eeWorker] = useState(
+    () => new Worker(new URL("livekit-client/e2ee-worker", import.meta.url)),
+  );
+  const [room] = useState(
+    () =>
+      new Room({
+        encryption: {
+          keyProvider,
+          worker: e2eeWorker,
+        },
+        loggerName: "call",
+      }),
+  );
+
+  useEffect(() => {
+    async function enableStuff() {
+      await keyProvider.setKey(callSecret || "");
+      await room.setE2EEEnabled(true);
+    }
+    enableStuff();
+  }, [callSecret, keyProvider, room]);
+
   return (
     <context.Provider
       value={{
         state,
         view,
         setView,
+        room,
 
         connect,
         disconnect,
@@ -141,67 +168,21 @@ export default function Provider(props: { children: React.ReactNode }) {
         serverUrl="wss://call.tensamin.net"
         token={livekitToken || ""}
         connect={state !== "closed" && livekitToken !== ""}
-        options={{
-          encryption: {
-            e2eeManager: {
-              on(event, callback) {
-                void event;
-                void callback;
-                return this;
-              },
-              isEnabled: callSecret !== null,
-              isDataChannelEncryptionEnabled: true,
-              setup: async (room) => {
-                void room;
-              },
-              setupEngine: async (engine) => {
-                void engine;
-              },
-              setParticipantCryptorEnabled: async (
-                enabled: boolean,
-                participantIdentity: string,
-              ) => {
-                console.log(
-                  `Set participant ${participantIdentity} cryptor enabled: ${enabled}`,
-                );
-              },
-              setSifTrailer: async (trailer: Uint8Array) => {
-                void trailer;
-              },
-
-              // Encryption
-              encryptData: async (data: Uint8Array<ArrayBuffer>) => {
-                const encrypted = await encrypt(callSecret || "", data);
-                return {
-                  uuid: "",
-                  payload: encrypted,
-                  iv: new Uint8Array(),
-                  keyIndex: 0,
-                };
-              },
-              handleEncryptedData: async (
-                payload: Uint8Array<ArrayBuffer>,
-                iv: Uint8Array,
-                participantIdentity: string,
-                keyIndex: number,
-              ) => {
-                void iv;
-                void participantIdentity;
-                void keyIndex;
-
-                const decrypted = await decrypt(callSecret || "", payload);
-
-                return {
-                  uuid: "",
-                  payload: decrypted,
-                };
-              },
-            },
-          },
-          loggerName: "call",
+        room={room}
+        onConnected={() => {
+          setState("open");
+          log(2, "call", "purple", "Connected to call", {
+            callId,
+            callSecret,
+          });
         }}
-        onConnected={() => setState("open")}
-        onDisconnected={() => setState("closed")}
+        onDisconnected={() => {
+          setState("closed");
+          log(2, "call", "purple", "Disconnected from call", {
+            callId,
+            callSecret,
+          });
+        }}
         onError={(error) => {
           log(1, "call", "red", error.message);
           toast("error", error.message);
@@ -255,13 +236,14 @@ function NoiseFilter() {
 }
 
 type contextType = {
-  state: "closed" | "closing" | "connecting" | "open";
+  state: "closed" | "closing" | "connecting" | "open" | "encrypting";
   view: "preview" | "focused" | "grid";
   setView: (view: "preview" | "focused" | "grid") => void;
   connect: (callId: string, callSecret: string) => void;
   disconnect: () => void;
   joinCall: (userId: number, callSecret?: string, callId?: string) => void;
   currentCallData: z.infer<typeof ttp.call_data.response> | null;
+  room: Room;
 };
 
 export function useCall(): contextType {
