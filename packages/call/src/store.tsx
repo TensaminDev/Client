@@ -15,9 +15,20 @@ import {
   RoomEvent,
   type RemoteTrack,
   Track,
+  setLogExtension,
+  getLogger,
 } from "livekit-client";
 import z from "zod";
 import { toast as sonnerToast } from "sonner";
+
+// logging
+setLogExtension(
+  (level, message, context) =>
+    context
+      ? log(level, "livekit", "blue", message, context)
+      : log(level, "livekit", "blue", message),
+  getLogger("tensamin"),
+);
 
 type CallState = "closed" | "closing" | "connecting" | "open" | "encrypting";
 type CallView = "preview" | "focused" | "grid";
@@ -76,6 +87,7 @@ const e2eeWorker = new Worker(
 const room = new Room({
   dynacast: true,
   adaptiveStream: true,
+  loggerName: "tensamin",
   encryption: {
     keyProvider,
     worker: e2eeWorker,
@@ -83,6 +95,7 @@ const room = new Room({
 });
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
 
+// audio helpers
 function attachRemoteAudio(trackSid: string, element: HTMLMediaElement) {
   const existingElement = remoteAudioElements.get(trackSid);
 
@@ -113,6 +126,7 @@ function clearRemoteAudio() {
   }
 }
 
+// utils
 function requireRuntime(runtime: Runtime | null): Runtime {
   if (!runtime) {
     throw new Error("Call store is not initialized");
@@ -132,6 +146,7 @@ export function syncParticipantState() {
   });
 }
 
+// set state functions
 export function setCallRuntime(runtime: Runtime) {
   useCall.setState({ runtime });
 }
@@ -154,6 +169,7 @@ export function setCurrentCallData(
   useCall.setState({ currentCallData });
 }
 
+// more utils
 export async function openCallPage(callId: string) {
   await requireRuntime(useCall.getState().runtime).navigate({
     to: "/call",
@@ -225,6 +241,7 @@ export function disconnect() {
   });
 
   room.disconnect();
+  useCall.setState({ state: "closed" });
   syncParticipantState();
 }
 
@@ -594,7 +611,7 @@ export function useInitializeCall() {
         });
       })
       .catch((err) => {
-        log(1, "Call", "red", "Failed to get call data", {
+        log(1, "call", "red", "Failed to get call data", {
           callId,
           error: err,
         });

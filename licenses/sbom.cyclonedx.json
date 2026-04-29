@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-04-28T17:49:46.479Z",
+    "timestamp": "2026-04-29T21:21:16.348Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -615,15 +615,15 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tensamin/ttp-core@0.0.12",
+      "bomRef": "pkg:npm/%40tensamin/ttp-core@0.0.13",
       "name": "@tensamin/ttp-core",
-      "version": "0.0.12",
-      "purl": "pkg:npm/%40tensamin/ttp-core@0.0.12",
+      "version": "0.0.13",
+      "purl": "pkg:npm/%40tensamin/ttp-core@0.0.13",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tensamin_ttp-core@0.0.12"
+          "value": "licenses/@tensamin_ttp-core@0.0.13"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1397,6 +1397,76 @@
     },
     {
       "type": "library",
+      "bomRef": "pkg:npm/recharts@3.8.1",
+      "name": "recharts",
+      "version": "3.8.1",
+      "purl": "pkg:npm/recharts@3.8.1",
+      "description": "React charts",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/recharts/recharts"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/recharts/recharts.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/recharts@3.8.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/call/node_modules/recharts"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/recharts@3.8.1",
+      "name": "recharts",
+      "version": "3.8.1",
+      "purl": "pkg:npm/recharts@3.8.1",
+      "description": "React charts",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/recharts/recharts"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/recharts/recharts.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/recharts@3.8.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/call/node_modules/recharts"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "bomRef": "pkg:npm/shadcn@4.2.0",
       "name": "shadcn",
       "version": "4.2.0",
@@ -1905,6 +1975,41 @@
         {
           "name": "local:sourcePackageDir",
           "value": "apps/web/node_modules/zod"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/zustand@5.0.12",
+      "name": "zustand",
+      "version": "5.0.12",
+      "purl": "pkg:npm/zustand@5.0.12",
+      "description": "🐻 Bear necessities for state management in React",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/pmndrs/zustand"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/pmndrs/zustand.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/zustand@5.0.12"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/call/node_modules/zustand"
         }
       ]
     }

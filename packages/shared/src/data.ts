@@ -12,10 +12,10 @@ const fileFromMessage = z.object({
   type: z.enum(["image", "image_top_right", "file"]),
 });
 
-const message = z.object({
+export const message = z.object({
   height: z.number(),
   not_encrypted: z.boolean().optional(),
-  sent_by_self: z.boolean(),
+  sent_by_self: z.boolean().optional(),
   send_time: z.number(),
   content: z.base64(),
   files: z.array(fileFromMessage).optional(),
@@ -113,10 +113,9 @@ export const ttp = {
     }),
   },
   message_live: {
-    request: z.object({}),
+    request: z.object({}).optional(),
     response: z.object({
       sender_id: z.number(),
-      send_time: z.number(),
       message,
     }),
   },

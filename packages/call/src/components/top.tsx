@@ -17,7 +17,6 @@ export default function TopBar() {
     let active = true;
 
     if (userIds.length === 0) {
-      setUsers([]);
       return () => {
         active = false;
       };
@@ -42,7 +41,7 @@ export default function TopBar() {
     return () => {
       active = false;
     };
-  }, [get, userIdsKey]);
+  }, [get, userIdsKey, userIds]);
 
   return (
     <div className="w-full flex justify-between h-12">

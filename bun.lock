@@ -7,6 +7,7 @@
       "dependencies": {
         "@tensamin/ttp-core": "*",
         "@tensamin/ui": "*",
+        "sonner": "^2.0.7",
       },
       "devDependencies": {
         "@eslint/js": "^10.0.1",
@@ -54,6 +55,7 @@
         "@tensamin/call": "workspace:*",
         "@tensamin/chat": "workspace:*",
         "@tensamin/crypto": "workspace:*",
+        "@tensamin/notifications": "workspace:*",
         "@tensamin/shared": "workspace:*",
         "@tensamin/storage": "workspace:*",
         "@tensamin/tauri": "workspace:*",
@@ -164,7 +166,11 @@
       "name": "@tensamin/notifications",
       "version": "0.0.0",
       "dependencies": {
-        "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+        "@tensamin/crypto": "workspace:*",
+        "@tensamin/shared": "workspace:*",
+        "@tensamin/storage": "workspace:*",
+        "@tensamin/ttp": "workspace:*",
+        "@tensamin/user": "workspace:*",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "zod": "^4.3.6",
@@ -244,7 +250,7 @@
     },
   },
   "overrides": {
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.12.tar.gz",
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.13.tar.gz",
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.30.tar.gz",
   },
   "packages": {
@@ -696,7 +702,7 @@
 
     "@tensamin/ttp": ["@tensamin/ttp@workspace:packages/ttp"],
 
-    "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.12.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@typescript-eslint/parser": "^8.58.1", "@webtransport-bun/webtransport": "^0.3.0", "globals": "^17.5.0", "typescript": "^6.0.2", "typescript-eslint": "^8.58.1", "zod": "^4.3.6" } }, "sha512-YdwOocPnNMoE0N/yqksJM9JizkhmNv7q8sc7JMI/TOKM/0wDlQqHLqJBMd7fAGkGLCSx+DKx5z8SJbrA9YlzVg=="],
+    "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.13.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@typescript-eslint/parser": "^8.58.1", "@webtransport-bun/webtransport": "^0.3.0", "globals": "^17.5.0", "typescript": "^6.0.2", "typescript-eslint": "^8.58.1", "zod": "^4.3.6" } }, "sha512-ib5E8n9IfMzai+ucOXwTNMtu4j6m1RSHANGbFVJxP1VwJDtqIVMqpg/NtTKdRNXQYM1hK5WAScfl6r+aeyaj4g=="],
 
     "@tensamin/ui": ["@tensamin/ui@https://git.methanium.net/tensamin/ui/archive/0.0.30.tar.gz", { "dependencies": { "@base-ui/react": "^1.3.0", "@fontsource-variable/inter": "^5.2.6", "@tauri-apps/api": "^2", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "lucide-react": "^1.8.0", "next-themes": "^0.4.6", "react-day-picker": "^9.14.0", "react-resizable-panels": "^4.10.0", "recharts": "3.8.0", "shadcn": "^3.5.0", "sonner": "^2.0.7", "tailwind-merge": "^3.5.0", "tw-animate-css": "^1.3.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" } }, "sha512-Eh/ko+4x4gF/25JyB38PNN2n/UVUIR6yxxZTpyZPx4maL00992pGmFt62kb1ejJQoooEpEfSo/ALtQDF5cjdoA=="],
 
@@ -1661,8 +1667,6 @@
     "@tailwindcss/oxide-wasm32-wasi/@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" }, "bundled": true }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 
     "@tailwindcss/oxide-wasm32-wasi/tslib": ["tslib@2.8.1", "", { "bundled": true }, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
-
-    "@tensamin/notifications/@tensamin/ttp": ["TTP@github:Tensamin/TTP#e246d1a", {}, "Tensamin-TTP-e246d1a", "sha512-ECvnNMtGemIawk/F1FcuOPwMmNgMUaAzcRZiEwHGuG1DtjcbQ8BSF1ZG9ZpGA/9HqcnHmoreG+QGjF6uLKbi+w=="],
 
     "@tensamin/shared/sonner": ["sonner@1.7.4", "", { "peerDependencies": { "react": "^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react-dom": "^18.0.0 || ^19.0.0 || ^19.0.0-rc" } }, "sha512-DIS8z4PfJRbIyfVFDVnK9rO3eYDtse4Omcm6bt0oEr5/jtLgysmjuBl1frJ9E/EQZrFmKx2A8m/s5s9CRXIzhw=="],
 

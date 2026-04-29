@@ -113,7 +113,7 @@ export function TinyPingGraph() {
       <TooltipTrigger
         render={
           <div
-            className="w-full h-6"
+            className="h-6 w-24 min-w-0 shrink-0"
             style={{
               WebkitMaskImage:
                 "linear-gradient(to right, transparent 0%, var(--primary) 15%, var(--primary) 85%, transparent 100%)",
@@ -122,13 +122,24 @@ export function TinyPingGraph() {
             }}
           >
             {data.length > 1 && (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                minWidth={0}
+                minHeight={24}
+              >
                 <AreaChart
                   data={data}
                   margin={{ top: 2, right: 0, bottom: 2, left: 0 }}
                 >
                   <defs>
-                    <linearGradient id="pingGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="pingGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop
                         offset="0%"
                         stopColor="currentColor"

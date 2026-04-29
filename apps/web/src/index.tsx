@@ -25,6 +25,7 @@ import { useInitializeCall } from "@tensamin/call/store";
 import { Provider as SocketContext } from "@tensamin/ttp";
 import UserContext from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
+import NotificationsProvider from "@tensamin/notifications/context";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
@@ -145,7 +146,9 @@ function AppShell() {
         <CallInit />
         <TAuthWrapper>
           <AppLayout>
-            <Outlet />
+            <NotificationsProvider>
+              <Outlet />
+            </NotificationsProvider>
           </AppLayout>
         </TAuthWrapper>
       </UserContext>

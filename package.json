@@ -38,10 +38,11 @@
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.30.tar.gz",
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.12.tar.gz"
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.13.tar.gz"
   },
   "dependencies": {
     "@tensamin/ttp-core": "*",
-    "@tensamin/ui": "*"
+    "@tensamin/ui": "*",
+    "sonner": "^2.0.7"
   }
 }

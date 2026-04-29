@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-28T17:49:46.477Z",
-  "packageCount": 57,
+  "generatedAt": "2026-04-29T21:21:16.347Z",
+  "packageCount": 60,
   "packages": [
     {
       "name": "@codemirror/commands",
@@ -240,7 +240,7 @@
     },
     {
       "name": "@tensamin/ttp-core",
-      "version": "0.0.12",
+      "version": "0.0.13",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
@@ -248,7 +248,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@tensamin_ttp-core@0.0.12",
+      "licenseFolder": "licenses/@tensamin_ttp-core@0.0.13",
       "sourcePackageDir": "packages/ttp/node_modules/@tensamin/ttp-core"
     },
     {
@@ -550,6 +550,32 @@
       "sourcePackageDir": "apps/tauri/node_modules/react-dom"
     },
     {
+      "name": "recharts",
+      "version": "3.8.1",
+      "license": "MIT",
+      "homepage": "https://github.com/recharts/recharts",
+      "repository": "git+https://github.com/recharts/recharts.git",
+      "description": "React charts",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/recharts@3.8.1",
+      "sourcePackageDir": "packages/call/node_modules/recharts"
+    },
+    {
+      "name": "recharts",
+      "version": "3.8.1",
+      "license": "MIT",
+      "homepage": "https://github.com/recharts/recharts",
+      "repository": "git+https://github.com/recharts/recharts.git",
+      "description": "React charts",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/recharts@3.8.1",
+      "sourcePackageDir": "packages/call/node_modules/recharts"
+    },
+    {
       "name": "shadcn",
       "version": "4.2.0",
       "license": "MIT",
@@ -743,6 +769,19 @@
       ],
       "licenseFolder": "licenses/zod@4.3.6",
       "sourcePackageDir": "apps/web/node_modules/zod"
+    },
+    {
+      "name": "zustand",
+      "version": "5.0.12",
+      "license": "MIT",
+      "homepage": "https://github.com/pmndrs/zustand",
+      "repository": "git+https://github.com/pmndrs/zustand.git",
+      "description": "🐻 Bear necessities for state management in React",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/zustand@5.0.12",
+      "sourcePackageDir": "packages/call/node_modules/zustand"
     }
   ]
 }

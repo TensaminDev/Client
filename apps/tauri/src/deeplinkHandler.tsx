@@ -59,10 +59,6 @@ export default function DeeplinkProvider({
     };
   }, [isTauriEnv]);
 
-  useEffect(() => {
-    console.log(deeplinks);
-  }, [deeplinks]);
-
   return (
     <deeplinkContext.Provider
       value={{

@@ -12,7 +12,11 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@tensamin/ttp": "git+https://github.com/Tensamin/TTP.git",
+    "@tensamin/ttp": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/crypto": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "@tensamin/user": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zod": "^4.3.6"

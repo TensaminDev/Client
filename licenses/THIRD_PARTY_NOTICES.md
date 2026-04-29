@@ -173,11 +173,11 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@tauri-apps_plugin-opener@2.5.3`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-opener`
 
-## @tensamin/ttp-core@0.0.12
+## @tensamin/ttp-core@0.0.13
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@tensamin_ttp-core@0.0.12`
+- Folder: `licenses/@tensamin_ttp-core@0.0.13`
 - Source package dir: `packages/ttp/node_modules/@tensamin/ttp-core`
 
 ## @tensamin/ui@0.0.30
@@ -401,6 +401,26 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/react-dom@19.2.5`
 - Source package dir: `apps/tauri/node_modules/react-dom`
 
+## recharts@3.8.1
+
+- License: MIT
+- Homepage: https://github.com/recharts/recharts
+- Repository: git+https://github.com/recharts/recharts.git
+- Description: React charts
+- Included files: LICENSE
+- Folder: `licenses/recharts@3.8.1`
+- Source package dir: `packages/call/node_modules/recharts`
+
+## recharts@3.8.1
+
+- License: MIT
+- Homepage: https://github.com/recharts/recharts
+- Repository: git+https://github.com/recharts/recharts.git
+- Description: React charts
+- Included files: LICENSE
+- Folder: `licenses/recharts@3.8.1`
+- Source package dir: `packages/call/node_modules/recharts`
+
 ## shadcn@4.2.0
 
 - License: MIT
@@ -547,3 +567,13 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Included files: LICENSE
 - Folder: `licenses/zod@4.3.6`
 - Source package dir: `apps/web/node_modules/zod`
+
+## zustand@5.0.12
+
+- License: MIT
+- Homepage: https://github.com/pmndrs/zustand
+- Repository: git+https://github.com/pmndrs/zustand.git
+- Description: 🐻 Bear necessities for state management in React
+- Included files: LICENSE
+- Folder: `licenses/zustand@5.0.12`
+- Source package dir: `packages/call/node_modules/zustand`

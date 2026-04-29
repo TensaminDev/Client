@@ -12,7 +12,6 @@ export default function Preview() {
     let active = true;
 
     if (!currentCallData?.exists) {
-      setData([]);
       return () => {
         active = false;
       };
@@ -52,7 +51,7 @@ export default function Preview() {
           })}
         </div>
       ) : (
-        <p className="text-2xl">Invalid call</p>
+        <p className="text-2xl">Call expired</p>
       )}
     </div>
   );
