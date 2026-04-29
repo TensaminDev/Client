@@ -1,17 +1,27 @@
 import { Button } from "@tensamin/ui";
-import { useCall } from "../../context";
+import { toggleMute, useCall } from "../../store";
 import { Mic, MicOff } from "lucide-react";
 
-export default function MuteButton({ className }: { className?: string }) {
-  const { room } = useCall();
-  const micEnabled = room.localParticipant.isMicrophoneEnabled;
+export default function MuteButton({
+  className,
+  iconSize,
+}: {
+  className?: string;
+  iconSize?: number;
+}) {
+  const micEnabled = useCall((state) => state.micEnabled);
 
   return (
     <Button
       variant={micEnabled ? "default" : "destructive"}
       className={className}
+      onClick={() => void toggleMute()}
     >
-      {micEnabled ? <Mic /> : <MicOff />}
+      {micEnabled ? (
+        <Mic style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }} />
+      ) : (
+        <MicOff style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }} />
+      )}
     </Button>
   );
 }

@@ -1,39 +1,47 @@
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import { MonitorDot, ScreenShare } from "lucide-react";
-import { useCall } from "../../context";
+import { setScreenShareEnabled, useCall } from "../../store";
 
 export default function ScreenshareButton({
   className,
+  iconSize,
 }: {
   className?: string;
+  iconSize?: number;
 }) {
-  const { room } = useCall();
-
-  const isScreensharing = room.localParticipant.isScreenShareEnabled;
+  const isScreensharing = useCall((state) => state.screenShareEnabled);
 
   return (
     <Popover>
       <PopoverTrigger
         render={
           <Button
-            variant={isScreensharing ? "secondary" : "default"}
+            variant={isScreensharing ? "subtleDefault" : "default"}
             className={className}
           >
-            {isScreensharing ? <MonitorDot /> : <ScreenShare />}
+            {isScreensharing ? (
+              <MonitorDot
+                style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
+              />
+            ) : (
+              <ScreenShare
+                style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
+              />
+            )}
           </Button>
         }
       />
       <PopoverContent className="w-auto flex flex-col gap-2">
         <Button
           disabled={isScreensharing}
-          onClick={() => room.localParticipant.setScreenShareEnabled(true)}
+          onClick={() => void setScreenShareEnabled(true)}
         >
           Start
         </Button>
         <Button
           variant="destructive"
           disabled={!isScreensharing}
-          onClick={() => room.localParticipant.setScreenShareEnabled(false)}
+          onClick={() => void setScreenShareEnabled(false)}
         >
           Stop
         </Button>

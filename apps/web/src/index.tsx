@@ -21,7 +21,7 @@ import CallScreen from "@tensamin/call/screen";
 import Login from "@/routes/screens/login";
 
 import ChatContext from "@tensamin/chat/context";
-import CallContext from "@tensamin/call/context";
+import { useInitializeCall } from "@tensamin/call/store";
 import { Provider as SocketContext } from "@tensamin/ttp";
 import UserContext from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
@@ -142,16 +142,21 @@ function AppShell() {
   return (
     <SocketContext>
       <UserContext>
-        <CallContext>
-          <TAuthWrapper>
-            <AppLayout>
-              <Outlet />
-            </AppLayout>
-          </TAuthWrapper>
-        </CallContext>
+        <CallInit />
+        <TAuthWrapper>
+          <AppLayout>
+            <Outlet />
+          </AppLayout>
+        </TAuthWrapper>
       </UserContext>
     </SocketContext>
   );
+}
+
+function CallInit() {
+  useInitializeCall();
+
+  return null;
 }
 
 function Chat() {

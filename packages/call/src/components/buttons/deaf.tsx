@@ -1,9 +1,15 @@
 import { Button } from "@tensamin/ui";
-import { useCall } from "../../context";
+import { toggleDeaf, useCall } from "../../store";
 import { HeadphoneOff, Headphones } from "lucide-react";
 
-export default function DeafButton({ className }: { className?: string }) {
-  const { toggleDeaf, deaf } = useCall();
+export default function DeafButton({
+  className,
+  iconSize,
+}: {
+  className?: string;
+  iconSize?: number;
+}) {
+  const deaf = useCall((state) => state.deaf);
 
   return (
     <Button
@@ -11,7 +17,15 @@ export default function DeafButton({ className }: { className?: string }) {
       onClick={toggleDeaf}
       className={className}
     >
-      {deaf ? <HeadphoneOff /> : <Headphones />}
+      {deaf ? (
+        <HeadphoneOff
+          style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
+        />
+      ) : (
+        <Headphones
+          style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
+        />
+      )}
     </Button>
   );
 }

@@ -1,8 +1,12 @@
+import Actions from "../../components/actions";
+import TopBar from "../../components/top";
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      Layout
-      {children}
+    <div className="w-full h-full flex flex-col bg-green-500">
+      <TopBar />
+      <div className="w-full h-full">{children}</div>
+      <Actions />
     </div>
   );
 }

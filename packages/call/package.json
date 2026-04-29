@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./context": "./src/context.tsx",
+    "./store": "./src/store.tsx",
     "./screen": "./src/screen.tsx",
     "./utils": "./src/utils.ts",
     "./sidebarBox": "./src/components/sidebarBox.tsx"
@@ -32,6 +32,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.8.1",
+    "zustand": "^5.0.8",
     "zod": "^4.3.6"
   }
 }

@@ -1,7 +1,7 @@
 import { Button } from "@tensamin/ui";
 import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
-import { useCall } from "@tensamin/call/context";
+import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
 import { Skeleton } from "@tensamin/ui";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@tensamin/ui";
@@ -13,7 +13,7 @@ import { WindowControls as Controls } from "@tensamin/ui";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
-  const { joinCall, state } = useCall();
+  const callState = useCall((state) => state.state);
   const { contacts } = useTTP();
 
   const { pathname } = useLocation();
@@ -73,9 +73,9 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           <>
             {currentCalls.length === 0 ? (
               <Button
-                disabled={state !== "closed"}
+                disabled={callState !== "closed"}
                 onClick={() => {
-                  joinCall(id);
+                  void joinCall(id);
                 }}
                 className="w-9 h-9 aspect-square rounded-lg"
                 variant="outline"
@@ -84,9 +84,9 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               </Button>
             ) : currentCalls.length === 1 ? (
               <Button
-                disabled={state !== "closed"}
+                disabled={callState !== "closed"}
                 onClick={() => {
-                  joinCall(id, currentCalls[0].secret, currentCalls[0].id);
+                  void joinCall(id, currentCalls[0].secret, currentCalls[0].id);
                 }}
                 className="w-9 h-9 aspect-square rounded-lg"
               >
@@ -108,7 +108,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                         value={call.id}
                         key={call.id}
                         onSelect={() => {
-                          joinCall(id, call.secret, call.id);
+                          void joinCall(id, call.secret, call.id);
                         }}
                       >
                         {displayCallId(call.id)}
