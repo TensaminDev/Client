@@ -13,6 +13,7 @@ import {
   LocalAudioTrack,
   Room,
   RoomEvent,
+  type RemoteTrack,
   Track,
 } from "livekit-client";
 import z from "zod";
@@ -80,6 +81,37 @@ const room = new Room({
     worker: e2eeWorker,
   },
 });
+const remoteAudioElements = new Map<string, HTMLMediaElement>();
+
+function attachRemoteAudio(trackSid: string, element: HTMLMediaElement) {
+  const existingElement = remoteAudioElements.get(trackSid);
+
+  if (existingElement) {
+    existingElement.remove();
+  }
+
+  element.autoplay = true;
+  element.style.display = "none";
+  document.body.appendChild(element);
+  remoteAudioElements.set(trackSid, element);
+}
+
+function detachRemoteAudio(trackSid: string) {
+  const element = remoteAudioElements.get(trackSid);
+
+  if (!element) {
+    return;
+  }
+
+  element.remove();
+  remoteAudioElements.delete(trackSid);
+}
+
+function clearRemoteAudio() {
+  for (const trackSid of remoteAudioElements.keys()) {
+    detachRemoteAudio(trackSid);
+  }
+}
 
 function requireRuntime(runtime: Runtime | null): Runtime {
   if (!runtime) {
@@ -495,9 +527,28 @@ export function useInitializeCall() {
       void ensureNoiseFilter(noiseFilter);
     };
 
+    const onTrackSubscribed = (track: RemoteTrack) => {
+      if (track.kind !== "audio" || !track.sid) {
+        return;
+      }
+
+      attachRemoteAudio(track.sid, track.attach());
+    };
+
+    const onTrackUnsubscribed = (track: RemoteTrack) => {
+      if (track.kind !== "audio" || !track.sid) {
+        return;
+      }
+
+      track.detach();
+      detachRemoteAudio(track.sid);
+    };
+
     room.on(RoomEvent.Connected, onConnected);
     room.on(RoomEvent.Reconnected, onConnected);
     room.on(RoomEvent.Disconnected, onDisconnected);
+    room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
+    room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
     room.on(RoomEvent.TrackMuted, onParticipantStateChange);
     room.on(RoomEvent.TrackUnmuted, onParticipantStateChange);
     room.on(RoomEvent.LocalTrackPublished, onParticipantStateChange);
@@ -513,6 +564,8 @@ export function useInitializeCall() {
       room.off(RoomEvent.Connected, onConnected);
       room.off(RoomEvent.Reconnected, onConnected);
       room.off(RoomEvent.Disconnected, onDisconnected);
+      room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
+      room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
       room.off(RoomEvent.TrackMuted, onParticipantStateChange);
       room.off(RoomEvent.TrackUnmuted, onParticipantStateChange);
       room.off(RoomEvent.LocalTrackPublished, onParticipantStateChange);
@@ -520,6 +573,7 @@ export function useInitializeCall() {
       room.off(RoomEvent.MediaDevicesError, onMediaDeviceFailure);
       room.off(RoomEvent.EncryptionError, onEncryptionError);
       room.off(RoomEvent.ConnectionStateChanged, onParticipantStateChange);
+      clearRemoteAudio();
       listenersRegistered.current = false;
       room.disconnect();
       e2eeWorker.terminate();
