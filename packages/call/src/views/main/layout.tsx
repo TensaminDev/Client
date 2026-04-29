@@ -3,7 +3,7 @@ import TopBar from "../../components/top";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full h-full flex flex-col bg-green-500">
+    <div className="w-full h-full flex flex-col">
       <TopBar />
       <div className="w-full h-full">{children}</div>
       <Actions />

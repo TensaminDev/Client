@@ -198,7 +198,19 @@ export const ttp = {
       call_id: z.string(),
     }),
     response: z.object({
-      users: z.array(z.number()),
+      user_ids: z.array(z.number()),
+    }),
+  },
+  call_invite: {
+    request: z.object({
+      call_id: z.string(),
+      call_secret: z.base64(),
+      receiver_id: z.number(),
+    }),
+    response: z.object({
+      call_id: z.string().optional(),
+      call_secret: z.base64().optional(),
+      sender_id: z.number().optional(),
     }),
   },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;

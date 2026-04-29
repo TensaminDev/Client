@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { create } from "zustand";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useTTP } from "@tensamin/ttp";
@@ -16,10 +16,13 @@ import {
   Track,
 } from "livekit-client";
 import z from "zod";
+import { toast as sonnerToast } from "sonner";
 
 type CallState = "closed" | "closing" | "connecting" | "open" | "encrypting";
 type CallView = "preview" | "focused" | "grid";
-type CurrentCallData = z.infer<typeof ttp.call_data.response> | null;
+type CurrentCallData =
+  | (z.infer<typeof ttp.call_data.response> & { exists: boolean })
+  | null;
 
 type NavigateFn = (options: {
   to: string;
@@ -50,6 +53,7 @@ type Runtime = {
 type CallStore = {
   state: CallState;
   view: CallView;
+  invitedUserId: number | null;
   callId: string | null;
   callSecret: string | null;
   livekitToken: string | null;
@@ -112,7 +116,9 @@ export function setCallId(callId: string | null) {
   useCall.setState({ callId });
 }
 
-export function setCurrentCallData(currentCallData: CurrentCallData) {
+export function setCurrentCallData(
+  currentCallData: CurrentCallData & { exists: boolean },
+) {
   useCall.setState({ currentCallData });
 }
 
@@ -173,6 +179,7 @@ export async function connect(callId: string) {
 export function disconnect() {
   useCall.setState({
     state: "closing",
+    invitedUserId: null,
     callId: null,
     callSecret: null,
     livekitToken: null,
@@ -193,11 +200,15 @@ export async function joinCall(
   userId: number,
   callSecret?: string,
   existingCallId?: string,
+  sendInvite = true,
 ) {
   const runtime = requireRuntime(useCall.getState().runtime);
 
   log(2, "call", "purple", "Call creation initialised");
-  useCall.setState({ state: "encrypting" });
+  useCall.setState({
+    state: "encrypting",
+    invitedUserId: sendInvite ? userId : null,
+  });
 
   if (callSecret) {
     try {
@@ -274,6 +285,7 @@ export function resetCallState() {
   useCall.setState({
     state: "closed",
     view: "preview",
+    invitedUserId: null,
     callId: null,
     callSecret: null,
     livekitToken: null,
@@ -306,6 +318,7 @@ async function ensureNoiseFilter(
 export const useCall = create<CallStore>(() => ({
   state: "closed",
   view: "preview",
+  invitedUserId: null,
   callId: null,
   callSecret: null,
   livekitToken: null,
@@ -324,8 +337,8 @@ export const useCall = create<CallStore>(() => ({
 export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { send } = useTTP();
-  const { getSharedSecret, decryptText } = useCrypto();
+  const { send, subscribePush } = useTTP();
+  const { getSharedSecret, decryptText, encryptText } = useCrypto();
   const { load } = useStorage();
   const { get } = useUser();
 
@@ -358,6 +371,49 @@ export function useInitializeCall() {
     });
   }, [decryptText, get, getSharedSecret, load, navigate, send]);
 
+  const showCallingScreen = useCallback(
+    async (callId: string, callSecret: string, senderId: number) => {
+      const senderName = await get(senderId).then((data) => data.display);
+
+      sonnerToast(`Incoming call from ${senderName}`, {
+        action: {
+          label: "Accept",
+          onClick: () => {
+            joinCall(senderId, callSecret, callId, false).catch((err) => {
+              log(1, "call", "red", "Failed to join call", err);
+            });
+          },
+        },
+        cancel: {
+          label: "Decline",
+          onClick: () => {
+            log(2, "call", "purple", "Declined call invite", {
+              callId,
+              senderId,
+            });
+          },
+        },
+      });
+    },
+    [get],
+  );
+
+  // listen to call invites
+  useEffect(() => {
+    subscribePush(async (message) => {
+      if (message.type !== "call_invite") return;
+
+      const { call_id, call_secret, sender_id } = message.data as {
+        call_id: string;
+        call_secret: string;
+        sender_id: number;
+      };
+
+      showCallingScreen(call_id, call_secret, sender_id);
+    });
+  }, [subscribePush, showCallingScreen]);
+
+  // get callId from url
   useEffect(() => {
     if (!location.pathname.startsWith("/call")) {
       return;
@@ -371,6 +427,7 @@ export function useInitializeCall() {
     }
   }, [location.pathname, location.searchStr]);
 
+  // room setup
   useEffect(() => {
     if (listenersRegistered.current) {
       return;
@@ -381,6 +438,33 @@ export function useInitializeCall() {
     const onConnected = () => {
       useCall.setState({ state: "open" });
       syncParticipantState();
+
+      const invitedUserId = useCall.getState().invitedUserId;
+
+      if (invitedUserId != null) {
+        setTimeout(async () => {
+          void requireRuntime(useCall.getState().runtime)
+            .send("call_invite", {
+              receiver_id: invitedUserId,
+              call_id: useCall.getState().callId!,
+              call_secret: await encryptText(
+                await getSharedSecret(
+                  await load("private_key"),
+                  await get(await load("user_id")).then(
+                    (data) => data.public_key,
+                  ),
+                  await get(invitedUserId).then((data) => data.public_key),
+                ),
+                useCall.getState().callSecret!,
+              ),
+            })
+            .catch((error) => {
+              toast("error", "Failed to send call invite.");
+              log(1, "call", "red", "Failed to send call invite", error);
+            });
+        }, 1000);
+      }
+
       log(2, "call", "purple", "Connected to call", {
         callId: useCall.getState().callId,
         callSecret: useCall.getState().callSecret,
@@ -440,8 +524,9 @@ export function useInitializeCall() {
       room.disconnect();
       e2eeWorker.terminate();
     };
-  }, [noiseFilter]);
+  }, [noiseFilter, encryptText, get, getSharedSecret, load]);
 
+  // fetch call data for preview page
   useEffect(() => {
     if (view !== "preview" || !callId) {
       return;
@@ -449,7 +534,10 @@ export function useInitializeCall() {
 
     send("call_data", { call_id: callId })
       .then((data) => {
-        setCurrentCallData(data.data as z.infer<typeof ttp.call_data.response>);
+        setCurrentCallData({
+          ...(data.data as z.infer<typeof ttp.call_data.response>),
+          exists: true,
+        });
       })
       .catch((err) => {
         log(1, "Call", "red", "Failed to get call data", {
@@ -457,7 +545,8 @@ export function useInitializeCall() {
           error: err,
         });
         setCurrentCallData({
-          users: [],
+          user_ids: [],
+          exists: false,
         });
       });
   }, [callId, send, view]);
