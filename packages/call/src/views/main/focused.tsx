@@ -1,4 +1,5 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { RoomEvent } from "livekit-client";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useCall } from "../../store";
 import Base from "../../components/modals/base";
 
@@ -16,6 +17,20 @@ export default function View() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [focusedTileSize, setFocusedTileSize] = useState({ width: 0, height: 0 });
   const [isFocusedTileFlush, setIsFocusedTileFlush] = useState(false);
+  const [participantVersion, setParticipantVersion] = useState(0);
+
+  useEffect(() => {
+    const syncParticipants = () => {
+      setParticipantVersion((version) => version + 1);
+    };
+    room.on(RoomEvent.ParticipantConnected, syncParticipants);
+    room.on(RoomEvent.ParticipantDisconnected, syncParticipants);
+
+    return () => {
+      room.off(RoomEvent.ParticipantConnected, syncParticipants);
+      room.off(RoomEvent.ParticipantDisconnected, syncParticipants);
+    };
+  }, [room]);
 
   const users = useMemo(() => {
     const participants = [
@@ -27,11 +42,16 @@ export default function View() {
       const participantId = Number(participant.identity);
       return Number.isInteger(participantId) && participantId > 0;
     });
-  }, [room]);
+  // eslint-disable-next-line
+  }, [participantVersion, room]);
 
   const userIds = useMemo(
     () => users.map((participant) => Number(participant.identity)),
     [users],
+  );
+  const activeScreenShareParticipantIdSet = useMemo(
+    () => new Set(activeScreenShareParticipantIds),
+    [activeScreenShareParticipantIds],
   );
 
   const tiles = useMemo(
@@ -45,14 +65,19 @@ export default function View() {
         })),
       ...userIds
         .filter((id) => id !== focusedParticipantId)
-        .filter((id) => !activeScreenShareParticipantIds.includes(id))
+        .filter((id) => !activeScreenShareParticipantIdSet.has(id))
         .map((participantId) => ({
           key: `user:${participantId}`,
           kind: "user" as const,
           participantId,
         })),
     ],
-    [activeScreenShareParticipantIds, userIds, focusedParticipantId],
+    [
+      activeScreenShareParticipantIds,
+      activeScreenShareParticipantIdSet,
+      userIds,
+      focusedParticipantId,
+    ],
   );
 
   useLayoutEffect(() => {
@@ -103,9 +128,17 @@ export default function View() {
     return null;
   }
 
-  const focusedParticipant = room.getParticipantByIdentity(
-    String(focusedParticipantId),
-  );
+  function getParticipantById(participantId: number) {
+    if (Number(room.localParticipant.identity) === participantId) {
+      return room.localParticipant;
+    }
+
+    return room.getParticipantByIdentity(String(participantId));
+  }
+
+  const focusedParticipant = getParticipantById(focusedParticipantId);
+  const focusedParticipantHasActiveScreenShare =
+    activeScreenShareParticipantIdSet.has(focusedParticipantId);
 
   return (
     <div ref={containerRef} className="flex h-full w-full items-center justify-center overflow-hidden">
@@ -117,10 +150,8 @@ export default function View() {
           <div className="overflow-hidden" style={focusedTileSize}>
             <Base
               flush={isFocusedTileFlush}
-              type={focusedParticipant?.isScreenShareEnabled ? "stream" : "user"}
-              participant={room.getParticipantByIdentity(
-                String(focusedParticipantId),
-              )}
+              type={focusedParticipantHasActiveScreenShare ? "stream" : "user"}
+              participant={focusedParticipant}
             />
           </div>
         </div>
@@ -133,9 +164,7 @@ export default function View() {
               <div key={tile.key} className="h-full shrink-0 aspect-video">
                 <Base
                   type={tile.kind}
-                  participant={room.getParticipantByIdentity(
-                    String(tile.participantId),
-                  )}
+                  participant={getParticipantById(tile.participantId)}
                 />
               </div>
             ))}

@@ -157,7 +157,7 @@ function getActiveScreenShareParticipantIds(): number[] {
     .map((participant) => ({
       participantId: getParticipantId(participant.identity),
       hasScreenShare:
-        participant.getTrackPublication(Track.Source.ScreenShare) != null,
+        participant.getTrackPublication(Track.Source.ScreenShare)?.track != null,
     }))
     .filter(
       (entry): entry is { participantId: number; hasScreenShare: true } =>
@@ -841,6 +841,8 @@ export function useInitializeCall() {
     room.on(RoomEvent.Disconnected, onDisconnected);
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+    room.on(RoomEvent.TrackPublished, onParticipantStateChange);
+    room.on(RoomEvent.TrackUnpublished, onParticipantStateChange);
     room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
     room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
     room.on(RoomEvent.TrackMuted, onParticipantStateChange);
@@ -860,6 +862,8 @@ export function useInitializeCall() {
       room.off(RoomEvent.Disconnected, onDisconnected);
       room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
       room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+      room.off(RoomEvent.TrackPublished, onParticipantStateChange);
+      room.off(RoomEvent.TrackUnpublished, onParticipantStateChange);
       room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
       room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
       room.off(RoomEvent.TrackMuted, onParticipantStateChange);

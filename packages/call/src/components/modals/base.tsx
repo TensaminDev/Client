@@ -7,7 +7,7 @@ import {
   ContextMenuTrigger,
 } from "@tensamin/ui";
 import { focusParticipant, setCallView, useCall } from "../../store";
-import { type Participant } from "livekit-client";
+import { Track, type Participant } from "livekit-client";
 import { useEffect, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
 import VideoViewer from "../videoViewer";
@@ -67,6 +67,9 @@ export default function Base({
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
   const view = useCall((state) => state.view);
   const [user, setUser] = useState<User | null>(null);
+  const screenSharePublication = participant?.getTrackPublication(
+    Track.Source.ScreenShare,
+  );
 
   useEffect(() => {
     const participantId = Number(participant?.identity);
@@ -139,18 +142,15 @@ export default function Base({
               {/* Detect video / user and place here */}
 
               {type === "stream" &&
-                Array.from(participant.videoTrackPublications.values()).map(
-                  (publication) =>
-                    publication.isSubscribed && publication.track ? (
-                      <VideoViewer
-                        flush={flush}
-                        participantId={participant.identity}
-                        publication={publication}
-                      />
-                    ) : (
-                      <Loader2 className="animate-spin" />
-                    ),
-                )}
+                (screenSharePublication?.isSubscribed && screenSharePublication.track ? (
+                  <VideoViewer
+                    flush={flush}
+                    participantId={participant.identity}
+                    publication={screenSharePublication}
+                  />
+                ) : (
+                  <Loader2 className="animate-spin" />
+                ))}
 
               {type === "user" && <p>{user.display}</p>}
             </div>
