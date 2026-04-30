@@ -129,13 +129,16 @@ export default function View() {
   }, [room]);
 
   const users = useMemo(() => {
-    const participants = [...room.remoteParticipants.values(), room.localParticipant];
+    const participants = [
+      ...room.remoteParticipants.values(),
+      room.localParticipant,
+    ];
 
     return participants.filter((participant) => {
       const participantId = Number(participant.identity);
       return Number.isInteger(participantId) && participantId > 0;
     });
-  // eslint-disable-next-line
+    // eslint-disable-next-line
   }, [participantVersion, room]);
 
   const userIds = useMemo(
@@ -195,9 +198,13 @@ export default function View() {
   }
 
   return (
-    <div ref={containerRef} style={{
-      height: "calc(100% - 2rem)"
-    }} className="w-full overflow-hidden p-3">
+    <div
+      ref={containerRef}
+      style={{
+        height: "calc(100% - 2rem)",
+      }}
+      className="w-full overflow-hidden p-3"
+    >
       <div className="flex h-full w-full flex-col items-center justify-center gap-3">
         {rows.map((row) => (
           <div key={row.rowIndex} className="flex justify-center gap-3">
@@ -217,7 +224,10 @@ export default function View() {
                     height: layout.tileHeight,
                   }}
                 >
-                  <Base type={tile.kind} participant={getParticipantById(tile.participantId)} />
+                  <Base
+                    type={tile.kind}
+                    participant={getParticipantById(tile.participantId)}
+                  />
                 </div>
               );
             })}

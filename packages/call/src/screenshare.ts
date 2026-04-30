@@ -51,7 +51,13 @@ export function createScreenShareController({
     await Promise.all(
       screenShareSession.tracks.map((track) =>
         room.localParticipant.unpublishTrack(track, true).catch((error) => {
-          log(1, "call", "red", "Failed to unpublish screen share track", error);
+          log(
+            1,
+            "call",
+            "red",
+            "Failed to unpublish screen share track",
+            error,
+          );
         }),
       ),
     );
@@ -194,15 +200,12 @@ export function createScreenShareController({
       });
     }, 125);
 
-    await publishScreenShareTracks(
-      [videoTrack],
-      () => {
-        stopped = true;
-        window.clearInterval(interval);
-        stream.getTracks().forEach((track) => track.stop());
-        canvas.remove();
-      },
-    );
+    await publishScreenShareTracks([videoTrack], () => {
+      stopped = true;
+      window.clearInterval(interval);
+      stream.getTracks().forEach((track) => track.stop());
+      canvas.remove();
+    });
   }
 
   async function stopScreenShare() {

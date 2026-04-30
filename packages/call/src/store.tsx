@@ -157,7 +157,8 @@ function getActiveScreenShareParticipantIds(): number[] {
     .map((participant) => ({
       participantId: getParticipantId(participant.identity),
       hasScreenShare:
-        participant.getTrackPublication(Track.Source.ScreenShare)?.track != null,
+        participant.getTrackPublication(Track.Source.ScreenShare)?.track !=
+        null,
     }))
     .filter(
       (entry): entry is { participantId: number; hasScreenShare: true } =>
@@ -290,18 +291,21 @@ export async function sendCallInvite(userId: number) {
 
   const ownUserId = (await runtime.load("user_id")) as number;
   const privateKey = await runtime.load("private_key");
-  const ownPublicKey = await runtime.getUser(ownUserId).then(
-    (data) => data.public_key,
-  );
-  const remotePublicKey = await runtime.getUser(userId).then(
-    (data) => data.public_key,
-  );
+  const ownPublicKey = await runtime
+    .getUser(ownUserId)
+    .then((data) => data.public_key);
+  const remotePublicKey = await runtime
+    .getUser(userId)
+    .then((data) => data.public_key);
   const sharedSecret = await runtime.getSharedSecret(
     privateKey,
     ownPublicKey,
     remotePublicKey,
   );
-  const encryptedCallSecret = await runtime.encryptText(sharedSecret, callSecret);
+  const encryptedCallSecret = await runtime.encryptText(
+    sharedSecret,
+    callSecret,
+  );
 
   await runtime.send("call_invite", {
     receiver_id: userId,
@@ -373,8 +377,9 @@ export function stopWatchingFocusedStream() {
   stopWatchingStream(focusedParticipantId);
 }
 
-let screenShareController: ReturnType<typeof createScreenShareController> | null =
-  null;
+let screenShareController: ReturnType<
+  typeof createScreenShareController
+> | null = null;
 
 function getScreenShareController() {
   if (!screenShareController) {
@@ -390,7 +395,8 @@ function getScreenShareController() {
             : updater,
         );
       },
-      getLocalParticipantId: () => getParticipantId(room.localParticipant.identity),
+      getLocalParticipantId: () =>
+        getParticipantId(room.localParticipant.identity),
       startWatching: startWatchingStream,
       stopWatching: stopWatchingStream,
       syncParticipantState,
@@ -439,7 +445,13 @@ export async function disconnect() {
   try {
     await getScreenShareController().clearPublishedScreenShare();
   } catch (error) {
-    log(1, "call", "red", "Failed to clear screen share during disconnect", error);
+    log(
+      1,
+      "call",
+      "red",
+      "Failed to clear screen share during disconnect",
+      error,
+    );
   }
 
   useCall.setState({
@@ -463,7 +475,7 @@ export async function disconnect() {
   });
 
   try {
-    room.disconnect();
+    await room.disconnect();
   } catch (error) {
     log(1, "call", "red", "Failed to disconnect from room", error);
   } finally {
@@ -480,6 +492,11 @@ export async function joinCall(
   sendInvite = true,
 ) {
   const runtime = requireRuntime(useCall.getState().runtime);
+  const state = useCall.getState().state;
+
+  if (state !== "closed") {
+    await disconnect();
+  }
 
   log(2, "call", "purple", "Call creation initialised");
   useCall.setState({
@@ -754,11 +771,10 @@ export function useInitializeCall() {
 
       if (invitedUserId != null) {
         setTimeout(async () => {
-          void sendCallInvite(invitedUserId)
-            .catch((error) => {
-              toast("error", "Failed to send call invite.");
-              log(1, "call", "red", "Failed to send call invite", error);
-            });
+          void sendCallInvite(invitedUserId).catch((error) => {
+            toast("error", "Failed to send call invite.");
+            log(1, "call", "red", "Failed to send call invite", error);
+          });
         }, 1000);
       }
 

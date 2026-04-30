@@ -15,7 +15,10 @@ export default function View() {
     (state) => state.activeScreenShareParticipantIds,
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [focusedTileSize, setFocusedTileSize] = useState({ width: 0, height: 0 });
+  const [focusedTileSize, setFocusedTileSize] = useState({
+    width: 0,
+    height: 0,
+  });
   const [isFocusedTileFlush, setIsFocusedTileFlush] = useState(false);
   const [participantVersion, setParticipantVersion] = useState(0);
 
@@ -42,7 +45,7 @@ export default function View() {
       const participantId = Number(participant.identity);
       return Number.isInteger(participantId) && participantId > 0;
     });
-  // eslint-disable-next-line
+    // eslint-disable-next-line
   }, [participantVersion, room]);
 
   const userIds = useMemo(
@@ -141,7 +144,10 @@ export default function View() {
     activeScreenShareParticipantIdSet.has(focusedParticipantId);
 
   return (
-    <div ref={containerRef} className="flex h-full w-full items-center justify-center overflow-hidden">
+    <div
+      ref={containerRef}
+      className="flex h-full w-full items-center justify-center overflow-hidden"
+    >
       <div
         className="flex max-h-full w-full flex-col items-center overflow-hidden"
         style={{ gap: tiles.length > 0 ? STACK_GAP_PX : 0 }}

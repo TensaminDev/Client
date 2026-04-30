@@ -7,12 +7,15 @@ export default function TopBar() {
   const room = useCall((state) => state.room);
   const view = useCall((state) => state.view);
 
-  const userIds = Array.from(room.remoteParticipants.values(), (participant) => {
-    const participantId = Number(participant.identity);
-    return Number.isInteger(participantId) && participantId > 0
-      ? participantId
-      : null;
-  }).filter((participantId): participantId is number => participantId != null);
+  const userIds = Array.from(
+    room.remoteParticipants.values(),
+    (participant) => {
+      const participantId = Number(participant.identity);
+      return Number.isInteger(participantId) && participantId > 0
+        ? participantId
+        : null;
+    },
+  ).filter((participantId): participantId is number => participantId != null);
   const userIdsKey = userIds.join(",");
 
   const [users, setUsers] = useState<User[]>([]);

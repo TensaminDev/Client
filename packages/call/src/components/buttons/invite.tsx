@@ -1,10 +1,5 @@
 import { useTTP } from "@tensamin/ttp";
-import {
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@tensamin/ui";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import Wrapper from "@tensamin/user/wrapper";
 import { Mail } from "lucide-react";
 import { sendCallInvite } from "../../store";

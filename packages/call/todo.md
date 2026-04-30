@@ -7,3 +7,4 @@
   - Buttons
   - Preview image
 - Mobile
+- Deaf status is not synced

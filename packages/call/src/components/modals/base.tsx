@@ -142,7 +142,8 @@ export default function Base({
               {/* Detect video / user and place here */}
 
               {type === "stream" &&
-                (screenSharePublication?.isSubscribed && screenSharePublication.track ? (
+                (screenSharePublication?.isSubscribed &&
+                screenSharePublication.track ? (
                   <VideoViewer
                     flush={flush}
                     participantId={participant.identity}
