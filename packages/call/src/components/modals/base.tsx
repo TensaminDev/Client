@@ -1,21 +1,24 @@
-// show speaking ring
-
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@tensamin/ui";
-import { focusParticipant, setCallView, useCall } from "../../store";
+import {
+  focusParticipant,
+  getParsedParticipantMetadata,
+  setCallView,
+  useCall,
+} from "../../store";
 import { Track, type Participant } from "livekit-client";
 import { useEffect, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
 import VideoViewer from "../videoViewer";
-import { Loader2, MicOff, Monitor } from "lucide-react";
+import { Loader2, MicOff, Monitor, Shield } from "lucide-react";
 
 function TransparentButton({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-6 px-1.5 bg-black/80 rounded-sm flex items-center justify-center">
+    <div className="h-6 px-1.5 bg-black/40 backdrop-blur-xs border rounded-sm flex items-center justify-center">
       {children}
     </div>
   );
@@ -30,13 +33,22 @@ function Overlay({
   user: User;
   participant: Participant;
 }) {
+  const { isAdmin } = getParsedParticipantMetadata(user.user_id) || {
+    isAdmin: false,
+  };
+
   return (
-    <div className="w-full h-auto flex items-center gap-2">
+    <div className="w-full h-auto flex items-center gap-1">
       {type === "user" && (
         <>
           {!participant.isMicrophoneEnabled && (
             <TransparentButton>
               <MicOff className="size-3.5" />
+            </TransparentButton>
+          )}
+          {isAdmin && (
+            <TransparentButton>
+              <Shield className="size-3.5" />
             </TransparentButton>
           )}
         </>
@@ -130,9 +142,10 @@ export default function Base({
             }`}
           >
             <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
-              {view === "grid" && (
+              {view === "grid" ||
+              (view === "focused" && user.user_id !== focusedParticipantId) ? (
                 <Overlay type={type} user={user} participant={participant} />
-              )}
+              ) : null}
             </div>
             <div
               className={`z-10 bg-card absolute top-0 left-0 w-full h-full flex items-center justify-center ${
