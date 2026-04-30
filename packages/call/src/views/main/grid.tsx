@@ -137,7 +137,7 @@ export default function View() {
   );
 
   const rows = useMemo(() => {
-    let nextParticipant = 1;
+    let nextParticipant = 0;
 
     return layout.rowCounts.map((count, rowIndex) => {
       const participants = Array.from(
@@ -148,21 +148,29 @@ export default function View() {
     });
   }, [layout.rowCounts]);
 
+  const users = useMemo(() => {
+    const participants = [
+      ...room.remoteParticipants.values(),
+      room.localParticipant,
+    ];
+    return participants;
+  }, [room.localParticipant, room.remoteParticipants]);
+
   return (
-    <div ref={containerRef} className="h-full w-full overflow-hidden p-3">
+    <div ref={containerRef} className="h-[75vh] w-full overflow-hidden p-3">
       <div className="flex h-full w-full flex-col items-center justify-center gap-3">
         {rows.map((row) => (
           <div key={row.rowIndex} className="flex justify-center gap-3">
-            {row.participants.map((participant) => (
+            {row.participants.map((userIndex) => (
               <div
-                key={participant}
+                key={userIndex}
                 className="flex items-center justify-center rounded-xl bg-red-500"
                 style={{
                   width: layout.tileWidth,
                   height: layout.tileHeight,
                 }}
               >
-                Test {participant}
+                Test {users[userIndex]?.identity}
               </div>
             ))}
           </div>

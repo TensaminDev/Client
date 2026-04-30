@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { create } from "zustand";
 import { useLocation, useNavigate } from "@tanstack/react-router";
+import { invoke } from "@tauri-apps/api/core";
 import { useTTP } from "@tensamin/ttp";
 import { log, toast } from "@tensamin/shared/log";
 import { ttp } from "@tensamin/shared/data";
@@ -11,9 +12,11 @@ import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
   ExternalE2EEKeyProvider,
   LocalAudioTrack,
+  type LocalTrack,
   Room,
   RoomEvent,
   type RemoteTrack,
+  type ScreenShareCaptureOptions,
   Track,
   setLogExtension,
   getLogger,
@@ -62,6 +65,11 @@ type Runtime = {
   getUser: GetUserFn;
 };
 
+type ScreenShareSession = {
+  tracks: Array<LocalTrack | MediaStreamTrack>;
+  cleanup?: () => void;
+};
+
 type CallStore = {
   state: CallState;
   view: CallView;
@@ -73,6 +81,7 @@ type CallStore = {
   deaf: boolean;
   micEnabled: boolean;
   screenShareEnabled: boolean;
+  screenShareSession: ScreenShareSession | null;
   isEncrypted: boolean;
   room: Room;
   keyProvider: ExternalE2EEKeyProvider;
@@ -136,11 +145,12 @@ function requireRuntime(runtime: Runtime | null): Runtime {
 }
 
 export function syncParticipantState() {
-  const { room } = useCall.getState();
+  const { room, screenShareSession } = useCall.getState();
 
   useCall.setState({
     micEnabled: room.localParticipant.isMicrophoneEnabled,
-    screenShareEnabled: room.localParticipant.isScreenShareEnabled,
+    screenShareEnabled:
+      screenShareSession != null || room.localParticipant.isScreenShareEnabled,
     isEncrypted:
       room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
   });
@@ -225,6 +235,8 @@ export async function connect(callId: string) {
 }
 
 export function disconnect() {
+  void clearPublishedScreenShare();
+
   useCall.setState({
     state: "closing",
     invitedUserId: null,
@@ -234,6 +246,7 @@ export function disconnect() {
     currentCallData: null,
     deaf: false,
     view: "preview",
+    screenShareSession: null,
   });
 
   room.remoteParticipants.forEach((participant) => {
@@ -325,9 +338,161 @@ export async function toggleMute() {
   syncParticipantState();
 }
 
-export async function setScreenShareEnabled(enabled: boolean) {
-  await room.localParticipant.setScreenShareEnabled(enabled);
+async function clearPublishedScreenShare() {
+  const screenShareSession = useCall.getState().screenShareSession;
+
+  if (!screenShareSession) {
+    return;
+  }
+
+  await Promise.all(
+    screenShareSession.tracks.map((track) =>
+      room.localParticipant.unpublishTrack(track, true).catch((error) => {
+        log(1, "call", "red", "Failed to unpublish screen share track", error);
+      }),
+    ),
+  );
+
+  screenShareSession.cleanup?.();
+
+  useCall.setState({ screenShareSession: null });
+}
+
+async function publishScreenShareTracks(
+  tracks: Array<LocalTrack | MediaStreamTrack>,
+  cleanup?: () => void,
+) {
+  if (tracks.length === 0) {
+    throw new Error("No screen share tracks were created.");
+  }
+
+  await Promise.all(
+    tracks.map((track) =>
+      room.localParticipant.publishTrack(track, {
+        source:
+          track.kind === Track.Kind.Video
+            ? Track.Source.ScreenShare
+            : Track.Source.ScreenShareAudio,
+      }),
+    ),
+  );
+
+  for (const track of tracks) {
+    const mediaStreamTrack =
+      track instanceof MediaStreamTrack ? track : track.mediaStreamTrack;
+
+    mediaStreamTrack.addEventListener(
+      "ended",
+      () => {
+        void stopScreenShare();
+      },
+      { once: true },
+    );
+  }
+
+  useCall.setState({ screenShareSession: { tracks, cleanup } });
   syncParticipantState();
+}
+
+export async function startScreenShare(options?: ScreenShareCaptureOptions) {
+  await clearPublishedScreenShare();
+
+  const tracks = await room.localParticipant.createScreenTracks(options);
+
+  await publishScreenShareTracks(
+    tracks,
+    () => tracks.forEach((track) => track.stop()),
+  );
+}
+
+export async function startLinuxDesktopScreenShare(sourceId: string) {
+  await clearPublishedScreenShare();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1280;
+  canvas.height = 720;
+  canvas.style.display = "none";
+  document.body.appendChild(canvas);
+
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    canvas.remove();
+    throw new Error("Failed to initialize the screen share canvas.");
+  }
+
+  const stream = canvas.captureStream(8);
+  const videoTrack = stream.getVideoTracks()[0];
+
+  if (!videoTrack) {
+    canvas.remove();
+    throw new Error("Failed to create a video track for screen sharing.");
+  }
+
+  const image = new Image();
+  let stopped = false;
+  let frameRequestInFlight = false;
+
+  const renderFrame = async () => {
+    if (stopped || frameRequestInFlight) {
+      return;
+    }
+
+    frameRequestInFlight = true;
+
+    try {
+      const dataUrl = await invoke<string>("capture_screen_share_frame", {
+        sourceId,
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("Failed to decode screen share frame."));
+        image.src = dataUrl;
+      });
+
+      if (canvas.width !== image.naturalWidth || canvas.height !== image.naturalHeight) {
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    } finally {
+      frameRequestInFlight = false;
+    }
+  };
+
+  await renderFrame();
+
+  const interval = window.setInterval(() => {
+    void renderFrame().catch((error) => {
+      log(1, "call", "red", "Failed to capture Linux screen share frame", error);
+    });
+  }, 125);
+
+  await publishScreenShareTracks([videoTrack], () => {
+    stopped = true;
+    window.clearInterval(interval);
+    stream.getTracks().forEach((track) => track.stop());
+    canvas.remove();
+  });
+}
+
+export async function stopScreenShare() {
+  await clearPublishedScreenShare();
+  syncParticipantState();
+}
+
+export async function setScreenShareEnabled(
+  enabled: boolean,
+  options?: ScreenShareCaptureOptions,
+) {
+  if (enabled) {
+    await startScreenShare(options);
+    return;
+  }
+
+  await stopScreenShare();
 }
 
 export function resetCallState() {
@@ -340,6 +505,7 @@ export function resetCallState() {
     livekitToken: null,
     currentCallData: null,
     deaf: false,
+    screenShareSession: null,
   });
 
   syncParticipantState();
@@ -375,6 +541,7 @@ export const useCall = create<CallStore>(() => ({
   deaf: false,
   micEnabled: room.localParticipant.isMicrophoneEnabled,
   screenShareEnabled: room.localParticipant.isScreenShareEnabled,
+  screenShareSession: null,
   isEncrypted:
     room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
   room,

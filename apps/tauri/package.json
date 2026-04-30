@@ -4,10 +4,22 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./context": "./src/context.tsx",
-    "./controls": "./src/windowControls.tsx",
-    "./deeplinkHandler": "./src/deeplinkHandler.tsx",
-    "./qrCodeScanner": "./src/qrCodeScanner.tsx"
+    "./context": {
+      "types": "./src/context.tsx",
+      "default": "./src/context.tsx"
+    },
+    "./controls": {
+      "types": "./src/windowControls.tsx",
+      "default": "./src/windowControls.tsx"
+    },
+    "./deeplinkHandler": {
+      "types": "./src/deeplinkHandler.tsx",
+      "default": "./src/deeplinkHandler.tsx"
+    },
+    "./qrCodeScanner": {
+      "types": "./src/qrCodeScanner.tsx",
+      "default": "./src/qrCodeScanner.tsx"
+    }
   },
   "scripts": {
     "dev:mobile:raw": "tauri android dev",
