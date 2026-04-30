@@ -7,6 +7,5 @@
   - Buttons
   - Preview image
 - Mobile
-- Deaf status is not synced
 - Call invite popup
 - Sounds

@@ -220,9 +220,12 @@ function requireRuntime(runtime: Runtime | null): Runtime {
 
 export function getRoomMetadata() {
   const roomMetadata = room.metadata;
-  return JSON.parse(roomMetadata || '{"admin": 0}').catch(() => ({
-    admin: 0,
-  })) as { admin: number };
+  try {
+    const data = JSON.parse(roomMetadata || '{"admin": 0}');
+    return data as { admin: number };
+  } catch {
+    return { admin: 0 };
+  }
 }
 
 // Sync local participant flags and screen-share derived state for the active call UI.
