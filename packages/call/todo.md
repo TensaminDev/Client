@@ -6,3 +6,4 @@
 - Stream previews
   - Buttons
   - Preview image
+- Mobile
