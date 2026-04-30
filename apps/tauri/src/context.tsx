@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 
 export type DesktopScreenShareSource = {
@@ -21,13 +16,12 @@ export type DesktopScreenShareAudioOutput = {
 
 export type DesktopScreenShareCapabilities = {
   platform: "linux" | "macos" | "windows" | "other";
-  usesPipeWireAudioPicker: boolean;
-  supportsSystemAudioSwitch: boolean;
-  supportsReliableSystemAudio: boolean;
+  showAudioOutputSelector: boolean;
+  showAudioSwitch: boolean;
+  hasReliableSystemAudio: boolean;
 };
 
 type DesktopMediaContextValue = {
-  isDesktopTauri: boolean;
   getScreenShareCapabilities: () => Promise<DesktopScreenShareCapabilities>;
   listScreenShareSources: () => Promise<DesktopScreenShareSource[]>;
   listScreenShareAudioOutputs: () => Promise<DesktopScreenShareAudioOutput[]>;
@@ -35,9 +29,9 @@ type DesktopMediaContextValue = {
 
 const defaultCapabilities: DesktopScreenShareCapabilities = {
   platform: "other",
-  usesPipeWireAudioPicker: false,
-  supportsSystemAudioSwitch: false,
-  supportsReliableSystemAudio: false,
+  showAudioOutputSelector: false,
+  showAudioSwitch: false,
+  hasReliableSystemAudio: false,
 };
 
 const desktopMediaContext = createContext<DesktopMediaContextValue | undefined>(
@@ -69,7 +63,9 @@ async function getScreenShareCapabilities(): Promise<DesktopScreenShareCapabilit
     return defaultCapabilities;
   }
 
-  return invoke<DesktopScreenShareCapabilities>("get_screen_share_capabilities");
+  return invoke<DesktopScreenShareCapabilities>(
+    "get_screen_share_capabilities",
+  );
 }
 
 export function useDesktopMedia() {
@@ -85,7 +81,6 @@ export function useDesktopMedia() {
 export default function Provider({ children }: { children: ReactNode }) {
   const value = useMemo<DesktopMediaContextValue>(
     () => ({
-      isDesktopTauri: isTauri(),
       getScreenShareCapabilities,
       listScreenShareSources,
       listScreenShareAudioOutputs,

@@ -21,12 +21,9 @@ struct ScreenShareAudioOutput {
 #[serde(rename_all = "camelCase")]
 struct ScreenShareCapabilities {
     platform: String,
-    #[serde(rename = "usesPipeWireAudioPicker")]
-    uses_pipewire_audio_picker: bool,
-    #[serde(rename = "supportsSystemAudioSwitch")]
-    supports_system_audio_switch: bool,
-    #[serde(rename = "supportsReliableSystemAudio")]
-    supports_reliable_system_audio: bool,
+    show_audio_output_selector: bool,
+    show_audio_switch: bool,
+    has_reliable_system_audio: bool,
 }
 
 #[tauri::command]
@@ -100,13 +97,14 @@ fn list_screen_share_sources() -> Result<Vec<ScreenShareSource>, String> {
 }
 
 #[tauri::command]
-fn list_screen_share_audio_outputs() -> Result<Vec<ScreenShareAudioOutput>, String> {
+fn list_audio_outputs() -> Result<Vec<ScreenShareAudioOutput>, String> {
     #[cfg(target_os = "linux")]
     {
+        use serde_json::Value;
         use std::process::Command;
 
         let output = Command::new("pactl")
-            .args(["list", "short", "sinks"])
+            .args(["--format=json", "list", "sinks"])
             .output()
             .map_err(|error| error.to_string())?;
 
@@ -114,84 +112,56 @@ fn list_screen_share_audio_outputs() -> Result<Vec<ScreenShareAudioOutput>, Stri
             return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
         }
 
+        let default_sink = Command::new("pactl")
+            .arg("get-default-sink")
+            .output()
+            .ok()
+            .filter(|result| result.status.success())
+            .map(|result| String::from_utf8_lossy(&result.stdout).trim().to_string());
+
+        let sinks: Value = serde_json::from_slice(&output.stdout).map_err(|error| error.to_string())?;
+        let sink_entries = sinks
+            .as_array()
+            .ok_or_else(|| "Unexpected pactl sink response".to_string())?;
+
         let mut outputs = Vec::new();
 
-        for line in String::from_utf8_lossy(&output.stdout).lines() {
-            let mut parts = line.split('\t');
-
-            let Some(id) = parts.next() else {
+        for sink in sink_entries {
+            let Some(index) = sink.get("index").and_then(Value::as_i64) else {
                 continue;
             };
 
-            let Some(name) = parts.next() else {
+            let Some(name) = sink.get("name").and_then(Value::as_str) else {
                 continue;
             };
 
-            let description = parts.next_back().unwrap_or(name).to_string();
+            let description = sink
+                .get("description")
+                .and_then(Value::as_str)
+                .or_else(|| {
+                    sink.get("properties")
+                        .and_then(|properties| properties.get("device.description"))
+                        .and_then(Value::as_str)
+                })
+                .unwrap_or(name)
+                .to_string();
+
+            let is_default = default_sink.as_deref() == Some(name);
 
             outputs.push(ScreenShareAudioOutput {
-                id: id.to_string(),
+                id: index.to_string(),
                 name: description,
-                is_default: false,
+                is_default,
             });
         }
+
+        outputs.sort_by_key(|output| !output.is_default);
 
         return Ok(outputs);
     }
 
     #[allow(unreachable_code)]
     Ok(Vec::new())
-}
-
-#[tauri::command]
-fn capture_screen_share_frame(source_id: &str) -> Result<String, String> {
-    #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
-    {
-        use base64::Engine;
-        use image::{codecs::jpeg::JpegEncoder, DynamicImage};
-        use std::io::Cursor;
-        use xcap::{Monitor, Window};
-
-        let Some((kind, index)) = source_id.split_once(':') else {
-            return Err("Invalid source id".to_string());
-        };
-
-        let index = index
-            .parse::<usize>()
-            .map_err(|_| "Invalid source index".to_string())?;
-
-        let frame = match kind {
-            "screen" => Monitor::all()
-                .map_err(|error| error.to_string())?
-                .into_iter()
-                .nth(index)
-                .ok_or_else(|| "Screen source not found".to_string())?
-                .capture_image()
-                .map_err(|error| error.to_string())?,
-            "window" => Window::all()
-                .map_err(|error| error.to_string())?
-                .into_iter()
-                .filter(|window| !window.is_minimized().unwrap_or(false))
-                .nth(index)
-                .ok_or_else(|| "Window source not found".to_string())?
-                .capture_image()
-                .map_err(|error| error.to_string())?,
-            _ => return Err("Unsupported source kind".to_string()),
-        };
-
-        let mut buffer = Cursor::new(Vec::new());
-        let image = DynamicImage::ImageRgba8(frame);
-
-        JpegEncoder::new_with_quality(&mut buffer, 70)
-            .encode_image(&image)
-            .map_err(|error| error.to_string())?;
-
-        let encoded = base64::engine::general_purpose::STANDARD.encode(buffer.into_inner());
-        return Ok(format!("data:image/jpeg;base64,{encoded}"));
-    }
-
-    #[allow(unreachable_code)]
-    Err("Screen capture is not supported on this platform".to_string())
 }
 
 #[tauri::command]
@@ -207,9 +177,9 @@ fn get_screen_share_capabilities() -> ScreenShareCapabilities {
             "other"
         }
         .to_string(),
-        uses_pipewire_audio_picker: cfg!(target_os = "linux"),
-        supports_system_audio_switch: cfg!(any(target_os = "windows", target_os = "macos")),
-        supports_reliable_system_audio: cfg!(target_os = "windows"),
+        show_audio_output_selector: cfg!(target_os = "linux"),
+        show_audio_switch: cfg!(any(target_os = "windows", target_os = "macos")),
+        has_reliable_system_audio: cfg!(target_os = "windows"),
     }
 }
 
@@ -254,9 +224,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             list_screen_share_sources,
-            list_screen_share_audio_outputs,
-            get_screen_share_capabilities,
-            capture_screen_share_frame
+            list_audio_outputs,
+            get_screen_share_capabilities
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,8 @@
+- Speaking indicator
+- Overlay for stream modals
+- User modals
+  - Bg based on avatar
+  - Avatar in the center
+- Stream previews
+  - Buttons
+  - Preview image

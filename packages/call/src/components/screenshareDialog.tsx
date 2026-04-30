@@ -24,10 +24,7 @@ import {
 import { toast } from "@tensamin/shared/log";
 import { AppWindow, Loader2, MonitorUp } from "lucide-react";
 import type { ScreenShareCaptureOptions } from "livekit-client";
-import {
-  setScreenShareEnabled,
-  startLinuxDesktopScreenShare,
-} from "../../store";
+import { setScreenShareEnabled, startLinuxDesktopScreenShare } from "../store";
 
 const NONE_AUDIO_OUTPUT = "__none__";
 
@@ -37,9 +34,9 @@ function buildScreenShareOptions(
   selectedAudioOutputId: string,
   shareAudio: boolean,
 ): ScreenShareCaptureOptions {
-  const wantsAudio = capabilities.usesPipeWireAudioPicker
+  const wantsAudio = capabilities.showAudioOutputSelector
     ? selectedAudioOutputId !== NONE_AUDIO_OUTPUT
-    : capabilities.supportsReliableSystemAudio && shareAudio;
+    : capabilities.hasReliableSystemAudio && shareAudio;
 
   return {
     audio: wantsAudio
@@ -76,9 +73,9 @@ export default function ScreenShareDialog({
 
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<DesktopScreenShareSource[]>([]);
-  const [audioOutputs, setAudioOutputs] = useState<DesktopScreenShareAudioOutput[]>(
-    [],
-  );
+  const [audioOutputs, setAudioOutputs] = useState<
+    DesktopScreenShareAudioOutput[]
+  >([]);
   const [capabilities, setCapabilities] =
     useState<DesktopScreenShareCapabilities | null>(null);
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
@@ -107,7 +104,7 @@ export default function ScreenShareDialog({
         setSources(nextSources);
         setCapabilities(nextCapabilities);
 
-        if (nextCapabilities.usesPipeWireAudioPicker) {
+        if (nextCapabilities.showAudioOutputSelector) {
           const nextOutputs = await listScreenShareAudioOutputs();
 
           if (!active) {
@@ -197,7 +194,7 @@ export default function ScreenShareDialog({
         <DialogHeader className="p-4 pb-3">
           <DialogTitle>Share your screen</DialogTitle>
           <DialogDescription>
-            Pick the window or display you want to share with the call.
+            Choose a window or display you want to share.
           </DialogDescription>
         </DialogHeader>
 
@@ -238,11 +235,11 @@ export default function ScreenShareDialog({
 
           {!loading && sources.length === 0 && (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-              No windows or displays are currently available for capture.
+              No windows or displays found.
             </p>
           )}
 
-          {capabilities?.usesPipeWireAudioPicker ? (
+          {capabilities?.showAudioOutputSelector ? (
             <div className="flex flex-col gap-2">
               <Label>Share audio output</Label>
               <Select
@@ -252,43 +249,46 @@ export default function ScreenShareDialog({
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="None" />
+                  <SelectValue>
+                    {selectedAudioOutputId === NONE_AUDIO_OUTPUT
+                      ? "None"
+                      : (audioOutputs.find(
+                          (output) => output.id === selectedAudioOutputId,
+                        )?.name ?? "None")}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE_AUDIO_OUTPUT}>None</SelectItem>
                   {audioOutputs.map((output) => (
                     <SelectItem key={output.id} value={output.id}>
-                      {output.name}
+                      {output.isDefault
+                        ? `${output.name} (Default)`
+                        : output.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Select a PipeWire output to try sharing system audio with your
-                screen.
-              </p>
             </div>
-          ) : capabilities?.supportsSystemAudioSwitch ? (
+          ) : capabilities?.showAudioSwitch ? (
             <div className="flex flex-col gap-2 rounded-xl border p-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="share-system-audio">Share audio</Label>
                   <p className="text-xs text-muted-foreground">
-                    Share system audio alongside your screen when the runtime can
-                    provide it.
+                    Share system audio alongside your screen when the runtime
+                    can provide it.
                   </p>
                 </div>
                 <Switch
                   id="share-system-audio"
                   checked={shareAudio}
-                  disabled={!capabilities.supportsReliableSystemAudio}
+                  disabled={!capabilities.hasReliableSystemAudio}
                   onCheckedChange={setShareAudio}
                 />
               </div>
-              {!capabilities.supportsReliableSystemAudio && (
+              {!capabilities.hasReliableSystemAudio && (
                 <p className="text-xs text-muted-foreground">
-                  System audio sharing is not available on this platform/runtime
-                  yet.
+                  System audio sharing is not available on this platform.
                 </p>
               )}
             </div>
@@ -297,17 +297,21 @@ export default function ScreenShareDialog({
           {loading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
-              Loading available share targets...
+              Loading sources...
             </div>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="m-0! p-2!">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           {isScreensharing && (
-            <Button variant="destructive" disabled={loading} onClick={stopSharing}>
+            <Button
+              variant="destructive"
+              disabled={loading}
+              onClick={stopSharing}
+            >
               Stop sharing
             </Button>
           )}

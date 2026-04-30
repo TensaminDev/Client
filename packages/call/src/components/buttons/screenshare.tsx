@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import { MonitorDot, ScreenShare } from "lucide-react";
 import { toast } from "@tensamin/shared/log";
-import { useDesktopMedia } from "@tensamin/tauri/context";
+import { isTauri } from "@tauri-apps/api/core";
 import { setScreenShareEnabled, useCall } from "../../store";
-import ScreenShareDialog from "./screenshareDialog";
+import ScreenShareDialog from "../screenshareDialog";
 
 export default function ScreenshareButton({
   className,
@@ -16,7 +16,6 @@ export default function ScreenshareButton({
   const isScreensharing = useCall((state) => state.screenShareEnabled);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { isDesktopTauri } = useDesktopMedia();
 
   async function startWebShare() {
     try {
@@ -67,13 +66,13 @@ export default function ScreenshareButton({
             </Button>
           }
         />
-        <PopoverContent className="flex w-52 flex-col gap-2">
+        <PopoverContent className="flex w-40 flex-col gap-2">
           <Button
             disabled={isScreensharing}
             onClick={() => {
               setMenuOpen(false);
 
-              if (isDesktopTauri) {
+              if (isTauri()) {
                 setDialogOpen(true);
                 return;
               }
@@ -81,7 +80,7 @@ export default function ScreenshareButton({
               void startWebShare();
             }}
           >
-            Start sharing
+            Start screenshare
           </Button>
           <Button
             variant="destructive"
@@ -91,15 +90,13 @@ export default function ScreenshareButton({
               void stopShare();
             }}
           >
-            Stop sharing
+            Stop screenshare
           </Button>
-          <Button disabled variant="outline">
-            Stream quality soon
-          </Button>
+          <Button variant="outline">Change quality</Button>
         </PopoverContent>
       </Popover>
 
-      {isDesktopTauri && (
+      {isTauri() && (
         <ScreenShareDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}

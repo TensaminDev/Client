@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { create } from "zustand";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
 import { useTTP } from "@tensamin/ttp";
 import { log, toast } from "@tensamin/shared/log";
 import { ttp } from "@tensamin/shared/data";
@@ -12,7 +11,7 @@ import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
   ExternalE2EEKeyProvider,
   LocalAudioTrack,
-  type LocalTrack,
+  type Participant,
   Room,
   RoomEvent,
   type RemoteTrack,
@@ -23,6 +22,10 @@ import {
 } from "livekit-client";
 import z from "zod";
 import { toast as sonnerToast } from "sonner";
+import {
+  createScreenShareController,
+  type ScreenShareSession,
+} from "./screenshare";
 
 // logging
 setLogExtension(
@@ -53,6 +56,7 @@ type GetSharedSecretFn = (
   remotePublicKey: string,
 ) => Promise<string>;
 type DecryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
+type EncryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
 type LoadFn = (key: string) => Promise<unknown>;
 type GetUserFn = (userId: number) => Promise<{ public_key: string }>;
 
@@ -61,13 +65,9 @@ type Runtime = {
   send: SendFn;
   getSharedSecret: GetSharedSecretFn;
   decryptText: DecryptTextFn;
+  encryptText: EncryptTextFn;
   load: LoadFn;
   getUser: GetUserFn;
-};
-
-type ScreenShareSession = {
-  tracks: Array<LocalTrack | MediaStreamTrack>;
-  cleanup?: () => void;
 };
 
 type CallStore = {
@@ -82,6 +82,10 @@ type CallStore = {
   micEnabled: boolean;
   screenShareEnabled: boolean;
   screenShareSession: ScreenShareSession | null;
+  focusedParticipantId: number | null;
+  watchedStreamParticipantIds: number[];
+  pendingWatchedParticipantIds: number[];
+  activeScreenShareParticipantIds: number[];
   isEncrypted: boolean;
   room: Room;
   keyProvider: ExternalE2EEKeyProvider;
@@ -135,6 +139,75 @@ function clearRemoteAudio() {
   }
 }
 
+function getParticipantId(identity: string | undefined): number | null {
+  if (!identity) {
+    return null;
+  }
+
+  const parsed = Number(identity);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getAllParticipants(): Participant[] {
+  return [...room.remoteParticipants.values(), room.localParticipant];
+}
+
+function getActiveScreenShareParticipantIds(): number[] {
+  return getAllParticipants()
+    .map((participant) => ({
+      participantId: getParticipantId(participant.identity),
+      hasScreenShare:
+        participant.getTrackPublication(Track.Source.ScreenShare) != null,
+    }))
+    .filter(
+      (entry): entry is { participantId: number; hasScreenShare: true } =>
+        entry.participantId != null && entry.hasScreenShare,
+    )
+    .map((entry) => entry.participantId);
+}
+
+function getScreenShareTrackForParticipant(participantId: number) {
+  return getAllParticipants()
+    .find(
+      (participant) => getParticipantId(participant.identity) === participantId,
+    )
+    ?.getTrackPublication(Track.Source.ScreenShare)?.track;
+}
+
+function hasParticipant(participantId: number) {
+  return getAllParticipants().some(
+    (participant) => getParticipantId(participant.identity) === participantId,
+  );
+}
+
+function syncScreenShareParticipants() {
+  const activeScreenShareParticipantIds = getActiveScreenShareParticipantIds();
+  const state = useCall.getState();
+  const watchedStreamParticipantIds = state.watchedStreamParticipantIds.filter(
+    (participantId) => activeScreenShareParticipantIds.includes(participantId),
+  );
+  const pendingWatchedParticipantIds = watchedStreamParticipantIds.filter(
+    (participantId) => getScreenShareTrackForParticipant(participantId) == null,
+  );
+  const focusedParticipantId =
+    state.focusedParticipantId != null &&
+    (watchedStreamParticipantIds.includes(state.focusedParticipantId) ||
+      hasParticipant(state.focusedParticipantId))
+      ? state.focusedParticipantId
+      : null;
+
+  useCall.setState({
+    activeScreenShareParticipantIds,
+    watchedStreamParticipantIds,
+    pendingWatchedParticipantIds,
+    focusedParticipantId,
+    view:
+      state.view === "focused" && focusedParticipantId == null
+        ? "grid"
+        : state.view,
+  });
+}
+
 // utils
 function requireRuntime(runtime: Runtime | null): Runtime {
   if (!runtime) {
@@ -144,6 +217,7 @@ function requireRuntime(runtime: Runtime | null): Runtime {
   return runtime;
 }
 
+// Sync local participant flags and screen-share derived state for the active call UI.
 export function syncParticipantState() {
   const { room, screenShareSession } = useCall.getState();
 
@@ -154,25 +228,27 @@ export function syncParticipantState() {
     isEncrypted:
       room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
   });
+
+  syncScreenShareParticipants();
 }
 
 // set state functions
+// Store runtime dependencies from hooks so the call store can use them outside React.
 export function setCallRuntime(runtime: Runtime) {
   useCall.setState({ runtime });
 }
 
-export function setCallState(state: CallState) {
-  useCall.setState({ state });
-}
-
+// Switch between preview, grid, and focused call layouts.
 export function setCallView(view: CallView) {
   useCall.setState({ view });
 }
 
+// Keep the current call id in sync with navigation and connection flow.
 export function setCallId(callId: string | null) {
   useCall.setState({ callId });
 }
 
+// Cache server call metadata used by the preview screen.
 export function setCurrentCallData(
   currentCallData: CurrentCallData & { exists: boolean },
 ) {
@@ -180,6 +256,7 @@ export function setCurrentCallData(
 }
 
 // more utils
+// Navigate the app into the dedicated call route for an active call.
 export async function openCallPage(callId: string) {
   await requireRuntime(useCall.getState().runtime).navigate({
     to: "/call",
@@ -187,6 +264,7 @@ export async function openCallPage(callId: string) {
   });
 }
 
+// Request the LiveKit token that authorizes this client to join a call.
 export async function getCallToken(callId: string): Promise<string> {
   const response = await requireRuntime(useCall.getState().runtime)
     .send("call_token", {
@@ -201,6 +279,128 @@ export async function getCallToken(callId: string): Promise<string> {
   return data.call_token;
 }
 
+// Encrypt the active call secret for a recipient and send the call invite.
+export async function sendCallInvite(userId: number) {
+  const runtime = requireRuntime(useCall.getState().runtime);
+  const { callId, callSecret } = useCall.getState();
+
+  if (!callId || !callSecret) {
+    throw new Error("Cannot send call invite without an active call.");
+  }
+
+  const ownUserId = (await runtime.load("user_id")) as number;
+  const privateKey = await runtime.load("private_key");
+  const ownPublicKey = await runtime.getUser(ownUserId).then(
+    (data) => data.public_key,
+  );
+  const remotePublicKey = await runtime.getUser(userId).then(
+    (data) => data.public_key,
+  );
+  const sharedSecret = await runtime.getSharedSecret(
+    privateKey,
+    ownPublicKey,
+    remotePublicKey,
+  );
+  const encryptedCallSecret = await runtime.encryptText(sharedSecret, callSecret);
+
+  await runtime.send("call_invite", {
+    receiver_id: userId,
+    call_id: callId,
+    call_secret: encryptedCallSecret,
+  });
+}
+
+// Start tracking a participant's shared screen in the call UI.
+export function startWatchingStream(
+  participantId: number,
+  options?: { focus?: boolean },
+) {
+  const focus = options?.focus ?? false;
+  const trackReady = getScreenShareTrackForParticipant(participantId) != null;
+
+  useCall.setState((state) => ({
+    watchedStreamParticipantIds: state.watchedStreamParticipantIds.includes(
+      participantId,
+    )
+      ? state.watchedStreamParticipantIds
+      : [...state.watchedStreamParticipantIds, participantId],
+    pendingWatchedParticipantIds: trackReady
+      ? state.pendingWatchedParticipantIds.filter((id) => id !== participantId)
+      : state.pendingWatchedParticipantIds.includes(participantId)
+        ? state.pendingWatchedParticipantIds
+        : [...state.pendingWatchedParticipantIds, participantId],
+    focusedParticipantId: focus ? participantId : state.focusedParticipantId,
+    view: focus ? "focused" : state.view,
+  }));
+}
+
+// Focus a participant in the main call view even when they are not sharing a screen.
+export function focusParticipant(participantId: number) {
+  useCall.setState({
+    focusedParticipantId: participantId,
+    view: "focused",
+  });
+}
+
+// Stop tracking a participant's shared screen and clean up related UI state.
+export function stopWatchingStream(participantId: number) {
+  useCall.setState((state) => ({
+    watchedStreamParticipantIds: state.watchedStreamParticipantIds.filter(
+      (id) => id !== participantId,
+    ),
+    pendingWatchedParticipantIds: state.pendingWatchedParticipantIds.filter(
+      (id) => id !== participantId,
+    ),
+    focusedParticipantId:
+      state.focusedParticipantId === participantId
+        ? null
+        : state.focusedParticipantId,
+    view:
+      state.view === "focused" && state.focusedParticipantId === participantId
+        ? "grid"
+        : state.view,
+  }));
+}
+
+// Exit focused screen-share mode for the currently highlighted participant.
+export function stopWatchingFocusedStream() {
+  const focusedParticipantId = useCall.getState().focusedParticipantId;
+
+  if (focusedParticipantId == null) {
+    return;
+  }
+
+  stopWatchingStream(focusedParticipantId);
+}
+
+let screenShareController: ReturnType<typeof createScreenShareController> | null =
+  null;
+
+function getScreenShareController() {
+  if (!screenShareController) {
+    screenShareController = createScreenShareController({
+      room,
+      getState: () => ({
+        screenShareSession: useCall.getState().screenShareSession,
+      }),
+      setState: (updater) => {
+        useCall.setState((state) =>
+          typeof updater === "function"
+            ? updater({ screenShareSession: state.screenShareSession })
+            : updater,
+        );
+      },
+      getLocalParticipantId: () => getParticipantId(room.localParticipant.identity),
+      startWatching: startWatchingStream,
+      stopWatching: stopWatchingStream,
+      syncParticipantState,
+    });
+  }
+
+  return screenShareController;
+}
+
+// Connect to LiveKit, enable the microphone, and move the UI into the live call.
 export async function connect(callId: string) {
   const token = await getCallToken(callId);
 
@@ -234,8 +434,13 @@ export async function connect(callId: string) {
   syncParticipantState();
 }
 
-export function disconnect() {
-  void clearPublishedScreenShare();
+// Tear down the active call session and return the store to a closed state.
+export async function disconnect() {
+  try {
+    await getScreenShareController().clearPublishedScreenShare();
+  } catch (error) {
+    log(1, "call", "red", "Failed to clear screen share during disconnect", error);
+  }
 
   useCall.setState({
     state: "closing",
@@ -247,17 +452,27 @@ export function disconnect() {
     deaf: false,
     view: "preview",
     screenShareSession: null,
+    focusedParticipantId: null,
+    watchedStreamParticipantIds: [],
+    pendingWatchedParticipantIds: [],
+    activeScreenShareParticipantIds: [],
   });
 
   room.remoteParticipants.forEach((participant) => {
-    participant.setVolume(100);
+    participant.setVolume(1);
   });
 
-  room.disconnect();
-  useCall.setState({ state: "closed" });
-  syncParticipantState();
+  try {
+    room.disconnect();
+  } catch (error) {
+    log(1, "call", "red", "Failed to disconnect from room", error);
+  } finally {
+    useCall.setState({ state: "closed" });
+    syncParticipantState();
+  }
 }
 
+// Prepare encryption and join or create a call with another user.
 export async function joinCall(
   userId: number,
   callSecret?: string,
@@ -313,11 +528,12 @@ export async function joinCall(
   }
 }
 
+// Mute or restore incoming call audio for every remote participant.
 export function toggleDeaf() {
   const nextDeaf = !useCall.getState().deaf;
 
   room.remoteParticipants.forEach((participant) => {
-    participant.setVolume(nextDeaf ? 0 : 100);
+    participant.setVolume(nextDeaf ? 0 : 1);
   });
 
   if (nextDeaf && room.localParticipant.isMicrophoneEnabled) {
@@ -327,6 +543,7 @@ export function toggleDeaf() {
   useCall.setState({ deaf: nextDeaf });
 }
 
+// Toggle the local microphone while keeping deaf/mute state consistent.
 export async function toggleMute() {
   const micEnabled = useCall.getState().micEnabled;
 
@@ -338,163 +555,30 @@ export async function toggleMute() {
   syncParticipantState();
 }
 
-async function clearPublishedScreenShare() {
-  const screenShareSession = useCall.getState().screenShareSession;
-
-  if (!screenShareSession) {
-    return;
-  }
-
-  await Promise.all(
-    screenShareSession.tracks.map((track) =>
-      room.localParticipant.unpublishTrack(track, true).catch((error) => {
-        log(1, "call", "red", "Failed to unpublish screen share track", error);
-      }),
-    ),
-  );
-
-  screenShareSession.cleanup?.();
-
-  useCall.setState({ screenShareSession: null });
-}
-
-async function publishScreenShareTracks(
-  tracks: Array<LocalTrack | MediaStreamTrack>,
-  cleanup?: () => void,
-) {
-  if (tracks.length === 0) {
-    throw new Error("No screen share tracks were created.");
-  }
-
-  await Promise.all(
-    tracks.map((track) =>
-      room.localParticipant.publishTrack(track, {
-        source:
-          track.kind === Track.Kind.Video
-            ? Track.Source.ScreenShare
-            : Track.Source.ScreenShareAudio,
-      }),
-    ),
-  );
-
-  for (const track of tracks) {
-    const mediaStreamTrack =
-      track instanceof MediaStreamTrack ? track : track.mediaStreamTrack;
-
-    mediaStreamTrack.addEventListener(
-      "ended",
-      () => {
-        void stopScreenShare();
-      },
-      { once: true },
-    );
-  }
-
-  useCall.setState({ screenShareSession: { tracks, cleanup } });
-  syncParticipantState();
-}
-
+// Start browser-native screen sharing for the current participant.
 export async function startScreenShare(options?: ScreenShareCaptureOptions) {
-  await clearPublishedScreenShare();
-
-  const tracks = await room.localParticipant.createScreenTracks(options);
-
-  await publishScreenShareTracks(
-    tracks,
-    () => tracks.forEach((track) => track.stop()),
-  );
+  await getScreenShareController().startScreenShare(options);
 }
 
+// Start the Linux desktop capture path that renders frames through Tauri.
 export async function startLinuxDesktopScreenShare(sourceId: string) {
-  await clearPublishedScreenShare();
-
-  const canvas = document.createElement("canvas");
-  canvas.width = 1280;
-  canvas.height = 720;
-  canvas.style.display = "none";
-  document.body.appendChild(canvas);
-
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    canvas.remove();
-    throw new Error("Failed to initialize the screen share canvas.");
-  }
-
-  const stream = canvas.captureStream(8);
-  const videoTrack = stream.getVideoTracks()[0];
-
-  if (!videoTrack) {
-    canvas.remove();
-    throw new Error("Failed to create a video track for screen sharing.");
-  }
-
-  const image = new Image();
-  let stopped = false;
-  let frameRequestInFlight = false;
-
-  const renderFrame = async () => {
-    if (stopped || frameRequestInFlight) {
-      return;
-    }
-
-    frameRequestInFlight = true;
-
-    try {
-      const dataUrl = await invoke<string>("capture_screen_share_frame", {
-        sourceId,
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve();
-        image.onerror = () => reject(new Error("Failed to decode screen share frame."));
-        image.src = dataUrl;
-      });
-
-      if (canvas.width !== image.naturalWidth || canvas.height !== image.naturalHeight) {
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-      }
-
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    } finally {
-      frameRequestInFlight = false;
-    }
-  };
-
-  await renderFrame();
-
-  const interval = window.setInterval(() => {
-    void renderFrame().catch((error) => {
-      log(1, "call", "red", "Failed to capture Linux screen share frame", error);
-    });
-  }, 125);
-
-  await publishScreenShareTracks([videoTrack], () => {
-    stopped = true;
-    window.clearInterval(interval);
-    stream.getTracks().forEach((track) => track.stop());
-    canvas.remove();
-  });
+  await getScreenShareController().startLinuxDesktopScreenShare(sourceId);
 }
 
+// Stop the local participant's active screen share and related previews.
 export async function stopScreenShare() {
-  await clearPublishedScreenShare();
-  syncParticipantState();
+  await getScreenShareController().stopScreenShare();
 }
 
+// Toggle screen sharing on or off from UI controls.
 export async function setScreenShareEnabled(
   enabled: boolean,
   options?: ScreenShareCaptureOptions,
 ) {
-  if (enabled) {
-    await startScreenShare(options);
-    return;
-  }
-
-  await stopScreenShare();
+  await getScreenShareController().setScreenShareEnabled(enabled, options);
 }
 
+// Reset the in-memory call store when leaving the call experience entirely.
 export function resetCallState() {
   useCall.setState({
     state: "closed",
@@ -506,11 +590,16 @@ export function resetCallState() {
     currentCallData: null,
     deaf: false,
     screenShareSession: null,
+    focusedParticipantId: null,
+    watchedStreamParticipantIds: [],
+    pendingWatchedParticipantIds: [],
+    activeScreenShareParticipantIds: [],
   });
 
   syncParticipantState();
 }
 
+// Attach the deep noise filter to the local microphone track when available.
 async function ensureNoiseFilter(
   noiseFilter: DeepFilterNoiseFilterProcessor,
 ): Promise<void> {
@@ -542,6 +631,10 @@ export const useCall = create<CallStore>(() => ({
   micEnabled: room.localParticipant.isMicrophoneEnabled,
   screenShareEnabled: room.localParticipant.isScreenShareEnabled,
   screenShareSession: null,
+  focusedParticipantId: null,
+  watchedStreamParticipantIds: [],
+  pendingWatchedParticipantIds: [],
+  activeScreenShareParticipantIds: [],
   isEncrypted:
     room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
   room,
@@ -550,6 +643,7 @@ export const useCall = create<CallStore>(() => ({
   runtime: null,
 }));
 
+// Register app-level call listeners and wire React dependencies into the store.
 export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -582,10 +676,11 @@ export function useInitializeCall() {
       send: send as SendFn,
       getSharedSecret: getSharedSecret as GetSharedSecretFn,
       decryptText: decryptText as DecryptTextFn,
+      encryptText: encryptText as EncryptTextFn,
       load: load as LoadFn,
       getUser: get as GetUserFn,
     });
-  }, [decryptText, get, getSharedSecret, load, navigate, send]);
+  }, [decryptText, encryptText, get, getSharedSecret, load, navigate, send]);
 
   const showCallingScreen = useCallback(
     async (callId: string, callSecret: string, senderId: number) => {
@@ -659,21 +754,7 @@ export function useInitializeCall() {
 
       if (invitedUserId != null) {
         setTimeout(async () => {
-          void requireRuntime(useCall.getState().runtime)
-            .send("call_invite", {
-              receiver_id: invitedUserId,
-              call_id: useCall.getState().callId!,
-              call_secret: await encryptText(
-                await getSharedSecret(
-                  await load("private_key"),
-                  await get(await load("user_id")).then(
-                    (data) => data.public_key,
-                  ),
-                  await get(invitedUserId).then((data) => data.public_key),
-                ),
-                useCall.getState().callSecret!,
-              ),
-            })
+          void sendCallInvite(invitedUserId)
             .catch((error) => {
               toast("error", "Failed to send call invite.");
               log(1, "call", "red", "Failed to send call invite", error);
@@ -696,6 +777,20 @@ export function useInitializeCall() {
       });
     };
 
+    const onParticipantConnected = () => {
+      syncParticipantState();
+    };
+
+    const onParticipantDisconnected = (participant: Participant) => {
+      const participantId = getParticipantId(participant.identity);
+
+      if (participantId != null) {
+        stopWatchingStream(participantId);
+      }
+
+      syncParticipantState();
+    };
+
     const onMediaDeviceFailure = (error: Error, kind?: MediaDeviceKind) => {
       log(1, "call", "red", "Media device failure", { error, kind });
       toast("error", "Media device failure. See console for details.");
@@ -712,20 +807,33 @@ export function useInitializeCall() {
     };
 
     const onTrackSubscribed = (track: RemoteTrack) => {
-      if (track.kind !== "audio" || !track.sid) {
-        return;
+      if (track.kind === "audio" && track.sid) {
+        attachRemoteAudio(track.sid, track.attach());
       }
 
-      attachRemoteAudio(track.sid, track.attach());
+      syncParticipantState();
     };
 
-    const onTrackUnsubscribed = (track: RemoteTrack) => {
-      if (track.kind !== "audio" || !track.sid) {
-        return;
+    const onTrackUnsubscribed = (
+      track: RemoteTrack,
+      _publication: unknown,
+      participant: Participant,
+    ) => {
+      if (track.kind === "audio" && track.sid) {
+        track.detach();
+        detachRemoteAudio(track.sid);
       }
 
-      track.detach();
-      detachRemoteAudio(track.sid);
+      const participantId = getParticipantId(participant.identity);
+
+      if (
+        participantId != null &&
+        participant.getTrackPublication(Track.Source.ScreenShare)?.track == null
+      ) {
+        stopWatchingStream(participantId);
+      }
+
+      syncParticipantState();
     };
 
     room.on(RoomEvent.Connected, onConnected);
@@ -733,6 +841,8 @@ export function useInitializeCall() {
     room.on(RoomEvent.Disconnected, onDisconnected);
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+    room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
+    room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
     room.on(RoomEvent.TrackMuted, onParticipantStateChange);
     room.on(RoomEvent.TrackUnmuted, onParticipantStateChange);
     room.on(RoomEvent.LocalTrackPublished, onParticipantStateChange);
@@ -750,6 +860,8 @@ export function useInitializeCall() {
       room.off(RoomEvent.Disconnected, onDisconnected);
       room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
       room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+      room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
+      room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
       room.off(RoomEvent.TrackMuted, onParticipantStateChange);
       room.off(RoomEvent.TrackUnmuted, onParticipantStateChange);
       room.off(RoomEvent.LocalTrackPublished, onParticipantStateChange);
@@ -762,7 +874,7 @@ export function useInitializeCall() {
       room.disconnect();
       e2eeWorker.terminate();
     };
-  }, [noiseFilter, encryptText, get, getSharedSecret, load]);
+  }, [noiseFilter]);
 
   // fetch call data for preview page
   useEffect(() => {

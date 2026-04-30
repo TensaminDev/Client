@@ -1,6 +1,7 @@
 import { RoomEvent } from "livekit-client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCall } from "../../store";
+import Base from "../../components/modals/base";
 
 const TILE_ASPECT_RATIO = 16 / 9;
 const GRID_GAP = 12;
@@ -82,12 +83,13 @@ function calculateOptimalGridLayout(
 
 export default function View() {
   const room = useCall((state) => state.room);
+  const activeScreenShareParticipantIds = useCall(
+    (state) => state.activeScreenShareParticipantIds,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [participantCount, setParticipantCount] = useState(
-    () => room.remoteParticipants.size + 1,
-  );
+  const [participantVersion, setParticipantVersion] = useState(0);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -107,33 +109,53 @@ export default function View() {
   }, []);
 
   useEffect(() => {
-    const syncParticipantCount = () => {
-      setParticipantCount(room.remoteParticipants.size + 1);
+    const syncParticipants = () => {
+      setParticipantVersion((version) => version + 1);
     };
 
-    syncParticipantCount();
+    syncParticipants();
 
-    room.on(RoomEvent.Connected, syncParticipantCount);
-    room.on(RoomEvent.Disconnected, syncParticipantCount);
-    room.on(RoomEvent.ParticipantConnected, syncParticipantCount);
-    room.on(RoomEvent.ParticipantDisconnected, syncParticipantCount);
+    room.on(RoomEvent.Connected, syncParticipants);
+    room.on(RoomEvent.Disconnected, syncParticipants);
+    room.on(RoomEvent.ParticipantConnected, syncParticipants);
+    room.on(RoomEvent.ParticipantDisconnected, syncParticipants);
 
     return () => {
-      room.off(RoomEvent.Connected, syncParticipantCount);
-      room.off(RoomEvent.Disconnected, syncParticipantCount);
-      room.off(RoomEvent.ParticipantConnected, syncParticipantCount);
-      room.off(RoomEvent.ParticipantDisconnected, syncParticipantCount);
+      room.off(RoomEvent.Connected, syncParticipants);
+      room.off(RoomEvent.Disconnected, syncParticipants);
+      room.off(RoomEvent.ParticipantConnected, syncParticipants);
+      room.off(RoomEvent.ParticipantDisconnected, syncParticipants);
     };
   }, [room]);
+
+  const users = useMemo(() => {
+    const participants = [...room.remoteParticipants.values(), room.localParticipant];
+
+    return participants.filter((participant) => {
+      const participantId = Number(participant.identity);
+      return Number.isInteger(participantId) && participantId > 0;
+    });
+  // eslint-disable-next-line
+  }, [participantVersion, room]);
+
+  const userIds = useMemo(
+    () => users.map((participant) => Number(participant.identity)),
+    [users],
+  );
 
   const layout = useMemo(
     () =>
       calculateOptimalGridLayout(
         containerSize.width,
         containerSize.height,
-        participantCount,
+        activeScreenShareParticipantIds.length + userIds.length,
       ),
-    [containerSize.height, containerSize.width, participantCount],
+    [
+      activeScreenShareParticipantIds.length,
+      containerSize.height,
+      containerSize.width,
+      userIds.length,
+    ],
   );
 
   const rows = useMemo(() => {
@@ -148,31 +170,57 @@ export default function View() {
     });
   }, [layout.rowCounts]);
 
-  const users = useMemo(() => {
-    const participants = [
-      ...room.remoteParticipants.values(),
-      room.localParticipant,
-    ];
-    return participants;
-  }, [room.localParticipant, room.remoteParticipants]);
+  const tiles = useMemo(
+    () => [
+      ...activeScreenShareParticipantIds.map((participantId) => ({
+        key: `stream:${participantId}`,
+        kind: "stream" as const,
+        participantId,
+      })),
+      ...userIds.map((participantId) => ({
+        key: `user:${participantId}`,
+        kind: "user" as const,
+        participantId,
+      })),
+    ],
+    [activeScreenShareParticipantIds, userIds],
+  );
+
+  function getParticipantById(participantId: number) {
+    if (Number(room.localParticipant.identity) === participantId) {
+      return room.localParticipant;
+    }
+
+    return room.getParticipantByIdentity(String(participantId));
+  }
 
   return (
-    <div ref={containerRef} className="h-[75vh] w-full overflow-hidden p-3">
+    <div ref={containerRef} style={{
+      height: "calc(100% - 2rem)"
+    }} className="w-full overflow-hidden p-3">
       <div className="flex h-full w-full flex-col items-center justify-center gap-3">
         {rows.map((row) => (
           <div key={row.rowIndex} className="flex justify-center gap-3">
-            {row.participants.map((userIndex) => (
-              <div
-                key={userIndex}
-                className="flex items-center justify-center rounded-xl bg-red-500"
-                style={{
-                  width: layout.tileWidth,
-                  height: layout.tileHeight,
-                }}
-              >
-                Test {users[userIndex]?.identity}
-              </div>
-            ))}
+            {row.participants.map((userIndex) => {
+              const tile = tiles[userIndex];
+
+              if (!tile) {
+                return null;
+              }
+
+              return (
+                <div
+                  key={tile.key}
+                  className="flex items-center justify-center rounded-xl"
+                  style={{
+                    width: layout.tileWidth,
+                    height: layout.tileHeight,
+                  }}
+                >
+                  <Base type={tile.kind} participant={getParticipantById(tile.participantId)} />
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
