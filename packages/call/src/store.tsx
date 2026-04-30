@@ -70,10 +70,6 @@ type Runtime = {
   getUser: GetUserFn;
 };
 
-type ParticipantMetadata = {
-  isAdmin: boolean;
-};
-
 type CallStore = {
   state: CallState;
   view: CallView;
@@ -90,7 +86,6 @@ type CallStore = {
   watchedStreamParticipantIds: number[];
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
-  parsedParticipantMetadataById: Record<number, ParticipantMetadata>;
   isEncrypted: boolean;
   room: Room;
   keyProvider: ExternalE2EEKeyProvider;
@@ -186,51 +181,6 @@ function hasParticipant(participantId: number) {
   );
 }
 
-function parseParticipantMetadata(
-  metadata: string | undefined,
-): ParticipantMetadata | undefined {
-  if (!metadata) {
-    return undefined;
-  }
-
-  try {
-    return JSON.parse(metadata);
-  } catch {
-    return undefined;
-  }
-}
-
-function getParsedParticipantMetadataById(): Record<
-  number,
-  ParticipantMetadata
-> {
-  return Object.fromEntries(
-    getAllParticipants()
-      .map((participant) => {
-        const participantId = getParticipantId(participant.identity);
-
-        if (participantId == null) {
-          return null;
-        }
-
-        return [
-          participantId,
-          parseParticipantMetadata(participant.metadata),
-        ] as const;
-      })
-      .filter(
-        (entry): entry is readonly [number, ParticipantMetadata] =>
-          entry != null,
-      ),
-  );
-}
-
-function syncParsedParticipantMetadata() {
-  useCall.setState({
-    parsedParticipantMetadataById: getParsedParticipantMetadataById(),
-  });
-}
-
 function syncScreenShareParticipants() {
   const activeScreenShareParticipantIds = getActiveScreenShareParticipantIds();
   const state = useCall.getState();
@@ -268,6 +218,13 @@ function requireRuntime(runtime: Runtime | null): Runtime {
   return runtime;
 }
 
+export function getRoomMetadata() {
+  const roomMetadata = room.metadata;
+  return JSON.parse(roomMetadata || '{"admin": 0}').catch(() => ({
+    admin: 0,
+  })) as { admin: number };
+}
+
 // Sync local participant flags and screen-share derived state for the active call UI.
 export function syncParticipantState() {
   const { room, screenShareSession } = useCall.getState();
@@ -281,13 +238,6 @@ export function syncParticipantState() {
   });
 
   syncScreenShareParticipants();
-  syncParsedParticipantMetadata();
-}
-
-export function getParsedParticipantMetadata(
-  participantId: number,
-): ParticipantMetadata | undefined {
-  return useCall.getState().parsedParticipantMetadataById[participantId];
 }
 
 // set state functions
@@ -525,7 +475,6 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
-    parsedParticipantMetadataById: {},
   });
 
   room.remoteParticipants.forEach((participant) => {
@@ -604,7 +553,7 @@ export async function joinCall(
 }
 
 // Mute or restore incoming call audio for every remote participant.
-export function toggleDeaf() {
+export async function toggleDeaf() {
   const nextDeaf = !useCall.getState().deaf;
 
   room.remoteParticipants.forEach((participant) => {
@@ -612,8 +561,12 @@ export function toggleDeaf() {
   });
 
   if (nextDeaf && room.localParticipant.isMicrophoneEnabled) {
-    toggleMute();
+    await toggleMute();
   }
+
+  await room.localParticipant.setAttributes({
+    deafened: nextDeaf ? "true" : "false",
+  });
 
   useCall.setState({ deaf: nextDeaf });
 }
@@ -623,7 +576,7 @@ export async function toggleMute() {
   const micEnabled = useCall.getState().micEnabled;
 
   if (!micEnabled && useCall.getState().deaf) {
-    toggleDeaf();
+    await toggleDeaf();
   }
 
   await room.localParticipant.setMicrophoneEnabled(!micEnabled);
@@ -669,7 +622,6 @@ export function resetCallState() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
-    parsedParticipantMetadataById: {},
   });
 
   syncParticipantState();
@@ -711,7 +663,6 @@ export const useCall = create<CallStore>(() => ({
   watchedStreamParticipantIds: [],
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],
-  parsedParticipantMetadataById: {},
   isEncrypted:
     room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
   room,

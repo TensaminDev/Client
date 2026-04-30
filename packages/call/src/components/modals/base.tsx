@@ -6,7 +6,7 @@ import {
 } from "@tensamin/ui";
 import {
   focusParticipant,
-  getParsedParticipantMetadata,
+  getRoomMetadata,
   setCallView,
   useCall,
 } from "../../store";
@@ -14,7 +14,7 @@ import { Track, type Participant } from "livekit-client";
 import { useEffect, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
 import VideoViewer from "../videoViewer";
-import { Loader2, MicOff, Monitor, Shield } from "lucide-react";
+import { HeadphoneOff, Loader2, MicOff, Monitor, Shield } from "lucide-react";
 
 function TransparentButton({ children }: { children: React.ReactNode }) {
   return (
@@ -33,9 +33,8 @@ function Overlay({
   user: User;
   participant: Participant;
 }) {
-  const { isAdmin } = getParsedParticipantMetadata(user.user_id) || {
-    isAdmin: false,
-  };
+  const isAdmin = getRoomMetadata()?.admin === user.user_id;
+  const isDeafened = participant.attributes["deafened"] === "true";
 
   return (
     <div className="w-full h-auto flex items-center gap-1">
@@ -44,6 +43,11 @@ function Overlay({
           {!participant.isMicrophoneEnabled && (
             <TransparentButton>
               <MicOff className="size-3.5" />
+            </TransparentButton>
+          )}
+          {isDeafened && (
+            <TransparentButton>
+              <HeadphoneOff className="size-3.5" />
             </TransparentButton>
           )}
           {isAdmin && (
