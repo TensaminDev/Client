@@ -86,7 +86,11 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <Button
                 disabled={callState !== "closed"}
                 onClick={() => {
-                  void joinCall(id, currentCalls[0].secret, currentCalls[0].id);
+                  void joinCall(
+                    id,
+                    currentCalls[0].call_secret,
+                    currentCalls[0].call_id,
+                  );
                 }}
                 className="w-9 h-9 aspect-square rounded-lg"
               >
@@ -105,13 +109,13 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                   <SelectContent>
                     {currentCalls.map((call) => (
                       <SelectItem
-                        value={call.id}
-                        key={call.id}
+                        value={call.call_id}
+                        key={call.call_id}
                         onSelect={() => {
-                          void joinCall(id, call.secret, call.id);
+                          void joinCall(id, call.call_secret, call.call_id);
                         }}
                       >
-                        {displayCallId(call.id)}
+                        {displayCallId(call.call_id)}
                       </SelectItem>
                     ))}
                   </SelectContent>

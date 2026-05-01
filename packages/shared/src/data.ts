@@ -68,7 +68,7 @@ export const ttp = {
       contacts: z.array(
         z.object({
           calls: z
-            .array(z.object({ id: z.uuidv4(), secret: z.base64() }))
+            .array(z.object({ call_id: z.string(), call_secret: z.base64() }))
             .optional(),
           last_message_at: z.number(),
           user_id: z.number(),

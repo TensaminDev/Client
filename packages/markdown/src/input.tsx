@@ -13,6 +13,7 @@ import {
   placeholder,
   ViewPlugin,
   type DecorationSet,
+  type KeyBinding,
   type ViewUpdate,
 } from "@codemirror/view";
 import {
@@ -159,6 +160,12 @@ function createEditorExtensions(
   getInvertEnterBehavior: () => boolean,
   onSubmit: () => void,
 ): Extension[] {
+  const editorKeymap = [
+    ...defaultKeymap,
+    ...historyKeymap,
+    indentWithTab,
+  ] as unknown as readonly KeyBinding[];
+
   const customEnterKeymap = keymap.of([
     {
       key: "Shift-Enter",
@@ -187,7 +194,7 @@ function createEditorExtensions(
   return [
     history(),
     markdown(),
-    keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+    keymap.of(editorKeymap),
     Prec.highest(customEnterKeymap),
     EditorView.lineWrapping,
     placeholder(getPlaceholder() ?? ""),

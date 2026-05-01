@@ -191,22 +191,23 @@ export function Provider(props: {
    * @param options Optional request id.
    * @returns A promise for the typed message payload.
    */
-  const send = useCallback<BoundSendFn<Schemas>>(
-    ((
-      type: string,
-      data?: Record<string, unknown>,
-      options?: { id?: number },
-    ) => {
-      const client = clientRef.current;
+  const send: BoundSendFn<Schemas> = useMemo(
+    () =>
+      ((
+        type: string,
+        data?: Record<string, unknown>,
+        options?: { id?: number },
+      ) => {
+        const client = clientRef.current;
 
-      if (!client) {
-        return Promise.reject(new Error("ttp is not connected"));
-      }
+        if (!client) {
+          return Promise.reject(new Error("ttp is not connected"));
+        }
 
-      return client.send(type as keyof Schemas & string, data as never, {
-        ...options,
-      });
-    }) as BoundSendFn<Schemas>,
+        return client.send(type as keyof Schemas & string, data as never, {
+          ...options,
+        });
+      }) as BoundSendFn<Schemas>,
     [],
   );
 
@@ -350,6 +351,7 @@ export function Provider(props: {
             identificationStartedRef.current = false;
             setConnected(false);
             setIdentified(false);
+            setIdentifying(false);
           },
           onClose: ({ error: closeError, intentional }) => {
             clearReconnectResetTimer();
@@ -412,8 +414,6 @@ export function Provider(props: {
 
   useEffect(() => {
     if (!connected) {
-      setIdentifying(false);
-      setIdentified(false);
       identificationStartedRef.current = false;
       return;
     }

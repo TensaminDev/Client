@@ -15,6 +15,7 @@
     "pre-build": "bun run lint && bun run build:packages",
     "build:apps": "bun run copy-licenses && bun run pre-build && bun run build:mobile && bun run build:desktop && bun --bun run copy-releases",
     "build:packages": "bun scripts/build-packages.ts",
+    "update:packages": "bun scripts/update-packages.ts",
     "dev:web": "cd apps/web && bun dev",
     "build:web": "cd apps/web && bun run build",
     "preview:web": "cd apps/web && bun run preview",
@@ -28,18 +29,18 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/parser": "^8.58.1",
-    "eslint": "^10.2.0",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "globals": "^17.4.0",
-    "prettier": "^3.8.2",
-    "typescript": "^6.0.2",
-    "typescript-eslint": "^8.58.1",
+    "@typescript-eslint/parser": "^8.59.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.5.0",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.1",
     "jsonc-parser": "^3.3.1"
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.30.tar.gz",
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.13.tar.gz"
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.15.tar.gz"
   },
   "dependencies": {
     "@tensamin/ttp-core": "*",

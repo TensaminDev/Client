@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-05-01T13:23:05.336Z",
+    "timestamp": "2026-05-01T17:38:04.763Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -111,10 +111,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/view@6.41.0",
+      "bomRef": "pkg:npm/%40codemirror/view@6.41.1",
       "name": "@codemirror/view",
-      "version": "6.41.0",
-      "purl": "pkg:npm/%40codemirror/view@6.41.0",
+      "version": "6.41.1",
+      "purl": "pkg:npm/%40codemirror/view@6.41.1",
       "description": "DOM view component for the CodeMirror code editor",
       "licenses": [
         {
@@ -126,13 +126,13 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "git+https://github.com/codemirror/view.git"
+          "url": "git+https://code.haverbeke.berlin/codemirror/view.git"
         }
       ],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_view@6.41.0"
+          "value": "licenses/@codemirror_view@6.41.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -242,10 +242,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40noble/curves@2.0.1",
+      "bomRef": "pkg:npm/%40noble/curves@2.2.0",
       "name": "@noble/curves",
-      "version": "2.0.1",
-      "purl": "pkg:npm/%40noble/curves@2.0.1",
+      "version": "2.2.0",
+      "purl": "pkg:npm/%40noble/curves@2.2.0",
       "description": "Audited & minimal JS implementation of elliptic curve cryptography",
       "licenses": [
         {
@@ -267,7 +267,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@noble_curves@2.0.1"
+          "value": "licenses/@noble_curves@2.2.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -277,10 +277,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tailwindcss/vite@4.2.2",
+      "bomRef": "pkg:npm/%40tailwindcss/vite@4.2.4",
       "name": "@tailwindcss/vite",
-      "version": "4.2.2",
-      "purl": "pkg:npm/%40tailwindcss/vite@4.2.2",
+      "version": "4.2.4",
+      "purl": "pkg:npm/%40tailwindcss/vite@4.2.4",
       "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
       "licenses": [
         {
@@ -302,7 +302,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tailwindcss_vite@4.2.2"
+          "value": "licenses/@tailwindcss_vite@4.2.4"
         },
         {
           "name": "local:sourcePackageDir",
@@ -312,10 +312,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tanstack/react-query@5.99.0",
+      "bomRef": "pkg:npm/%40tanstack/react-query@5.100.7",
       "name": "@tanstack/react-query",
-      "version": "5.99.0",
-      "purl": "pkg:npm/%40tanstack/react-query@5.99.0",
+      "version": "5.100.7",
+      "purl": "pkg:npm/%40tanstack/react-query@5.100.7",
       "description": "Hooks for managing, caching and syncing asynchronous and remote data in React",
       "licenses": [
         {
@@ -337,7 +337,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tanstack_react-query@5.99.0"
+          "value": "licenses/@tanstack_react-query@5.100.7"
         },
         {
           "name": "local:sourcePackageDir",
@@ -347,10 +347,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tanstack/react-router@1.168.18",
+      "bomRef": "pkg:npm/%40tanstack/react-router@1.169.1",
       "name": "@tanstack/react-router",
-      "version": "1.168.18",
-      "purl": "pkg:npm/%40tanstack/react-router@1.168.18",
+      "version": "1.169.1",
+      "purl": "pkg:npm/%40tanstack/react-router@1.169.1",
       "description": "Modern and scalable routing for React applications",
       "licenses": [
         {
@@ -372,7 +372,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tanstack_react-router@1.168.18"
+          "value": "licenses/@tanstack_react-router@1.169.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -382,10 +382,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tanstack/react-virtual@3.13.23",
+      "bomRef": "pkg:npm/%40tanstack/react-virtual@3.13.24",
       "name": "@tanstack/react-virtual",
-      "version": "3.13.23",
-      "purl": "pkg:npm/%40tanstack/react-virtual@3.13.23",
+      "version": "3.13.24",
+      "purl": "pkg:npm/%40tanstack/react-virtual@3.13.24",
       "description": "Headless UI for virtualizing scrollable elements in React",
       "licenses": [
         {
@@ -407,7 +407,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tanstack_react-virtual@3.13.23"
+          "value": "licenses/@tanstack_react-virtual@3.13.24"
         },
         {
           "name": "local:sourcePackageDir",
@@ -417,10 +417,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/api@2.10.1",
+      "bomRef": "pkg:npm/%40tauri-apps/api@2.11.0",
       "name": "@tauri-apps/api",
-      "version": "2.10.1",
-      "purl": "pkg:npm/%40tauri-apps/api@2.10.1",
+      "version": "2.11.0",
+      "purl": "pkg:npm/%40tauri-apps/api@2.11.0",
       "description": "Tauri API definitions",
       "licenses": [
         {
@@ -442,7 +442,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_api@2.10.1"
+          "value": "licenses/@tauri-apps_api@2.11.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -452,10 +452,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/cli@2.10.1",
+      "bomRef": "pkg:npm/%40tauri-apps/cli@2.11.0",
       "name": "@tauri-apps/cli",
-      "version": "2.10.1",
-      "purl": "pkg:npm/%40tauri-apps/cli@2.10.1",
+      "version": "2.11.0",
+      "purl": "pkg:npm/%40tauri-apps/cli@2.11.0",
       "description": "Command line interface for building Tauri apps",
       "licenses": [
         {
@@ -477,7 +477,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_cli@2.10.1"
+          "value": "licenses/@tauri-apps_cli@2.11.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -580,15 +580,15 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tensamin/ttp-core@0.0.13",
+      "bomRef": "pkg:npm/%40tensamin/ttp-core@0.0.15",
       "name": "@tensamin/ttp-core",
-      "version": "0.0.13",
-      "purl": "pkg:npm/%40tensamin/ttp-core@0.0.13",
+      "version": "0.0.15",
+      "purl": "pkg:npm/%40tensamin/ttp-core@0.0.15",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tensamin_ttp-core@0.0.13"
+          "value": "licenses/@tensamin_ttp-core@0.0.15"
         },
         {
           "name": "local:sourcePackageDir",
@@ -756,10 +756,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.58.1",
+      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.59.1",
       "name": "@typescript-eslint/parser",
-      "version": "8.58.1",
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.58.1",
+      "version": "8.59.1",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.59.1",
       "description": "An ESLint custom parser which leverages TypeScript ESTree",
       "licenses": [
         {
@@ -781,7 +781,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@typescript-eslint_parser@8.58.1"
+          "value": "licenses/@typescript-eslint_parser@8.59.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -791,10 +791,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40vitejs/plugin-react@5.2.0",
+      "bomRef": "pkg:npm/%40vitejs/plugin-react@6.0.1",
       "name": "@vitejs/plugin-react",
-      "version": "5.2.0",
-      "purl": "pkg:npm/%40vitejs/plugin-react@5.2.0",
+      "version": "6.0.1",
+      "purl": "pkg:npm/%40vitejs/plugin-react@6.0.1",
       "description": "The default Vite plugin for React projects",
       "licenses": [
         {
@@ -816,7 +816,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@vitejs_plugin-react@5.2.0"
+          "value": "licenses/@vitejs_plugin-react@6.0.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -958,10 +958,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/eslint@10.2.0",
+      "bomRef": "pkg:npm/eslint@10.2.1",
       "name": "eslint",
-      "version": "10.2.0",
-      "purl": "pkg:npm/eslint@10.2.0",
+      "version": "10.2.1",
+      "purl": "pkg:npm/eslint@10.2.1",
       "description": "An AST-based pattern checker for JavaScript.",
       "licenses": [
         {
@@ -983,7 +983,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/eslint@10.2.0"
+          "value": "licenses/eslint@10.2.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -993,10 +993,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/eslint-plugin-react-hooks@7.0.1",
+      "bomRef": "pkg:npm/eslint-plugin-react-hooks@7.1.1",
       "name": "eslint-plugin-react-hooks",
-      "version": "7.0.1",
-      "purl": "pkg:npm/eslint-plugin-react-hooks@7.0.1",
+      "version": "7.1.1",
+      "purl": "pkg:npm/eslint-plugin-react-hooks@7.1.1",
       "description": "ESLint rules for React Hooks",
       "licenses": [
         {
@@ -1018,7 +1018,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/eslint-plugin-react-hooks@7.0.1"
+          "value": "licenses/eslint-plugin-react-hooks@7.1.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1121,10 +1121,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/livekit-client@2.18.1",
+      "bomRef": "pkg:npm/livekit-client@2.18.8",
       "name": "livekit-client",
-      "version": "2.18.1",
-      "purl": "pkg:npm/livekit-client@2.18.1",
+      "version": "2.18.8",
+      "purl": "pkg:npm/livekit-client@2.18.8",
       "description": "JavaScript/TypeScript client SDK for LiveKit",
       "licenses": [
         {
@@ -1142,7 +1142,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/livekit-client@2.18.1"
+          "value": "licenses/livekit-client@2.18.8"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1152,10 +1152,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/lucide-react@1.8.0",
+      "bomRef": "pkg:npm/lucide-react@1.14.0",
       "name": "lucide-react",
-      "version": "1.8.0",
-      "purl": "pkg:npm/lucide-react@1.8.0",
+      "version": "1.14.0",
+      "purl": "pkg:npm/lucide-react@1.14.0",
       "description": "A Lucide icon library package for React applications.",
       "licenses": [
         {
@@ -1177,7 +1177,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/lucide-react@1.8.0"
+          "value": "licenses/lucide-react@1.14.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1187,10 +1187,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/prettier@3.8.2",
+      "bomRef": "pkg:npm/prettier@3.8.3",
       "name": "prettier",
-      "version": "3.8.2",
-      "purl": "pkg:npm/prettier@3.8.2",
+      "version": "3.8.3",
+      "purl": "pkg:npm/prettier@3.8.3",
       "description": "Prettier is an opinionated code formatter",
       "licenses": [
         {
@@ -1212,7 +1212,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/prettier@3.8.2"
+          "value": "licenses/prettier@3.8.3"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1362,10 +1362,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/shadcn@4.2.0",
+      "bomRef": "pkg:npm/shadcn@4.6.0",
       "name": "shadcn",
-      "version": "4.2.0",
-      "purl": "pkg:npm/shadcn@4.2.0",
+      "version": "4.6.0",
+      "purl": "pkg:npm/shadcn@4.6.0",
       "description": "Add components to your apps.",
       "licenses": [
         {
@@ -1383,7 +1383,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/shadcn@4.2.0"
+          "value": "licenses/shadcn@4.6.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1393,10 +1393,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/sonner@1.7.4",
+      "bomRef": "pkg:npm/sonner@2.0.7",
       "name": "sonner",
-      "version": "1.7.4",
-      "purl": "pkg:npm/sonner@1.7.4",
+      "version": "2.0.7",
+      "purl": "pkg:npm/sonner@2.0.7",
       "description": "An opinionated toast component for React.",
       "licenses": [
         {
@@ -1418,7 +1418,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/sonner@1.7.4"
+          "value": "licenses/sonner@2.0.7"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1498,10 +1498,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/tailwindcss@4.2.2",
+      "bomRef": "pkg:npm/tailwindcss@4.2.4",
       "name": "tailwindcss",
-      "version": "4.2.2",
-      "purl": "pkg:npm/tailwindcss@4.2.2",
+      "version": "4.2.4",
+      "purl": "pkg:npm/tailwindcss@4.2.4",
       "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
       "licenses": [
         {
@@ -1523,7 +1523,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/tailwindcss@4.2.2"
+          "value": "licenses/tailwindcss@4.2.4"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1568,10 +1568,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/typescript@5.9.3",
+      "bomRef": "pkg:npm/typescript@6.0.3",
       "name": "typescript",
-      "version": "5.9.3",
-      "purl": "pkg:npm/typescript@5.9.3",
+      "version": "6.0.3",
+      "purl": "pkg:npm/typescript@6.0.3",
       "description": "TypeScript is a language for application scale JavaScript development",
       "licenses": [
         {
@@ -1593,7 +1593,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/typescript@5.9.3"
+          "value": "licenses/typescript@6.0.3"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1603,10 +1603,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/typescript-eslint@8.58.1",
+      "bomRef": "pkg:npm/typescript-eslint@8.59.1",
       "name": "typescript-eslint",
-      "version": "8.58.1",
-      "purl": "pkg:npm/typescript-eslint@8.58.1",
+      "version": "8.59.1",
+      "purl": "pkg:npm/typescript-eslint@8.59.1",
       "description": "Tooling which enables you to use TypeScript with ESLint",
       "licenses": [
         {
@@ -1628,7 +1628,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/typescript-eslint@8.58.1"
+          "value": "licenses/typescript-eslint@8.59.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1638,10 +1638,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/vite@7.3.2",
+      "bomRef": "pkg:npm/vite@8.0.10",
       "name": "vite",
-      "version": "7.3.2",
-      "purl": "pkg:npm/vite@7.3.2",
+      "version": "8.0.10",
+      "purl": "pkg:npm/vite@8.0.10",
       "description": "Native-ESM powered web dev build tool",
       "licenses": [
         {
@@ -1663,7 +1663,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/vite@7.3.2"
+          "value": "licenses/vite@8.0.10"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1673,41 +1673,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/vite-tsconfig-paths@6.1.1",
-      "name": "vite-tsconfig-paths",
-      "version": "6.1.1",
-      "purl": "pkg:npm/vite-tsconfig-paths@6.1.1",
-      "description": "Vite resolver for TypeScript compilerOptions.paths",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "aleclarson/vite-tsconfig-paths"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/vite-tsconfig-paths@6.1.1"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/vite-tsconfig-paths"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/zod@4.3.6",
+      "bomRef": "pkg:npm/zod@4.4.1",
       "name": "zod",
-      "version": "4.3.6",
-      "purl": "pkg:npm/zod@4.3.6",
+      "version": "4.4.1",
+      "purl": "pkg:npm/zod@4.4.1",
       "description": "TypeScript-first schema declaration and validation library with static type inference",
       "licenses": [
         {
@@ -1729,7 +1698,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/zod@4.3.6"
+          "value": "licenses/zod@4.4.1"
         },
         {
           "name": "local:sourcePackageDir",

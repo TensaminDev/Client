@@ -29,13 +29,13 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@codemirror_state@6.6.0`
 - Source package dir: `packages/markdown/node_modules/@codemirror/state`
 
-## @codemirror/view@6.41.0
+## @codemirror/view@6.41.1
 
 - License: MIT
-- Repository: git+https://github.com/codemirror/view.git
+- Repository: git+https://code.haverbeke.berlin/codemirror/view.git
 - Description: DOM view component for the CodeMirror code editor
 - Included files: LICENSE
-- Folder: `licenses/@codemirror_view@6.41.0`
+- Folder: `licenses/@codemirror_view@6.41.1`
 - Source package dir: `packages/markdown/node_modules/@codemirror/view`
 
 ## @eslint/js@10.0.1
@@ -66,74 +66,74 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@livekit_components-react@2.9.20`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
 
-## @noble/curves@2.0.1
+## @noble/curves@2.2.0
 
 - License: MIT
 - Homepage: https://paulmillr.com/noble/
 - Repository: git+https://github.com/paulmillr/noble-curves.git
 - Description: Audited & minimal JS implementation of elliptic curve cryptography
 - Included files: LICENSE
-- Folder: `licenses/@noble_curves@2.0.1`
+- Folder: `licenses/@noble_curves@2.2.0`
 - Source package dir: `apps/web/node_modules/@noble/curves`
 
-## @tailwindcss/vite@4.2.2
+## @tailwindcss/vite@4.2.4
 
 - License: MIT
 - Homepage: https://tailwindcss.com
 - Repository: https://github.com/tailwindlabs/tailwindcss.git
 - Description: A utility-first CSS framework for rapidly building custom user interfaces.
 - Included files: LICENSE
-- Folder: `licenses/@tailwindcss_vite@4.2.2`
+- Folder: `licenses/@tailwindcss_vite@4.2.4`
 - Source package dir: `apps/web/node_modules/@tailwindcss/vite`
 
-## @tanstack/react-query@5.99.0
+## @tanstack/react-query@5.100.7
 
 - License: MIT
 - Homepage: https://tanstack.com/query
 - Repository: git+https://github.com/TanStack/query.git
 - Description: Hooks for managing, caching and syncing asynchronous and remote data in React
 - Included files: LICENSE
-- Folder: `licenses/@tanstack_react-query@5.99.0`
+- Folder: `licenses/@tanstack_react-query@5.100.7`
 - Source package dir: `packages/call/node_modules/@tanstack/react-query`
 
-## @tanstack/react-router@1.168.18
+## @tanstack/react-router@1.169.1
 
 - License: MIT
 - Homepage: https://tanstack.com/router
 - Repository: git+https://github.com/TanStack/router.git
 - Description: Modern and scalable routing for React applications
 - Included files: LICENSE
-- Folder: `licenses/@tanstack_react-router@1.168.18`
+- Folder: `licenses/@tanstack_react-router@1.169.1`
 - Source package dir: `apps/web/node_modules/@tanstack/react-router`
 
-## @tanstack/react-virtual@3.13.23
+## @tanstack/react-virtual@3.13.24
 
 - License: MIT
 - Homepage: https://tanstack.com/virtual
 - Repository: git+https://github.com/TanStack/virtual.git
 - Description: Headless UI for virtualizing scrollable elements in React
 - Included files: LICENSE
-- Folder: `licenses/@tanstack_react-virtual@3.13.23`
+- Folder: `licenses/@tanstack_react-virtual@3.13.24`
 - Source package dir: `apps/web/node_modules/@tanstack/react-virtual`
 
-## @tauri-apps/api@2.10.1
+## @tauri-apps/api@2.11.0
 
 - License: Apache-2.0 OR MIT
 - Homepage: https://github.com/tauri-apps/tauri#readme
 - Repository: git+https://github.com/tauri-apps/tauri.git
 - Description: Tauri API definitions
 - Included files: LICENSE_MIT, LICENSE_APACHE-2.0
-- Folder: `licenses/@tauri-apps_api@2.10.1`
+- Folder: `licenses/@tauri-apps_api@2.11.0`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/api`
 
-## @tauri-apps/cli@2.10.1
+## @tauri-apps/cli@2.11.0
 
 - License: Apache-2.0 OR MIT
 - Homepage: https://github.com/tauri-apps/tauri#readme
 - Repository: git+https://github.com/tauri-apps/tauri.git
 - Description: Command line interface for building Tauri apps
 - Included files: LICENSE_MIT, LICENSE_APACHE-2.0
-- Folder: `licenses/@tauri-apps_cli@2.10.1`
+- Folder: `licenses/@tauri-apps_cli@2.11.0`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/cli`
 
 ## @tauri-apps/plugin-barcode-scanner@2.4.4
@@ -163,11 +163,11 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@tauri-apps_plugin-opener@2.5.3`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-opener`
 
-## @tensamin/ttp-core@0.0.13
+## @tensamin/ttp-core@0.0.15
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@tensamin_ttp-core@0.0.13`
+- Folder: `licenses/@tensamin_ttp-core@0.0.15`
 - Source package dir: `packages/ttp/node_modules/@tensamin/ttp-core`
 
 ## @tensamin/ui@0.0.30
@@ -217,24 +217,24 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@types_react-dom@19.2.3`
 - Source package dir: `apps/web/node_modules/@types/react-dom`
 
-## @typescript-eslint/parser@8.58.1
+## @typescript-eslint/parser@8.59.1
 
 - License: MIT
 - Homepage: https://typescript-eslint.io/packages/parser
 - Repository: https://github.com/typescript-eslint/typescript-eslint.git
 - Description: An ESLint custom parser which leverages TypeScript ESTree
 - Included files: LICENSE
-- Folder: `licenses/@typescript-eslint_parser@8.58.1`
+- Folder: `licenses/@typescript-eslint_parser@8.59.1`
 - Source package dir: `node_modules/@typescript-eslint/parser`
 
-## @vitejs/plugin-react@5.2.0
+## @vitejs/plugin-react@6.0.1
 
 - License: MIT
 - Homepage: https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#readme
 - Repository: git+https://github.com/vitejs/vite-plugin-react.git
 - Description: The default Vite plugin for React projects
 - Included files: LICENSE
-- Folder: `licenses/@vitejs_plugin-react@5.2.0`
+- Folder: `licenses/@vitejs_plugin-react@6.0.1`
 - Source package dir: `apps/web/node_modules/@vitejs/plugin-react`
 
 ## class-variance-authority@0.7.1
@@ -275,24 +275,24 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/deepfilternet3-noise-filter@1.2.1`
 - Source package dir: `packages/call/node_modules/deepfilternet3-noise-filter`
 
-## eslint@10.2.0
+## eslint@10.2.1
 
 - License: MIT
 - Homepage: https://eslint.org
 - Repository: eslint/eslint
 - Description: An AST-based pattern checker for JavaScript.
 - Included files: LICENSE
-- Folder: `licenses/eslint@10.2.0`
+- Folder: `licenses/eslint@10.2.1`
 - Source package dir: `apps/web/node_modules/eslint`
 
-## eslint-plugin-react-hooks@7.0.1
+## eslint-plugin-react-hooks@7.1.1
 
 - License: MIT
 - Homepage: https://react.dev/
 - Repository: https://github.com/facebook/react.git
 - Description: ESLint rules for React Hooks
 - Included files: LICENSE
-- Folder: `licenses/eslint-plugin-react-hooks@7.0.1`
+- Folder: `licenses/eslint-plugin-react-hooks@7.1.1`
 - Source package dir: `node_modules/eslint-plugin-react-hooks`
 
 ## framer-motion@12.38.0
@@ -322,33 +322,33 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/jsonc-parser@3.3.1`
 - Source package dir: `node_modules/jsonc-parser`
 
-## livekit-client@2.18.1
+## livekit-client@2.18.8
 
 - License: Apache-2.0
 - Repository: git@github.com:livekit/client-sdk-js.git
 - Description: JavaScript/TypeScript client SDK for LiveKit
 - Included files: LICENSE
-- Folder: `licenses/livekit-client@2.18.1`
+- Folder: `licenses/livekit-client@2.18.8`
 - Source package dir: `packages/call/node_modules/livekit-client`
 
-## lucide-react@1.8.0
+## lucide-react@1.14.0
 
 - License: ISC
 - Homepage: https://lucide.dev
 - Repository: https://github.com/lucide-icons/lucide.git
 - Description: A Lucide icon library package for React applications.
 - Included files: LICENSE
-- Folder: `licenses/lucide-react@1.8.0`
+- Folder: `licenses/lucide-react@1.14.0`
 - Source package dir: `apps/tauri/node_modules/lucide-react`
 
-## prettier@3.8.2
+## prettier@3.8.3
 
 - License: MIT
 - Homepage: https://prettier.io
 - Repository: prettier/prettier
 - Description: Prettier is an opinionated code formatter
 - Included files: LICENSE
-- Folder: `licenses/prettier@3.8.2`
+- Folder: `licenses/prettier@3.8.3`
 - Source package dir: `node_modules/prettier`
 
 ## qrcode@1.5.4
@@ -391,23 +391,23 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/recharts@3.8.1`
 - Source package dir: `packages/call/node_modules/recharts`
 
-## shadcn@4.2.0
+## shadcn@4.6.0
 
 - License: MIT
 - Repository: https://github.com/shadcn-ui/ui.git
 - Description: Add components to your apps.
 - Included files: LICENSE.md
-- Folder: `licenses/shadcn@4.2.0`
+- Folder: `licenses/shadcn@4.6.0`
 - Source package dir: `apps/web/node_modules/shadcn`
 
-## sonner@1.7.4
+## sonner@2.0.7
 
 - License: MIT
 - Homepage: https://sonner.emilkowal.ski/
 - Repository: git+https://github.com/emilkowalski/sonner.git
 - Description: An opinionated toast component for React.
 - Included files: LICENSE.md
-- Folder: `licenses/sonner@1.7.4`
+- Folder: `licenses/sonner@2.0.7`
 - Source package dir: `apps/web/node_modules/sonner`
 
 ## tailwind-merge@3.5.0
@@ -430,14 +430,14 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/tailwind-scrollbar-hide@4.0.0`
 - Source package dir: `apps/web/node_modules/tailwind-scrollbar-hide`
 
-## tailwindcss@4.2.2
+## tailwindcss@4.2.4
 
 - License: MIT
 - Homepage: https://tailwindcss.com
 - Repository: https://github.com/tailwindlabs/tailwindcss.git
 - Description: A utility-first CSS framework for rapidly building custom user interfaces.
 - Included files: LICENSE
-- Folder: `licenses/tailwindcss@4.2.2`
+- Folder: `licenses/tailwindcss@4.2.4`
 - Source package dir: `apps/web/node_modules/tailwindcss`
 
 ## tw-animate-css@1.4.0
@@ -450,53 +450,44 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/tw-animate-css@1.4.0`
 - Source package dir: `apps/web/node_modules/tw-animate-css`
 
-## typescript@5.9.3
+## typescript@6.0.3
 
 - License: Apache-2.0
 - Homepage: https://www.typescriptlang.org/
 - Repository: https://github.com/microsoft/TypeScript.git
 - Description: TypeScript is a language for application scale JavaScript development
 - Included files: LICENSE.txt
-- Folder: `licenses/typescript@5.9.3`
+- Folder: `licenses/typescript@6.0.3`
 - Source package dir: `apps/web/node_modules/typescript`
 
-## typescript-eslint@8.58.1
+## typescript-eslint@8.59.1
 
 - License: MIT
 - Homepage: https://typescript-eslint.io/packages/typescript-eslint
 - Repository: https://github.com/typescript-eslint/typescript-eslint.git
 - Description: Tooling which enables you to use TypeScript with ESLint
 - Included files: LICENSE
-- Folder: `licenses/typescript-eslint@8.58.1`
+- Folder: `licenses/typescript-eslint@8.59.1`
 - Source package dir: `apps/web/node_modules/typescript-eslint`
 
-## vite@7.3.2
+## vite@8.0.10
 
 - License: MIT
 - Homepage: https://vite.dev
 - Repository: git+https://github.com/vitejs/vite.git
 - Description: Native-ESM powered web dev build tool
 - Included files: LICENSE.md
-- Folder: `licenses/vite@7.3.2`
+- Folder: `licenses/vite@8.0.10`
 - Source package dir: `apps/web/node_modules/vite`
 
-## vite-tsconfig-paths@6.1.1
-
-- License: MIT
-- Repository: aleclarson/vite-tsconfig-paths
-- Description: Vite resolver for TypeScript compilerOptions.paths
-- Included files: LICENSE
-- Folder: `licenses/vite-tsconfig-paths@6.1.1`
-- Source package dir: `apps/web/node_modules/vite-tsconfig-paths`
-
-## zod@4.3.6
+## zod@4.4.1
 
 - License: MIT
 - Homepage: https://zod.dev
 - Repository: git+https://github.com/colinhacks/zod.git
 - Description: TypeScript-first schema declaration and validation library with static type inference
 - Included files: LICENSE
-- Folder: `licenses/zod@4.3.6`
+- Folder: `licenses/zod@4.4.1`
 - Source package dir: `apps/web/node_modules/zod`
 
 ## zustand@5.0.12

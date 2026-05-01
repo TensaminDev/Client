@@ -183,8 +183,31 @@ fn get_screen_share_capabilities() -> ScreenShareCapabilities {
     }
 }
 
+fn setup_app<R: tauri::Runtime>(
+    _app: &mut tauri::App<R>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(any(target_os = "linux", windows))]
+    {
+        use tauri_plugin_deep_link::DeepLinkExt;
+
+        if let Err(error) = _app.deep_link().register_all() {
+            if cfg!(debug_assertions) {
+                eprintln!("Skipping deep link registration during dev: {error}");
+            } else {
+                return Err(Box::new(error));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    let builder = tauri::Builder::<tauri::Cef>::default();
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     let builder = tauri::Builder::default();
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -207,21 +230,7 @@ pub fn run() {
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
 
     builder
-        .setup(|_app| {
-            #[cfg(any(target_os = "linux", windows))]
-            {
-                use tauri_plugin_deep_link::DeepLinkExt;
-
-                if let Err(error) = _app.deep_link().register_all() {
-                    if cfg!(debug_assertions) {
-                        eprintln!("Skipping deep link registration during dev: {error}");
-                    } else {
-                        return Err(error.into());
-                    }
-                }
-            }
-            Ok(())
-        })
+        .setup(setup_app)
         .invoke_handler(tauri::generate_handler![
             list_screen_share_sources,
             list_audio_outputs,

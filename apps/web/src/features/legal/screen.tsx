@@ -50,11 +50,6 @@ export default function Screen(props: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    setLoading(true);
-
-    setError("");
-    setErrorDescription("");
-
     void (async () => {
       try {
         const id = await load("user_id");

@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 const host = process.env.TAURI_DEV_HOST;
@@ -54,6 +53,7 @@ function deepFilterAssetHeaders(rootDir: string): Plugin {
 export default defineConfig({
   clearScreen: false,
   resolve: {
+    tsconfigPaths: true,
     alias: [
       {
         find: "@codemirror/commands",
@@ -102,7 +102,6 @@ export default defineConfig({
   plugins: [
     deepFilterAssetHeaders(resolve(appDir, "public")),
     react(),
-    tsconfigPaths(),
     tailwindcss(),
   ],
   worker: {
