@@ -1,8 +1,5 @@
-import { useCrypto } from "@tensamin/crypto/context";
 import * as React from "react";
-import { useChat } from "../context";
 import type { RawMessage } from "../values";
-import { log } from "@tensamin/shared/log";
 import Text from "@tensamin/markdown/text";
 import { AlertTriangle, Clock } from "lucide-react";
 
@@ -14,92 +11,18 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@tensamin/ui";
-import { decryptText } from "@tensamin/crypto/worker";
 
-function generateFixedLoadingSize(size: number, height: number) {
-  return size * 3 - (height / 20) * 11;
-}
-
-function getSafeMessageHeight(height: number | undefined) {
-  if (typeof height === "number" && Number.isFinite(height) && height > 0) {
-    return Math.ceil(height);
-  }
-
-  return 40;
-}
-
-/**
- * Executes Message.
- * @param props Parameter props.
- * @returns unknown.
- */
 function MessageComponent({
   message,
-  notEncrypted,
-  measureRef,
 }: {
   message: RawMessage & {
     failed?: boolean;
   };
-  notEncrypted?: boolean;
-  measureRef?: React.Ref<HTMLDivElement>;
 }) {
-  const { sharedSecret } = useChat();
-  const { decrypt } = useCrypto();
-
   const isMobile = useIsMobile();
-
-  const [decodedContent, setDecodedContent] = React.useState("");
-  const [isReady, setIsReady] = React.useState(false);
-  const safeMessageHeight = getSafeMessageHeight(message.height);
-
-  React.useEffect(() => {
-    if (notEncrypted) {
-      setDecodedContent(message.content);
-      setIsReady(true);
-      return;
-    }
-
-    const content = message.content;
-    const secret = sharedSecret;
-    let active = true;
-
-    if (!secret) {
-      setIsReady(false);
-      return;
-    }
-
-    decryptText(secret, content)
-      .then((value) => {
-        if (!active) {
-          return;
-        }
-
-        setDecodedContent(value);
-        setIsReady(true);
-      })
-      .catch((e) => {
-        if (!active) {
-          return;
-        }
-
-        log(0, "Chat", "red", "Failed to decrypt message", e, {
-          content,
-          secret,
-        });
-
-        setDecodedContent("Failed to decrypt");
-        setIsReady(true);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [decrypt, message.content, notEncrypted, sharedSecret]);
 
   return (
     <div
-      ref={measureRef}
       className={`w-full flex justify-start transition-opacity duration-150 ${(message.failed || message.message_state === "awaiting") && "opacity-50"}`}
     >
       <ContextMenu>
@@ -112,7 +35,7 @@ function MessageComponent({
                     ? "bg-destructive/75 text-destructive-foreground"
                     : "bg-primary text-primary-foreground"
                   : "bg-muted"
-              } ${!isReady && "animate-pulse"} ${isMobile && "select-none"}`}
+              } ${isMobile && "select-none"}`}
             >
               {message.failed && message.message_state === "awaiting" && (
                 <Tooltip>
@@ -125,26 +48,13 @@ function MessageComponent({
               {!message.failed && message.message_state === "awaiting" && (
                 <Clock size={17} />
               )}
-              {isReady ? (
-                <Text value={decodedContent} />
-              ) : (
-                <div
-                  className="block rounded-sm"
-                  style={{
-                    width: generateFixedLoadingSize(
-                      message.content.length,
-                      safeMessageHeight,
-                    ),
-                    minHeight: safeMessageHeight,
-                  }}
-                />
-              )}
+              <Text value={message.content} />
             </div>
           }
         />
         <ContextMenuContent>
           <ContextMenuItem>
-            <Text value={decodedContent} />
+            <Text value={message.content} />
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -154,8 +64,6 @@ function MessageComponent({
 
 export default React.memo(MessageComponent, (prev, next) => {
   return (
-    prev.notEncrypted === next.notEncrypted &&
-    prev.measureRef === next.measureRef &&
     prev.message.send_time === next.message.send_time &&
     prev.message.content === next.message.content &&
     prev.message.height === next.message.height &&

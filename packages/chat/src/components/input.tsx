@@ -8,7 +8,6 @@ import { Plus, Laugh, Clapperboard } from "lucide-react";
 import { useChat } from "../context";
 import { useTTP } from "@tensamin/ttp";
 import { log, toast } from "@tensamin/shared/log";
-import Message from "./message";
 import { cn, useIsMobile } from "@tensamin/ui";
 import { encryptText } from "@tensamin/crypto/worker";
 
@@ -20,7 +19,6 @@ export default function InputComponent({
   setValue: (value: string) => void;
 }) {
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
-  const measurementRef = React.useRef<HTMLDivElement | null>(null);
 
   const { send } = useTTP();
   const { addLiveMessage, sharedSecret, userId } = useChat();
@@ -31,21 +29,6 @@ export default function InputComponent({
       setInvertEnterBehavior(shouldInvert);
     });
   }, [load]);
-
-  const getRenderedHeight = React.useCallback(() => {
-    const measuredHeight =
-      measurementRef.current?.getBoundingClientRect().height;
-
-    if (
-      typeof measuredHeight === "number" &&
-      Number.isFinite(measuredHeight) &&
-      measuredHeight > 0
-    ) {
-      return Math.ceil(measuredHeight);
-    }
-
-    return 40;
-  }, []);
 
   /**
    * Executes handleSubmit.
@@ -68,10 +51,8 @@ export default function InputComponent({
       return;
     }
 
-    const height = getRenderedHeight();
-
     const reference = addLiveMessage({
-      height,
+      height: 0,
       not_encrypted: true,
       send_time: time,
       content: currentValue,
@@ -82,7 +63,7 @@ export default function InputComponent({
     const encryptedContext = await encryptText(sharedSecret, currentValue);
 
     send("message_send", {
-      height,
+      height: 0,
       content: encryptedContext,
       receiver_id: userId,
       send_time: time,
@@ -112,24 +93,6 @@ export default function InputComponent({
       )}
     >
       <CardHeader className="relative p-0 flex flex-col">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 w-full px-2.5 opacity-0"
-          style={{ visibility: "hidden" }}
-        >
-          <Message
-            measureRef={measurementRef}
-            message={{
-              height: 0,
-              not_encrypted: true,
-              send_time: 0,
-              content: value,
-              sent_by_self: true,
-              message_state: "awaiting",
-            }}
-            notEncrypted
-          />
-        </div>
         <Input
           placeholder="Send a message..."
           value={value}

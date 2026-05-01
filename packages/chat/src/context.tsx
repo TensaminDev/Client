@@ -55,7 +55,7 @@ function updateMessageStateBySendTime<
  * @returns unknown.
  */
 export default function Provider(props: { children: ReactNode }) {
-  const { getSharedSecret } = useCrypto();
+  const { getSharedSecret, decryptText } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
   const { send, subscribePush } = useTTP();
@@ -128,7 +128,7 @@ export default function Provider(props: { children: ReactNode }) {
     };
   }, [get, getSharedSecret, load, userIdValue]);
 
-  const customGetMessages = useCallback(
+  const getMessages = useCallback(
     async (amount: number, offset: number) => {
       const messages = await send("messages_get", {
         amount,
@@ -155,9 +155,20 @@ export default function Provider(props: { children: ReactNode }) {
         });
       }
 
-      return sorted;
+      return await Promise.all(
+        sorted.map(async (message) => {
+          try {
+            return {
+              ...message,
+              content: await decryptText(currentSharedSecret, message.content),
+            };
+          } catch {
+            return message;
+          }
+        }),
+      );
     },
-    [send, userIdValue],
+    [send, userIdValue, currentSharedSecret, decryptText],
   );
 
   const addLiveMessage = useCallback((message: RawMessage) => {
@@ -287,7 +298,7 @@ export default function Provider(props: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <context.Provider
         value={{
-          getMessages: customGetMessages,
+          getMessages,
           liveMessages: () => liveMessagesState,
           addLiveMessage,
           clearLiveMessages,

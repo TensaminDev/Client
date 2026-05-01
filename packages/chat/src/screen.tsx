@@ -7,32 +7,23 @@ import InputComponent from "./components/input";
 import Message from "./components/message";
 
 import { PAGE_SIZE } from "./values";
-import { useLayoutEffect } from "react";
 import { useIsMobile } from "@tensamin/ui";
 
 function getDistanceFromBottom(element: HTMLDivElement) {
   return element.scrollHeight - (element.scrollTop + element.clientHeight);
 }
 
-const FALLBACK_MESSAGE_HEIGHT = 40;
+const MESSAGE_ROW_HEIGHT = 48;
 const ROW_VERTICAL_PADDING = 8;
-
-function getSafeMessageHeight(height: number | undefined) {
-  if (typeof height === "number" && Number.isFinite(height) && height > 0) {
-    return Math.ceil(height);
-  }
-
-  return FALLBACK_MESSAGE_HEIGHT;
-}
 
 /**
  * Renders the chat screen with virtualized history and live message updates.
  * @returns Chat screen JSX.
  */
 export default function Screen() {
-  const { getMessages, liveMessages, clearLiveMessages, userId } = useChat();
+  const { getMessages, liveMessages, clearLiveMessages, userId, sharedSecret } =
+    useChat();
 
-  const inputBoxRef = React.useRef<HTMLDivElement | null>(null);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
   const stickyBottomThreshold = isMobile ? 220 : 140;
@@ -46,12 +37,13 @@ export default function Screen() {
   } | null>(null);
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
+  const hasSharedSecret = sharedSecret.length > 0;
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: ["chat-messages", String(userId)],
+    queryKey: ["chat-messages", String(userId), hasSharedSecret],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
-    enabled: hasValidChatUser,
+    enabled: hasValidChatUser && hasSharedSecret,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_SIZE) {
         return undefined;
@@ -105,10 +97,7 @@ export default function Screen() {
     count: messages.length,
     getScrollElement: () => scrollRef.current,
     getItemKey,
-    estimateSize: (index) => {
-      const message = messages[index];
-      return getSafeMessageHeight(message?.height) + ROW_VERTICAL_PADDING;
-    },
+    estimateSize: () => MESSAGE_ROW_HEIGHT + ROW_VERTICAL_PADDING,
     overscan: isMobile ? 10 : 6,
   });
 
@@ -195,71 +184,7 @@ export default function Screen() {
     void onScroll();
   }, [onScroll]);
 
-  /**
-   * Input box height changes & state
-   */
   const [value, setValue] = React.useState("");
-
-  const updateMaxHeight = React.useCallback(() => {
-    const el = inputBoxRef.current;
-    const host = scrollRef.current;
-    if (!host || !el || typeof window === "undefined") return;
-
-    const shouldStickToBottom =
-      getDistanceFromBottom(host) <= stickyBottomThreshold;
-
-    const viewportHeight = Math.max(
-      window.innerHeight,
-      window.visualViewport?.height ?? 0,
-    );
-    const inputHeight = el.scrollHeight + 56;
-
-    host.style.maxHeight = `calc(${viewportHeight}px - ${inputHeight - 62}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`;
-
-    if (shouldStickToBottom) {
-      requestAnimationFrame(() => {
-        if (!scrollRef.current) {
-          return;
-        }
-
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      });
-    }
-  }, [stickyBottomThreshold]);
-
-  useLayoutEffect(() => {
-    updateMaxHeight();
-  }, [value, updateMaxHeight]);
-
-  React.useEffect(() => {
-    updateMaxHeight();
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const handleViewportChange = () => {
-      updateMaxHeight();
-    };
-
-    const viewport = window.visualViewport;
-    viewport?.addEventListener("resize", handleViewportChange);
-    window.addEventListener("resize", handleViewportChange);
-
-    const input = inputBoxRef.current;
-    const resizeObserver = input
-      ? new ResizeObserver(handleViewportChange)
-      : null;
-    if (input) {
-      resizeObserver?.observe(input);
-    }
-
-    return () => {
-      viewport?.removeEventListener("resize", handleViewportChange);
-      window.removeEventListener("resize", handleViewportChange);
-      resizeObserver?.disconnect();
-    };
-  }, [updateMaxHeight]);
 
   // Render
   if (!hasValidChatUser) {
@@ -275,7 +200,7 @@ export default function Screen() {
       <div
         ref={scrollRef}
         id="chat_container"
-        className="flex-1 overflow-y-auto px-2.5"
+        className="flex-1 overflow-y-auto px-2.5 pb-32"
         style={{
           overflowAnchor: "none",
         }}
@@ -307,21 +232,15 @@ export default function Screen() {
                   padding: "4px 0",
                 }}
               >
-                <Message
-                  message={message}
-                  notEncrypted={message.not_encrypted}
-                />
+                <Message message={message} />
               </div>
             );
           })}
         </div>
       </div>
       <div
-        ref={inputBoxRef}
         className="fixed -bottom-15 pb-15"
-        style={{
-          width: "calc(100vw - 277px)",
-        }}
+        style={{ width: "calc(100vw - 277px)" }}
       >
         <InputComponent setValue={setValue} value={value} />
       </div>
