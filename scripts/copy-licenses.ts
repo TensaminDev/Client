@@ -78,18 +78,20 @@ async function main(): Promise<void> {
     }
   }
 
-  records.sort((a, b) => {
+  const uniqueRecords = dedupePackageRecords(records);
+
+  uniqueRecords.sort((a, b) => {
     const byName = a.name.localeCompare(b.name);
     if (byName !== 0) return byName;
     return a.version.localeCompare(b.version);
   });
 
-  await writeThirdPartyNotices(records);
-  await writeCreditsJson(records);
-  await writeCycloneDxSbom(records);
+  await writeThirdPartyNotices(uniqueRecords);
+  await writeCreditsJson(uniqueRecords);
+  await writeCycloneDxSbom(uniqueRecords);
 
   console.log(
-    `Generated ${records.length} third-party package records in ${OUTPUT_DIR}`,
+    `Generated ${uniqueRecords.length} third-party package records in ${OUTPUT_DIR}`,
   );
 }
 
@@ -456,6 +458,31 @@ async function writeCycloneDxSbom(records: PackageRecord[]): Promise<void> {
     JSON.stringify(sbom, null, 2),
     "utf8",
   );
+}
+
+function dedupePackageRecords(records: PackageRecord[]): PackageRecord[] {
+  const unique = new Map<string, PackageRecord>();
+
+  for (const record of records) {
+    const key = `${record.name}@${record.version}`;
+    const existing = unique.get(key);
+
+    if (!existing) {
+      unique.set(key, record);
+      continue;
+    }
+
+    unique.set(key, {
+      ...existing,
+      copiedFiles: [...new Set([...existing.copiedFiles, ...record.copiedFiles])],
+      license: existing.license ?? record.license,
+      description: existing.description ?? record.description,
+      homepage: existing.homepage ?? record.homepage,
+      repository: existing.repository ?? record.repository,
+    });
+  }
+
+  return [...unique.values()];
 }
 
 function toCycloneDxLicenses(

@@ -76,16 +76,6 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@noble_curves@2.0.1`
 - Source package dir: `apps/web/node_modules/@noble/curves`
 
-## @noble/curves@2.0.1
-
-- License: MIT
-- Homepage: https://paulmillr.com/noble/
-- Repository: git+https://github.com/paulmillr/noble-curves.git
-- Description: Audited & minimal JS implementation of elliptic curve cryptography
-- Included files: LICENSE
-- Folder: `licenses/@noble_curves@2.0.1`
-- Source package dir: `apps/web/node_modules/@noble/curves`
-
 ## @tailwindcss/vite@4.2.2
 
 - License: MIT
@@ -351,16 +341,6 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/lucide-react@1.8.0`
 - Source package dir: `apps/tauri/node_modules/lucide-react`
 
-## lucide-react@1.8.0
-
-- License: ISC
-- Homepage: https://lucide.dev
-- Repository: https://github.com/lucide-icons/lucide.git
-- Description: A Lucide icon library package for React applications.
-- Included files: LICENSE
-- Folder: `licenses/lucide-react@1.8.0`
-- Source package dir: `apps/tauri/node_modules/lucide-react`
-
 ## prettier@3.8.2
 
 - License: MIT
@@ -411,16 +391,6 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/recharts@3.8.1`
 - Source package dir: `packages/call/node_modules/recharts`
 
-## recharts@3.8.1
-
-- License: MIT
-- Homepage: https://github.com/recharts/recharts
-- Repository: git+https://github.com/recharts/recharts.git
-- Description: React charts
-- Included files: LICENSE
-- Folder: `licenses/recharts@3.8.1`
-- Source package dir: `packages/call/node_modules/recharts`
-
 ## shadcn@4.2.0
 
 - License: MIT
@@ -429,25 +399,6 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Included files: LICENSE.md
 - Folder: `licenses/shadcn@4.2.0`
 - Source package dir: `apps/web/node_modules/shadcn`
-
-## shadcn@4.2.0
-
-- License: MIT
-- Repository: https://github.com/shadcn-ui/ui.git
-- Description: Add components to your apps.
-- Included files: LICENSE.md
-- Folder: `licenses/shadcn@4.2.0`
-- Source package dir: `apps/web/node_modules/shadcn`
-
-## sonner@1.7.4
-
-- License: MIT
-- Homepage: https://sonner.emilkowal.ski/
-- Repository: git+https://github.com/emilkowalski/sonner.git
-- Description: An opinionated toast component for React.
-- Included files: LICENSE.md
-- Folder: `licenses/sonner@1.7.4`
-- Source package dir: `apps/web/node_modules/sonner`
 
 ## sonner@1.7.4
 
@@ -509,16 +460,6 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/typescript@5.9.3`
 - Source package dir: `apps/web/node_modules/typescript`
 
-## typescript@5.9.3
-
-- License: Apache-2.0
-- Homepage: https://www.typescriptlang.org/
-- Repository: https://github.com/microsoft/TypeScript.git
-- Description: TypeScript is a language for application scale JavaScript development
-- Included files: LICENSE.txt
-- Folder: `licenses/typescript@5.9.3`
-- Source package dir: `apps/web/node_modules/typescript`
-
 ## typescript-eslint@8.58.1
 
 - License: MIT
@@ -547,16 +488,6 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Included files: LICENSE
 - Folder: `licenses/vite-tsconfig-paths@6.1.1`
 - Source package dir: `apps/web/node_modules/vite-tsconfig-paths`
-
-## zod@4.3.6
-
-- License: MIT
-- Homepage: https://zod.dev
-- Repository: git+https://github.com/colinhacks/zod.git
-- Description: TypeScript-first schema declaration and validation library with static type inference
-- Included files: LICENSE
-- Folder: `licenses/zod@4.3.6`
-- Source package dir: `apps/web/node_modules/zod`
 
 ## zod@4.3.6
 

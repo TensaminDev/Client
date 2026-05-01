@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-30T20:51:14.826Z",
-  "packageCount": 60,
+  "generatedAt": "2026-05-01T13:23:05.335Z",
+  "packageCount": 53,
   "packages": [
     {
       "name": "@codemirror/commands",
@@ -92,19 +92,6 @@
       ],
       "licenseFolder": "licenses/@livekit_components-react@2.9.20",
       "sourcePackageDir": "packages/call/node_modules/@livekit/components-react"
-    },
-    {
-      "name": "@noble/curves",
-      "version": "2.0.1",
-      "license": "MIT",
-      "homepage": "https://paulmillr.com/noble/",
-      "repository": "git+https://github.com/paulmillr/noble-curves.git",
-      "description": "Audited & minimal JS implementation of elliptic curve cryptography",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@noble_curves@2.0.1",
-      "sourcePackageDir": "apps/web/node_modules/@noble/curves"
     },
     {
       "name": "@noble/curves",
@@ -485,19 +472,6 @@
       "sourcePackageDir": "apps/tauri/node_modules/lucide-react"
     },
     {
-      "name": "lucide-react",
-      "version": "1.8.0",
-      "license": "ISC",
-      "homepage": "https://lucide.dev",
-      "repository": "https://github.com/lucide-icons/lucide.git",
-      "description": "A Lucide icon library package for React applications.",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/lucide-react@1.8.0",
-      "sourcePackageDir": "apps/tauri/node_modules/lucide-react"
-    },
-    {
       "name": "prettier",
       "version": "3.8.2",
       "license": "MIT",
@@ -563,19 +537,6 @@
       "sourcePackageDir": "packages/call/node_modules/recharts"
     },
     {
-      "name": "recharts",
-      "version": "3.8.1",
-      "license": "MIT",
-      "homepage": "https://github.com/recharts/recharts",
-      "repository": "git+https://github.com/recharts/recharts.git",
-      "description": "React charts",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/recharts@3.8.1",
-      "sourcePackageDir": "packages/call/node_modules/recharts"
-    },
-    {
       "name": "shadcn",
       "version": "4.2.0",
       "license": "MIT",
@@ -587,32 +548,6 @@
       ],
       "licenseFolder": "licenses/shadcn@4.2.0",
       "sourcePackageDir": "apps/web/node_modules/shadcn"
-    },
-    {
-      "name": "shadcn",
-      "version": "4.2.0",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "https://github.com/shadcn-ui/ui.git",
-      "description": "Add components to your apps.",
-      "files": [
-        "LICENSE.md"
-      ],
-      "licenseFolder": "licenses/shadcn@4.2.0",
-      "sourcePackageDir": "apps/web/node_modules/shadcn"
-    },
-    {
-      "name": "sonner",
-      "version": "1.7.4",
-      "license": "MIT",
-      "homepage": "https://sonner.emilkowal.ski/",
-      "repository": "git+https://github.com/emilkowalski/sonner.git",
-      "description": "An opinionated toast component for React.",
-      "files": [
-        "LICENSE.md"
-      ],
-      "licenseFolder": "licenses/sonner@1.7.4",
-      "sourcePackageDir": "apps/web/node_modules/sonner"
     },
     {
       "name": "sonner",
@@ -693,19 +628,6 @@
       "sourcePackageDir": "apps/web/node_modules/typescript"
     },
     {
-      "name": "typescript",
-      "version": "5.9.3",
-      "license": "Apache-2.0",
-      "homepage": "https://www.typescriptlang.org/",
-      "repository": "https://github.com/microsoft/TypeScript.git",
-      "description": "TypeScript is a language for application scale JavaScript development",
-      "files": [
-        "LICENSE.txt"
-      ],
-      "licenseFolder": "licenses/typescript@5.9.3",
-      "sourcePackageDir": "apps/web/node_modules/typescript"
-    },
-    {
       "name": "typescript-eslint",
       "version": "8.58.1",
       "license": "MIT",
@@ -743,19 +665,6 @@
       ],
       "licenseFolder": "licenses/vite-tsconfig-paths@6.1.1",
       "sourcePackageDir": "apps/web/node_modules/vite-tsconfig-paths"
-    },
-    {
-      "name": "zod",
-      "version": "4.3.6",
-      "license": "MIT",
-      "homepage": "https://zod.dev",
-      "repository": "git+https://github.com/colinhacks/zod.git",
-      "description": "TypeScript-first schema declaration and validation library with static type inference",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/zod@4.3.6",
-      "sourcePackageDir": "apps/web/node_modules/zod"
     },
     {
       "name": "zod",

@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-04-30T20:51:14.827Z",
+    "timestamp": "2026-05-01T13:23:05.336Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -237,41 +237,6 @@
         {
           "name": "local:sourcePackageDir",
           "value": "packages/call/node_modules/@livekit/components-react"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40noble/curves@2.0.1",
-      "name": "@noble/curves",
-      "version": "2.0.1",
-      "purl": "pkg:npm/%40noble/curves@2.0.1",
-      "description": "Audited & minimal JS implementation of elliptic curve cryptography",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://paulmillr.com/noble/"
-        },
-        {
-          "type": "vcs",
-          "url": "git+https://github.com/paulmillr/noble-curves.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@noble_curves@2.0.1"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/@noble/curves"
         }
       ]
     },
@@ -1222,41 +1187,6 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/lucide-react@1.8.0",
-      "name": "lucide-react",
-      "version": "1.8.0",
-      "purl": "pkg:npm/lucide-react@1.8.0",
-      "description": "A Lucide icon library package for React applications.",
-      "licenses": [
-        {
-          "license": {
-            "id": "ISC"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://lucide.dev"
-        },
-        {
-          "type": "vcs",
-          "url": "https://github.com/lucide-icons/lucide.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/lucide-react@1.8.0"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/lucide-react"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bomRef": "pkg:npm/prettier@3.8.2",
       "name": "prettier",
       "version": "3.8.2",
@@ -1432,41 +1362,6 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/recharts@3.8.1",
-      "name": "recharts",
-      "version": "3.8.1",
-      "purl": "pkg:npm/recharts@3.8.1",
-      "description": "React charts",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://github.com/recharts/recharts"
-        },
-        {
-          "type": "vcs",
-          "url": "git+https://github.com/recharts/recharts.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/recharts@3.8.1"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/call/node_modules/recharts"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bomRef": "pkg:npm/shadcn@4.2.0",
       "name": "shadcn",
       "version": "4.2.0",
@@ -1493,72 +1388,6 @@
         {
           "name": "local:sourcePackageDir",
           "value": "apps/web/node_modules/shadcn"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/shadcn@4.2.0",
-      "name": "shadcn",
-      "version": "4.2.0",
-      "purl": "pkg:npm/shadcn@4.2.0",
-      "description": "Add components to your apps.",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/shadcn-ui/ui.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/shadcn@4.2.0"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/shadcn"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/sonner@1.7.4",
-      "name": "sonner",
-      "version": "1.7.4",
-      "purl": "pkg:npm/sonner@1.7.4",
-      "description": "An opinionated toast component for React.",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://sonner.emilkowal.ski/"
-        },
-        {
-          "type": "vcs",
-          "url": "git+https://github.com/emilkowalski/sonner.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/sonner@1.7.4"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/sonner"
         }
       ]
     },
@@ -1774,41 +1603,6 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/typescript@5.9.3",
-      "name": "typescript",
-      "version": "5.9.3",
-      "purl": "pkg:npm/typescript@5.9.3",
-      "description": "TypeScript is a language for application scale JavaScript development",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://www.typescriptlang.org/"
-        },
-        {
-          "type": "vcs",
-          "url": "https://github.com/microsoft/TypeScript.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/typescript@5.9.3"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/typescript"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bomRef": "pkg:npm/typescript-eslint@8.58.1",
       "name": "typescript-eslint",
       "version": "8.58.1",
@@ -1905,41 +1699,6 @@
         {
           "name": "local:sourcePackageDir",
           "value": "apps/web/node_modules/vite-tsconfig-paths"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/zod@4.3.6",
-      "name": "zod",
-      "version": "4.3.6",
-      "purl": "pkg:npm/zod@4.3.6",
-      "description": "TypeScript-first schema declaration and validation library with static type inference",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://zod.dev"
-        },
-        {
-          "type": "vcs",
-          "url": "git+https://github.com/colinhacks/zod.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/zod@4.3.6"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/zod"
         }
       ]
     },

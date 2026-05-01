@@ -207,12 +207,12 @@ pub fn run() {
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
 
     builder
-        .setup(|app| {
+        .setup(|_app| {
             #[cfg(any(target_os = "linux", windows))]
             {
                 use tauri_plugin_deep_link::DeepLinkExt;
 
-                if let Err(error) = app.deep_link().register_all() {
+                if let Err(error) = _app.deep_link().register_all() {
                     if cfg!(debug_assertions) {
                         eprintln!("Skipping deep link registration during dev: {error}");
                     } else {
