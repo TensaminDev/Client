@@ -25,15 +25,15 @@ import {
   TRANSPORT_URL,
 } from "./values";
 import {
+  type Communities,
+  type Contacts,
   ttp as schemas,
-  ttp,
   type TTP as Schemas,
 } from "@tensamin/shared/data";
 import { LoadingScreen as Loading } from "@tensamin/ui";
 import { ErrorScreen } from "@tensamin/ui";
 
 import { version } from "../../../package.json";
-import z from "zod";
 import { decryptText } from "@tensamin/crypto/worker";
 
 const FATAL_IDENTIFICATION_ERROR_TYPES = new Set([
@@ -147,10 +147,8 @@ type ContextType = {
   ownPing: number;
   iotaPing: number;
   identified: boolean;
-  contacts: z.infer<typeof ttp.challenge_response.response.shape.contacts>;
-  communities: z.infer<
-    typeof ttp.challenge_response.response.shape.communities
-  >;
+  freshContacts: Contacts;
+  freshCommunities: Communities;
 };
 
 const TTPContext = createContext<ContextType | undefined>(undefined);
@@ -178,12 +176,8 @@ export function Provider(props: {
   const [error, setError] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
 
-  const [communities, setCommunities] = useState<
-    z.infer<typeof ttp.challenge_response.response.shape.communities>
-  >([]);
-  const [contacts, setContacts] = useState<
-    z.infer<typeof ttp.challenge_response.response.shape.contacts>
-  >([]);
+  const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
+  const [freshContacts, setFreshContacts] = useState<Contacts>([]);
 
   const clientRef = useRef<ReturnType<
     typeof createTransportClient<Schemas>
@@ -500,8 +494,8 @@ export function Provider(props: {
         });
 
         // Data handling
-        setContacts(finalResponse.data.contacts);
-        setCommunities(finalResponse.data.communities);
+        setFreshContacts(finalResponse.data.contacts);
+        setFreshCommunities(finalResponse.data.communities);
         if (cancelled) {
           return;
         }
@@ -613,8 +607,8 @@ export function Provider(props: {
         ownPing,
         iotaPing,
         identified,
-        contacts,
-        communities,
+        freshContacts,
+        freshCommunities,
       }}
     >
       {props.children}

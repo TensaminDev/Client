@@ -1,9 +1,9 @@
-import { useTTP } from "@tensamin/ttp";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import Wrapper from "@tensamin/user/wrapper";
 import { Mail } from "lucide-react";
 import { sendCallInvite } from "../../store";
 import { log, toast } from "@tensamin/shared/log";
+import { useSession } from "@tensamin/storage/session";
 
 export default function InviteButton({
   className,
@@ -12,7 +12,7 @@ export default function InviteButton({
   className?: string;
   iconSize?: number;
 }) {
-  const { contacts } = useTTP();
+  const { contacts } = useSession();
 
   return (
     <Popover>

@@ -197,6 +197,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@tensamin/shared": "workspace:*",
+        "@tensamin/ttp": "workspace:*",
         "@tensamin/ui": "*",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",

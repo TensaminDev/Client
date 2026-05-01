@@ -8,13 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@tensamin/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui";
-import { useTTP } from "@tensamin/ttp";
 import { WindowControls as Controls } from "@tensamin/ui";
+import { useSession } from "@tensamin/storage/session";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
   const callState = useCall((state) => state.state);
-  const { contacts } = useTTP();
+  const { contacts } = useSession();
 
   const { pathname } = useLocation();
 

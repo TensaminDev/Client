@@ -17,6 +17,7 @@ import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useTTP } from "@tensamin/ttp";
 import { log } from "@tensamin/shared/log";
+import { useSession } from "@tensamin/storage/session";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -59,6 +60,7 @@ export default function Provider(props: { children: ReactNode }) {
   const { get } = useUser();
   const { load } = useStorage();
   const { send, subscribePush } = useTTP();
+  const { moveUserIdToTop } = useSession();
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
   const [currentSharedSecretState, setCurrentSharedSecretState] = useState<{
@@ -171,32 +173,39 @@ export default function Provider(props: { children: ReactNode }) {
     [send, userIdValue, currentSharedSecret, decryptText],
   );
 
-  const addLiveMessage = useCallback((message: RawMessage) => {
-    const localId =
-      globalThis.crypto?.randomUUID?.() ??
-      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const addLiveMessage = useCallback(
+    (message: RawMessage) => {
+      const localId =
+        globalThis.crypto?.randomUUID?.() ??
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    setLiveMessagesState((prev) => [
-      ...prev,
-      {
-        ...message,
-        localId,
-        failed: false,
-      },
-    ]);
+      if (!message.sent_by_self) {
+        moveUserIdToTop(userIdValue);
+      }
 
-    return {
-      setFailed: (failed: boolean) => {
-        setLiveMessagesState((prev) =>
-          prev.map((liveMessage) =>
-            liveMessage.localId === localId
-              ? { ...liveMessage, failed }
-              : liveMessage,
-          ),
-        );
-      },
-    };
-  }, []);
+      setLiveMessagesState((prev) => [
+        ...prev,
+        {
+          ...message,
+          localId,
+          failed: false,
+        },
+      ]);
+
+      return {
+        setFailed: (failed: boolean) => {
+          setLiveMessagesState((prev) =>
+            prev.map((liveMessage) =>
+              liveMessage.localId === localId
+                ? { ...liveMessage, failed }
+                : liveMessage,
+            ),
+          );
+        },
+      };
+    },
+    [userIdValue, moveUserIdToTop],
+  );
 
   const clearLiveMessages = useCallback(() => {
     setLiveMessagesState([]);

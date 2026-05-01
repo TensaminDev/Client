@@ -22,7 +22,7 @@ import Login from "@/routes/screens/login";
 
 import ChatContext from "@tensamin/chat/context";
 import { useInitializeCall } from "@tensamin/call/store";
-import { Provider as SocketContext } from "@tensamin/ttp";
+import { Provider as TTPProvider } from "@tensamin/ttp";
 import UserContext from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
@@ -35,6 +35,7 @@ import z from "zod";
 import { useEffect, useState, type ReactNode } from "react";
 
 import Storage from "@tensamin/storage/context";
+import Session from "@tensamin/storage/session";
 import Crypto from "@tensamin/crypto/context";
 import Mobile from "@tensamin/tauri/context";
 
@@ -141,20 +142,22 @@ function RootShell() {
 
 function AppShell() {
   return (
-    <SocketContext>
-      <UserContext>
-        <CallInit />
-        <TAuthWrapper>
-          <AppLayout>
-            <ChatContext>
-              <NotificationsProvider>
-                <Outlet />
-              </NotificationsProvider>
-            </ChatContext>
-          </AppLayout>
-        </TAuthWrapper>
-      </UserContext>
-    </SocketContext>
+    <TTPProvider>
+      <Session>
+        <UserContext>
+          <CallInit />
+          <TAuthWrapper>
+            <AppLayout>
+              <ChatContext>
+                <NotificationsProvider>
+                  <Outlet />
+                </NotificationsProvider>
+              </ChatContext>
+            </AppLayout>
+          </TAuthWrapper>
+        </UserContext>
+      </Session>
+    </TTPProvider>
   );
 }
 

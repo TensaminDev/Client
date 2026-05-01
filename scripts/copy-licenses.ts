@@ -474,7 +474,9 @@ function dedupePackageRecords(records: PackageRecord[]): PackageRecord[] {
 
     unique.set(key, {
       ...existing,
-      copiedFiles: [...new Set([...existing.copiedFiles, ...record.copiedFiles])],
+      copiedFiles: [
+        ...new Set([...existing.copiedFiles, ...record.copiedFiles]),
+      ],
       license: existing.license ?? record.license,
       description: existing.description ?? record.description,
       homepage: existing.homepage ?? record.homepage,

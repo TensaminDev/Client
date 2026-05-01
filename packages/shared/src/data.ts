@@ -39,6 +39,13 @@ export const failedUser = {
   username: "unknown",
 } as z.infer<typeof ttp.get_user_data.response>;
 
+export type Contacts = z.infer<
+  typeof ttp.challenge_response.response.shape.contacts
+>;
+export type Communities = z.infer<
+  typeof ttp.challenge_response.response.shape.communities
+>;
+
 // TTP
 export const ttp = {
   identification: {
@@ -230,6 +237,8 @@ export interface Storage extends SettingsStorageDefaults {
   analytics_usage_data: boolean;
   analytics_done: boolean;
   legal_docs: z.infer<typeof legalDocsSchema>;
+  cached_contacts: Contacts;
+  cached_communities: Communities;
 }
 
 export const storageDefaults: Storage = {
@@ -260,4 +269,6 @@ export const storageDefaults: Storage = {
       unix: 0,
     },
   },
+  cached_contacts: [],
+  cached_communities: [],
 };

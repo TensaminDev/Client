@@ -10,6 +10,7 @@ import { useTTP } from "@tensamin/ttp";
 import { log, toast } from "@tensamin/shared/log";
 import { cn, useIsMobile } from "@tensamin/ui";
 import { encryptText } from "@tensamin/crypto/worker";
+import { useSession } from "@tensamin/storage/session";
 
 export default function InputComponent({
   value,
@@ -23,6 +24,7 @@ export default function InputComponent({
   const { send } = useTTP();
   const { addLiveMessage, sharedSecret, userId, inputBoxRef } = useChat();
   const { load } = useStorage();
+  const { moveUserIdToTop } = useSession();
 
   React.useEffect(() => {
     void load("settings.reverse_enter_behavior").then((shouldInvert) => {
@@ -77,6 +79,8 @@ export default function InputComponent({
       reference.setFailed(true);
       toast("error", "Failed to send message");
     });
+
+    moveUserIdToTop(userId);
 
     setValue("");
   }

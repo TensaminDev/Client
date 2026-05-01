@@ -1,23 +1,18 @@
 import * as React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useTTP } from "@tensamin/ttp";
 
 import Switch from "./switch";
 import ConversationModal from "../modal/conversation";
 import CommunityModal from "../modal/community";
 import { Loader2 } from "lucide-react";
+import { useSession } from "@tensamin/storage/session";
 
-/**
- * Executes List.
- * @param none This function has no parameters.
- * @returns unknown.
- */
 export default function List() {
   const [category, setCategory] = React.useState<
     "conversations" | "communities"
   >("conversations");
 
-  const { contacts, communities } = useTTP();
+  const { contacts, communities } = useSession();
   const items = category === "conversations" ? contacts : communities;
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);

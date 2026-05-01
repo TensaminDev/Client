@@ -9,6 +9,7 @@ import { toast as sonnerToast } from "sonner";
 import { message as messageSchema } from "@tensamin/shared/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@tensamin/ui";
 import { isTauri } from "@tauri-apps/api/core";
+import { useSession } from "@tensamin/storage/session";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -27,6 +28,7 @@ export default function Provider(props: { children: React.ReactNode }) {
   const { get } = useUser();
   const { decryptText, getSharedSecret } = useCrypto();
   const { addLiveMessage, userId } = useChat();
+  const { moveUserIdToTop } = useSession();
 
   useEffect(() => {
     return subscribePush(async (ttpMessage) => {
@@ -60,6 +62,8 @@ export default function Provider(props: { children: React.ReactNode }) {
 
         // add notification symbol to conversation cards
 
+        moveUserIdToTop(sender_id);
+
         if (isTauri()) {
           console.log("weewoo");
         } else {
@@ -86,6 +90,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     get,
     addLiveMessage,
     userId,
+    moveUserIdToTop,
   ]);
 
   return (
