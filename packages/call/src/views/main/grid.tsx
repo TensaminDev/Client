@@ -119,12 +119,22 @@ export default function View() {
     room.on(RoomEvent.Disconnected, syncParticipants);
     room.on(RoomEvent.ParticipantConnected, syncParticipants);
     room.on(RoomEvent.ParticipantDisconnected, syncParticipants);
+    room.on(RoomEvent.TrackPublished, syncParticipants);
+    room.on(RoomEvent.TrackUnpublished, syncParticipants);
+    room.on(RoomEvent.TrackSubscribed, syncParticipants);
+    room.on(RoomEvent.TrackUnsubscribed, syncParticipants);
+    room.on(RoomEvent.ParticipantAttributesChanged, syncParticipants);
 
     return () => {
       room.off(RoomEvent.Connected, syncParticipants);
       room.off(RoomEvent.Disconnected, syncParticipants);
       room.off(RoomEvent.ParticipantConnected, syncParticipants);
       room.off(RoomEvent.ParticipantDisconnected, syncParticipants);
+      room.off(RoomEvent.TrackPublished, syncParticipants);
+      room.off(RoomEvent.TrackUnpublished, syncParticipants);
+      room.off(RoomEvent.TrackSubscribed, syncParticipants);
+      room.off(RoomEvent.TrackUnsubscribed, syncParticipants);
+      room.off(RoomEvent.ParticipantAttributesChanged, syncParticipants);
     };
   }, [room]);
 

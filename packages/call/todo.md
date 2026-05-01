@@ -3,9 +3,6 @@
 - User modals
   - Bg based on avatar
   - Avatar in the center
-- Stream previews
-  - Buttons
-  - Preview image
 - Mobile
 - Call invite popup
 - Sounds

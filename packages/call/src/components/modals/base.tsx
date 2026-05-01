@@ -1,4 +1,5 @@
 import {
+  Button,
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -8,13 +9,27 @@ import {
   focusParticipant,
   getRoomMetadata,
   setCallView,
+  startWatchingStream,
   useCall,
 } from "../../store";
 import { Track, type Participant } from "livekit-client";
 import { useEffect, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
 import VideoViewer from "../videoViewer";
-import { HeadphoneOff, Loader2, MicOff, Monitor, Shield } from "lucide-react";
+import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
+
+function getTrackPublicationBySource(
+  participant: Participant | undefined,
+  source: Track.Source,
+) {
+  if (!participant) {
+    return undefined;
+  }
+
+  return [...participant.trackPublications.values()].find(
+    (publication) => publication.source === source,
+  );
+}
 
 function TransparentButton({ children }: { children: React.ReactNode }) {
   return (
@@ -83,9 +98,11 @@ export default function Base({
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
   const view = useCall((state) => state.view);
   const [user, setUser] = useState<User | null>(null);
-  const screenSharePublication = participant?.getTrackPublication(
+  const screenSharePublication = getTrackPublicationBySource(
+    participant,
     Track.Source.ScreenShare,
   );
+  const screenSharePreview = participant?.attributes["screenSharePreview"];
 
   useEffect(() => {
     const participantId = Number(participant?.identity);
@@ -135,6 +152,12 @@ export default function Base({
     }
   };
 
+  const showStream =
+    screenSharePublication?.isSubscribed && screenSharePublication.track;
+
+  const isFocusedInFocusedView =
+    view === "focused" && user.user_id === focusedParticipantId;
+
   return (
     <ContextMenu>
       <ContextMenuTrigger
@@ -146,29 +169,66 @@ export default function Base({
             }`}
           >
             <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
-              {view === "grid" ||
-              (view === "focused" && user.user_id !== focusedParticipantId) ? (
-                <Overlay type={type} user={user} participant={participant} />
-              ) : null}
+              <>
+                {type === "stream" && !showStream && (
+                  <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={(event) => {
+                        if (isFocusedInFocusedView) event.stopPropagation();
+                        startWatchingStream(user.user_id);
+                      }}
+                    >
+                      Watch Stream
+                    </Button>
+                    {!isFocusedInFocusedView && (
+                      <Button
+                        variant="outline"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          startWatchingStream(user.user_id);
+                        }}
+                      >
+                        <Plus className="w-8 h-8" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {view === "grid" ||
+                (view === "focused" &&
+                  user.user_id !== focusedParticipantId) ? (
+                  <Overlay type={type} user={user} participant={participant} />
+                ) : null}
+              </>
             </div>
             <div
-              className={`z-10 bg-card absolute top-0 left-0 w-full h-full flex items-center justify-center ${
+              className={`z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
                 flush ? "rounded-none" : "rounded-sm"
               }`}
             >
               {/* Detect video / user and place here */}
 
               {type === "stream" &&
-                (screenSharePublication?.isSubscribed &&
-                screenSharePublication.track ? (
+                (showStream ? (
                   <VideoViewer
                     flush={flush}
                     participantId={participant.identity}
                     publication={screenSharePublication}
                   />
-                ) : (
-                  <Loader2 className="animate-spin" />
-                ))}
+                ) : screenSharePreview ? (
+                  <div
+                    className={`absolute inset-0 bg-muted h-full w-full object-cover ${
+                      flush ? "rounded-none" : "rounded-sm"
+                    }`}
+                  >
+                    <img
+                      src={screenSharePreview}
+                      className={`blur-sm h-full w-full object-cover opacity-50 ${
+                        flush ? "rounded-none" : "rounded-sm"
+                      }`}
+                    />
+                  </div>
+                ) : null)}
 
               {type === "user" && <p>{user.display}</p>}
             </div>

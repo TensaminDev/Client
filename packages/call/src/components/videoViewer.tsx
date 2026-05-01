@@ -2,6 +2,7 @@ import { VideoTrack, useParticipantTracks } from "@livekit/components-react";
 import { TrackPublication } from "livekit-client";
 import { useCall } from "../store";
 import { cn } from "@tensamin/ui";
+import { Loader2 } from "lucide-react";
 
 export default function VideoViewer({
   className,
@@ -21,9 +22,7 @@ export default function VideoViewer({
   });
   const trackRef = tracks[0];
 
-  if (!trackRef) {
-    return null;
-  }
+  if (!trackRef) return <Loader2 className="animate-spin" />;
 
   return (
     <VideoTrack

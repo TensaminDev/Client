@@ -12,6 +12,8 @@ import {
   ExternalE2EEKeyProvider,
   LocalAudioTrack,
   type Participant,
+  type RemoteParticipant,
+  type RemoteTrackPublication,
   Room,
   RoomEvent,
   type RemoteTrack,
@@ -59,6 +61,7 @@ type DecryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
 type EncryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
 type LoadFn = (key: string) => Promise<unknown>;
 type GetUserFn = (userId: number) => Promise<{ public_key: string }>;
+type RemoteVideoTrackSelector = Track.Kind | Track.Source;
 
 type Runtime = {
   navigate: NavigateFn;
@@ -108,6 +111,11 @@ const room = new Room({
 });
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
 
+const SCREEN_SHARE_PREVIEW_MAX_WIDTH = 320;
+const SCREEN_SHARE_PREVIEW_MAX_HEIGHT = 180;
+const SCREEN_SHARE_PREVIEW_QUALITY = 0.7;
+const SCREEN_SHARE_PREVIEW_TIMEOUT_MS = 5000;
+
 // audio helpers
 function attachRemoteAudio(trackSid: string, element: HTMLMediaElement) {
   const existingElement = remoteAudioElements.get(trackSid);
@@ -152,12 +160,60 @@ function getAllParticipants(): Participant[] {
   return [...room.remoteParticipants.values(), room.localParticipant];
 }
 
+function getTrackPublicationBySource(
+  participant: Participant | undefined,
+  source: Track.Source,
+) {
+  if (!participant) {
+    return undefined;
+  }
+
+  return [...participant.trackPublications.values()].find(
+    (publication) => publication.source === source,
+  );
+}
+
+function getRemoteParticipant(participantId: number) {
+  return [...room.remoteParticipants.values()].find(
+    (participant) => getParticipantId(participant.identity) === participantId,
+  );
+}
+
+function getRemoteTrackPublications(participantId: number) {
+  return [
+    ...(getRemoteParticipant(participantId)?.trackPublications.values() ?? []),
+  ] as RemoteTrackPublication[];
+}
+
+function matchesRemoteTrackSelector(
+  publication: Pick<RemoteTrackPublication, "kind" | "source">,
+  selector: RemoteVideoTrackSelector,
+) {
+  return publication.source === selector || publication.kind === selector;
+}
+
+function syncRemoteParticipantTrackSubscriptions(participantId: number) {
+  for (const publication of getRemoteTrackPublications(participantId)) {
+    publication.setSubscribed(publication.kind === Track.Kind.Audio);
+  }
+}
+
+function syncAllRemoteTrackSubscriptions() {
+  for (const participant of room.remoteParticipants.values()) {
+    const participantId = getParticipantId(participant.identity);
+
+    if (participantId != null) {
+      syncRemoteParticipantTrackSubscriptions(participantId);
+    }
+  }
+}
+
 function getActiveScreenShareParticipantIds(): number[] {
   return getAllParticipants()
     .map((participant) => ({
       participantId: getParticipantId(participant.identity),
       hasScreenShare:
-        participant.getTrackPublication(Track.Source.ScreenShare)?.track !=
+        getTrackPublicationBySource(participant, Track.Source.ScreenShare) !=
         null,
     }))
     .filter(
@@ -168,17 +224,211 @@ function getActiveScreenShareParticipantIds(): number[] {
 }
 
 function getScreenShareTrackForParticipant(participantId: number) {
-  return getAllParticipants()
-    .find(
-      (participant) => getParticipantId(participant.identity) === participantId,
-    )
-    ?.getTrackPublication(Track.Source.ScreenShare)?.track;
+  const participant = getAllParticipants().find(
+    (entry) => getParticipantId(entry.identity) === participantId,
+  );
+
+  return getTrackPublicationBySource(participant, Track.Source.ScreenShare)
+    ?.track;
 }
 
 function hasParticipant(participantId: number) {
   return getAllParticipants().some(
     (participant) => getParticipantId(participant.identity) === participantId,
   );
+}
+
+function getLocalScreenShareTrack(): MediaStreamTrack | null {
+  const track = getTrackPublicationBySource(
+    room.localParticipant,
+    Track.Source.ScreenShare,
+  )?.track;
+
+  if (!track || track.kind !== Track.Kind.Video) {
+    return null;
+  }
+
+  return track.mediaStreamTrack;
+}
+
+async function updateLocalParticipantAttributes(
+  attributes: Record<string, string>,
+) {
+  log(2, "call", "purple", "Updating local participant attributes", {
+    attributeKeys: Object.keys(attributes),
+    screenSharePreviewLength: attributes.screenSharePreview?.length ?? 0,
+  });
+
+  await room.localParticipant.setAttributes(attributes).catch((error) => {
+    log(1, "call", "red", "Failed to update local participant attributes", {
+      attributes: Object.keys(attributes),
+      error,
+    });
+    throw error;
+  });
+
+  log(2, "call", "purple", "Updated local participant attributes", {
+    attributeKeys: Object.keys(attributes),
+    screenSharePreviewLength: attributes.screenSharePreview?.length ?? 0,
+  });
+}
+
+async function waitForScreenSharePreviewFrame(video: HTMLVideoElement) {
+  if (
+    video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+    video.videoWidth > 0 &&
+    video.videoHeight > 0
+  ) {
+    log(2, "call", "purple", "Screen share preview frame already ready", {
+      readyState: video.readyState,
+      width: video.videoWidth,
+      height: video.videoHeight,
+    });
+    return;
+  }
+
+  log(2, "call", "purple", "Waiting for screen share preview frame", {
+    readyState: video.readyState,
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Timed out waiting for screen share preview frame."));
+    }, SCREEN_SHARE_PREVIEW_TIMEOUT_MS);
+
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      video.onloadeddata = null;
+      video.oncanplay = null;
+      video.onerror = null;
+    };
+
+    const ready = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        log(2, "call", "purple", "Screen share preview frame became ready", {
+          readyState: video.readyState,
+          width: video.videoWidth,
+          height: video.videoHeight,
+        });
+        cleanup();
+        resolve();
+      }
+    };
+
+    video.onloadeddata = ready;
+    video.oncanplay = ready;
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("Failed to load screen share preview frame."));
+    };
+
+    if (typeof video.requestVideoFrameCallback === "function") {
+      video.requestVideoFrameCallback(() => {
+        ready();
+      });
+    }
+
+    ready();
+  });
+}
+
+async function publishScreenSharePreview() {
+  const videoTrack = getLocalScreenShareTrack();
+
+  if (!videoTrack) {
+    log(
+      2,
+      "call",
+      "purple",
+      "Skipping screen share preview publish: no local video track",
+    );
+    return;
+  }
+
+  log(2, "call", "purple", "Publishing screen share preview", {
+    trackId: videoTrack.id,
+    readyState: videoTrack.readyState,
+    muted: videoTrack.muted,
+  });
+
+  const video = document.createElement("video");
+  video.muted = true;
+  video.playsInline = true;
+  video.autoplay = true;
+  video.srcObject = new MediaStream([videoTrack]);
+
+  try {
+    await video.play().catch(() => undefined);
+    log(2, "call", "purple", "Screen share preview video play attempted", {
+      readyState: video.readyState,
+    });
+    await waitForScreenSharePreviewFrame(video);
+
+    if (!video.videoWidth || !video.videoHeight) {
+      throw new Error("Screen share preview video has no dimensions.");
+    }
+
+    log(2, "call", "purple", "Capturing screen share preview frame", {
+      width: video.videoWidth,
+      height: video.videoHeight,
+    });
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Failed to create screen share preview canvas.");
+    }
+
+    canvas.width = SCREEN_SHARE_PREVIEW_MAX_WIDTH;
+    canvas.height = SCREEN_SHARE_PREVIEW_MAX_HEIGHT;
+
+    const scale = Math.min(
+      canvas.width / video.videoWidth,
+      canvas.height / video.videoHeight,
+    );
+    const drawWidth = Math.max(1, Math.round(video.videoWidth * scale));
+    const drawHeight = Math.max(1, Math.round(video.videoHeight * scale));
+    const x = Math.floor((canvas.width - drawWidth) / 2);
+    const y = Math.floor((canvas.height - drawHeight) / 2);
+
+    context.fillStyle = "#111111";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(video, x, y, drawWidth, drawHeight);
+
+    const preview = canvas.toDataURL(
+      "image/webp",
+      SCREEN_SHARE_PREVIEW_QUALITY,
+    );
+
+    log(2, "call", "purple", "Generated screen share preview", {
+      previewLength: preview.length,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+    });
+
+    await updateLocalParticipantAttributes({
+      screenSharePreview: preview,
+    });
+
+    log(2, "call", "purple", "Published screen share preview");
+  } catch (error) {
+    log(1, "call", "red", "Failed to publish screen share preview", error);
+  } finally {
+    video.pause();
+    video.srcObject = null;
+  }
+}
+
+async function clearScreenSharePreview() {
+  log(2, "call", "purple", "Clearing screen share preview");
+
+  await updateLocalParticipantAttributes({
+    screenSharePreview: "",
+  }).catch((error) => {
+    log(1, "call", "red", "Failed to clear screen share preview", error);
+  });
 }
 
 function syncScreenShareParticipants() {
@@ -220,6 +470,7 @@ function requireRuntime(runtime: Runtime | null): Runtime {
 
 export function getRoomMetadata() {
   const roomMetadata = room.metadata;
+  log(3, "call", "purple", "Room metadata:", { roomMetadata });
   try {
     const data = JSON.parse(roomMetadata || '{"admin": 0}');
     return data as { admin: number };
@@ -325,12 +576,10 @@ export async function sendCallInvite(userId: number) {
 }
 
 // Start tracking a participant's shared screen in the call UI.
-export function startWatchingStream(
-  participantId: number,
-  options?: { focus?: boolean },
-) {
-  const focus = options?.focus ?? false;
+export function startWatchingStream(participantId: number) {
   const trackReady = getScreenShareTrackForParticipant(participantId) != null;
+
+  setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare);
 
   useCall.setState((state) => ({
     watchedStreamParticipantIds: state.watchedStreamParticipantIds.includes(
@@ -343,9 +592,23 @@ export function startWatchingStream(
       : state.pendingWatchedParticipantIds.includes(participantId)
         ? state.pendingWatchedParticipantIds
         : [...state.pendingWatchedParticipantIds, participantId],
-    focusedParticipantId: focus ? participantId : state.focusedParticipantId,
-    view: focus ? "focused" : state.view,
+    focusedParticipantId: participantId,
   }));
+}
+
+// Toggle remote track subscriptions using LiveKit's built-in publication API.
+export function setParticipantTrackSubscribed(
+  participantId: number,
+  selector: RemoteVideoTrackSelector,
+  subscribed = true,
+) {
+  for (const publication of getRemoteTrackPublications(participantId)) {
+    if (matchesRemoteTrackSelector(publication, selector)) {
+      publication.setSubscribed(subscribed);
+    }
+  }
+
+  syncParticipantState();
 }
 
 // Focus a participant in the main call view even when they are not sharing a screen.
@@ -358,6 +621,8 @@ export function focusParticipant(participantId: number) {
 
 // Stop tracking a participant's shared screen and clean up related UI state.
 export function stopWatchingStream(participantId: number) {
+  setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare, false);
+
   useCall.setState((state) => ({
     watchedStreamParticipantIds: state.watchedStreamParticipantIds.filter(
       (id) => id !== participantId,
@@ -431,15 +696,21 @@ export async function connect(callId: string) {
     callSecret: useCall.getState().callSecret,
   });
 
-  await room.connect("wss://call.tensamin.net", token).catch((error) => {
-    useCall.setState({ state: "closed", livekitToken: null });
-    log(1, "call", "red", "Failed to connect to room", error);
-    toast(
-      "error",
-      error instanceof Error ? error.message : "Failed to connect to call.",
-    );
-    throw error;
-  });
+  await room
+    .connect("wss://call.tensamin.net", token, {
+      autoSubscribe: false,
+    })
+    .catch((error) => {
+      useCall.setState({ state: "closed", livekitToken: null });
+      log(1, "call", "red", "Failed to connect to room", error);
+      toast(
+        "error",
+        error instanceof Error ? error.message : "Failed to connect to call.",
+      );
+      throw error;
+    });
+
+  syncAllRemoteTrackSubscriptions();
 
   await room.localParticipant.setMicrophoneEnabled(true).catch((error) => {
     log(1, "call", "red", "Failed to enable microphone", error);
@@ -452,6 +723,8 @@ export async function connect(callId: string) {
 
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
+  await clearScreenSharePreview();
+
   try {
     await getScreenShareController().clearPublishedScreenShare();
   } catch (error) {
@@ -567,7 +840,7 @@ export async function toggleDeaf() {
     await toggleMute();
   }
 
-  await room.localParticipant.setAttributes({
+  await updateLocalParticipantAttributes({
     deafened: nextDeaf ? "true" : "false",
   });
 
@@ -589,16 +862,19 @@ export async function toggleMute() {
 // Start browser-native screen sharing for the current participant.
 export async function startScreenShare(options?: ScreenShareCaptureOptions) {
   await getScreenShareController().startScreenShare(options);
+  await publishScreenSharePreview();
 }
 
 // Start the Linux desktop capture path that renders frames through Tauri.
 export async function startLinuxDesktopScreenShare(sourceId: string) {
   await getScreenShareController().startLinuxDesktopScreenShare(sourceId);
+  await publishScreenSharePreview();
 }
 
 // Stop the local participant's active screen share and related previews.
 export async function stopScreenShare() {
   await getScreenShareController().stopScreenShare();
+  await clearScreenSharePreview();
 }
 
 // Toggle screen sharing on or off from UI controls.
@@ -607,6 +883,13 @@ export async function setScreenShareEnabled(
   options?: ScreenShareCaptureOptions,
 ) {
   await getScreenShareController().setScreenShareEnabled(enabled, options);
+
+  if (enabled) {
+    await publishScreenSharePreview();
+    return;
+  }
+
+  await clearScreenSharePreview();
 }
 
 // Reset the in-memory call store when leaving the call experience entirely.
@@ -808,6 +1091,7 @@ export function useInitializeCall() {
     };
 
     const onParticipantConnected = () => {
+      syncAllRemoteTrackSubscriptions();
       syncParticipantState();
     };
 
@@ -836,6 +1120,23 @@ export function useInitializeCall() {
       void ensureNoiseFilter(noiseFilter);
     };
 
+    const onTrackPublished = (
+      publication: RemoteTrackPublication,
+      participant: RemoteParticipant,
+    ) => {
+      const participantId = getParticipantId(participant.identity);
+
+      if (participantId != null) {
+        if (publication.kind === Track.Kind.Audio) {
+          publication.setSubscribed(true);
+        } else {
+          publication.setSubscribed(false);
+        }
+      }
+
+      onParticipantStateChange();
+    };
+
     const onTrackSubscribed = (track: RemoteTrack) => {
       if (track.kind === "audio" && track.sid) {
         attachRemoteAudio(track.sid, track.attach());
@@ -858,7 +1159,8 @@ export function useInitializeCall() {
 
       if (
         participantId != null &&
-        participant.getTrackPublication(Track.Source.ScreenShare)?.track == null
+        getTrackPublicationBySource(participant, Track.Source.ScreenShare)
+          ?.track == null
       ) {
         stopWatchingStream(participantId);
       }
@@ -871,7 +1173,7 @@ export function useInitializeCall() {
     room.on(RoomEvent.Disconnected, onDisconnected);
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
-    room.on(RoomEvent.TrackPublished, onParticipantStateChange);
+    room.on(RoomEvent.TrackPublished, onTrackPublished);
     room.on(RoomEvent.TrackUnpublished, onParticipantStateChange);
     room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
     room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
@@ -892,7 +1194,7 @@ export function useInitializeCall() {
       room.off(RoomEvent.Disconnected, onDisconnected);
       room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
       room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
-      room.off(RoomEvent.TrackPublished, onParticipantStateChange);
+      room.off(RoomEvent.TrackPublished, onTrackPublished);
       room.off(RoomEvent.TrackUnpublished, onParticipantStateChange);
       room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
       room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
