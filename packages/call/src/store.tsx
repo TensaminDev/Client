@@ -470,12 +470,11 @@ function requireRuntime(runtime: Runtime | null): Runtime {
 
 export function getRoomMetadata() {
   const roomMetadata = room.metadata;
-  log(3, "call", "purple", "Room metadata:", { roomMetadata });
   try {
-    const data = JSON.parse(roomMetadata || '{"admin": 0}');
-    return data as { admin: number };
+    const data = JSON.parse(roomMetadata || '{"admins": []}');
+    return data as { admins: number[] };
   } catch {
-    return { admin: 0 };
+    return { admins: [] };
   }
 }
 

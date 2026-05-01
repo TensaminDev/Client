@@ -8,3 +8,6 @@
   - Save call invite in `calls` array
 - Sounds
 - Fullscreen button for screenshares
+- Admin call actions
+  - Timeout
+  - Disconnect

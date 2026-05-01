@@ -48,7 +48,7 @@ function Overlay({
   user: User;
   participant: Participant;
 }) {
-  const isAdmin = getRoomMetadata()?.admin === user.user_id;
+  const isAdmin = getRoomMetadata()?.admins.includes(user.user_id) === true;
   const isDeafened = participant.attributes["deafened"] === "true";
 
   return (

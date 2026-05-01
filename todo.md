@@ -1,2 +1,0 @@
-- Handle live messages in notification context
-- Mobile message box broken
