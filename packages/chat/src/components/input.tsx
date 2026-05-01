@@ -87,7 +87,7 @@ export default function InputComponent({
     <Card
       ref={inputBoxRef}
       className={cn(
-        "rounded-none border-b-0 pt-0 pb-[env(safe-area-inset-bottom)]",
+        "rounded-none border-b-0 pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
         isMobile
           ? "border-0 border-t fixed w-full bottom-0 left-0 px-2"
           : "rounded-t-xl",

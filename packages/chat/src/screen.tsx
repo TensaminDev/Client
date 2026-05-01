@@ -46,6 +46,7 @@ export default function Screen() {
     Record<number, number>
   >({});
   const measurementRefs = React.useRef(new Map<number, HTMLDivElement>());
+  const shouldRestoreBottomOnResizeRef = React.useRef(false);
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasSharedSecret = sharedSecret.length > 0;
@@ -225,8 +226,22 @@ export default function Screen() {
     }
 
     const handleResize = () => {
+      if (scrollRef.current) {
+        shouldRestoreBottomOnResizeRef.current =
+          getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
+      }
+
       requestAnimationFrame(() => {
         virtualizer.measure();
+
+        requestAnimationFrame(() => {
+          if (!scrollRef.current || !shouldRestoreBottomOnResizeRef.current) {
+            return;
+          }
+
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          shouldRestoreBottomOnResizeRef.current = false;
+        });
       });
     };
 
@@ -234,7 +249,7 @@ export default function Screen() {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [virtualizer]);
+  }, [stickyBottomThreshold, virtualizer]);
 
   React.useLayoutEffect(() => {
     const element = inputBoxRef.current;
