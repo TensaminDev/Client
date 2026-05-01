@@ -3,7 +3,7 @@ import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
 import { AlertTriangle, Clock } from "lucide-react";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
+import { cn, Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
 import { useIsMobile } from "@tensamin/ui";
 import {
   ContextMenu,
@@ -20,22 +20,27 @@ function MessageComponent({
   };
 }) {
   const isMobile = useIsMobile();
+  const actuallyFailed = message.failed && message.message_state === "awaiting";
 
   return (
     <div
-      className={`w-full flex justify-start transition-opacity duration-150 ${(message.failed || message.message_state === "awaiting") && "opacity-50"}`}
+      className={`w-full flex justify-start transition-opacity duration-150 ${actuallyFailed || message.message_state === "awaiting" ? "opacity-50" : ""}`}
     >
       <ContextMenu>
         <ContextMenuTrigger
           render={
             <div
-              className={`selection-foreground flex gap-1 items-center justify-center max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap break-all ${
-                message.sent_by_self
-                  ? message.failed
-                    ? "bg-destructive/75 text-destructive-foreground"
-                    : "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              } ${isMobile && "select-none"}`}
+              className={cn(
+                "selection-foreground flex gap-1 items-center justify-center max-w-[80%] rounded-lg px-2 py-px whitespace-pre-wrap break-all",
+                {
+                  "bg-(--destructive)/75 text-destructive-foreground":
+                    actuallyFailed,
+                  "bg-primary text-primary-foreground":
+                    !actuallyFailed && message.sent_by_self,
+                  "bg-muted": !message.sent_by_self,
+                  "select-none": isMobile,
+                },
+              )}
             >
               {message.failed && message.message_state === "awaiting" && (
                 <Tooltip>

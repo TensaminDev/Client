@@ -5,4 +5,6 @@
   - Avatar in the center
 - Mobile
 - Call invite popup
+  - Save call invite in `calls` array
 - Sounds
+- Fullscreen button for screenshares

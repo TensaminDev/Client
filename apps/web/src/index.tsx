@@ -146,9 +146,11 @@ function AppShell() {
         <CallInit />
         <TAuthWrapper>
           <AppLayout>
-            <NotificationsProvider>
-              <Outlet />
-            </NotificationsProvider>
+            <ChatContext>
+              <NotificationsProvider>
+                <Outlet />
+              </NotificationsProvider>
+            </ChatContext>
           </AppLayout>
         </TAuthWrapper>
       </UserContext>
@@ -160,14 +162,6 @@ function CallInit() {
   useInitializeCall();
 
   return null;
-}
-
-function Chat() {
-  return (
-    <ChatContext>
-      <ChatScreen />
-    </ChatContext>
-  );
 }
 
 const rootRoute = createRootRoute({
@@ -234,7 +228,7 @@ const homeRoute = createRoute({
 const chatRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "chat",
-  component: Chat,
+  component: ChatScreen,
   validateSearch: z.object({
     id: z.number().optional(),
   }),
