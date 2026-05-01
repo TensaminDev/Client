@@ -21,7 +21,7 @@ export default function InputComponent({
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
 
   const { send } = useTTP();
-  const { addLiveMessage, sharedSecret, userId } = useChat();
+  const { addLiveMessage, sharedSecret, userId, inputBoxRef } = useChat();
   const { load } = useStorage();
 
   React.useEffect(() => {
@@ -85,6 +85,7 @@ export default function InputComponent({
 
   return (
     <Card
+      ref={inputBoxRef}
       className={cn(
         "rounded-none border-b-0 pt-0 pb-[env(safe-area-inset-bottom)]",
         isMobile

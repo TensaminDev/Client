@@ -1,5 +1,2 @@
-- Calculate message height and pass to virtualizer (-> packages/chat/src/components/input.tsx)
-- Add "Rename Conversations to Friends" option in settings
 - Handle live messages in notification context
-- Add files to message height calculation
 - Mobile message box broken
