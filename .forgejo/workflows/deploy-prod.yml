@@ -29,7 +29,7 @@ jobs:
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
           bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
-          bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\\\n/g, '\n').split(/[\r\n\s]+/).filter(l => l.includes('=')).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
+          bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\\\n/g, '\n').replace(/\\r/g, '').split('\n').map(l => l.trim()).filter(l => l).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
 
       - name: Build
         run: bun run build:apps
