@@ -11,6 +11,9 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
+      - name: Install sudo
+        run: apt-get update && apt-get install -y sudo
+
       - name: Install Nix
         uses: https://github.com/cachix/install-nix-action@v30
 
