@@ -28,8 +28,8 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
-          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64, 'base64'))"
-          echo "$KEYSTORE_PROPERTIES" > keystore.properties
+          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
+          bun -e "require('fs').writeFileSync('keystore.properties', process.env.KEYSTORE_PROPERTIES.trim())"
 
       - name: Build
         run: bun run build:apps
