@@ -62,7 +62,7 @@ jobs:
           find releases -type f | grep -q .
 
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o release_out.json -H "Authorization: token $TOKEN" "$API/repos/$REPO/releases/tags/$TAG")
-          
+
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "Release $TAG already exists."
             RELEASE_ID="$(jq -r .id release_out.json)"
