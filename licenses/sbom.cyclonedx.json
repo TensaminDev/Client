@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-05-01T17:38:04.763Z",
+    "timestamp": "2026-05-02T16:10:01.092Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -312,10 +312,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tanstack/react-query@5.100.7",
+      "bomRef": "pkg:npm/%40tanstack/react-query@5.100.8",
       "name": "@tanstack/react-query",
-      "version": "5.100.7",
-      "purl": "pkg:npm/%40tanstack/react-query@5.100.7",
+      "version": "5.100.8",
+      "purl": "pkg:npm/%40tanstack/react-query@5.100.8",
       "description": "Hooks for managing, caching and syncing asynchronous and remote data in React",
       "licenses": [
         {
@@ -337,7 +337,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tanstack_react-query@5.100.7"
+          "value": "licenses/@tanstack_react-query@5.100.8"
         },
         {
           "name": "local:sourcePackageDir",
@@ -518,10 +518,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/plugin-deep-link@2.4.8",
+      "bomRef": "pkg:npm/%40tauri-apps/plugin-deep-link@2.4.9",
       "name": "@tauri-apps/plugin-deep-link",
-      "version": "2.4.8",
-      "purl": "pkg:npm/%40tauri-apps/plugin-deep-link@2.4.8",
+      "version": "2.4.9",
+      "purl": "pkg:npm/%40tauri-apps/plugin-deep-link@2.4.9",
       "description": "Set your Tauri application as the default handler for an URL",
       "licenses": [
         {
@@ -539,7 +539,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_plugin-deep-link@2.4.8"
+          "value": "licenses/@tauri-apps_plugin-deep-link@2.4.9"
         },
         {
           "name": "local:sourcePackageDir",
@@ -549,10 +549,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/plugin-opener@2.5.3",
+      "bomRef": "pkg:npm/%40tauri-apps/plugin-opener@2.5.4",
       "name": "@tauri-apps/plugin-opener",
-      "version": "2.5.3",
-      "purl": "pkg:npm/%40tauri-apps/plugin-opener@2.5.3",
+      "version": "2.5.4",
+      "purl": "pkg:npm/%40tauri-apps/plugin-opener@2.5.4",
       "description": "Open files and URLs using their default application.",
       "licenses": [
         {
@@ -570,7 +570,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_plugin-opener@2.5.3"
+          "value": "licenses/@tauri-apps_plugin-opener@2.5.4"
         },
         {
           "name": "local:sourcePackageDir",
@@ -958,10 +958,41 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/eslint@10.2.1",
+      "bomRef": "pkg:npm/esbuild@0.25.12",
+      "name": "esbuild",
+      "version": "0.25.12",
+      "purl": "pkg:npm/esbuild@0.25.12",
+      "description": "An extremely fast JavaScript and CSS bundler and minifier.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/evanw/esbuild.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/esbuild@0.25.12"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/esbuild"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/eslint@10.3.0",
       "name": "eslint",
-      "version": "10.2.1",
-      "purl": "pkg:npm/eslint@10.2.1",
+      "version": "10.3.0",
+      "purl": "pkg:npm/eslint@10.3.0",
       "description": "An AST-based pattern checker for JavaScript.",
       "licenses": [
         {
@@ -983,7 +1014,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/eslint@10.2.1"
+          "value": "licenses/eslint@10.3.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1059,10 +1090,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/globals@17.5.0",
+      "bomRef": "pkg:npm/globals@17.6.0",
       "name": "globals",
-      "version": "17.5.0",
-      "purl": "pkg:npm/globals@17.5.0",
+      "version": "17.6.0",
+      "purl": "pkg:npm/globals@17.6.0",
       "description": "Global identifiers from different JavaScript environments",
       "licenses": [
         {
@@ -1080,7 +1111,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/globals@17.5.0"
+          "value": "licenses/globals@17.6.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1673,10 +1704,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/zod@4.4.1",
+      "bomRef": "pkg:npm/zod@4.4.2",
       "name": "zod",
-      "version": "4.4.1",
-      "purl": "pkg:npm/zod@4.4.1",
+      "version": "4.4.2",
+      "purl": "pkg:npm/zod@4.4.2",
       "description": "TypeScript-first schema declaration and validation library with static type inference",
       "licenses": [
         {
@@ -1698,7 +1729,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/zod@4.4.1"
+          "value": "licenses/zod@4.4.2"
         },
         {
           "name": "local:sourcePackageDir",

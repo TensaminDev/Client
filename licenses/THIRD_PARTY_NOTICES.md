@@ -86,14 +86,14 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@tailwindcss_vite@4.2.4`
 - Source package dir: `apps/web/node_modules/@tailwindcss/vite`
 
-## @tanstack/react-query@5.100.7
+## @tanstack/react-query@5.100.8
 
 - License: MIT
 - Homepage: https://tanstack.com/query
 - Repository: git+https://github.com/TanStack/query.git
 - Description: Hooks for managing, caching and syncing asynchronous and remote data in React
 - Included files: LICENSE
-- Folder: `licenses/@tanstack_react-query@5.100.7`
+- Folder: `licenses/@tanstack_react-query@5.100.8`
 - Source package dir: `packages/call/node_modules/@tanstack/react-query`
 
 ## @tanstack/react-router@1.169.1
@@ -145,22 +145,22 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@tauri-apps_plugin-barcode-scanner@2.4.4`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-barcode-scanner`
 
-## @tauri-apps/plugin-deep-link@2.4.8
+## @tauri-apps/plugin-deep-link@2.4.9
 
 - License: MIT OR Apache-2.0
 - Repository: https://github.com/tauri-apps/plugins-workspace
 - Description: Set your Tauri application as the default handler for an URL
 - Included files: LICENSE.spdx
-- Folder: `licenses/@tauri-apps_plugin-deep-link@2.4.8`
+- Folder: `licenses/@tauri-apps_plugin-deep-link@2.4.9`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-deep-link`
 
-## @tauri-apps/plugin-opener@2.5.3
+## @tauri-apps/plugin-opener@2.5.4
 
 - License: MIT OR Apache-2.0
 - Repository: https://github.com/tauri-apps/plugins-workspace
 - Description: Open files and URLs using their default application.
 - Included files: LICENSE.spdx
-- Folder: `licenses/@tauri-apps_plugin-opener@2.5.3`
+- Folder: `licenses/@tauri-apps_plugin-opener@2.5.4`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-opener`
 
 ## @tensamin/ttp-core@0.0.15
@@ -275,14 +275,23 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/deepfilternet3-noise-filter@1.2.1`
 - Source package dir: `packages/call/node_modules/deepfilternet3-noise-filter`
 
-## eslint@10.2.1
+## esbuild@0.25.12
+
+- License: MIT
+- Repository: git+https://github.com/evanw/esbuild.git
+- Description: An extremely fast JavaScript and CSS bundler and minifier.
+- Included files: LICENSE.md
+- Folder: `licenses/esbuild@0.25.12`
+- Source package dir: `apps/web/node_modules/esbuild`
+
+## eslint@10.3.0
 
 - License: MIT
 - Homepage: https://eslint.org
 - Repository: eslint/eslint
 - Description: An AST-based pattern checker for JavaScript.
 - Included files: LICENSE
-- Folder: `licenses/eslint@10.2.1`
+- Folder: `licenses/eslint@10.3.0`
 - Source package dir: `apps/web/node_modules/eslint`
 
 ## eslint-plugin-react-hooks@7.1.1
@@ -304,13 +313,13 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/framer-motion@12.38.0`
 - Source package dir: `apps/web/node_modules/framer-motion`
 
-## globals@17.5.0
+## globals@17.6.0
 
 - License: MIT
 - Repository: sindresorhus/globals
 - Description: Global identifiers from different JavaScript environments
 - Included files: license
-- Folder: `licenses/globals@17.5.0`
+- Folder: `licenses/globals@17.6.0`
 - Source package dir: `apps/web/node_modules/globals`
 
 ## jsonc-parser@3.3.1
@@ -480,14 +489,14 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/vite@8.0.10`
 - Source package dir: `apps/web/node_modules/vite`
 
-## zod@4.4.1
+## zod@4.4.2
 
 - License: MIT
 - Homepage: https://zod.dev
 - Repository: git+https://github.com/colinhacks/zod.git
 - Description: TypeScript-first schema declaration and validation library with static type inference
 - Included files: LICENSE
-- Folder: `licenses/zod@4.4.1`
+- Folder: `licenses/zod@4.4.2`
 - Source package dir: `apps/web/node_modules/zod`
 
 ## zustand@5.0.12

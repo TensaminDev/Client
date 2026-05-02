@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-05-01T17:38:04.762Z",
-  "packageCount": 52,
+  "generatedAt": "2026-05-02T16:10:01.091Z",
+  "packageCount": 53,
   "packages": [
     {
       "name": "@codemirror/commands",
@@ -121,7 +121,7 @@
     },
     {
       "name": "@tanstack/react-query",
-      "version": "5.100.7",
+      "version": "5.100.8",
       "license": "MIT",
       "homepage": "https://tanstack.com/query",
       "repository": "git+https://github.com/TanStack/query.git",
@@ -129,7 +129,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@tanstack_react-query@5.100.7",
+      "licenseFolder": "licenses/@tanstack_react-query@5.100.8",
       "sourcePackageDir": "packages/call/node_modules/@tanstack/react-query"
     },
     {
@@ -201,7 +201,7 @@
     },
     {
       "name": "@tauri-apps/plugin-deep-link",
-      "version": "2.4.8",
+      "version": "2.4.9",
       "license": "MIT OR Apache-2.0",
       "homepage": null,
       "repository": "https://github.com/tauri-apps/plugins-workspace",
@@ -209,12 +209,12 @@
       "files": [
         "LICENSE.spdx"
       ],
-      "licenseFolder": "licenses/@tauri-apps_plugin-deep-link@2.4.8",
+      "licenseFolder": "licenses/@tauri-apps_plugin-deep-link@2.4.9",
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-deep-link"
     },
     {
       "name": "@tauri-apps/plugin-opener",
-      "version": "2.5.3",
+      "version": "2.5.4",
       "license": "MIT OR Apache-2.0",
       "homepage": null,
       "repository": "https://github.com/tauri-apps/plugins-workspace",
@@ -222,7 +222,7 @@
       "files": [
         "LICENSE.spdx"
       ],
-      "licenseFolder": "licenses/@tauri-apps_plugin-opener@2.5.3",
+      "licenseFolder": "licenses/@tauri-apps_plugin-opener@2.5.4",
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-opener"
     },
     {
@@ -381,8 +381,21 @@
       "sourcePackageDir": "packages/call/node_modules/deepfilternet3-noise-filter"
     },
     {
+      "name": "esbuild",
+      "version": "0.25.12",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "git+https://github.com/evanw/esbuild.git",
+      "description": "An extremely fast JavaScript and CSS bundler and minifier.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/esbuild@0.25.12",
+      "sourcePackageDir": "apps/web/node_modules/esbuild"
+    },
+    {
       "name": "eslint",
-      "version": "10.2.1",
+      "version": "10.3.0",
       "license": "MIT",
       "homepage": "https://eslint.org",
       "repository": "eslint/eslint",
@@ -390,7 +403,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/eslint@10.2.1",
+      "licenseFolder": "licenses/eslint@10.3.0",
       "sourcePackageDir": "apps/web/node_modules/eslint"
     },
     {
@@ -421,7 +434,7 @@
     },
     {
       "name": "globals",
-      "version": "17.5.0",
+      "version": "17.6.0",
       "license": "MIT",
       "homepage": null,
       "repository": "sindresorhus/globals",
@@ -429,7 +442,7 @@
       "files": [
         "license"
       ],
-      "licenseFolder": "licenses/globals@17.5.0",
+      "licenseFolder": "licenses/globals@17.6.0",
       "sourcePackageDir": "apps/web/node_modules/globals"
     },
     {
@@ -655,7 +668,7 @@
     },
     {
       "name": "zod",
-      "version": "4.4.1",
+      "version": "4.4.2",
       "license": "MIT",
       "homepage": "https://zod.dev",
       "repository": "git+https://github.com/colinhacks/zod.git",
@@ -663,7 +676,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/zod@4.4.1",
+      "licenseFolder": "licenses/zod@4.4.2",
       "sourcePackageDir": "apps/web/node_modules/zod"
     },
     {

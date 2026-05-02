@@ -11,13 +11,13 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
-      - name: Install sudo
-        run: apt-get update && apt-get install -y sudo
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
 
       - name: Install Nix
         uses: https://github.com/cachix/install-nix-action@v30
 
-      - name: Setup Bun
+      - name: Install Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
@@ -32,4 +32,49 @@ jobs:
       - name: Deploy
         run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-prod/
 
-# todo: add release of .deb, .rpm & .apk
+      - name: Read version
+        id: version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
+          echo "tag=v$VERSION" >> "$FORGEJO_OUTPUT"
+
+      - name: Create release and upload files
+        env:
+          TOKEN: ${{ forgejo.token }}
+          API: ${{ forgejo.api_url }}
+          REPO: ${{ forgejo.repository }}
+          SHA: ${{ forgejo.sha }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+
+          test -d releases
+          find releases -type f | grep -q .
+
+          RELEASE_JSON="$(curl -fsS -X POST "$API/repos/$REPO/releases" \
+            -H "Authorization: token $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg tag "$TAG" \
+              --arg name "$TAG" \
+              --arg body "Release $VERSION" \
+              --arg target "$SHA" \
+              '{
+                tag_name: $tag,
+                name: $name,
+                body: $body,
+                target_commitish: $target,
+                draft: false,
+                prerelease: false
+              }')")"
+
+          RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
+
+          find releases -type f -print0 | while IFS= read -r -d '' file; do
+            name="$(basename "$file")"
+            curl -fsS -X POST "$API/repos/$REPO/releases/$RELEASE_ID/assets?name=$name" \
+              -H "Authorization: token $TOKEN" \
+              -F "attachment=@$file"
+          done
