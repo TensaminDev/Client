@@ -12,7 +12,7 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v30
+        uses: https://github.com/cachix/install-nix-action@v30
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
