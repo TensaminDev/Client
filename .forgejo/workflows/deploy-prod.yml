@@ -28,7 +28,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
-          echo "$KEYSTORE_BASE64" | tr -d ' \n\r' | base64 --decode --ignore-garbage > keystore.jks
+          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64, 'base64'))"
           echo "$KEYSTORE_PROPERTIES" > keystore.properties
 
       - name: Build
