@@ -175,6 +175,7 @@ const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "app",
   component: AppShell,
+  notFoundComponent: NotFound,
 });
 
 const settingsRoute = createRoute({
