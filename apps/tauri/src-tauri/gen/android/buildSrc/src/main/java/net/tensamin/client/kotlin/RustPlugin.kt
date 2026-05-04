@@ -72,7 +72,6 @@ open class RustPlugin : Plugin<Project> {
                         rootDirRel = config.rootDirRel
                         target = targetName
                         release = profile == "release"
-                        baseProjectDir = project.projectDir
                     }
 
                     buildTask.dependsOn(targetBuildTask)

@@ -1,6 +1,3 @@
-import com.android.build.api.dsl.ApplicationExtension
-import com.android.build.api.dsl.LibraryExtension
-
 buildscript {
     repositories {
         google()
@@ -8,7 +5,7 @@ buildscript {
     }
     dependencies {
         classpath("com.android.tools.build:gradle:8.11.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.21")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.25")
     }
 }
 
@@ -19,24 +16,7 @@ allprojects {
     }
 }
 
-subprojects {
-    plugins.withId("com.android.application") {
-        extensions.configure<ApplicationExtension>("android") {
-            lint {
-                checkReleaseBuilds = false
-            }
-        }
-    }
-
-    plugins.withId("com.android.library") {
-        extensions.configure<LibraryExtension>("android") {
-            lint {
-                checkReleaseBuilds = false
-            }
-        }
-    }
-}
-
 tasks.register("clean").configure {
     delete("build")
 }
+

@@ -1,13 +1,10 @@
 import java.io.File
-import javax.inject.Inject
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
-import org.gradle.process.ExecOperations
 
 open class BuildTask : DefaultTask() {
     @Input
@@ -16,13 +13,6 @@ open class BuildTask : DefaultTask() {
     var target: String? = null
     @Input
     var release: Boolean? = null
-
-    @Internal
-    var baseProjectDir: File? = null
-
-    @get:Inject
-    protected open val execOperations: ExecOperations
-        get() = throw UnsupportedOperationException("Gradle injects ExecOperations")
 
     @TaskAction
     fun assemble() {
@@ -58,16 +48,15 @@ open class BuildTask : DefaultTask() {
         val rootDirRel = rootDirRel ?: throw GradleException("rootDirRel cannot be null")
         val target = target ?: throw GradleException("target cannot be null")
         val release = release ?: throw GradleException("release cannot be null")
-        val baseProjectDir = baseProjectDir ?: throw GradleException("baseProjectDir cannot be null")
         val args = listOf("tauri", "android", "android-studio-script");
 
-        execOperations.exec {
-            workingDir(File(baseProjectDir, rootDirRel))
+        project.exec {
+            workingDir(File(project.projectDir, rootDirRel))
             executable(executable)
             args(args)
-            if (logger.isEnabled(LogLevel.DEBUG)) {
+            if (project.logger.isEnabled(LogLevel.DEBUG)) {
                 args("-vv")
-            } else if (logger.isEnabled(LogLevel.INFO)) {
+            } else if (project.logger.isEnabled(LogLevel.INFO)) {
                 args("-v")
             }
             if (release) {
