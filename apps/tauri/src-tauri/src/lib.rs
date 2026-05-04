@@ -229,7 +229,7 @@ pub fn run() {
     #[cfg(any(target_os = "ios", target_os = "android"))]
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
 
-    builder
+    if let Err(error) = builder
         .setup(setup_app)
         .invoke_handler(tauri::generate_handler![
             list_screen_share_sources,
@@ -237,5 +237,8 @@ pub fn run() {
             get_screen_share_capabilities
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    {
+        eprintln!("error while running tauri application: {error}");
+        panic!("error while running tauri application: {error}");
+    }
 }
