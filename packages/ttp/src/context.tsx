@@ -186,6 +186,7 @@ export function Provider(props: {
     typeof createTransportClient<Schemas>
   > | null>(null);
   const identificationStartedRef = useRef(false);
+  const reconnectExhaustedRef = useRef(false);
 
   /**
    * Sends typed protocol messages through the active transport client.
@@ -315,12 +316,14 @@ export function Provider(props: {
         return;
       }
 
-      if (attempts >= RECONNECT_TRIES) {
+      if (reconnectExhaustedRef.current || attempts >= RECONNECT_TRIES) {
+        reconnectExhaustedRef.current = true;
         setError("Connection Failed");
         setErrorDescription(
           "Unable to connect to the server after multiple attempts. Please check your internet connection or try again later.",
         );
         log(0, "ttp", "red", "Reconnection attempts exhausted", reason);
+        void transportClient?.close("reconnect-exhausted");
         return;
       }
 
@@ -342,6 +345,7 @@ export function Provider(props: {
             if (state === READY_STATE.OPEN) {
               clearReconnectTimer();
               scheduleReconnectReset();
+              reconnectExhaustedRef.current = false;
               identificationStartedRef.current = false;
               setConnected(true);
               setIdentified(false);
@@ -379,7 +383,7 @@ export function Provider(props: {
      * @returns Promise that resolves after one connection attempt.
      */
     async function connect() {
-      if (disposed) {
+      if (disposed || reconnectExhaustedRef.current) {
         return;
       }
 
