@@ -18,13 +18,13 @@ export default function Layout({ children }: { children: ReactNode }) {
   const showMobileNavbar = useShowMobileNavbar();
 
   return (
-    <div className="w-full h-full flex bg-sidebar">
-      <SidebarProvider>
+    <div className="w-full h-full min-h-0 flex overflow-hidden bg-sidebar">
+      <SidebarProvider className="h-full min-h-0 overflow-hidden">
         <Sidebar />
         <div
           // Background of ui that is overlapping with the system ui
           className={cn(
-            "w-full h-full flex flex-col",
+            "w-full h-full min-h-0 flex flex-col overflow-hidden",
             isTauri() && isMobile && "pt-[env(safe-area-inset-top)]",
             isMobile && showMobileNavbar && "bg-background",
           )}
@@ -34,7 +34,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
           <div
             className={cn(
-              "bg-background h-full w-full",
+              "bg-background min-h-0 flex-1 w-full overflow-hidden",
               !isMobile && "rounded-tl-3xl border-t border-l",
             )}
           >

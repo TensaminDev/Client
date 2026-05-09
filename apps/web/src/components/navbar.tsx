@@ -30,7 +30,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   return (
     <div
       data-tauri-drag-region
-      className={`${forMobile && "border-b"} w-full gap-2 h-13.5 flex items-center justify-between`}
+      className={`${forMobile && "border-b"} w-full shrink-0 gap-2 h-13.5 flex items-center justify-between`}
     >
       <div className="flex items-center justify-center gap-2">
         {forMobile ? (
@@ -137,7 +137,7 @@ export function MobileNavbar() {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <div className="z-51 w-full pb-[env(safe-area-inset-bottom)] bg-card border-t">
+    <div className="z-51 w-full shrink-0 pb-[env(safe-area-inset-bottom)] bg-card border-t">
       <div className="z-51 w-full h-15 grid grid-cols-3 items-center place-items-center px-5">
         <SidebarTrigger
           className="text-foreground w-12! h-12! aspect-square rounded-xl flex flex-col gap-1"

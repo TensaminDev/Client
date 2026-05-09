@@ -48,6 +48,8 @@ export default function Screen() {
   >({});
   const measurementRefs = React.useRef(new Map<number, HTMLDivElement>());
   const shouldRestoreBottomOnResizeRef = React.useRef(false);
+  const isAtBottomRef = React.useRef(true);
+  const shouldRestoreBottomOnFocusResizeRef = React.useRef(false);
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasSharedSecret = sharedSecret.length > 0;
@@ -244,11 +246,9 @@ export default function Screen() {
       return;
     }
 
-    const handleResize = () => {
-      if (scrollRef.current) {
-        shouldRestoreBottomOnResizeRef.current =
-          getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
-      }
+    const restoreBottomAfterResize = () => {
+      shouldRestoreBottomOnResizeRef.current =
+        isAtBottomRef.current || shouldRestoreBottomOnFocusResizeRef.current;
 
       requestAnimationFrame(() => {
         virtualizer.measure();
@@ -259,16 +259,24 @@ export default function Screen() {
           }
 
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          isAtBottomRef.current = true;
+          shouldRestoreBottomOnFocusResizeRef.current = false;
           shouldRestoreBottomOnResizeRef.current = false;
         });
       });
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", restoreBottomAfterResize);
+    window.visualViewport?.addEventListener("resize", restoreBottomAfterResize);
+
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", restoreBottomAfterResize);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        restoreBottomAfterResize,
+      );
     };
-  }, [stickyBottomThreshold, virtualizer]);
+  }, [virtualizer]);
 
   React.useLayoutEffect(() => {
     const element = inputBoxRef.current;
@@ -289,6 +297,34 @@ export default function Screen() {
       observer.disconnect();
     };
   }, [inputBoxRef]);
+
+  React.useEffect(() => {
+    const element = inputBoxRef.current;
+    if (!element) {
+      return;
+    }
+
+    const handleFocusIn = () => {
+      if (!scrollRef.current) {
+        return;
+      }
+
+      shouldRestoreBottomOnFocusResizeRef.current =
+        getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
+    };
+
+    const handleFocusOut = () => {
+      shouldRestoreBottomOnFocusResizeRef.current = false;
+    };
+
+    element.addEventListener("focusin", handleFocusIn);
+    element.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      element.removeEventListener("focusin", handleFocusIn);
+      element.removeEventListener("focusout", handleFocusOut);
+    };
+  }, [inputBoxRef, stickyBottomThreshold]);
 
   /**
    * Loads the next page when the scroll container reaches the top.
@@ -325,6 +361,7 @@ export default function Screen() {
     }
 
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    isAtBottomRef.current = true;
     setHasScrolledToBottomInitially(true);
   }, [hasScrolledToBottomInitially, virtualRowCount]);
 
@@ -341,6 +378,7 @@ export default function Screen() {
 
       if (shouldStickToBottom) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        isAtBottomRef.current = true;
       }
     }
 
@@ -370,8 +408,13 @@ export default function Screen() {
    * @returns Void.
    */
   const handleContainerScroll = React.useCallback((): void => {
+    if (scrollRef.current) {
+      isAtBottomRef.current =
+        getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
+    }
+
     void onScroll();
-  }, [onScroll]);
+  }, [onScroll, stickyBottomThreshold]);
 
   const [value, setValue] = React.useState("");
   const totalSize = virtualizer.getTotalSize();
@@ -388,13 +431,12 @@ export default function Screen() {
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden px-2">
+    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden px-2">
       <div
         ref={scrollRef}
         id="chat_container"
-        className="absolute inset-x-0 top-0 overflow-y-auto px-2.5"
+        className="min-h-0 flex-1 overflow-y-auto px-2.5"
         style={{
-          bottom: `${inputHeight}px`,
           overflowAnchor: "none",
           paddingBottom: "8px",
         }}
@@ -459,7 +501,7 @@ export default function Screen() {
           })}
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 z-10">
+      <div className="z-10 shrink-0">
         <InputComponent setValue={setValue} value={value} />
       </div>
       <div

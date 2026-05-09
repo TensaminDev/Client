@@ -5,3 +5,15 @@
 
 @source "./**/*.{ts,tsx}";
 @source "../../../packages/**/src/**/*.{ts,tsx}";
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  min-height: 0;
+}

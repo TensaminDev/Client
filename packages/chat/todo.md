@@ -1,1 +1,0 @@
-- Mobile message box broken

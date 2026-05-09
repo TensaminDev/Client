@@ -110,7 +110,7 @@ function RootShell() {
   return (
     <DeeplinkContext>
       <ThemeProvider>
-        <div className="w-screen h-screen overflow-hidden">
+        <div className="w-screen h-dvh overflow-hidden">
           <Toaster
             position={isMobile ? "top-center" : "bottom-right"}
             {...(isTauri() && isMobile
