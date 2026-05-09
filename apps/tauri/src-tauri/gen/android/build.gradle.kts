@@ -1,3 +1,5 @@
+import com.android.build.gradle.LibraryExtension
+
 buildscript {
     repositories {
         google()
@@ -16,7 +18,16 @@ allprojects {
     }
 }
 
+subprojects {
+    afterEvaluate {
+        plugins.withId("com.android.library") {
+            extensions.configure<LibraryExtension>("android") {
+                compileSdk = 36
+            }
+        }
+    }
+}
+
 tasks.register("clean").configure {
     delete("build")
 }
-

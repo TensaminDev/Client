@@ -76,6 +76,7 @@
         "tailwind-merge": "^3.5.0",
         "tailwind-scrollbar-hide": "^4.0.0",
         "tailwindcss": "^4.2.4",
+        "tauri-plugin-app-events-api": "^0.2.0",
         "tw-animate-css": "^1.4.0",
         "zod": "^4.3.6",
       },
@@ -228,6 +229,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@tanstack/react-router": "^1.0.0",
+        "@tauri-apps/api": "^2",
         "@tensamin/crypto": "workspace:*",
         "@tensamin/shared": "workspace:*",
         "@tensamin/storage": "workspace:*",
@@ -235,6 +237,7 @@
         "@tensamin/ui": "*",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
+        "tauri-plugin-app-events-api": "^0.2.0",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -1496,6 +1499,8 @@
     "tailwindcss": ["tailwindcss@4.2.4", "", {}, "sha512-HhKppgO81FQof5m6TEnuBWCZGgfRAWbaeOaGT00KOy/Pf/j6oUihdvBpA7ltCeAvZpFhW3j0PTclkxsd4IXYDA=="],
 
     "tapable": ["tapable@2.3.3", "", {}, "sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A=="],
+
+    "tauri-plugin-app-events-api": ["tauri-plugin-app-events-api@0.2.0", "", { "dependencies": { "@tauri-apps/api": "^2.0.3" } }, "sha512-CnlAeucWhT+Rgx6CCsqUpq2D3pqgx0fhjSPKomH7O2t1rGVu5kGLMkYvaCX6gqVTUYpIWX5BLV7LGY2DRri0QA=="],
 
     "tiny-invariant": ["tiny-invariant@1.3.3", "", {}, "sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg=="],
 

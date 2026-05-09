@@ -16,6 +16,8 @@ import {
   READY_STATE,
   type BoundSendFn,
 } from "@tensamin/ttp-core";
+import { isTauri } from "@tauri-apps/api/core";
+import { onResume } from "tauri-plugin-app-events-api";
 import type { PushHandler } from "@tensamin/ttp-core";
 import {
   PING_INTERVAL,
@@ -141,6 +143,10 @@ function getProtocolErrorDetails(error: unknown) {
   };
 }
 
+function isTauriMobile() {
+  return isTauri() && /Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+}
+
 type ContextType = {
   send: BoundSendFn<Schemas>;
   subscribePush: (handler: PushHandler) => () => void;
@@ -186,7 +192,6 @@ export function Provider(props: {
     typeof createTransportClient<Schemas>
   > | null>(null);
   const identificationStartedRef = useRef(false);
-  const reconnectExhaustedRef = useRef(false);
 
   /**
    * Sends typed protocol messages through the active transport client.
@@ -266,6 +271,8 @@ export function Provider(props: {
     let reconnectResetTimer: ReturnType<typeof setTimeout> | null = null;
     let reconnectScheduled = false;
     let disposed = false;
+    let resumeListenerRegistered = false;
+    let currentReadyState: number = READY_STATE.CLOSED;
 
     /**
      * Clears any scheduled reconnect timeout and resets scheduling flags.
@@ -316,14 +323,12 @@ export function Provider(props: {
         return;
       }
 
-      if (reconnectExhaustedRef.current || attempts >= RECONNECT_TRIES) {
-        reconnectExhaustedRef.current = true;
+      if (attempts >= RECONNECT_TRIES) {
         setError("Connection Failed");
         setErrorDescription(
           "Unable to connect to the server after multiple attempts. Please check your internet connection or try again later.",
         );
         log(0, "ttp", "red", "Reconnection attempts exhausted", reason);
-        void transportClient?.close("reconnect-exhausted");
         return;
       }
 
@@ -340,12 +345,12 @@ export function Provider(props: {
       ? createTransportClient(schemas, {
           url: TRANSPORT_URL,
           onReadyStateChange: (state) => {
+            currentReadyState = state;
             setReadyState(state);
 
             if (state === READY_STATE.OPEN) {
               clearReconnectTimer();
               scheduleReconnectReset();
-              reconnectExhaustedRef.current = false;
               identificationStartedRef.current = false;
               setConnected(true);
               setIdentified(false);
@@ -383,7 +388,7 @@ export function Provider(props: {
      * @returns Promise that resolves after one connection attempt.
      */
     async function connect() {
-      if (disposed || reconnectExhaustedRef.current) {
+      if (disposed) {
         return;
       }
 
@@ -399,18 +404,56 @@ export function Provider(props: {
       }
     }
 
+    /**
+     * Starts a reconnect after resume only when the transport is disconnected.
+     * @returns Promise that resolves after any needed resume reconnect starts.
+     */
+    async function reconnectAfterResume() {
+      if (disposed || !transportClient) {
+        return;
+      }
+
+      if (
+        currentReadyState === READY_STATE.OPEN ||
+        currentReadyState === READY_STATE.CONNECTING
+      ) {
+        return;
+      }
+
+      clearReconnectTimer();
+      clearReconnectResetTimer();
+      attempts = 0;
+      reconnectScheduled = false;
+      setError("");
+      setErrorDescription("");
+
+      await connect();
+    }
+
     void connect();
+
+    if (!props.blockConnection && isTauriMobile()) {
+      resumeListenerRegistered = true;
+      onResume(() => {
+        void reconnectAfterResume();
+      });
+    }
 
     return () => {
       disposed = true;
       clearReconnectTimer();
       clearReconnectResetTimer();
 
+      if (resumeListenerRegistered) {
+        onResume();
+      }
+
       if (clientRef.current === transportClient) {
         clientRef.current = null;
       }
 
       void transportClient?.close("context-dispose");
+      currentReadyState = READY_STATE.CLOSED;
       setReadyState(READY_STATE.CLOSED);
       setConnected(false);
       setIdentified(false);

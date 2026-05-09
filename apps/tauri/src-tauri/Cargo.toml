@@ -50,6 +50,7 @@ default-features = false
 
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-barcode-scanner = "2"
+tauri-plugin-app-events = "0.2"
 
 [patch.crates-io.tauri]
 git = "https://github.com/tauri-apps/tauri"

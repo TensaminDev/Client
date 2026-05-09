@@ -1,1 +1,2 @@
 - Add `notifications: number` to contacts
+- Store private key in a device bound session

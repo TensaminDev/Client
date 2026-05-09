@@ -206,6 +206,9 @@ pub fn run() {
     #[cfg(any(target_os = "ios", target_os = "android"))]
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
 
+    #[cfg(any(target_os = "ios", target_os = "android"))]
+    let builder = builder.plugin(tauri_plugin_app_events::init());
+
     if let Err(error) = builder
         .setup(|_app| {
             #[cfg(any(target_os = "linux", windows))]

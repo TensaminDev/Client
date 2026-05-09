@@ -431,7 +431,7 @@ export default function Screen() {
   }
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden px-2">
+    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div
         ref={scrollRef}
         id="chat_container"

@@ -22,7 +22,8 @@
     "dev:mobile": "cd apps/tauri && bun dev:mobile",
     "build:mobile": "cd apps/tauri && bun run build:mobile",
     "dev:desktop": "cd apps/tauri && bun dev:desktop",
-    "build:desktop": "cd apps/tauri && bun run build:desktop"
+    "build:desktop": "cd apps/tauri && bun run build:desktop",
+    "delete:mobile": "cd apps/tauri && nix develop --command adb uninstall net.tensamin.client"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
