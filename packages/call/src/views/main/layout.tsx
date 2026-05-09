@@ -7,9 +7,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const screenRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
-  const hideChromeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideChromeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [overlayInsets, setOverlayInsets] = useState({ top: 0, bottom: 0 });
-  const [isImmersiveChromeVisible, setIsImmersiveChromeVisible] = useState(false);
+  const [isImmersiveChromeVisible, setIsImmersiveChromeVisible] =
+    useState(false);
 
   useEffect(() => {
     setScreenRef(screenRef);
@@ -102,7 +105,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ref={screenRef}
       className={`relative w-full h-full flex flex-col ${
         isImmersiveFocusedView && !immersiveChromeVisible ? "cursor-none" : ""
-      }`}
+      } ${callIsFullscreen ? "bg-background" : ""}`}
       onMouseEnter={showImmersiveChrome}
       onMouseMove={showImmersiveChrome}
       onMouseLeave={hideImmersiveChrome}

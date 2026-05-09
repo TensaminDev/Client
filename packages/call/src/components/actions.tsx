@@ -24,6 +24,7 @@ import {
   ChevronUp,
   Maximize,
   Minimize,
+  ScreenShareOff,
   SquareArrowOutDownLeft,
   SquareArrowOutUpRight,
 } from "lucide-react";
@@ -96,68 +97,56 @@ export default function Actions() {
       </div>
       <Card className="p-1.75">
         <CardContent className="p-0! flex gap-1.75">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <MuteButton
-                  className={sharedClasses}
-                  iconSize={sharedIconSize}
-                />
-              }
-            />
-            <TooltipContent portalProps={{ container: portalContainer }}>
-              Mute
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <DeafButton
-                  className={sharedClasses}
-                  iconSize={sharedIconSize}
-                />
-              }
-            />
-            <TooltipContent portalProps={{ container: portalContainer }}>
-              Deafen
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <ScreenshareButton
-                  className={sharedClasses}
-                  iconSize={sharedIconSize}
-                />
-              }
-            />
-            <TooltipContent portalProps={{ container: portalContainer }}>
-              Screenshare
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <InviteButton
-                  className={sharedClasses}
-                  iconSize={sharedIconSize}
-                />
-              }
-            />
-            <TooltipContent portalProps={{ container: portalContainer }}>
-              Invite
-            </TooltipContent>
-          </Tooltip>
+          <MuteButton
+            className={sharedClasses}
+            iconSize={sharedIconSize}
+            tooltip="Mute"
+            portalContainer={portalContainer}
+          />
+          <DeafButton
+            className={sharedClasses}
+            iconSize={sharedIconSize}
+            tooltip="Deafen"
+            portalContainer={portalContainer}
+          />
+          <ScreenshareButton
+            className={sharedClasses}
+            iconSize={sharedIconSize}
+            tooltip="Screenshare"
+          />
+          <InviteButton
+            className={sharedClasses}
+            iconSize={sharedIconSize}
+            tooltip="Invite"
+          />
           {isWatchingFocusedStream ? (
-            <Button
-              className="h-10"
-              variant="destructive"
-              onClick={() => stopWatchingFocusedStream()}
-            >
-              Stop watching
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    className={sharedClasses}
+                    variant="destructive"
+                    onClick={() => stopWatchingFocusedStream()}
+                  >
+                    <ScreenShareOff
+                      style={{
+                        scale: (sharedIconSize ? sharedIconSize + 100 : 100) + "%",
+                      }}
+                    />
+                  </Button>
+                }
+              />
+              <TooltipContent portalProps={{ container: portalContainer }}>
+                Stop watching
+              </TooltipContent>
+            </Tooltip>
           ) : (
-            <LeaveButton className={sharedClasses} iconSize={sharedIconSize} />
+            <LeaveButton
+              className={sharedClasses}
+              iconSize={sharedIconSize}
+              tooltip="Leave"
+              portalContainer={portalContainer}
+            />
           )}
         </CardContent>
       </Card>

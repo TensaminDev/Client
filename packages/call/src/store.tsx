@@ -509,9 +509,7 @@ export function setCallView(view: CallView) {
   useCall.setState({ view });
 }
 
-export function setUsersInFocusedViewHidden(
-  usersInFocusedViewHidden: boolean,
-) {
+export function setUsersInFocusedViewHidden(usersInFocusedViewHidden: boolean) {
   useCall.setState((state) => ({
     usersInFocusedViewHidden,
     layoutVersion:

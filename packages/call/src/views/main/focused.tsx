@@ -107,7 +107,9 @@ export default function View() {
     let frameId = 0;
 
     const syncTileLayout = () => {
-      const containerWidth = Math.floor(container.getBoundingClientRect().width);
+      const containerWidth = Math.floor(
+        container.getBoundingClientRect().width,
+      );
       const tileWidth = Math.floor(focusedTile.getBoundingClientRect().width);
 
       setIsFocusedTileFlush(Math.abs(containerWidth - tileWidth) <= 1);
@@ -155,14 +157,10 @@ export default function View() {
   const focusedParticipant = getParticipantById(focusedParticipantId);
   const focusedParticipantHasActiveScreenShare =
     activeScreenShareParticipantIdSet.has(focusedParticipantId);
-  const isImmersiveFocusedView =
-    callIsFullscreen && usersInFocusedViewHidden;
+  const isImmersiveFocusedView = callIsFullscreen && usersInFocusedViewHidden;
 
   return (
-    <div
-      ref={containerRef}
-      className="flex h-full w-full overflow-hidden"
-    >
+    <div ref={containerRef} className="flex h-full w-full overflow-hidden">
       <div
         className="flex h-full w-full flex-col items-center overflow-hidden"
         style={{
@@ -175,7 +173,7 @@ export default function View() {
             className={
               isImmersiveFocusedView
                 ? "h-full w-full overflow-hidden"
-                : "h-full max-w-full aspect-video overflow-hidden"
+                : "h-full max-w-full aspect-video overflow-hidden flex items-center"
             }
           >
             <Base

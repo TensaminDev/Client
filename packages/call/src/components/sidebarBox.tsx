@@ -45,11 +45,7 @@ export default function SidebarBox() {
   );
 }
 
-function ConnectionBar({
-  portalContainer,
-}: {
-  portalContainer?: HTMLElement;
-}) {
+function ConnectionBar({ portalContainer }: { portalContainer?: HTMLElement }) {
   const state = useCall((store) => store.state);
   const isEncrypted = useCall((store) => store.isEncrypted);
   const callId = useCall((store) => store.callId);
