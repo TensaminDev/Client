@@ -219,8 +219,9 @@ export default function View() {
       ref={containerRef}
       style={{
         height: "calc(100% - 2rem)",
+        width: "calc(100% - 2rem)",
       }}
-      className="w-full overflow-hidden p-3"
+      className="overflow-hidden p-3"
     >
       <div className="flex h-full w-full flex-col items-center justify-center gap-3">
         {rows.map((row) => (
