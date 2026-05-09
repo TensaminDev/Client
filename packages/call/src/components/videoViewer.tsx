@@ -6,11 +6,13 @@ import { Loader2 } from "lucide-react";
 
 export default function VideoViewer({
   className,
+  fill = false,
   flush = false,
   publication,
   participantId,
 }: {
   className?: string;
+  fill?: boolean;
   flush?: boolean;
   publication: TrackPublication;
   participantId: string;
@@ -28,7 +30,7 @@ export default function VideoViewer({
     <VideoTrack
       trackRef={trackRef}
       className={cn(
-        "w-full h-full aspect-video bg-black",
+        fill ? "w-full h-full bg-black" : "w-full h-full aspect-video bg-black",
         flush ? "rounded-none" : "rounded-md",
         className,
       )}

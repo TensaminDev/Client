@@ -90,10 +90,12 @@ function Overlay({
 export default function Base({
   participant,
   type,
+  fill = false,
   flush = false,
 }: {
   participant: Participant | undefined;
   type: "user" | "stream";
+  fill?: boolean;
   flush?: boolean;
 }) {
   const { get } = useUser();
@@ -170,9 +172,9 @@ export default function Base({
         render={
           <div
             onClick={onClick}
-            className={`relative aspect-video w-full border-2 ${
-              flush ? "rounded-none border-x-0" : "rounded-md"
-            }`}
+            className={`relative w-full ${fill ? "h-full border-0" : "aspect-video border-2"} ${
+              flush || fill ? "rounded-none" : "rounded-md"
+            } ${flush && !fill ? "border-x-0" : ""}`}
           >
             <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
               <>
@@ -219,6 +221,7 @@ export default function Base({
               {type === "stream" &&
                 (showStream ? (
                   <VideoViewer
+                    fill={fill}
                     flush={flush}
                     participantId={participant.identity}
                     publication={screenSharePublication}

@@ -6,18 +6,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@tensamin/ui";
+import { useEffect, useState } from "react";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";
 import ScreenshareButton from "./buttons/screenshare";
 import LeaveButton from "./buttons/leave";
 import {
   setCallIsPopout,
+  setUsersInFocusedViewHidden,
   stopWatchingFocusedStream,
   triggerCallLayoutCalculation,
   useCall,
 } from "../store";
 import InviteButton from "./buttons/invite";
 import {
+  ChevronDown,
+  ChevronUp,
   Maximize,
   Minimize,
   SquareArrowOutDownLeft,
@@ -37,9 +41,15 @@ export default function Actions() {
     focusedParticipantId != null &&
     watchedStreamParticipantIds.includes(focusedParticipantId);
 
+  // Fullscreen stuff
   const callIsPopout = useCall((state) => state.callIsPopout);
   const callIsFullscreen = useCall((state) => state.callIsFullscreen);
   const screenRef = useCall((state) => state.screenRef);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
+
+  useEffect(() => {
+    setPortalContainer(screenRef?.current ?? undefined);
+  }, [screenRef]);
 
   const toggleFullscreen = async () => {
     if (callIsFullscreen) {
@@ -51,18 +61,93 @@ export default function Actions() {
     triggerCallLayoutCalculation();
   };
 
+  // Hide users in focused view
+  const usersInFocusedViewHidden = useCall(
+    (state) => state.usersInFocusedViewHidden,
+  );
+
   return (
     <div className="w-full flex justify-between items-center">
-      <div className="w-30" />
+      <div className="w-30 flex justify-start">
+        {view === "focused" && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  onClick={() =>
+                    setUsersInFocusedViewHidden(!usersInFocusedViewHidden)
+                  }
+                  variant="link"
+                  className="w-11 h-11 p-0! ml-3 text-foreground"
+                >
+                  {usersInFocusedViewHidden ? (
+                    <ChevronUp className="size-6" />
+                  ) : (
+                    <ChevronDown className="size-6" />
+                  )}
+                </Button>
+              }
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Hide users
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
       <Card className="p-1.75">
         <CardContent className="p-0! flex gap-1.75">
-          <MuteButton className={sharedClasses} iconSize={sharedIconSize} />
-          <DeafButton className={sharedClasses} iconSize={sharedIconSize} />
-          <ScreenshareButton
-            className={sharedClasses}
-            iconSize={sharedIconSize}
-          />
-          <InviteButton className={sharedClasses} iconSize={sharedIconSize} />
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <MuteButton
+                  className={sharedClasses}
+                  iconSize={sharedIconSize}
+                />
+              }
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Mute
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <DeafButton
+                  className={sharedClasses}
+                  iconSize={sharedIconSize}
+                />
+              }
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Deafen
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <ScreenshareButton
+                  className={sharedClasses}
+                  iconSize={sharedIconSize}
+                />
+              }
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Screenshare
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <InviteButton
+                  className={sharedClasses}
+                  iconSize={sharedIconSize}
+                />
+              }
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Invite
+            </TooltipContent>
+          </Tooltip>
           {isWatchingFocusedStream ? (
             <Button
               className="h-10"
@@ -93,7 +178,9 @@ export default function Actions() {
               </Button>
             }
           />
-          <TooltipContent>Popout</TooltipContent>
+          <TooltipContent portalProps={{ container: portalContainer }}>
+            Popout
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -113,7 +200,9 @@ export default function Actions() {
               </Button>
             }
           />
-          <TooltipContent>Fullscreen</TooltipContent>
+          <TooltipContent portalProps={{ container: portalContainer }}>
+            Fullscreen
+          </TooltipContent>
         </Tooltip>
       </div>
     </div>

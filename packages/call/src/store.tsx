@@ -86,6 +86,7 @@ type CallStore = {
   screenShareEnabled: boolean;
   screenShareSession: ScreenShareSession | null;
   focusedParticipantId: number | null;
+  usersInFocusedViewHidden: boolean;
   watchedStreamParticipantIds: number[];
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
@@ -508,6 +509,18 @@ export function setCallView(view: CallView) {
   useCall.setState({ view });
 }
 
+export function setUsersInFocusedViewHidden(
+  usersInFocusedViewHidden: boolean,
+) {
+  useCall.setState((state) => ({
+    usersInFocusedViewHidden,
+    layoutVersion:
+      state.usersInFocusedViewHidden === usersInFocusedViewHidden
+        ? state.layoutVersion
+        : state.layoutVersion + 1,
+  }));
+}
+
 export function setCallIsFullscreen(callIsFullscreen: boolean) {
   useCall.setState({ callIsFullscreen });
 }
@@ -771,6 +784,7 @@ export async function disconnect() {
     view: "preview",
     screenShareSession: null,
     focusedParticipantId: null,
+    usersInFocusedViewHidden: false,
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
@@ -928,6 +942,7 @@ export function resetCallState() {
     deaf: false,
     screenShareSession: null,
     focusedParticipantId: null,
+    usersInFocusedViewHidden: false,
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
@@ -969,6 +984,7 @@ export const useCall = create<CallStore>(() => ({
   screenShareEnabled: room.localParticipant.isScreenShareEnabled,
   screenShareSession: null,
   focusedParticipantId: null,
+  usersInFocusedViewHidden: false,
   watchedStreamParticipantIds: [],
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],

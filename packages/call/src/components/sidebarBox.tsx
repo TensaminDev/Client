@@ -20,12 +20,18 @@ import LeaveButton from "./buttons/leave";
 
 export default function SidebarBox() {
   const state = useCall((store) => store.state);
+  const screenRef = useCall((store) => store.screenRef);
   const isMobile = useIsMobile();
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
+
+  useEffect(() => {
+    setPortalContainer(screenRef?.current ?? undefined);
+  }, [screenRef]);
 
   return state === "closed" ? null : (
     <Card className="p-1.5 gap-2" hidden={isMobile}>
       <CardHeader className="p-0! pb-2! border-b-2">
-        <ConnectionBar />
+        <ConnectionBar portalContainer={portalContainer} />
       </CardHeader>
       <CardContent className="p-0! flex flex-col gap-1">
         <div className="flex justify-start gap-1">
@@ -39,7 +45,11 @@ export default function SidebarBox() {
   );
 }
 
-function ConnectionBar() {
+function ConnectionBar({
+  portalContainer,
+}: {
+  portalContainer?: HTMLElement;
+}) {
   const state = useCall((store) => store.state);
   const isEncrypted = useCall((store) => store.isEncrypted);
   const callId = useCall((store) => store.callId);
@@ -62,7 +72,7 @@ function ConnectionBar() {
             {state === "closed" && "Closed"}
             {state === "closing" && "Closing"}
 
-            <TinyPingGraph />
+            <TinyPingGraph portalContainer={portalContainer} />
 
             {isEncrypted ? (
               <Lock color="var(--primary-foreground-alt)" />
@@ -72,12 +82,18 @@ function ConnectionBar() {
           </Button>
         }
       />
-      <TooltipContent>Click to open call page</TooltipContent>
+      <TooltipContent portalProps={{ container: portalContainer }}>
+        Click to open call page
+      </TooltipContent>
     </Tooltip>
   );
 }
 
-export function TinyPingGraph() {
+export function TinyPingGraph({
+  portalContainer,
+}: {
+  portalContainer?: HTMLElement;
+}) {
   const room = useCall((store) => store.room);
 
   const [mapData, setMapData] = useState<Map<number, number>>(() => new Map());
@@ -164,7 +180,7 @@ export function TinyPingGraph() {
           </div>
         }
       />
-      <TooltipContent>
+      <TooltipContent portalProps={{ container: portalContainer }}>
         {data.length > 0 ? `${data.at(-1)?.ping} ms` : "Measuring ping..."}
       </TooltipContent>
     </Tooltip>

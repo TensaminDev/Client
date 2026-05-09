@@ -3,7 +3,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useCall } from "../../store";
 import Base from "../../components/modals/base";
 
-const TILE_ASPECT_RATIO = 16 / 9;
 const SECONDARY_ROW_HEIGHT_PX = 180;
 const STACK_GAP_PX = 12;
 
@@ -11,15 +10,17 @@ export default function View() {
   const room = useCall((state) => state.room);
   const layoutVersion = useCall((state) => state.layoutVersion);
 
+  const usersInFocusedViewHidden = useCall(
+    (state) => state.usersInFocusedViewHidden,
+  );
+  const callIsFullscreen = useCall((state) => state.callIsFullscreen);
+
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
   const activeScreenShareParticipantIds = useCall(
     (state) => state.activeScreenShareParticipantIds,
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [focusedTileSize, setFocusedTileSize] = useState({
-    width: 0,
-    height: 0,
-  });
+  const focusedTileRef = useRef<HTMLDivElement | null>(null);
   const [isFocusedTileFlush, setIsFocusedTileFlush] = useState(false);
   const [participantVersion, setParticipantVersion] = useState(0);
 
@@ -97,47 +98,47 @@ export default function View() {
 
   useLayoutEffect(() => {
     const container = containerRef.current;
+    const focusedTile = focusedTileRef.current;
 
-    if (!container) {
+    if (!container || !focusedTile) {
       return;
     }
 
-    const syncTileLayout = () => {
-      const rect = container.getBoundingClientRect();
-      const width = Math.max(0, Math.floor(window.innerWidth + 1 - rect.left));
-      const height = Math.max(0, Math.floor(container.clientHeight));
-      const reservedHeight =
-        tiles.length > 0 ? SECONDARY_ROW_HEIGHT_PX + STACK_GAP_PX : 0;
-      const availableHeight = Math.max(0, height - reservedHeight);
-      const nextWidth = Math.max(
-        0,
-        Math.min(width, availableHeight * TILE_ASPECT_RATIO),
-      );
-      const nextHeight = Math.max(0, nextWidth / TILE_ASPECT_RATIO);
-      const widthDelta = Math.abs(width - nextWidth);
+    let frameId = 0;
 
-      setFocusedTileSize((current) =>
-        current.width === nextWidth && current.height === nextHeight
-          ? current
-          : { width: nextWidth, height: nextHeight },
-      );
-      setIsFocusedTileFlush(widthDelta <= 1);
+    const syncTileLayout = () => {
+      const containerWidth = Math.floor(container.getBoundingClientRect().width);
+      const tileWidth = Math.floor(focusedTile.getBoundingClientRect().width);
+
+      setIsFocusedTileFlush(Math.abs(containerWidth - tileWidth) <= 1);
+    };
+
+    const scheduleSyncTileLayout = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(syncTileLayout);
     };
 
     syncTileLayout();
 
     const observer = new ResizeObserver(() => {
-      requestAnimationFrame(syncTileLayout);
+      scheduleSyncTileLayout();
     });
     observer.observe(container);
+    observer.observe(focusedTile);
 
-    window.addEventListener("resize", syncTileLayout);
+    window.addEventListener("resize", scheduleSyncTileLayout);
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", syncTileLayout);
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleSyncTileLayout);
     };
-  }, [layoutVersion, tiles.length, focusedParticipantId]);
+  }, [
+    layoutVersion,
+    tiles.length,
+    focusedParticipantId,
+    usersInFocusedViewHidden,
+  ]);
 
   if (focusedParticipantId == null) {
     return null;
@@ -154,20 +155,32 @@ export default function View() {
   const focusedParticipant = getParticipantById(focusedParticipantId);
   const focusedParticipantHasActiveScreenShare =
     activeScreenShareParticipantIdSet.has(focusedParticipantId);
+  const isImmersiveFocusedView =
+    callIsFullscreen && usersInFocusedViewHidden;
 
   return (
     <div
       ref={containerRef}
-      className="flex h-full w-full items-center justify-center overflow-hidden"
+      className="flex h-full w-full overflow-hidden"
     >
       <div
-        className="flex max-h-full w-full flex-col items-center overflow-hidden"
-        style={{ gap: tiles.length > 0 ? STACK_GAP_PX : 0 }}
+        className="flex h-full w-full flex-col items-center overflow-hidden"
+        style={{
+          gap: tiles.length > 0 && !isImmersiveFocusedView ? STACK_GAP_PX : 0,
+        }}
       >
-        <div className="w-full flex justify-center overflow-hidden">
-          <div className="overflow-hidden" style={focusedTileSize}>
+        <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
+          <div
+            ref={focusedTileRef}
+            className={
+              isImmersiveFocusedView
+                ? "h-full w-full overflow-hidden"
+                : "h-full max-w-full aspect-video overflow-hidden"
+            }
+          >
             <Base
-              flush={isFocusedTileFlush}
+              fill={isImmersiveFocusedView}
+              flush={isImmersiveFocusedView || isFocusedTileFlush}
               type={focusedParticipantHasActiveScreenShare ? "stream" : "user"}
               participant={focusedParticipant}
             />
@@ -175,6 +188,7 @@ export default function View() {
         </div>
         {tiles.length > 0 && (
           <div
+            hidden={usersInFocusedViewHidden}
             className="w-full shrink-0 flex justify-center gap-2 overflow-x-auto"
             style={{ height: SECONDARY_ROW_HEIGHT_PX }}
           >
