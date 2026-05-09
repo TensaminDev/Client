@@ -83,6 +83,7 @@ function calculateOptimalGridLayout(
 
 export default function View() {
   const room = useCall((state) => state.room);
+  const layoutVersion = useCall((state) => state.layoutVersion);
   const activeScreenShareParticipantIds = useCall(
     (state) => state.activeScreenShareParticipantIds,
   );
@@ -98,15 +99,21 @@ export default function View() {
       return;
     }
 
+    const syncContainerSize = () => {
+      const { width, height } = element.getBoundingClientRect();
+      setContainerSize({ width, height });
+    };
+
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       setContainerSize({ width, height });
     });
 
+    syncContainerSize();
     observer.observe(element);
 
     return () => observer.disconnect();
-  }, []);
+  }, [layoutVersion]);
 
   useEffect(() => {
     const syncParticipants = () => {

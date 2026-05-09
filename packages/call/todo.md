@@ -2,7 +2,6 @@
 - Overlay for stream modals
 - User modals
   - Bg based on avatar
-  - Avatar in the center
 - Mobile
 - Call invite popup
   - Save call invite in `calls` array
@@ -11,3 +10,5 @@
 - Admin call actions
   - Timeout
   - Disconnect
+- Desktop-App screenshares
+- Toggle members button in focused view

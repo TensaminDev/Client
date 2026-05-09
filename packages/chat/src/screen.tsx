@@ -41,6 +41,7 @@ export default function Screen() {
     scrollTop: number;
   } | null>(null);
   const [scrollWidth, setScrollWidth] = React.useState(0);
+  const [scrollHeight, setScrollHeight] = React.useState(0);
   const [inputHeight, setInputHeight] = React.useState(0);
   const [measuredHeights, setMeasuredHeights] = React.useState<
     Record<number, number>
@@ -93,6 +94,10 @@ export default function Screen() {
 
     return [...historicalMessages, ...liveWithoutDuplicates];
   }, [historicalMessages, liveMessagesSnapshot]);
+  const shouldShowConversationStart =
+    !!messagesQuery.data && !messagesQuery.hasNextPage;
+  const virtualRowCount =
+    messages.length + (shouldShowConversationStart ? 1 : 0);
 
   const messagesRef = React.useRef(messages);
 
@@ -101,8 +106,13 @@ export default function Screen() {
   }, [messages]);
 
   const getItemKey = React.useCallback((index: number) => {
-    return messagesRef.current[index]?.send_time ?? index;
-  }, []);
+    if (shouldShowConversationStart && index === 0) {
+      return "conversation-start";
+    }
+
+    const messageIndex = shouldShowConversationStart ? index - 1 : index;
+    return messagesRef.current[messageIndex]?.send_time ?? index;
+  }, [shouldShowConversationStart]);
 
   const setMeasurementRef = React.useCallback(
     (sendTime: number, element: HTMLDivElement | null) => {
@@ -118,7 +128,12 @@ export default function Screen() {
 
   const estimateMessageSize = React.useCallback(
     (index: number) => {
-      const sendTime = messages[index]?.send_time;
+      if (shouldShowConversationStart && index === 0) {
+        return FALLBACK_MESSAGE_HEIGHT;
+      }
+
+      const messageIndex = shouldShowConversationStart ? index - 1 : index;
+      const sendTime = messages[messageIndex]?.send_time;
 
       if (sendTime === undefined) {
         return FALLBACK_MESSAGE_HEIGHT;
@@ -126,12 +141,12 @@ export default function Screen() {
 
       return measuredHeights[sendTime] ?? FALLBACK_MESSAGE_HEIGHT;
     },
-    [measuredHeights, messages],
+    [measuredHeights, messages, shouldShowConversationStart],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
-    count: messages.length,
+    count: virtualRowCount,
     getScrollElement: () => scrollRef.current,
     getItemKey,
     estimateSize: estimateMessageSize,
@@ -144,13 +159,14 @@ export default function Screen() {
       return;
     }
 
-    const updateWidth = () => {
+    const updateDimensions = () => {
       setScrollWidth(element.clientWidth);
+      setScrollHeight(element.clientHeight);
     };
 
-    updateWidth();
+    updateDimensions();
 
-    const observer = new ResizeObserver(updateWidth);
+    const observer = new ResizeObserver(updateDimensions);
     observer.observe(element);
 
     return () => {
@@ -300,14 +316,14 @@ export default function Screen() {
     if (
       !scrollRef.current ||
       hasScrolledToBottomInitially ||
-      messages.length === 0
+      virtualRowCount === 0
     ) {
       return;
     }
 
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     setHasScrolledToBottomInitially(true);
-  }, [hasScrolledToBottomInitially, messages]);
+  }, [hasScrolledToBottomInitially, virtualRowCount]);
 
   React.useLayoutEffect(() => {
     const count = liveMessagesSnapshot.length;
@@ -355,6 +371,9 @@ export default function Screen() {
   }, [onScroll]);
 
   const [value, setValue] = React.useState("");
+  const totalSize = virtualizer.getTotalSize();
+  const verticalOffset = Math.max(0, scrollHeight - totalSize);
+  const contentHeight = Math.max(totalSize, scrollHeight);
 
   // Render
   if (!hasValidChatUser) {
@@ -381,11 +400,38 @@ export default function Screen() {
         <div
           className="relative w-full"
           style={{
-            height: `${virtualizer.getTotalSize()}px`,
+            height: `${contentHeight}px`,
           }}
         >
           {virtualizer.getVirtualItems().map((virtualRow) => {
-            const message = messages[virtualRow.index];
+            if (shouldShowConversationStart && virtualRow.index === 0) {
+              return (
+                <div
+                  key="conversation-start"
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start + verticalOffset}px)`,
+                    padding: "4px 0",
+                  }}
+                >
+                  <div className="w-full flex justify-start">
+                    <div className="max-w-[80%] rounded-lg bg-muted px-2 py-px text-sm text-foreground/55 whitespace-pre-wrap break-all">
+                      This is the start of your conversation with{" "}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            const messageIndex = shouldShowConversationStart
+              ? virtualRow.index - 1
+              : virtualRow.index;
+            const message = messages[messageIndex];
             if (!message) {
               return null;
             }
@@ -400,7 +446,7 @@ export default function Screen() {
                   top: 0,
                   left: 0,
                   width: "100%",
-                  transform: `translateY(${virtualRow.start}px)`,
+                  transform: `translateY(${virtualRow.start + verticalOffset}px)`,
                   padding: "4px 0",
                 }}
               >

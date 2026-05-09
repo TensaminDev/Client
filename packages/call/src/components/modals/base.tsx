@@ -1,4 +1,7 @@
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Button,
   ContextMenu,
   ContextMenuContent,
@@ -13,7 +16,7 @@ import {
   useCall,
 } from "../../store";
 import { Track, type Participant } from "livekit-client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
 import VideoViewer from "../videoViewer";
 import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
@@ -130,6 +133,9 @@ export default function Base({
     };
   }, [participant, get]);
 
+  // Avatar calc
+  const currentCard = useRef<HTMLDivElement>(null);
+
   if (!participant || !user) {
     return (
       <div
@@ -202,9 +208,11 @@ export default function Base({
               </>
             </div>
             <div
+              ref={currentCard}
               className={`z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
                 flush ? "rounded-none" : "rounded-sm"
               }`}
+              style={{ containerType: "size" }}
             >
               {/* Detect video / user and place here */}
 
@@ -230,7 +238,23 @@ export default function Base({
                   </div>
                 ) : null)}
 
-              {type === "user" && <p>{user.display}</p>}
+              {type === "user" && (
+                <Avatar
+                  style={{
+                    width: "32cqh",
+                    height: "32cqh",
+                  }}
+                >
+                  <AvatarImage src={user.avatar} />
+                  <AvatarFallback
+                    style={{
+                      fontSize: "11cqh",
+                    }}
+                  >
+                    {user.display.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
           </div>
         }

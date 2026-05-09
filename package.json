@@ -40,7 +40,7 @@
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.30.tar.gz",
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.15.tar.gz"
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.17.tar.gz"
   },
   "dependencies": {
     "@tensamin/ttp-core": "*",

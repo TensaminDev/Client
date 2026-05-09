@@ -9,6 +9,7 @@ const STACK_GAP_PX = 12;
 
 export default function View() {
   const room = useCall((state) => state.room);
+  const layoutVersion = useCall((state) => state.layoutVersion);
 
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
   const activeScreenShareParticipantIds = useCall(
@@ -136,7 +137,7 @@ export default function View() {
       observer.disconnect();
       window.removeEventListener("resize", syncTileLayout);
     };
-  }, [tiles.length, focusedParticipantId]);
+  }, [layoutVersion, tiles.length, focusedParticipantId]);
 
   if (focusedParticipantId == null) {
     return null;

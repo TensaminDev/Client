@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 import { cn, Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
 import { useIsMobile } from "@tensamin/ui";
@@ -49,9 +49,6 @@ function MessageComponent({
                   </TooltipContent>
                   <TooltipTrigger render={<AlertTriangle size={17} />} />
                 </Tooltip>
-              )}
-              {!message.failed && message.message_state === "awaiting" && (
-                <Clock size={17} />
               )}
               <Text value={message.content} />
             </div>

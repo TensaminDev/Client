@@ -90,6 +90,10 @@ type CallStore = {
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
   isEncrypted: boolean;
+  callIsFullscreen: boolean;
+  callIsPopout: boolean;
+  layoutVersion: number;
+  screenRef: React.RefObject<HTMLDivElement | null> | null;
   room: Room;
   keyProvider: ExternalE2EEKeyProvider;
   e2eeWorker: Worker;
@@ -502,6 +506,24 @@ export function setCallRuntime(runtime: Runtime) {
 // Switch between preview, grid, and focused call layouts.
 export function setCallView(view: CallView) {
   useCall.setState({ view });
+}
+
+export function setCallIsFullscreen(callIsFullscreen: boolean) {
+  useCall.setState({ callIsFullscreen });
+}
+
+export function setCallIsPopout(callIsPopout: boolean) {
+  useCall.setState({ callIsPopout });
+}
+
+export function triggerCallLayoutCalculation() {
+  useCall.setState((state) => ({
+    layoutVersion: state.layoutVersion + 1,
+  }));
+}
+
+export function setScreenRef(screenRef: React.RefObject<HTMLDivElement | null> | null) {
+  useCall.setState({ screenRef });
 }
 
 // Keep the current call id in sync with navigation and connection flow.
@@ -950,6 +972,10 @@ export const useCall = create<CallStore>(() => ({
   activeScreenShareParticipantIds: [],
   isEncrypted:
     room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
+  callIsFullscreen: false,
+  callIsPopout: false,
+  layoutVersion: 0,
+  screenRef: null,
   room,
   keyProvider,
   e2eeWorker,
@@ -1050,6 +1076,41 @@ export function useInitializeCall() {
       setCallId(routeCallId);
     }
   }, [location.pathname, location.searchStr]);
+
+  // fullscreen sync
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const screenRef = useCall.getState().screenRef;
+      if (!screenRef?.current) return;
+
+      if (screenRef.current === document.fullscreenElement) {
+        setCallIsFullscreen(true);
+      } else {
+        setCallIsFullscreen(false);
+      }
+
+      triggerCallLayoutCalculation();
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  // esc key listener
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "Escape" &&
+        useCall.getState().callIsFullscreen &&
+        location.pathname.startsWith("/call")
+      ) {
+        useCall.setState({ callIsFullscreen: false });
+      }
+    };
+    
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [location.pathname]);
 
   // room setup
   useEffect(() => {

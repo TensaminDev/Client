@@ -1,0 +1,1 @@
+- Move legal to extra onboarding package
