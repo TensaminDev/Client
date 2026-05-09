@@ -105,14 +105,17 @@ export default function Screen() {
     messagesRef.current = messages;
   }, [messages]);
 
-  const getItemKey = React.useCallback((index: number) => {
-    if (shouldShowConversationStart && index === 0) {
-      return "conversation-start";
-    }
+  const getItemKey = React.useCallback(
+    (index: number) => {
+      if (shouldShowConversationStart && index === 0) {
+        return "conversation-start";
+      }
 
-    const messageIndex = shouldShowConversationStart ? index - 1 : index;
-    return messagesRef.current[messageIndex]?.send_time ?? index;
-  }, [shouldShowConversationStart]);
+      const messageIndex = shouldShowConversationStart ? index - 1 : index;
+      return messagesRef.current[messageIndex]?.send_time ?? index;
+    },
+    [shouldShowConversationStart],
+  );
 
   const setMeasurementRef = React.useCallback(
     (sendTime: number, element: HTMLDivElement | null) => {

@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import Wrapper from "@tensamin/user/wrapper";
 import { Mail } from "lucide-react";
-import { sendCallInvite } from "../../store";
+import { sendCallInvite, useCall } from "../../store";
 import { log, toast } from "@tensamin/shared/log";
 import { useSession } from "@tensamin/storage/session";
 
@@ -13,6 +14,12 @@ export default function InviteButton({
   iconSize?: number;
 }) {
   const { contacts } = useSession();
+  const screenRef = useCall((state) => state.screenRef);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
+
+  useEffect(() => {
+    setPortalContainer(screenRef?.current ?? undefined);
+  }, [screenRef]);
 
   return (
     <Popover>
@@ -23,7 +30,10 @@ export default function InviteButton({
           </Button>
         }
       />
-      <PopoverContent className="flex w-40 flex-col gap-0.5 p-1!">
+      <PopoverContent
+        className="flex w-40 flex-col gap-0.5 p-1!"
+        portalProps={{ container: portalContainer }}
+      >
         {contacts.map((contact) => (
           <Wrapper
             key={contact.user_id}

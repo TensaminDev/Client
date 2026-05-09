@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import { MonitorDot, ScreenShare } from "lucide-react";
 import { toast } from "@tensamin/shared/log";
@@ -14,8 +14,14 @@ export default function ScreenshareButton({
   iconSize?: number;
 }) {
   const isScreensharing = useCall((state) => state.screenShareEnabled);
+  const screenRef = useCall((state) => state.screenRef);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setPortalContainer(screenRef?.current ?? undefined);
+  }, [screenRef]);
 
   async function startWebShare() {
     try {
@@ -66,7 +72,10 @@ export default function ScreenshareButton({
             </Button>
           }
         />
-        <PopoverContent className="flex w-40 flex-col gap-2">
+        <PopoverContent
+          className="flex w-40 flex-col gap-2"
+          portalProps={{ container: portalContainer }}
+        >
           <Button
             disabled={isScreensharing}
             onClick={() => {
@@ -101,6 +110,7 @@ export default function ScreenshareButton({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           isScreensharing={isScreensharing}
+          portalContainer={portalContainer}
         />
       )}
     </>

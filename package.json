@@ -39,7 +39,7 @@
     "jsonc-parser": "^3.3.1"
   },
   "overrides": {
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.30.tar.gz",
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.31.tar.gz",
     "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.17.tar.gz"
   },
   "dependencies": {

@@ -60,10 +60,12 @@ export default function ScreenShareDialog({
   open,
   onOpenChange,
   isScreensharing,
+  portalContainer,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isScreensharing: boolean;
+  portalContainer?: HTMLElement;
 }) {
   const {
     getScreenShareCapabilities,
@@ -191,7 +193,10 @@ export default function ScreenShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0">
+      <DialogContent
+        className="max-w-3xl gap-0 overflow-hidden p-0"
+        portalProps={{ container: portalContainer }}
+      >
         <DialogHeader className="p-4 pb-3">
           <DialogTitle>Share your screen</DialogTitle>
           <DialogDescription>

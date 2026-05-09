@@ -522,7 +522,9 @@ export function triggerCallLayoutCalculation() {
   }));
 }
 
-export function setScreenRef(screenRef: React.RefObject<HTMLDivElement | null> | null) {
+export function setScreenRef(
+  screenRef: React.RefObject<HTMLDivElement | null> | null,
+) {
   useCall.setState({ screenRef });
 }
 
@@ -1093,7 +1095,8 @@ export function useInitializeCall() {
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   // esc key listener
@@ -1107,7 +1110,7 @@ export function useInitializeCall() {
         useCall.setState({ callIsFullscreen: false });
       }
     };
-    
+
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [location.pathname]);
