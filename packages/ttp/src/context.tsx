@@ -25,6 +25,7 @@ import {
   TRANSPORT_URL,
 } from "./values";
 import {
+  type Calls,
   type Communities,
   type Contacts,
   ttp as schemas,
@@ -149,6 +150,7 @@ type ContextType = {
   identified: boolean;
   freshContacts: Contacts;
   freshCommunities: Communities;
+  freshCalls: Calls;
 };
 
 const TTPContext = createContext<ContextType | undefined>(undefined);
@@ -178,6 +180,7 @@ export function Provider(props: {
 
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
+  const [freshCalls, setFreshCalls] = useState<Calls>([]);
 
   const clientRef = useRef<ReturnType<
     typeof createTransportClient<Schemas>
@@ -496,6 +499,7 @@ export function Provider(props: {
         // Data handling
         setFreshContacts(finalResponse.data.contacts);
         setFreshCommunities(finalResponse.data.communities);
+        setFreshCalls(finalResponse.data.calls);
         if (cancelled) {
           return;
         }
@@ -609,6 +613,7 @@ export function Provider(props: {
         identified,
         freshContacts,
         freshCommunities,
+        freshCalls,
       }}
     >
       {props.children}

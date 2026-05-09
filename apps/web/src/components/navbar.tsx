@@ -14,13 +14,15 @@ import { useSession } from "@tensamin/storage/session";
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
   const callState = useCall((state) => state.state);
-  const { contacts } = useSession();
+  const { calls } = useSession();
 
   const { pathname } = useLocation();
 
   const { id } = useSearch({ strict: false });
 
-  const currentCalls = id ? contacts?.[id]?.calls || [] : [];
+  const currentCalls = calls.filter((call) =>
+    call.call_members.some((member) => member === id),
+  );
   //const currentCalls = ["leck", "schleck", "und", "eck"];
 
   const [selectOpen, setSelectOpen] = useState(false);

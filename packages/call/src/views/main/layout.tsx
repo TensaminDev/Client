@@ -112,7 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     >
       <div
         ref={topBarRef}
-        className={`shrink-0 w-full z-20 transition-all duration-200 ${
+        className={`shrink-0 w-full z-40 transition-all duration-200 ${
           isImmersiveFocusedView
             ? immersiveChromeVisible
               ? "opacity-100 translate-y-0 pointer-events-auto"
@@ -142,7 +142,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
       <div
         ref={actionsRef}
-        className={`shrink-0 pb-4.5 pt-3 bottom-0 w-full z-20 transition-all duration-200 ${
+        className={`shrink-0 pb-4.5 pt-3 bottom-0 w-full z-40 transition-all duration-200 ${
           isImmersiveFocusedView
             ? immersiveChromeVisible
               ? "opacity-100 translate-y-0 pointer-events-auto"

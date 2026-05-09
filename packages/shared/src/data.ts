@@ -45,6 +45,7 @@ export type Contacts = z.infer<
 export type Communities = z.infer<
   typeof ttp.challenge_response.response.shape.communities
 >;
+export type Calls = z.infer<typeof ttp.challenge_response.response.shape.calls>;
 
 // TTP
 export const ttp = {
@@ -67,9 +68,6 @@ export const ttp = {
       communities: z.array(z.object({})).optional(),
       contacts: z.array(
         z.object({
-          calls: z
-            .array(z.object({ call_id: z.string(), call_secret: z.base64() }))
-            .optional(),
           last_message_at: z.number(),
           user_id: z.number(),
           last_message: z
@@ -79,6 +77,13 @@ export const ttp = {
             })
             .optional(),
           messages: z.array(message),
+        }),
+      ),
+      calls: z.array(
+        z.object({
+          call_id: z.string(),
+          call_secret: z.base64().optional(),
+          call_members: z.array(z.number()),
         }),
       ),
     }),

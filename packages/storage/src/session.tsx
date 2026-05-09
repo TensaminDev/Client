@@ -7,18 +7,19 @@ import {
   useEffect,
 } from "react";
 import { useStorage } from "./context";
-import type { Contacts, Communities } from "@tensamin/shared/data";
+import type { Contacts, Communities, Calls } from "@tensamin/shared/data";
 
 interface SessionContextType {
   contacts: Contacts;
   communities: Communities;
+  calls: Calls;
   moveUserIdToTop: (userId: number) => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export default function SessionProvider({ children }: { children: ReactNode }) {
-  const { freshContacts, freshCommunities } = useTTP();
+  const { freshContacts, freshCommunities, freshCalls } = useTTP();
   const { load, save } = useStorage();
   const [contacts, setContacts] = useState<Contacts>([]);
   const [communities, setCommunities] = useState<Communities>([]);
@@ -69,7 +70,9 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SessionContext.Provider value={{ contacts, communities, moveUserIdToTop }}>
+    <SessionContext.Provider
+      value={{ contacts, communities, calls: freshCalls, moveUserIdToTop }}
+    >
       {children}
     </SessionContext.Provider>
   );

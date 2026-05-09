@@ -130,7 +130,8 @@ export default function Actions() {
                   >
                     <ScreenShareOff
                       style={{
-                        scale: (sharedIconSize ? sharedIconSize + 100 : 100) + "%",
+                        scale:
+                          (sharedIconSize ? sharedIconSize + 100 : 100) + "%",
                       }}
                     />
                   </Button>
