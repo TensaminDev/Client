@@ -244,6 +244,7 @@ export interface Storage extends SettingsStorageDefaults {
   legal_docs: z.infer<typeof legalDocsSchema>;
   cached_contacts: Contacts;
   cached_communities: Communities;
+  ttp_url: string;
 }
 
 export const storageDefaults: Storage = {
@@ -276,4 +277,5 @@ export const storageDefaults: Storage = {
   },
   cached_contacts: [],
   cached_communities: [],
+  ttp_url: "https://tensamin.net:959",
 };

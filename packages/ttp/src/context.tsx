@@ -24,7 +24,6 @@ import {
   RECONNECT_RESET,
   RECONNECT_TRIES,
   RETRY_INTERVAL,
-  TRANSPORT_URL,
 } from "./values";
 import {
   type Calls,
@@ -193,6 +192,14 @@ export function Provider(props: {
   > | null>(null);
   const identificationStartedRef = useRef(false);
 
+  // Load ttp url
+  const [ttpUrl, setTtpUrl] = useState<string | null>(null);
+  useEffect(() => {
+    load("ttp_url").then((url) => {
+      setTtpUrl(url);
+    });
+  }, [load]);
+
   /**
    * Sends typed protocol messages through the active transport client.
    * @param type Protocol message type.
@@ -266,6 +273,10 @@ export function Provider(props: {
   }, [connected, identified, send]);
 
   useEffect(() => {
+    if (!ttpUrl) {
+      return;
+    }
+
     let attempts = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let reconnectResetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -343,7 +354,7 @@ export function Provider(props: {
 
     const transportClient = !props.blockConnection
       ? createTransportClient(schemas, {
-          url: TRANSPORT_URL,
+          url: ttpUrl,
           onReadyStateChange: (state) => {
             currentReadyState = state;
             setReadyState(state);
@@ -392,8 +403,12 @@ export function Provider(props: {
         return;
       }
 
+      if (!ttpUrl) {
+        return;
+      }
+
       try {
-        await transportClient?.connect(TRANSPORT_URL);
+        await transportClient?.connect(ttpUrl);
       } catch (connectError) {
         if (disposed) {
           return;
@@ -460,7 +475,7 @@ export function Provider(props: {
       setIdentifying(false);
       identificationStartedRef.current = false;
     };
-  }, [props.blockConnection]);
+  }, [props.blockConnection, ttpUrl]);
 
   useEffect(() => {
     if (!connected) {
@@ -603,14 +618,19 @@ export function Provider(props: {
   }, [connected, decrypt, getSharedSecret, load, send]);
 
   const progress = useMemo(() => {
+    if (!ttpUrl) return 10;
     if (readyState === READY_STATE.CONNECTING) return 30;
     if (!connected) return 45;
     if (identifying) return 75;
     if (!identified) return 90;
     return 100;
-  }, [connected, identified, identifying, readyState]);
+  }, [connected, identified, identifying, readyState, ttpUrl]);
 
   const loadingTitle = useMemo(() => {
+    if (!ttpUrl) {
+      return "Looking up configuration";
+    }
+
     if (readyState === READY_STATE.CONNECTING || !connected) {
       return "Connecting to Tensamin";
     }
@@ -620,9 +640,13 @@ export function Provider(props: {
     }
 
     return "Loading";
-  }, [connected, identified, identifying, readyState]);
+  }, [connected, identified, identifying, readyState, ttpUrl]);
 
   const loadingDescription = useMemo(() => {
+    if (!ttpUrl) {
+      return "Loading connection details";
+    }
+
     if (readyState === READY_STATE.CONNECTING || !connected) {
       return "Establishing transport channel";
     }
@@ -632,13 +656,13 @@ export function Provider(props: {
     }
 
     return undefined;
-  }, [connected, identified, identifying, readyState]);
+  }, [connected, identified, identifying, readyState, ttpUrl]);
 
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;
   }
 
-  if (!connected || !identified) {
+  if (!connected || !identified || !ttpUrl) {
     return (
       <Loading
         progress={progress}

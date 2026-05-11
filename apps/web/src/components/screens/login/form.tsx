@@ -23,7 +23,7 @@ const fetchedUser = z.object({
 });
 
 const formSchema = z.object({
-  username: z.string().min(1).max(15),
+  username: z.string().min(1).max(255),
   private_key: z.string().min(1).max(92),
 });
 
@@ -35,6 +35,7 @@ const formSchema = z.object({
 function parseTuFileContent(rawFileContent: string): {
   userId: number;
   privateKey: string;
+  domain: string | null;
 } {
   if (rawFileContent.trim().length === 0) {
     throw new Error("File is empty");
@@ -42,21 +43,40 @@ function parseTuFileContent(rawFileContent: string): {
     throw new Error("Invalid file");
   } else if (rawFileContent.split("::").length !== 2) {
     throw new Error("Invalid file");
-  } else if (rawFileContent.split("::")[0].length === 0) {
+  }
+
+  const left = rawFileContent.split("::")[0];
+  const right = rawFileContent.split("::")[1];
+
+  if (left.length === 0) {
     throw new Error("Invalid file");
-  } else if (rawFileContent.split("::")[1].length === 0) {
+  } else if (right.length === 0) {
     throw new Error("Invalid file");
-  } else if (isNaN(Number(rawFileContent.split("::")[0]))) {
+  } else if (isNaN(Number(left)) && !left.includes("@")) {
     throw new Error("Invalid file");
   }
 
   const [userIdString, privateKey] = rawFileContent.split("::");
-  const userId = Number(userIdString);
+  const userId = isNaN(Number(userIdString))
+    ? Number(userIdString.split("@")[0])
+    : Number(userIdString);
+
+  const rawDomain = userIdString.includes("@")
+    ? userIdString.split("@")[1]
+    : null;
+  const domain = rawDomain ? (rawDomain.includes(":") ? rawDomain : rawDomain + ":1984") : null;
+
   if (!userId || !privateKey) {
     throw new Error("Invalid file");
   }
 
-  return { userId, privateKey };
+  console.log({
+    domain,
+    rawDomain,
+    userId,
+  });
+
+  return { userId, privateKey, domain };
 }
 
 /**
@@ -86,6 +106,9 @@ export default function Form() {
         await save("session_id", Date.now());
         await save("user_id", parsed.userId);
         await save("private_key", parsed.privateKey);
+        if (parsed.domain) {
+          await save("ttp_url", `https://${parsed.domain}/`);
+        }
 
         location.href = "/";
       } catch (error) {
@@ -114,9 +137,14 @@ export default function Form() {
         return;
       }
 
+      const inputUsername = inputParse.data.username;
+      const actualUsername = inputUsername.includes("@") ? inputUsername.split("@")[0] : inputUsername;
+      const rawDomain = inputUsername.includes("@") ? inputUsername.split("@")[1] : null;
+      const domain = rawDomain ? (rawDomain.includes(":") ? rawDomain : rawDomain + ":1984") : null;
+
       try {
         const response = await fetch(
-          `https://omega.tensamin.net/api/get/id/${inputParse.data.username}`,
+          `https://omega.tensamin.net/api/get/id/${actualUsername}`,
         );
         const rawData = await response.arrayBuffer();
 
@@ -137,6 +165,9 @@ export default function Form() {
         await save("session_id", Date.now());
         await save("user_id", user.user_id);
         await save("private_key", inputParse.data.private_key);
+        if (domain) {
+          await save("ttp_url", `https://${domain}/`);
+        }
 
         location.href = "/";
       } catch (error) {
@@ -154,7 +185,7 @@ export default function Form() {
       {isTauriEnv ? (
         <>
           <QrCodeScanner
-            onData={(data) => {
+            onData={async (data) => {
               if (!data.startsWith("tensamin://tu::")) {
                 toast("error", "Invalid QR code");
                 return;
@@ -162,10 +193,14 @@ export default function Form() {
                 const decoded = data.replace("tensamin://tu::", "");
 
                 try {
-                  const { userId, privateKey } = parseTuFileContent(decoded);
-                  save("session_id", Date.now());
-                  save("user_id", userId);
-                  save("private_key", privateKey);
+                  const { userId, privateKey, domain } =
+                    parseTuFileContent(decoded);
+                  await save("session_id", Date.now());
+                  await save("user_id", userId);
+                  await save("private_key", privateKey);
+                  if (domain) {
+                    await save("ttp_url", `https://${domain}/`);
+                  }
                   location.href = "/";
                 } catch (error) {
                   log(0, "login", "red", error);
