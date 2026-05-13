@@ -1,2 +1,1 @@
 - Make the sidebar use <Activity /> to make it feel less slow on mobile
-- Add logout button

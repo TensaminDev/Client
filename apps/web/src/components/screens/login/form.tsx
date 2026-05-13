@@ -64,7 +64,11 @@ function parseTuFileContent(rawFileContent: string): {
   const rawDomain = userIdString.includes("@")
     ? userIdString.split("@")[1]
     : null;
-  const domain = rawDomain ? (rawDomain.includes(":") ? rawDomain : rawDomain + ":1984") : null;
+  const domain = rawDomain
+    ? rawDomain.includes(":")
+      ? rawDomain
+      : rawDomain + ":1984"
+    : null;
 
   if (!userId || !privateKey) {
     throw new Error("Invalid file");
@@ -138,9 +142,17 @@ export default function Form() {
       }
 
       const inputUsername = inputParse.data.username;
-      const actualUsername = inputUsername.includes("@") ? inputUsername.split("@")[0] : inputUsername;
-      const rawDomain = inputUsername.includes("@") ? inputUsername.split("@")[1] : null;
-      const domain = rawDomain ? (rawDomain.includes(":") ? rawDomain : rawDomain + ":1984") : null;
+      const actualUsername = inputUsername.includes("@")
+        ? inputUsername.split("@")[0]
+        : inputUsername;
+      const rawDomain = inputUsername.includes("@")
+        ? inputUsername.split("@")[1]
+        : null;
+      const domain = rawDomain
+        ? rawDomain.includes(":")
+          ? rawDomain
+          : rawDomain + ":1984"
+        : null;
 
       try {
         const response = await fetch(

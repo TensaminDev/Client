@@ -1,4 +1,4 @@
-import { Button } from "@tensamin/ui";
+import { Button, ClearStorageButton } from "@tensamin/ui";
 
 import options from "@tensamin/shared/settings";
 import { cn, useIsMobile } from "@tensamin/ui";
@@ -69,6 +69,9 @@ export function SettingsSidebar() {
           ))}
         </div>
       ))}
+      <div className="mt-auto">
+        <ClearStorageButton className="w-full" />
+      </div>
     </div>
   );
 }
