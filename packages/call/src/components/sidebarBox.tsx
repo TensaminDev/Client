@@ -31,7 +31,7 @@ export default function SidebarBox() {
         <div className="flex justify-start gap-1">
           <MuteButton className="w-9 h-9" />
           <DeafButton className="w-9 h-9" />
-          <ScreenshareButton className="w-9 h-9" />
+          <ScreenshareButton className="w-9 h-9" defaultPortal />
           <LeaveButton className="w-9 h-9" />
         </div>
       </CardContent>

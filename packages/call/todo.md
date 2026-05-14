@@ -11,3 +11,4 @@
   - Disconnect
 - Desktop-App screenshares
 - Context menus
+- Popout Window
