@@ -4,14 +4,41 @@ on:
       - dev
 
 jobs:
-  deploy:
+  build-web:
     runs-on: docker
-
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
-        with:
-          fetch-depth: 0
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Copy licenses
+        run: bun run copy-licenses
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Build web
+        run: bun run build:web
+
+      - name: Install rsync
+        run: apt-get update && apt-get install -y rsync
+
+      - name: Deploy
+        run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-dev/
+
+  build-mobile:
+    runs-on: docker
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
         run: apt-get update && apt-get install -y sudo curl jq
@@ -25,6 +52,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Copy licenses
+        run: bun run copy-licenses
+
+      - name: Build packages
+        run: bun run build:packages
+
       - name: Setup Android Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -33,14 +66,80 @@ jobs:
           bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
           bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\\\n/g, '\n').replace(/\\r/g, '').split('\n').map(l => l.trim()).filter(l => l).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
 
-      - name: Build
-        run: bun run build:apps
+      - name: Build mobile
+        run: bun run build:mobile
 
-      - name: Install rsync
-        run: apt-get update && apt-get install -y rsync
+      - name: Upload mobile artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-apk
+          path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 
-      - name: Deploy
-        run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-dev/
+  build-desktop:
+    runs-on: docker
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
+
+      - name: Install Nix
+        uses: https://github.com/cachix/install-nix-action@v30
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Copy licenses
+        run: bun run copy-licenses
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Build desktop
+        run: bun run build:desktop
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-bundles
+          path: apps/tauri/src-tauri/target/release/bundle/
+
+  release:
+    runs-on: docker
+    needs: [build-web, build-mobile, build-desktop]
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download mobile artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mobile-apk
+          path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-bundles
+          path: apps/tauri/src-tauri/target/release/bundle/
+
+      - name: Copy releases
+        run: bun --bun run copy-releases
 
       - name: Read version and hash
         id: version
@@ -66,15 +165,42 @@ jobs:
           test -d releases
           find releases -type f | grep -q .
 
-          LATEST_PROD_TAG="$(git tag --list 'v*' --sort=-v:refname | head -n 1 || true)"
+          LATEST_PROD_TAG="$(git tag --list '*-prod' --sort=-v:refname | head -n 1 || true)"
+
           if [ -n "$LATEST_PROD_TAG" ]; then
-            LOG="$(git log "$LATEST_PROD_TAG"..HEAD --pretty=format:'- %s')"
-            SERVER_URL="$(echo "$API" | sed 's|/api/v1.*||')"
-            COMPARE_URL="${SERVER_URL}/${REPO}/compare/${LATEST_PROD_TAG}...${TAG}"
-            BODY="$(printf '%s\n\n[View changes](%s)' "$LOG" "$COMPARE_URL")"
+            RAW_LOG="$(git log "$LATEST_PROD_TAG"..HEAD --pretty=format:'- %s')"
           else
-            BODY="$(git log --pretty=format:'- %s')"
+            RAW_LOG="$(git log --pretty=format:'- %s')"
           fi
+
+          export RAW_LOG LATEST_PROD_TAG API REPO TAG
+          BODY="$(node -e '
+            const raw = process.env.RAW_LOG;
+            const lines = raw.split("\n");
+            const commits = [];
+            for (const line of lines) {
+              const msg = line.replace(/^- /, "");
+              const parts = msg.split(/(?=\([^)]+\):)/).filter(Boolean).map(s => s.trim()).filter(s => s);
+              for (const part of parts) {
+                commits.push(part);
+              }
+            }
+            const priority = { "(feat):": 1, "(fix):": 2, "(qol):": 3 };
+            commits.sort((a, b) => {
+              const tagA = a.match(/^(\([^)]+\):)/)?.[1] || "";
+              const tagB = b.match(/^(\([^)]+\):)/)?.[1] || "";
+              return (priority[tagA] || 99) - (priority[tagB] || 99);
+            });
+            const log = commits.map(c => "- " + c).join("\n");
+            const latestTag = process.env.LATEST_PROD_TAG;
+            if (latestTag) {
+              const serverUrl = process.env.API.replace(/\/api\/v1.*/, "");
+              const compareUrl = serverUrl + "/" + process.env.REPO + "/compare/" + latestTag + "..." + process.env.TAG;
+              console.log(log + "\n\n[View changes](" + compareUrl + ")");
+            } else {
+              console.log(log);
+            }
+          ')"
 
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o release_out.json -H "Authorization: token $TOKEN" "$API/repos/$REPO/releases/tags/$TAG")
 
