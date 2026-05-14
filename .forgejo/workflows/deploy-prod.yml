@@ -70,7 +70,7 @@ jobs:
         run: bun run build:mobile
 
       - name: Upload mobile artifact
-        uses: actions/upload-artifact@v4
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
         with:
           name: mobile-apk
           path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
@@ -103,7 +103,7 @@ jobs:
         run: bun run build:desktop
 
       - name: Upload desktop artifacts
-        uses: actions/upload-artifact@v4
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
         with:
           name: desktop-bundles
           path: apps/tauri/src-tauri/target/release/bundle/
@@ -125,13 +125,13 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Download mobile artifact
-        uses: actions/download-artifact@v4
+        uses: https://data.forgejo.org/actions/download-artifact@v3
         with:
           name: mobile-apk
           path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/
 
       - name: Download desktop artifacts
-        uses: actions/download-artifact@v4
+        uses: https://data.forgejo.org/actions/download-artifact@v3
         with:
           name: desktop-bundles
           path: apps/tauri/src-tauri/target/release/bundle/
