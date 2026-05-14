@@ -6,6 +6,7 @@ import {
   Sidebar as SidebarRoot,
   SidebarContent,
   SidebarFooter,
+  useSidebar,
 } from "@tensamin/ui";
 import { isTauri } from "@tauri-apps/api/core";
 import { useIsMobile } from "@tensamin/ui";
@@ -13,17 +14,21 @@ import { MobileNavbar } from "./navbar";
 
 import SidebarBox from "@tensamin/call/sidebarBox";
 import { useShowMobileNavbar } from "@/routes/app/layout";
-
 /**
  * Renders the conversation sidebar with account summary and conversation list.
+ * On mobile the sidebar is always kept in the DOM and hidden via CSS
+ * (opacity + translateX) instead of being unmounted. This keeps the DOM and
+ * React state alive while the drawer is closed, allowing the sidebar to open
+ * instantly on subsequent toggles.
  * @returns Sidebar JSX.
  */
 export default function Sidebar() {
   const isMobile = useIsMobile();
   const showMobileNavbar = useShowMobileNavbar();
+  const { openMobile, setOpenMobile } = useSidebar();
 
-  return (
-    <SidebarRoot className="border-0!">
+  const content = (
+    <>
       <SidebarContent
         className={
           isTauri() && isMobile ? "pt-[env(safe-area-inset-top)]" : "pt-2"
@@ -52,6 +57,34 @@ export default function Sidebar() {
           <SidebarBox />
         </SidebarFooter>
       )}
-    </SidebarRoot>
+    </>
   );
+
+  if (isMobile) {
+    return (
+      <>
+        {openMobile && (
+          <div
+            className="fixed inset-0 z-40 bg-black/10"
+            onClick={() => setOpenMobile(false)}
+          />
+        )}
+        <div
+          data-sidebar="sidebar"
+          data-slot="sidebar"
+          data-mobile="true"
+          className="fixed inset-y-0 left-0 z-50 w-screen bg-sidebar p-0 text-sidebar-foreground transition-[transform,opacity] duration-150 ease-linear"
+          style={{
+            transform: openMobile ? "translateX(0)" : "translateX(-100%)",
+            opacity: openMobile ? 1 : 0,
+            pointerEvents: openMobile ? "auto" : "none",
+          }}
+        >
+          <div className="flex h-full w-full flex-col">{content}</div>
+        </div>
+      </>
+    );
+  }
+
+  return <SidebarRoot className="border-0!">{content}</SidebarRoot>;
 }

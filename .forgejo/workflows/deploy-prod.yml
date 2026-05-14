@@ -54,12 +54,13 @@ jobs:
           REPO: ${{ forgejo.repository }}
           SHA: ${{ forgejo.sha }}
           TAG: ${{ steps.version.outputs.tag }}
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -eu
 
           test -d releases
           find releases -type f | grep -q .
+
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
 
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o release_out.json -H "Authorization: token $TOKEN" "$API/repos/$REPO/releases/tags/$TAG")
 
@@ -74,7 +75,7 @@ jobs:
               -d "$(jq -n \
                 --arg tag "$TAG" \
                 --arg name "$TAG" \
-                --arg body "Release $VERSION" \
+                --arg body "$COMMIT_MSG" \
                 --arg target "$SHA" \
                 '{
                   tag_name: $tag,
