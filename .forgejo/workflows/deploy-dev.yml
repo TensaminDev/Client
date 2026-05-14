@@ -68,9 +68,9 @@ jobs:
 
           LATEST_PROD_TAG="$(git tag --list 'v*' --sort=-v:refname | head -n 1 || true)"
           if [ -n "$LATEST_PROD_TAG" ]; then
-            BODY="$(git log "$LATEST_PROD_TAG"..HEAD --pretty=format:'- %s')"
+            BODY="$(git log "$LATEST_PROD_TAG"..HEAD --pretty=format:'- %s' | sed 's/$/<br>/')"
           else
-            BODY="$(git log --pretty=format:'- %s')"
+            BODY="$(git log --pretty=format:'- %s' | sed 's/$/<br>/')"
           fi
 
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o release_out.json -H "Authorization: token $TOKEN" "$API/repos/$REPO/releases/tags/$TAG")

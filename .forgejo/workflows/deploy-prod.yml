@@ -60,33 +60,33 @@ jobs:
           test -d releases
           find releases -type f | grep -q .
 
-          COMMIT_MSG="$(git log -1 --pretty=%B)"
+          COMMIT_MSG="$(git log -1 --pretty=%B | sed 's/$/<br>/')"
 
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o release_out.json -H "Authorization: token $TOKEN" "$API/repos/$REPO/releases/tags/$TAG")
 
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "Release $TAG already exists."
-            RELEASE_ID="$(jq -r .id release_out.json)"
-          else
-            echo "Creating new release for $TAG"
-            RELEASE_JSON="$(curl -f -sS -X POST "$API/repos/$REPO/releases" \
-              -H "Authorization: token $TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$(jq -n \
-                --arg tag "$TAG" \
-                --arg name "$TAG" \
-                --arg body "$COMMIT_MSG" \
-                --arg target "$SHA" \
-                '{
-                  tag_name: $tag,
-                  name: $name,
-                  body: $body,
-                  target_commitish: $target,
-                  draft: false,
-                  prerelease: false
-                }')")"
-            RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
+            exit 0
           fi
+
+          echo "Creating new release for $TAG"
+          RELEASE_JSON="$(curl -f -sS -X POST "$API/repos/$REPO/releases" \
+            -H "Authorization: token $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg tag "$TAG" \
+              --arg name "$TAG" \
+              --arg body "$COMMIT_MSG" \
+              --arg target "$SHA" \
+              '{
+                tag_name: $tag,
+                name: $name,
+                body: $body,
+                target_commitish: $target,
+                draft: false,
+                prerelease: false
+              }')")"
+          RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
 
           find releases -type f -print0 | while IFS= read -r -d '' file; do
             name="$(basename "$file")"
