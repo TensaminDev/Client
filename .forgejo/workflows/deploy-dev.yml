@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-web:
-    runs-on: docker
+    runs-on: selfhosted
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
         run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-dev/
 
   build-mobile:
-    runs-on: docker
+    runs-on: selfhosted
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
           path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 
   build-desktop:
-    runs-on: docker
+    runs-on: selfhosted
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -109,7 +109,7 @@ jobs:
           path: apps/tauri/src-tauri/target/release/bundle/
 
   release:
-    runs-on: docker
+    runs-on: selfhosted
     needs: [build-web, build-mobile, build-desktop]
     steps:
       - name: Check out repo
