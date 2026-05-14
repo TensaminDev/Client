@@ -45,7 +45,7 @@ jobs:
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
-          echo "tag=v$VERSION" >> "$FORGEJO_OUTPUT"
+          echo "tag=${VERSION}-prod" >> "$FORGEJO_OUTPUT"
 
       - name: Create release and upload files
         env:
@@ -60,7 +60,7 @@ jobs:
           test -d releases
           find releases -type f | grep -q .
 
-          COMMIT_MSG="$(git log -1 --pretty=%B | sed 's/$/<br>/')"
+          COMMIT_MSG="$(git log -1 --pretty=%B | sed 's/$/  /')"
 
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o release_out.json -H "Authorization: token $TOKEN" "$API/repos/$REPO/releases/tags/$TAG")
 
