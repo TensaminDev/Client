@@ -10,26 +10,17 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix-shell --run "bun install --frozen-lockfile"
 
       - name: Copy licenses
-        run: bun run copy-licenses
+        run: nix-shell --run "bun run copy-licenses"
 
       - name: Build packages
-        run: bun run build:packages
+        run: nix-shell --run "bun run build:packages"
 
       - name: Build web
-        run: bun run build:web
-
-      - name: Install rsync
-        run: apt-get update && apt-get install -y rsync
+        run: nix-shell --run "bun run build:web"
 
       - name: Deploy
         run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-dev/
@@ -40,34 +31,25 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
-
-      - name: Install Nix
-        uses: https://github.com/cachix/install-nix-action@v30
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix-shell --run "bun install --frozen-lockfile"
 
       - name: Copy licenses
-        run: bun run copy-licenses
+        run: nix-shell --run "bun run copy-licenses"
 
       - name: Build packages
-        run: bun run build:packages
+        run: nix-shell --run "bun run build:packages"
 
       - name: Setup Android Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
-          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
-          bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\\\n/g, '\n').replace(/\\r/g, '').split('\n').map(l => l.trim()).filter(l => l).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
+          nix-shell --run "bun -e \"require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\\s+/g, ''), 'base64'))\""
+          nix-shell --run "bun -e \"const content = process.env.KEYSTORE_PROPERTIES.replace(/\\\\n/g, '\\n').replace(/\\r/g, '').split('\\n').map(l => l.trim()).filter(l => l).join('\\n'); require('fs').writeFileSync('keystore.properties', content)\""
 
       - name: Build mobile
-        run: bun run build:mobile
+        run: nix-shell --run "bun run build:mobile"
 
       - name: Upload mobile artifact
         uses: https://data.forgejo.org/actions/upload-artifact@v3
@@ -81,26 +63,17 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
-
-      - name: Install Nix
-        uses: https://github.com/cachix/install-nix-action@v30
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix-shell --run "bun install --frozen-lockfile"
 
       - name: Copy licenses
-        run: bun run copy-licenses
+        run: nix-shell --run "bun run copy-licenses"
 
       - name: Build packages
-        run: bun run build:packages
+        run: nix-shell --run "bun run build:packages"
 
       - name: Build desktop
-        run: bun run build:desktop
+        run: nix-shell --run "bun run build:desktop"
 
       - name: Upload desktop artifacts
         uses: https://data.forgejo.org/actions/upload-artifact@v3
@@ -117,14 +90,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix-shell --run "bun install --frozen-lockfile"
 
       - name: Download mobile artifact
         uses: https://data.forgejo.org/actions/download-artifact@v3
@@ -139,12 +106,12 @@ jobs:
           path: apps/tauri/src-tauri/target/release/bundle/
 
       - name: Copy releases
-        run: bun --bun run copy-releases
+        run: nix-shell --run "bun --bun run copy-releases"
 
       - name: Read version and hash
         id: version
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
+          VERSION="$(nix-shell --run "node -p \"require('./package.json').version\"")"
           SHORT_SHA="$(git rev-parse --short HEAD)"
           echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
           echo "short_sha=$SHORT_SHA" >> "$FORGEJO_OUTPUT"
