@@ -71,9 +71,7 @@ jobs:
             LOG="$(git log "$LATEST_PROD_TAG"..HEAD --pretty=format:'- %s')"
             SERVER_URL="$(echo "$API" | sed 's|/api/v1.*||')"
             COMPARE_URL="${SERVER_URL}/${REPO}/compare/${LATEST_PROD_TAG}...${TAG}"
-            BODY="${LOG}
-
-[View changes](${COMPARE_URL})"
+            BODY="$(printf '%s\n\n[View changes](%s)' "$LOG" "$COMPARE_URL")"
           else
             BODY="$(git log --pretty=format:'- %s')"
           fi
