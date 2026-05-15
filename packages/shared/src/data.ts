@@ -280,6 +280,6 @@ export const storageDefaults: Storage = {
   cached_contacts: [],
   cached_communities: [],
   ttp_url: "https://tensamin.net:959",
-  call_mute_range_start: -50,
-  call_mute_range_end: -40,
+  call_mute_range_start: -55,
+  call_mute_range_end: -45,
 };

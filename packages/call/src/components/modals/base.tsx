@@ -152,12 +152,12 @@ export default function Base({
 
   const onClick = () => {
     if (view === "grid") {
-      focusParticipant(user.user_id);
+      focusParticipant(user.user_id, type);
     } else {
       if (user.user_id === focusedParticipantId) {
         setCallView("grid");
       } else {
-        focusParticipant(user.user_id);
+        focusParticipant(user.user_id, type);
       }
     }
   };
@@ -215,7 +215,7 @@ export default function Base({
               ref={currentCard}
               className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
                 flush ? "rounded-none" : "rounded-sm"
-              } ${isSpeaking ? "border-4 border-(--primary-foreground-alt)/75" : "border-0"}`}
+              } ${type === "user" && isSpeaking ? "border-4 border-(--primary-foreground-alt)/75" : "border-0"}`}
               style={{ containerType: "size" }}
             >
               {/* Detect video / user and place here */}

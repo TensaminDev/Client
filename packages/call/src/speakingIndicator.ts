@@ -1,7 +1,8 @@
+import { log } from "@tensamin/shared/log";
 import { useCall } from "./store";
 
 const SPEAKING_THRESHOLD = 0.01;
-const SPEAKING_HANGTIME_MS = 250;
+const SPEAKING_HANGTIME_MS = 500;
 const ANALYSIS_INTERVAL_MS = 30;
 const FFT_SIZE = 256;
 
@@ -137,8 +138,10 @@ class SpeakingDetector {
     const db = 20 * Math.log10(Math.max(rms, 0.0001));
 
     if (!this.localMicGateClosed && db < this.gateThresholdStart) {
+      log(3, "noise gate", "purple", "closed");
       this.muteLocalTrack(true);
     } else if (this.localMicGateClosed && db > this.gateThresholdEnd) {
+      log(3, "noise gate", "purple", "opened");
       this.muteLocalTrack(false);
     }
   }

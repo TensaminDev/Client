@@ -91,6 +91,7 @@ type CallStore = {
   screenShareEnabled: boolean;
   screenShareSession: ScreenShareSession | null;
   focusedParticipantId: number | null;
+  focusedParticipantType: "user" | "stream" | null;
   usersInFocusedViewHidden: boolean;
   watchedStreamParticipantIds: number[];
   pendingWatchedParticipantIds: number[];
@@ -464,6 +465,8 @@ function syncScreenShareParticipants() {
     watchedStreamParticipantIds,
     pendingWatchedParticipantIds,
     focusedParticipantId,
+    focusedParticipantType:
+      focusedParticipantId == null ? null : state.focusedParticipantType,
     view:
       state.view === "focused" && focusedParticipantId == null
         ? "grid"
@@ -634,6 +637,7 @@ export function startWatchingStream(participantId: number) {
         ? state.pendingWatchedParticipantIds
         : [...state.pendingWatchedParticipantIds, participantId],
     focusedParticipantId: participantId,
+    focusedParticipantType: "stream",
   }));
 }
 
@@ -653,9 +657,13 @@ export function setParticipantTrackSubscribed(
 }
 
 // Focus a participant in the main call view even when they are not sharing a screen.
-export function focusParticipant(participantId: number) {
+export function focusParticipant(
+  participantId: number,
+  type: "user" | "stream" = "user",
+) {
   useCall.setState({
     focusedParticipantId: participantId,
+    focusedParticipantType: type,
     view: "focused",
   });
 }
@@ -675,6 +683,10 @@ export function stopWatchingStream(participantId: number) {
       state.focusedParticipantId === participantId
         ? null
         : state.focusedParticipantId,
+    focusedParticipantType:
+      state.focusedParticipantId === participantId
+        ? null
+        : state.focusedParticipantType,
     view:
       state.view === "focused" && state.focusedParticipantId === participantId
         ? "grid"
@@ -790,6 +802,7 @@ export async function disconnect() {
     view: "preview",
     screenShareSession: null,
     focusedParticipantId: null,
+    focusedParticipantType: null,
     usersInFocusedViewHidden: false,
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
@@ -950,6 +963,7 @@ export function resetCallState() {
     deaf: false,
     screenShareSession: null,
     focusedParticipantId: null,
+    focusedParticipantType: null,
     usersInFocusedViewHidden: false,
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
@@ -1002,6 +1016,7 @@ export const useCall = create<CallStore>(() => ({
   screenShareEnabled: room.localParticipant.isScreenShareEnabled,
   screenShareSession: null,
   focusedParticipantId: null,
+  focusedParticipantType: null,
   usersInFocusedViewHidden: false,
   watchedStreamParticipantIds: [],
   pendingWatchedParticipantIds: [],
@@ -1038,7 +1053,7 @@ export function useInitializeCall() {
       new DeepFilterNoiseFilterProcessor({
         enabled: true,
         enableNoiseReduction: true,
-        noiseReductionLevel: 80,
+        noiseReductionLevel: 60,
         sampleRate: 48000,
         assetConfig: {
           cdnUrl: "/assets",
