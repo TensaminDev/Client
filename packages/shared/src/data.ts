@@ -245,6 +245,8 @@ export interface Storage extends SettingsStorageDefaults {
   cached_contacts: Contacts;
   cached_communities: Communities;
   ttp_url: string;
+  call_mute_range_start: number;
+  call_mute_range_end: number;
 }
 
 export const storageDefaults: Storage = {
@@ -278,4 +280,6 @@ export const storageDefaults: Storage = {
   cached_contacts: [],
   cached_communities: [],
   ttp_url: "https://tensamin.net:959",
+  call_mute_range_start: -50,
+  call_mute_range_end: -40,
 };

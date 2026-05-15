@@ -11,6 +11,7 @@ import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
   ExternalE2EEKeyProvider,
   LocalAudioTrack,
+  type LocalTrackPublication,
   type Participant,
   type RemoteParticipant,
   type RemoteTrackPublication,
@@ -28,6 +29,10 @@ import {
   createScreenShareController,
   type ScreenShareSession,
 } from "./screenshare";
+import {
+  getSpeakingDetector,
+  disposeSpeakingDetector,
+} from "./speakingIndicator";
 
 // logging
 setLogExtension(
@@ -99,6 +104,8 @@ type CallStore = {
   keyProvider: ExternalE2EEKeyProvider;
   e2eeWorker: Worker;
   runtime: Runtime | null;
+  speakingParticipantIds: Set<number>;
+  micGated: boolean;
 };
 
 const keyProvider = new ExternalE2EEKeyProvider();
@@ -152,7 +159,7 @@ function clearRemoteAudio() {
   }
 }
 
-function getParticipantId(identity: string | undefined): number | null {
+export function getParticipantId(identity: string | undefined): number | null {
   if (!identity) {
     return null;
   }
@@ -757,6 +764,7 @@ export async function connect(callId: string) {
 
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
+  disposeSpeakingDetector();
   await clearScreenSharePreview();
 
   try {
@@ -786,6 +794,7 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
+    micGated: false,
   });
 
   room.remoteParticipants.forEach((participant) => {
@@ -879,6 +888,7 @@ export async function toggleDeaf() {
     deafened: nextDeaf ? "true" : "false",
   });
 
+  getSpeakingDetector().setDeaf(nextDeaf);
   useCall.setState({ deaf: nextDeaf });
 }
 
@@ -967,6 +977,16 @@ async function ensureNoiseFilter(
   await microphoneTrack.setProcessor(noiseFilter).catch((err) => {
     log(1, "call", "red", "Failed to enable noise filter", err);
   });
+
+  const participantId = getParticipantId(room.localParticipant.identity);
+  if (participantId != null) {
+    const processedTrack = microphoneTrack.mediaStreamTrack;
+    getSpeakingDetector().addTrack(
+      participantId,
+      processedTrack.clone(),
+      processedTrack,
+    );
+  }
 }
 
 export const useCall = create<CallStore>(() => ({
@@ -996,6 +1016,8 @@ export const useCall = create<CallStore>(() => ({
   keyProvider,
   e2eeWorker,
   runtime: null,
+  speakingParticipantIds: new Set(),
+  micGated: false,
 }));
 
 // Register app-level call listeners and wire React dependencies into the store.
@@ -1137,9 +1159,41 @@ export function useInitializeCall() {
 
     listenersRegistered.current = true;
 
-    const onConnected = () => {
+    const onConnected = async () => {
       useCall.setState({ state: "open" });
       syncParticipantState();
+
+      const detector = getSpeakingDetector();
+      const localParticipantId = getParticipantId(
+        room.localParticipant.identity,
+      );
+      if (localParticipantId != null) {
+        detector.setLocalParticipantId(localParticipantId);
+      }
+
+      const [start, end] = await Promise.all([
+        load("call_mute_range_start"),
+        load("call_mute_range_end"),
+      ]);
+      detector.setGateThresholds(start, end);
+
+      // Scan existing audio tracks for speaking detection
+      for (const participant of getAllParticipants()) {
+        const participantId = getParticipantId(participant.identity);
+        if (participantId == null) continue;
+
+        for (const publication of participant.trackPublications.values()) {
+          if (publication.kind === Track.Kind.Audio && publication.track) {
+            const mediaTrack = publication.track.mediaStreamTrack;
+            if (participant === room.localParticipant) {
+              const clonedTrack = mediaTrack.clone();
+              detector.addTrack(participantId, clonedTrack, mediaTrack);
+            } else {
+              detector.addTrack(participantId, mediaTrack);
+            }
+          }
+        }
+      }
 
       const invitedUserId = useCall.getState().invitedUserId;
 
@@ -1177,6 +1231,7 @@ export function useInitializeCall() {
 
       if (participantId != null) {
         stopWatchingStream(participantId);
+        getSpeakingDetector().removeParticipant(participantId);
       }
 
       syncParticipantState();
@@ -1197,6 +1252,33 @@ export function useInitializeCall() {
       void ensureNoiseFilter(noiseFilter);
     };
 
+    const onLocalTrackPublished = (publication: LocalTrackPublication) => {
+      if (publication.kind === Track.Kind.Audio && publication.track) {
+        const participantId = getParticipantId(room.localParticipant.identity);
+        if (participantId != null) {
+          const originalTrack = publication.track.mediaStreamTrack;
+          const clonedTrack = originalTrack.clone();
+          getSpeakingDetector().addTrack(
+            participantId,
+            clonedTrack,
+            originalTrack,
+          );
+        }
+      }
+      syncParticipantState();
+      void ensureNoiseFilter(noiseFilter);
+    };
+
+    const onLocalTrackUnpublished = (publication: LocalTrackPublication) => {
+      if (publication.kind === Track.Kind.Audio) {
+        const participantId = getParticipantId(room.localParticipant.identity);
+        if (participantId != null) {
+          getSpeakingDetector().removeParticipant(participantId);
+        }
+      }
+      syncParticipantState();
+    };
+
     const onTrackPublished = (
       publication: RemoteTrackPublication,
       participant: RemoteParticipant,
@@ -1214,9 +1296,18 @@ export function useInitializeCall() {
       onParticipantStateChange();
     };
 
-    const onTrackSubscribed = (track: RemoteTrack) => {
+    const onTrackSubscribed = (
+      track: RemoteTrack,
+      _publication: RemoteTrackPublication,
+      participant: RemoteParticipant,
+    ) => {
       if (track.kind === "audio" && track.sid) {
         attachRemoteAudio(track.sid, track.attach());
+
+        const participantId = getParticipantId(participant.identity);
+        if (participantId != null) {
+          getSpeakingDetector().addTrack(participantId, track.mediaStreamTrack);
+        }
       }
 
       syncParticipantState();
@@ -1227,12 +1318,16 @@ export function useInitializeCall() {
       _publication: unknown,
       participant: Participant,
     ) => {
+      const participantId = getParticipantId(participant.identity);
+
       if (track.kind === "audio" && track.sid) {
         track.detach();
         detachRemoteAudio(track.sid);
-      }
 
-      const participantId = getParticipantId(participant.identity);
+        if (participantId != null) {
+          getSpeakingDetector().removeParticipant(participantId);
+        }
+      }
 
       if (
         participantId != null &&
@@ -1256,8 +1351,8 @@ export function useInitializeCall() {
     room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
     room.on(RoomEvent.TrackMuted, onParticipantStateChange);
     room.on(RoomEvent.TrackUnmuted, onParticipantStateChange);
-    room.on(RoomEvent.LocalTrackPublished, onParticipantStateChange);
-    room.on(RoomEvent.LocalTrackUnpublished, onParticipantStateChange);
+    room.on(RoomEvent.LocalTrackPublished, onLocalTrackPublished);
+    room.on(RoomEvent.LocalTrackUnpublished, onLocalTrackUnpublished);
     room.on(RoomEvent.MediaDevicesError, onMediaDeviceFailure);
     room.on(RoomEvent.EncryptionError, onEncryptionError);
     room.on(RoomEvent.ConnectionStateChanged, onParticipantStateChange);
@@ -1277,8 +1372,8 @@ export function useInitializeCall() {
       room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
       room.off(RoomEvent.TrackMuted, onParticipantStateChange);
       room.off(RoomEvent.TrackUnmuted, onParticipantStateChange);
-      room.off(RoomEvent.LocalTrackPublished, onParticipantStateChange);
-      room.off(RoomEvent.LocalTrackUnpublished, onParticipantStateChange);
+      room.off(RoomEvent.LocalTrackPublished, onLocalTrackPublished);
+      room.off(RoomEvent.LocalTrackUnpublished, onLocalTrackUnpublished);
       room.off(RoomEvent.MediaDevicesError, onMediaDeviceFailure);
       room.off(RoomEvent.EncryptionError, onEncryptionError);
       room.off(RoomEvent.ConnectionStateChanged, onParticipantStateChange);
@@ -1287,7 +1382,7 @@ export function useInitializeCall() {
       room.disconnect();
       e2eeWorker.terminate();
     };
-  }, [noiseFilter]);
+  }, [noiseFilter, load]);
 
   // fetch call data for preview page
   useEffect(() => {

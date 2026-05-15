@@ -18,6 +18,7 @@ import {
 import { Track, type Participant } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
+import { useIsSpeaking } from "../../speakingIndicator";
 import VideoViewer from "../videoViewer";
 import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
 
@@ -103,6 +104,7 @@ export default function Base({
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
   const view = useCall((state) => state.view);
   const [user, setUser] = useState<User | null>(null);
+  const isSpeaking = useIsSpeaking(user?.user_id ?? -1);
   const screenSharePublication = getTrackPublicationBySource(
     participant,
     Track.Source.ScreenShare,
@@ -211,9 +213,9 @@ export default function Base({
             </div>
             <div
               ref={currentCard}
-              className={`z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
+              className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
                 flush ? "rounded-none" : "rounded-sm"
-              }`}
+              } ${isSpeaking ? "border-4 border-(--primary-foreground-alt)/75" : "border-0"}`}
               style={{ containerType: "size" }}
             >
               {/* Detect video / user and place here */}
