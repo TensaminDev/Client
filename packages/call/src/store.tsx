@@ -207,7 +207,10 @@ function matchesRemoteTrackSelector(
 
 function syncRemoteParticipantTrackSubscriptions(participantId: number) {
   for (const publication of getRemoteTrackPublications(participantId)) {
-    publication.setSubscribed(publication.kind === Track.Kind.Audio);
+    publication.setSubscribed(
+      publication.kind === Track.Kind.Audio &&
+        publication.source !== Track.Source.ScreenShareAudio,
+    );
   }
 }
 
@@ -624,6 +627,7 @@ export function startWatchingStream(participantId: number) {
   const trackReady = getScreenShareTrackForParticipant(participantId) != null;
 
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare);
+  setParticipantTrackSubscribed(participantId, Track.Source.ScreenShareAudio);
 
   useCall.setState((state) => ({
     watchedStreamParticipantIds: state.watchedStreamParticipantIds.includes(
@@ -671,6 +675,11 @@ export function focusParticipant(
 // Stop tracking a participant's shared screen and clean up related UI state.
 export function stopWatchingStream(participantId: number) {
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare, false);
+  setParticipantTrackSubscribed(
+    participantId,
+    Track.Source.ScreenShareAudio,
+    false,
+  );
 
   useCall.setState((state) => ({
     watchedStreamParticipantIds: state.watchedStreamParticipantIds.filter(
@@ -1198,7 +1207,11 @@ export function useInitializeCall() {
         if (participantId == null) continue;
 
         for (const publication of participant.trackPublications.values()) {
-          if (publication.kind === Track.Kind.Audio && publication.track) {
+          if (
+            publication.kind === Track.Kind.Audio &&
+            publication.source === Track.Source.Microphone &&
+            publication.track
+          ) {
             const mediaTrack = publication.track.mediaStreamTrack;
             if (participant === room.localParticipant) {
               const clonedTrack = mediaTrack.clone();
@@ -1268,7 +1281,11 @@ export function useInitializeCall() {
     };
 
     const onLocalTrackPublished = (publication: LocalTrackPublication) => {
-      if (publication.kind === Track.Kind.Audio && publication.track) {
+      if (
+        publication.kind === Track.Kind.Audio &&
+        publication.source === Track.Source.Microphone &&
+        publication.track
+      ) {
         const participantId = getParticipantId(room.localParticipant.identity);
         if (participantId != null) {
           const originalTrack = publication.track.mediaStreamTrack;
@@ -1285,7 +1302,10 @@ export function useInitializeCall() {
     };
 
     const onLocalTrackUnpublished = (publication: LocalTrackPublication) => {
-      if (publication.kind === Track.Kind.Audio) {
+      if (
+        publication.kind === Track.Kind.Audio &&
+        publication.source === Track.Source.Microphone
+      ) {
         const participantId = getParticipantId(room.localParticipant.identity);
         if (participantId != null) {
           getSpeakingDetector().removeParticipant(participantId);
@@ -1301,7 +1321,10 @@ export function useInitializeCall() {
       const participantId = getParticipantId(participant.identity);
 
       if (participantId != null) {
-        if (publication.kind === Track.Kind.Audio) {
+        if (
+          publication.kind === Track.Kind.Audio &&
+          publication.source !== Track.Source.ScreenShareAudio
+        ) {
           publication.setSubscribed(true);
         } else {
           publication.setSubscribed(false);
@@ -1313,14 +1336,17 @@ export function useInitializeCall() {
 
     const onTrackSubscribed = (
       track: RemoteTrack,
-      _publication: RemoteTrackPublication,
+      publication: RemoteTrackPublication,
       participant: RemoteParticipant,
     ) => {
       if (track.kind === "audio" && track.sid) {
         attachRemoteAudio(track.sid, track.attach());
 
         const participantId = getParticipantId(participant.identity);
-        if (participantId != null) {
+        if (
+          participantId != null &&
+          publication.source === Track.Source.Microphone
+        ) {
           getSpeakingDetector().addTrack(participantId, track.mediaStreamTrack);
         }
       }
@@ -1330,7 +1356,7 @@ export function useInitializeCall() {
 
     const onTrackUnsubscribed = (
       track: RemoteTrack,
-      _publication: unknown,
+      publication: RemoteTrackPublication,
       participant: Participant,
     ) => {
       const participantId = getParticipantId(participant.identity);
@@ -1339,7 +1365,10 @@ export function useInitializeCall() {
         track.detach();
         detachRemoteAudio(track.sid);
 
-        if (participantId != null) {
+        if (
+          participantId != null &&
+          publication.source === Track.Source.Microphone
+        ) {
           getSpeakingDetector().removeParticipant(participantId);
         }
       }
