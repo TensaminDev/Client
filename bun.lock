@@ -55,6 +55,7 @@
         "@tensamin/call": "workspace:*",
         "@tensamin/chat": "workspace:*",
         "@tensamin/crypto": "workspace:*",
+        "@tensamin/markdown": "workspace:*",
         "@tensamin/notifications": "workspace:*",
         "@tensamin/shared": "workspace:*",
         "@tensamin/storage": "workspace:*",

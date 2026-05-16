@@ -48,6 +48,31 @@ export type Communities = z.infer<
 export type Calls = z.infer<typeof ttp.challenge_response.response.shape.calls>;
 
 // TTP
+const user = z.object({
+  about: z.string().max(255).optional(),
+  avatar: z.string().optional(),
+  display: z.string().min(1).max(15),
+  iota_id: z.number(),
+  omikron_connections: z.array(z.number()),
+  omikron_id: z.number().optional(),
+  online_status: z.enum([
+    "user_offline",
+    "user_online",
+    "user_dnd",
+    "user_idle",
+    "user_wc",
+    "user_borked",
+    "iota_offline",
+    "iota_online",
+    "iota_borked",
+  ]),
+  public_key: z.base64(),
+  status: z.string().max(15).optional(),
+  sub_end: z.number(),
+  sub_level: z.number(),
+  user_id: z.number(),
+  username: z.string().min(1).max(15),
+});
 export const ttp = {
   identification: {
     request: z.object({
@@ -92,31 +117,11 @@ export const ttp = {
     request: z.object({
       user_id: z.number(),
     }),
-    response: z.object({
-      about: z.string().max(255).optional(),
-      avatar: z.string().optional(),
-      display: z.string().max(15),
-      iota_id: z.number(),
-      omikron_connections: z.array(z.number()),
-      omikron_id: z.number().optional(),
-      online_status: z.enum([
-        "user_offline",
-        "user_online",
-        "user_dnd",
-        "user_idle",
-        "user_wc",
-        "user_borked",
-        "iota_offline",
-        "iota_online",
-        "iota_borked",
-      ]),
-      public_key: z.base64(),
-      status: z.string().max(15).optional(),
-      sub_end: z.number(),
-      sub_level: z.number(),
-      user_id: z.number(),
-      username: z.string().max(15),
-    }),
+    response: user,
+  },
+  change_user_data: {
+    request: user.partial(),
+    response: z.object({}),
   },
   ping: {
     request: z.object({
@@ -283,3 +288,28 @@ export const storageDefaults: Storage = {
   call_mute_range_start: -55,
   call_mute_range_end: -45,
 };
+
+// User Status
+export function getStatusColor(
+  status: z.infer<typeof ttp.get_user_data.response.shape.online_status>,
+) {
+  switch (status) {
+    case "user_online":
+      return "#22c55e";
+    case "iota_online":
+      return "#22c55e";
+    case "user_dnd":
+      return "#ef4444";
+    case "user_idle":
+      return "#f59e0b";
+    case "user_wc":
+      return "#3b82f6";
+    case "user_borked":
+    case "iota_borked":
+      return "#6b7280";
+    case "user_offline":
+    case "iota_offline":
+    default:
+      return "#9ca3af";
+  }
+}

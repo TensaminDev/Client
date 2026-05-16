@@ -161,7 +161,8 @@ export default function View() {
   const focusedParticipantHasActiveScreenShare =
     activeScreenShareParticipantIdSet.has(focusedParticipantId);
   const focusedTileType: "user" | "stream" =
-    focusedParticipantType === "stream" && focusedParticipantHasActiveScreenShare
+    focusedParticipantType === "stream" &&
+    focusedParticipantHasActiveScreenShare
       ? "stream"
       : "user";
   const isImmersiveFocusedView = callIsFullscreen && usersInFocusedViewHidden;

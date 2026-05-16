@@ -665,12 +665,12 @@ export const markdownStyles = `
 .tm-md-table th { background: hsl(var(--muted)); font-weight: 600; }
 .tm-md-hr { margin: 0.55rem 0; }
 
-.cm-editor.tm-md-editor { border-radius: 0.65rem; background: hsl(var(--card)); caret-color: var(--foreground); }
+.cm-editor.tm-md-editor { border-radius: inherit; background: transparent; caret-color: var(--foreground); }
 .cm-editor.tm-md-editor.cm-focused { outline: none; box-shadow: none; }
 .cm-editor.tm-md-editor .cm-scroller { font-family: inherit; line-height: 1.55; max-height: 30vh; overflow-y: auto; overflow-x: hidden; }
 .cm-editor.tm-md-editor .cm-content { caret-color: var(--foreground); }
-.cm-editor.tm-md-editor .cm-content { padding: 0.7rem 0.85rem; min-height: 2.75rem; }
-.cm-editor.tm-md-editor .cm-line { padding: 0 1px; color: hsl(var(--foreground)); }
+.cm-editor.tm-md-editor .cm-content { padding: var(--tm-md-content-padding, 0.25rem 0.625rem); min-height: 2rem; }
+.cm-editor.tm-md-editor .cm-line { padding: 0; color: hsl(var(--foreground)); }
 .cm-editor.tm-md-editor .tm-md-hidden-token { color: transparent; opacity: 0; font-size: inherit; }
 .cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: hsl(var(--muted)); border-radius: 0.3rem; }
 `;
