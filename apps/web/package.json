@@ -26,6 +26,7 @@
     "@tensamin/tauri": "workspace:*",
     "@tensamin/ttp": "workspace:*",
     "@tensamin/tauth": "workspace:*",
+    "@tensamin/markdown": "workspace:*",
     "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
     "@tensamin/notifications": "workspace:*",
