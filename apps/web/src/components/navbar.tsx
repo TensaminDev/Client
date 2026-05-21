@@ -23,7 +23,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const currentCalls = calls.filter((call) =>
     call.call_members.some((member) => member === id),
   );
-  //const currentCalls = ["leck", "schleck", "und", "eck"];
 
   const [selectOpen, setSelectOpen] = useState(false);
 

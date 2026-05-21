@@ -31,12 +31,12 @@ export function Basic({
           <Tooltip>
             <TooltipTrigger
               render={
-                <div className="absolute -bottom-0.75 -right-0.75 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-card">
+                <div className="absolute -bottom-0.5 -right-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-card">
                   <div
                     style={{
                       backgroundColor: getStatusColor(user.online_status),
                     }}
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2.25 w-2.25 rounded-full"
                   />
                 </div>
               }
@@ -52,7 +52,7 @@ export function Basic({
         <div className="flex flex-col gap-1 w-full items-start justify-center text-[15px]">
           <p>{user.display}</p>
         </div>
-        <div className="pr-2">{extra}</div>
+        <div className="pr-1">{extra}</div>
       </CardHeader>
     </Card>
   );
