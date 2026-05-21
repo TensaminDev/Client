@@ -115,7 +115,8 @@ export const ttp = {
   },
   get_user_data: {
     request: z.object({
-      user_id: z.number(),
+      user_id: z.number().optional(),
+      username: z.string().optional(),
     }),
     response: user,
   },

@@ -11,12 +11,12 @@ import {
   useIsMobile,
 } from "@tensamin/ui";
 import z from "zod";
-import { toast } from "@tensamin/shared/log";
 import { useTTP } from "@tensamin/ttp";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
 import { useStorage } from "@tensamin/storage/context";
+import { useSession } from "@tensamin/storage/session";
 
 // The page
 export default function Page() {
@@ -43,11 +43,16 @@ export default function Page() {
 // Add Conversation Button Component
 function AddConversationButton() {
   const { send } = useTTP();
+  const { contacts, insertContact } = useSession();
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function submit(username: string | null) {
+  async function submit(username: string | null) {
     if (loading) return;
+    setError(null);
 
+    // username check
     const schema = z
       .string()
       .min(1, "Username is too short")
@@ -56,26 +61,50 @@ function AddConversationButton() {
     const result = schema.safeParse(username?.toLowerCase().trim());
 
     if (!result.success) {
-      toast("error", result.error.issues[0].message);
+      setError(result.error.issues[0].message);
       return;
     }
 
+    // user existence check
+    const user = await send("get_user_data", {
+      username: result.data,
+    })
+      .then((data) => {
+        if (data.data.user_id === 0) {
+          throw new Error();
+        }
+
+        return data;
+      })
+      .catch(() => {
+        setError("User not found");
+        return;
+      });
+    if (!user) return;
+
+    // alrady added check
+    if (contacts.some((contact) => contact.user_id === user.data.user_id)) {
+      setError("Conversation already exists");
+      return;
+    }
+
+    // add the conv
     const timeout = setTimeout(() => setLoading(true), 500);
 
     send("add_conversation", {
       chat_partner_name: result.data,
     })
       .then(() => {
-        toast("success", "Conversation added");
+        insertContact(user.data.user_id);
+        setOpen(false);
       })
       .catch((error) => {
         if (String(error).includes("error_not_found")) {
-          toast("error", "User not found");
+          setError("User not found");
           return;
         }
 
-        toast("error", "Failed to add conversation, check console for details");
-        console.error("Failed to add conversation", error);
+        setError(String(error));
       })
       .finally(() => {
         clearTimeout(timeout);
@@ -84,7 +113,15 @@ function AddConversationButton() {
   }
 
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (value) {
+          setError(null);
+        }
+        setOpen(value);
+      }}
+    >
       <DialogTrigger render={<Button>Add Conversation</Button>} />
       <DialogContent>
         <DialogHeader>
@@ -110,7 +147,10 @@ function AddConversationButton() {
             name="username"
             placeholder="Enter username..."
           />
-          <div className="flex w-full justify-end gap-1">
+          <div className="flex w-full justify-end items-center gap-1">
+            {error && (
+              <p className="text-sm text-destructive w-full">{error}</p>
+            )}
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
             <Button disabled={loading} type="submit">
               {loading && <Loader2 className="animate-spin" />} Continue

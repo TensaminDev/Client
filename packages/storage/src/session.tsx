@@ -14,6 +14,7 @@ interface SessionContextType {
   communities: Communities;
   calls: Calls;
   moveUserIdToTop: (userId: number) => void;
+  insertContact: (userId: number) => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -69,9 +70,31 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const insertContact = (userId: number) => {
+    setContacts((prevContacts) => {
+      if (prevContacts.some((contact) => contact.user_id === userId)) {
+        return prevContacts;
+      }
+
+      const newUser = {
+        user_id: userId,
+        last_message_at: new Date().getTime(),
+        messages: [],
+      } satisfies Contacts[0];
+
+      return [newUser, ...prevContacts];
+    });
+  };
+
   return (
     <SessionContext.Provider
-      value={{ contacts, communities, calls: freshCalls, moveUserIdToTop }}
+      value={{
+        contacts,
+        communities,
+        calls: freshCalls,
+        moveUserIdToTop,
+        insertContact,
+      }}
     >
       {children}
     </SessionContext.Provider>

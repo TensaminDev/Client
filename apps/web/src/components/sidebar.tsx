@@ -220,7 +220,7 @@ export default function Sidebar() {
                             <button
                               type="button"
                               aria-label="Open profile menu"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                              className="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                             >
                               <Ellipsis />
                             </button>

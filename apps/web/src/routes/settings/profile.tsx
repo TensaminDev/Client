@@ -4,7 +4,9 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
+  cn,
   Input,
+  useIsMobile,
 } from "@tensamin/ui";
 import { useUser, type User } from "@tensamin/user/context";
 import { useEffect, useRef, useState } from "react";
@@ -83,6 +85,8 @@ export default function Page() {
     }
   };
 
+  const isMobile = useIsMobile();
+
   return currentUser ? (
     <>
       <input
@@ -93,7 +97,7 @@ export default function Page() {
         }
         type="file"
       />
-      <div className="flex flex-col gap-5 w-80">
+      <div className={cn("flex flex-col gap-5", isMobile ? "w-full" : "w-80")}>
         <div className="flex items-center gap-3">
           <Avatar className="size-14">
             <AvatarImage src={effectiveAvatar} />
@@ -121,7 +125,7 @@ export default function Page() {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              GIFs are supported in decentralised mode or with Tensamin Premium
+              GIFs are supported in decentralised mode or with Tensamin Premium.
               <br />
               Maximum file size is 16mb.
             </p>
@@ -162,13 +166,16 @@ export default function Page() {
         />
         <Button
           onClick={async () => {
+            const { avatar, ...draftUsersWithoutAvatar } = draftUser;
             const payload = {
-              ...draftUser,
-              avatar:
-                typeof draftUser.avatar === "string" &&
-                draftUser.avatar.startsWith("data:")
-                  ? (draftUser.avatar.split(",", 2)[1] ?? "")
-                  : draftUser.avatar,
+              ...draftUsersWithoutAvatar,
+              ...(typeof avatar === "string"
+                ? {
+                    avatar: avatar.startsWith("data:")
+                      ? (avatar.split(",", 2)[1] ?? "")
+                      : avatar,
+                  }
+                : {}),
             };
 
             const validation = ttp.change_user_data.request.safeParse(payload);

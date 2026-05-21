@@ -163,18 +163,18 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Folder: `licenses/@tauri-apps_plugin-opener@2.5.4`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-opener`
 
-## @tensamin/ttp-core@0.0.15
+## @tensamin/ttp-core@0.0.19
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@tensamin_ttp-core@0.0.15`
+- Folder: `licenses/@tensamin_ttp-core@0.0.19`
 - Source package dir: `packages/ttp/node_modules/@tensamin/ttp-core`
 
-## @tensamin/ui@0.0.30
+## @tensamin/ui@0.0.34
 
 - License: UNKNOWN
 - Included files: none found
-- Folder: `licenses/@tensamin_ui@0.0.30`
+- Folder: `licenses/@tensamin_ui@0.0.34`
 - Source package dir: `apps/tauri/node_modules/@tensamin/ui`
 
 ## @types/node@25.6.0
@@ -448,6 +448,16 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Included files: LICENSE
 - Folder: `licenses/tailwindcss@4.2.4`
 - Source package dir: `apps/web/node_modules/tailwindcss`
+
+## tauri-plugin-app-events-api@0.2.0
+
+- License: MIT
+- Homepage: https://github.com/wtto00/tauri-plugin-app-events#readme
+- Repository: git+https://github.com/wtto00/tauri-plugin-app-events.git
+- Description: A plugin for tauri@v2 to listen some events on iOS and Android.
+- Included files: LICENSE
+- Folder: `licenses/tauri-plugin-app-events-api@0.2.0`
+- Source package dir: `apps/web/node_modules/tauri-plugin-app-events-api`
 
 ## tw-animate-css@1.4.0
 
