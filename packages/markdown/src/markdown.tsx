@@ -560,7 +560,7 @@ export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
         }
 
         return (
-          <p key={blockIndex} className="tm-md-p">
+          <p key={blockIndex}>
             {block.text.split("\n").map((line, lineIndex) => (
               <React.Fragment key={lineIndex}>
                 {lineIndex > 0 ? <br /> : null}
@@ -645,7 +645,6 @@ export const markdownStyles = `
 .tm-md-h4 { font-size: 1.1rem; }
 .tm-md-h5 { font-size: 1rem; }
 .tm-md-h6 { font-size: 0.95rem; opacity: 0.9; }
-.tm-md-p { margin: 0.25rem 0; }
 .tm-md-blockquote { margin: 0.45rem 0; padding-left: 0.75rem; opacity: 0.95; }
 .tm-md-blockquote p { margin: 0.2rem 0; }
 .tm-md-pre { margin: 0.45rem 0; padding: 0.65rem 0.75rem; border-radius: 0.5rem; background: hsl(var(--muted)); overflow-x: auto; }
