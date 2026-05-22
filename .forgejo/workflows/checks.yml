@@ -1,0 +1,80 @@
+name: Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-web:
+    runs-on: docker
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
+
+      - name: Install Nix
+        uses: https://github.com/cachix/install-nix-action@v30
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Build web
+        run: bun run build:web
+
+  build-mobile:
+    runs-on: docker
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
+
+      - name: Install Nix
+        uses: https://github.com/cachix/install-nix-action@v30
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Build mobile
+        run: bun run build:mobile
+
+  build-desktop:
+    runs-on: docker
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
+
+      - name: Install Nix
+        uses: https://github.com/cachix/install-nix-action@v30
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Build desktop
+        run: bun run build:desktop
