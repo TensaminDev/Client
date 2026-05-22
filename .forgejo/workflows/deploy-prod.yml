@@ -5,6 +5,7 @@ on:
 
 jobs:
   build-web:
+    if: github.event_name != 'pull_request'
     runs-on: docker
     steps:
       - name: Check out repo
@@ -38,6 +39,7 @@ jobs:
         run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-prod/
 
   build-mobile:
+    if: github.event_name != 'pull_request'
     runs-on: docker
     steps:
       - name: Check out repo
@@ -79,6 +81,7 @@ jobs:
           path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 
   build-desktop:
+    if: github.event_name != 'pull_request'
     runs-on: docker
     steps:
       - name: Check out repo
@@ -112,6 +115,7 @@ jobs:
           path: apps/tauri/src-tauri/target/release/bundle/
 
   release:
+    if: github.event_name != 'pull_request'
     runs-on: docker
     needs: [build-web, build-mobile, build-desktop]
     steps:
