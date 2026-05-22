@@ -190,11 +190,9 @@ export default function Form() {
     [save],
   );
 
-  const isTauriEnv = isTauri();
-
   return (
     <div className="flex md:flex-row flex-col gap-15">
-      {isTauriEnv ? (
+      {isTauri() ? (
         <>
           <QrCodeScanner
             onData={async (data) => {
