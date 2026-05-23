@@ -25,7 +25,7 @@
     "dev:mobile:raw": "tauri android dev",
     "build:mobile:raw": "tauri android build",
     "dev:mobile": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:mobile:raw; else bun dev:mobile:raw; fi",
-    "build:mobile": "if command -v nix >/dev/null 2>&1; then nix develop --command bun build:mobile:raw; else bun build:mobile:raw; fi",
+    "build:mobile": "bun run render-version.ts && if command -v nix >/dev/null 2>&1; then nix develop --command bun build:mobile:raw; else bun build:mobile:raw; fi && bun run render-version.ts --unrender",
     "dev:desktop:raw": "tauri dev",
     "build:desktop:raw": "tauri build",
     "dev:desktop": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:desktop:raw; else bun dev:desktop:raw; fi",
@@ -46,6 +46,7 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^25.9.1"
   }
 }
