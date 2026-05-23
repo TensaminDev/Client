@@ -1,5 +1,5 @@
 import { Lock, LockOpen } from "lucide-react";
-import { openCallPage, useCall } from "../store";
+import { openCallPage, useCall, getRoom } from "../store";
 import {
   Button,
   Card,
@@ -78,7 +78,7 @@ function ConnectionBar() {
 }
 
 export function TinyPingGraph() {
-  const room = useCall((store) => store.room);
+  const room = getRoom();
 
   const [mapData, setMapData] = useState<Map<number, number>>(() => new Map());
 

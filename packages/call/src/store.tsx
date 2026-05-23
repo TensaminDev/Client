@@ -101,27 +101,46 @@ type CallStore = {
   callIsPopout: boolean;
   layoutVersion: number;
   screenRef: React.RefObject<HTMLDivElement | null> | null;
-  room: Room;
-  keyProvider: ExternalE2EEKeyProvider;
-  e2eeWorker: Worker;
   runtime: Runtime | null;
   speakingParticipantIds: Set<number>;
   micGated: boolean;
 };
 
-const keyProvider = new ExternalE2EEKeyProvider();
-const e2eeWorker = new Worker(
-  new URL("livekit-client/e2ee-worker", import.meta.url),
-);
-const room = new Room({
-  dynacast: true,
-  adaptiveStream: true,
-  loggerName: "tensamin",
-  encryption: {
-    keyProvider,
-    worker: e2eeWorker,
-  },
-});
+let _keyProvider: ExternalE2EEKeyProvider | null = null;
+let _e2eeWorker: Worker | null = null;
+let _room: Room | null = null;
+
+function getKeyProvider(): ExternalE2EEKeyProvider {
+  if (!_keyProvider) {
+    _keyProvider = new ExternalE2EEKeyProvider();
+  }
+  return _keyProvider;
+}
+
+function getE2EEWorker(): Worker {
+  if (!_e2eeWorker) {
+    _e2eeWorker = new Worker(
+      new URL("livekit-client/e2ee-worker", import.meta.url),
+    );
+  }
+  return _e2eeWorker;
+}
+
+export function getRoom(): Room {
+  if (!_room) {
+    _room = new Room({
+      dynacast: true,
+      adaptiveStream: true,
+      loggerName: "tensamin",
+      encryption: {
+        keyProvider: getKeyProvider(),
+        worker: getE2EEWorker(),
+      },
+    });
+  }
+  return _room;
+}
+
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
 
 const SCREEN_SHARE_PREVIEW_MAX_WIDTH = 320;
@@ -170,6 +189,7 @@ export function getParticipantId(identity: string | undefined): number | null {
 }
 
 function getAllParticipants(): Participant[] {
+  const room = getRoom();
   return [...room.remoteParticipants.values(), room.localParticipant];
 }
 
@@ -187,7 +207,7 @@ function getTrackPublicationBySource(
 }
 
 function getRemoteParticipant(participantId: number) {
-  return [...room.remoteParticipants.values()].find(
+  return [...getRoom().remoteParticipants.values()].find(
     (participant) => getParticipantId(participant.identity) === participantId,
   );
 }
@@ -215,7 +235,7 @@ function syncRemoteParticipantTrackSubscriptions(participantId: number) {
 }
 
 function syncAllRemoteTrackSubscriptions() {
-  for (const participant of room.remoteParticipants.values()) {
+  for (const participant of getRoom().remoteParticipants.values()) {
     const participantId = getParticipantId(participant.identity);
 
     if (participantId != null) {
@@ -256,7 +276,7 @@ function hasParticipant(participantId: number) {
 
 function getLocalScreenShareTrack(): MediaStreamTrack | null {
   const track = getTrackPublicationBySource(
-    room.localParticipant,
+    getRoom().localParticipant,
     Track.Source.ScreenShare,
   )?.track;
 
@@ -275,7 +295,7 @@ async function updateLocalParticipantAttributes(
     screenSharePreviewLength: attributes.screenSharePreview?.length ?? 0,
   });
 
-  await room.localParticipant.setAttributes(attributes).catch((error) => {
+  await getRoom().localParticipant.setAttributes(attributes).catch((error) => {
     log(1, "call", "red", "Failed to update local participant attributes", {
       attributes: Object.keys(attributes),
       error,
@@ -487,7 +507,7 @@ function requireRuntime(runtime: Runtime | null): Runtime {
 }
 
 export function getRoomMetadata() {
-  const roomMetadata = room.metadata;
+  const roomMetadata = getRoom().metadata;
   try {
     const data = JSON.parse(roomMetadata || '{"admins": []}');
     return data as { admins: number[] };
@@ -498,7 +518,8 @@ export function getRoomMetadata() {
 
 // Sync local participant flags and screen-share derived state for the active call UI.
 export function syncParticipantState() {
-  const { room, screenShareSession } = useCall.getState();
+  const { screenShareSession } = useCall.getState();
+  const room = getRoom();
 
   useCall.setState({
     micEnabled: room.localParticipant.isMicrophoneEnabled,
@@ -721,7 +742,7 @@ let screenShareController: ReturnType<
 function getScreenShareController() {
   if (!screenShareController) {
     screenShareController = createScreenShareController({
-      room,
+      room: getRoom(),
       getState: () => ({
         screenShareSession: useCall.getState().screenShareSession,
       }),
@@ -733,7 +754,7 @@ function getScreenShareController() {
         );
       },
       getLocalParticipantId: () =>
-        getParticipantId(room.localParticipant.identity),
+        getParticipantId(getRoom().localParticipant.identity),
       startWatching: startWatchingStream,
       stopWatching: stopWatchingStream,
       syncParticipantState,
@@ -758,7 +779,7 @@ export async function connect(callId: string) {
     callSecret: useCall.getState().callSecret,
   });
 
-  await room
+  await getRoom()
     .connect("wss://call.tensamin.net", token, {
       autoSubscribe: false,
     })
@@ -774,7 +795,7 @@ export async function connect(callId: string) {
 
   syncAllRemoteTrackSubscriptions();
 
-  await room.localParticipant.setMicrophoneEnabled(true).catch((error) => {
+  await getRoom().localParticipant.setMicrophoneEnabled(true).catch((error) => {
     log(1, "call", "red", "Failed to enable microphone", error);
     toast("error", "Failed to enable microphone.");
     throw error;
@@ -819,12 +840,12 @@ export async function disconnect() {
     micGated: false,
   });
 
-  room.remoteParticipants.forEach((participant) => {
+  getRoom().remoteParticipants.forEach((participant) => {
     participant.setVolume(1);
   });
 
   try {
-    await room.disconnect();
+    await getRoom().disconnect();
   } catch (error) {
     log(1, "call", "red", "Failed to disconnect from room", error);
   } finally {
@@ -867,8 +888,8 @@ export async function joinCall(
         callSecret,
       );
 
-      await keyProvider.setKey(decryptedSecret);
-      await room.setE2EEEnabled(true);
+      await getKeyProvider().setKey(decryptedSecret);
+      await getRoom().setE2EEEnabled(true);
       useCall.setState({ callSecret: decryptedSecret });
     } catch (err) {
       log(1, "call", "red", "Failed getting call secret", err);
@@ -878,8 +899,8 @@ export async function joinCall(
   } else {
     const random = crypto.randomUUID();
 
-    await keyProvider.setKey(random);
-    await room.setE2EEEnabled(true);
+    await getKeyProvider().setKey(random);
+    await getRoom().setE2EEEnabled(true);
     useCall.setState({ callSecret: random });
   }
 
@@ -898,11 +919,11 @@ export async function joinCall(
 export async function toggleDeaf() {
   const nextDeaf = !useCall.getState().deaf;
 
-  room.remoteParticipants.forEach((participant) => {
+  getRoom().remoteParticipants.forEach((participant) => {
     participant.setVolume(nextDeaf ? 0 : 1);
   });
 
-  if (nextDeaf && room.localParticipant.isMicrophoneEnabled) {
+  if (nextDeaf && getRoom().localParticipant.isMicrophoneEnabled) {
     await toggleMute();
   }
 
@@ -922,7 +943,7 @@ export async function toggleMute() {
     await toggleDeaf();
   }
 
-  await room.localParticipant.setMicrophoneEnabled(!micEnabled);
+  await getRoom().localParticipant.setMicrophoneEnabled(!micEnabled);
   syncParticipantState();
 }
 
@@ -986,7 +1007,7 @@ export function resetCallState() {
 async function ensureNoiseFilter(
   noiseFilter: DeepFilterNoiseFilterProcessor,
 ): Promise<void> {
-  const microphoneTrack = room.localParticipant.getTrackPublication(
+  const microphoneTrack = getRoom().localParticipant.getTrackPublication(
     Track.Source.Microphone,
   )?.track;
 
@@ -1001,7 +1022,7 @@ async function ensureNoiseFilter(
     log(1, "call", "red", "Failed to enable noise filter", err);
   });
 
-  const participantId = getParticipantId(room.localParticipant.identity);
+  const participantId = getParticipantId(getRoom().localParticipant.identity);
   if (participantId != null) {
     const processedTrack = microphoneTrack.mediaStreamTrack;
     getSpeakingDetector().addTrack(
@@ -1021,8 +1042,8 @@ export const useCall = create<CallStore>(() => ({
   livekitToken: null,
   currentCallData: null,
   deaf: false,
-  micEnabled: room.localParticipant.isMicrophoneEnabled,
-  screenShareEnabled: room.localParticipant.isScreenShareEnabled,
+  micEnabled: false,
+  screenShareEnabled: false,
   screenShareSession: null,
   focusedParticipantId: null,
   focusedParticipantType: null,
@@ -1030,15 +1051,11 @@ export const useCall = create<CallStore>(() => ({
   watchedStreamParticipantIds: [],
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],
-  isEncrypted:
-    room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
+  isEncrypted: false,
   callIsFullscreen: false,
   callIsPopout: false,
   layoutVersion: 0,
   screenRef: null,
-  room,
-  keyProvider,
-  e2eeWorker,
   runtime: null,
   speakingParticipantIds: new Set(),
   micGated: false,
@@ -1384,6 +1401,7 @@ export function useInitializeCall() {
       syncParticipantState();
     };
 
+    const room = getRoom();
     room.on(RoomEvent.Connected, onConnected);
     room.on(RoomEvent.Reconnected, onConnected);
     room.on(RoomEvent.Disconnected, onDisconnected);
@@ -1424,7 +1442,7 @@ export function useInitializeCall() {
       clearRemoteAudio();
       listenersRegistered.current = false;
       room.disconnect();
-      e2eeWorker.terminate();
+      if (_e2eeWorker) _e2eeWorker.terminate();
     };
   }, [noiseFilter, load]);
 
