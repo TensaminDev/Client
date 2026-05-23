@@ -191,6 +191,7 @@ export function Provider(props: {
     typeof createTransportClient<Schemas>
   > | null>(null);
   const identificationStartedRef = useRef(false);
+  const identificationCancelRef = useRef(false);
 
   // Load ttp url
   const [ttpUrl, setTtpUrl] = useState<string | null>(null);
@@ -241,6 +242,23 @@ export function Provider(props: {
 
     return client.subscribePush(handler);
   }, []);
+
+  // Check for error_no_iota
+  useEffect(() => {
+    if (!connected) return;
+
+    return subscribePush((message) => {
+      if (message.type !== "error_no_iota") return;
+
+      identificationCancelRef.current = true;
+      setIdentified(false);
+      setIdentifying(false);
+      setError("We couldn't reach your Iota");
+      setErrorDescription(
+        "You could try to restart your Iota, check for updates or check your network connection.",
+      );
+    })
+  }, [connected, subscribePush]);
 
   useEffect(() => {
     if (!connected || !identified) {
@@ -363,6 +381,7 @@ export function Provider(props: {
               clearReconnectTimer();
               scheduleReconnectReset();
               identificationStartedRef.current = false;
+              identificationCancelRef.current = false;
               setConnected(true);
               setIdentified(false);
               setError("");
@@ -483,6 +502,11 @@ export function Provider(props: {
       return;
     }
 
+    if (identificationCancelRef.current) {
+      identificationStartedRef.current = false;
+      return;
+    }
+
     if (identificationStartedRef.current) {
       return;
     }
@@ -551,10 +575,12 @@ export function Provider(props: {
         const finalResponse = await send("challenge_response", {
           challenge: decryptedChallenge,
         }).catch((error) => {
-          setError("Identification Failed");
-          setErrorDescription(
-            "Unable to complete secure identification. Please verify your credentials and try again.",
-          );
+          if (!identificationCancelRef.current) {
+            setError("Identification Failed");
+            setErrorDescription(
+              "Unable to complete secure identification. Please verify your credentials and try again.",
+            );
+          }
           throw error;
         });
 
@@ -562,7 +588,7 @@ export function Provider(props: {
         setFreshContacts(finalResponse.data.contacts);
         setFreshCommunities(finalResponse.data.communities);
         setFreshCalls(finalResponse.data.calls);
-        if (cancelled) {
+        if (cancelled || identificationCancelRef.current) {
           return;
         }
 
@@ -571,6 +597,10 @@ export function Provider(props: {
         setIdentified(true);
       } catch (identificationError) {
         if (cancelled) {
+          return;
+        }
+
+        if (identificationCancelRef.current) {
           return;
         }
 
@@ -604,7 +634,7 @@ export function Provider(props: {
             : "Unable to complete secure identification because the transport request failed.",
         );
       } finally {
-        if (!cancelled) {
+        if (!cancelled && !identificationCancelRef.current) {
           setIdentifying(false);
         }
       }
