@@ -147,7 +147,7 @@ jobs:
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
-          echo "tag=${VERSION}-prod" >> "$FORGEJO_OUTPUT"
+          echo "tag=$VERSION" >> "$FORGEJO_OUTPUT"
 
       - name: Create release and upload files
         env:

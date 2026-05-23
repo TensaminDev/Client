@@ -46,6 +46,7 @@ function QrCodeLogin() {
   const [qrCodeBase64, setQrCodeBase64] = useState<string | undefined>(
     undefined,
   );
+  const [connectionString, setConnectionString] = useState<string | null>(null);
 
   useEffect(() => {
     load("private_key").then((value) => {
@@ -58,15 +59,25 @@ function QrCodeLogin() {
         setUserId(value);
       }
     });
+    load("ttp_url")
+      .then((value) => {
+        if (value) {
+          const url = new URL(value);
+          setConnectionString(`@${url.host}`);
+        } else {
+          setConnectionString("");
+        }
+      })
+      .catch(() => setConnectionString(""));
   }, [load]);
 
   useEffect(() => {
-    if (userId && privateKey) {
-      generateQR(`tensamin://tu::${userId}::${privateKey}`).then(
-        setQrCodeBase64,
-      );
+    if (userId && privateKey && connectionString !== null) {
+      generateQR(
+        `tensamin://tu::${userId}${connectionString}::${privateKey}`,
+      ).then(setQrCodeBase64);
     }
-  }, [userId, privateKey]);
+  }, [userId, privateKey, connectionString]);
 
   const [qrCodeVisible, setQrCodeVisible] = useState(false);
 

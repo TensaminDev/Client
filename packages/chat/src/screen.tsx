@@ -435,7 +435,7 @@ export default function Screen() {
       <div
         ref={scrollRef}
         id="chat_container"
-        className="min-h-0 flex-1 overflow-y-auto px-2.5"
+        className="min-h-0 flex-1 overflow-y-auto"
         style={{
           overflowAnchor: "none",
           paddingBottom: "8px",
@@ -465,8 +465,8 @@ export default function Screen() {
                   }}
                 >
                   <div className="w-full flex justify-start">
-                    <div className="max-w-[80%] rounded-lg bg-muted px-2 py-px text-sm text-foreground/55 whitespace-pre-wrap break-all">
-                      This is the start of your conversation with{" "}
+                    <div className="text-sm text-foreground/55 px-2.5">
+                      Conversation start
                     </div>
                   </div>
                 </div>
@@ -481,6 +481,13 @@ export default function Screen() {
               return null;
             }
 
+            const lastMessage = messages[messageIndex - 1];
+            const isGrouped =
+              lastMessage &&
+              lastMessage.sent_by_self === message.sent_by_self &&
+              Math.round(lastMessage.send_time / 10000) ===
+                Math.round(message.send_time / 10000);
+
             return (
               <div
                 key={message.send_time}
@@ -492,10 +499,9 @@ export default function Screen() {
                   left: 0,
                   width: "100%",
                   transform: `translateY(${virtualRow.start + verticalOffset}px)`,
-                  padding: "4px 0",
                 }}
               >
-                <Message message={message} />
+                <Message grouped={isGrouped} message={message} />
               </div>
             );
           })}
@@ -509,17 +515,25 @@ export default function Screen() {
         className="pointer-events-none absolute left-0 top-0 -z-10 overflow-hidden opacity-0"
         style={{ width: scrollWidth > 0 ? `${scrollWidth}px` : "100%" }}
       >
-        {messages.map((message) => (
-          <div
-            key={`measure-${message.send_time}`}
-            ref={(element) => {
-              setMeasurementRef(message.send_time, element);
-            }}
-            style={{ padding: "4px 0" }}
-          >
-            <Message message={message} />
-          </div>
-        ))}
+        {messages.map((message, messageIndex) => {
+          const lastMessage = messages[messageIndex - 1];
+          const isGrouped =
+            lastMessage &&
+            lastMessage.sent_by_self === message.sent_by_self &&
+            Math.round(lastMessage.send_time / 10000) ===
+              Math.round(message.send_time / 10000);
+
+          return (
+            <div
+              key={`measure-${message.send_time}`}
+              ref={(element) => {
+                setMeasurementRef(message.send_time, element);
+              }}
+            >
+              <Message grouped={isGrouped} message={message} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
