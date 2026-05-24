@@ -17,3 +17,32 @@ body,
 #root {
   min-height: 0;
 }
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    opacity: 0.8;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
