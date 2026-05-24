@@ -171,6 +171,7 @@
       "name": "@tensamin/notifications",
       "version": "0.0.0",
       "dependencies": {
+        "@tanstack/react-router": "^1.169.1",
         "@tauri-apps/api": "^2.11.0",
         "@tensamin/chat": "workspace:*",
         "@tensamin/crypto": "workspace:*",

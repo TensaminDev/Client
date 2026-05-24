@@ -257,7 +257,7 @@ export function Provider(props: {
       setErrorDescription(
         "You could try to restart your Iota, check for updates or check your network connection.",
       );
-    })
+    });
   }, [connected, subscribePush]);
 
   useEffect(() => {

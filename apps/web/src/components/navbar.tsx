@@ -1,7 +1,8 @@
-import { Button } from "@tensamin/ui";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronUp,
   House,
   Phone,
   Settings,
@@ -17,6 +18,7 @@ import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui";
 import { WindowControls as Controls } from "@tensamin/ui";
 import { useSession } from "@tensamin/storage/session";
+import Profile from "./modals/profile";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
@@ -32,6 +34,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   );
 
   const [selectOpen, setSelectOpen] = useState(false);
+
+  const [userInfoOpen, setUserInfoOpen] = useState(false);
 
   return (
     <div
@@ -69,16 +73,27 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           <Wrapper
             userId={id}
             component={(user) => (
-              <Button
-                variant="link"
-                className="px-0! text-foreground"
-                style={{
-                  textDecorationLine: "none",
-                }}
-              >
-                <p className="font-medium text-md">{user?.display}</p>
-                <ChevronDown />
-              </Button>
+              <>
+                <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="link"
+                        className="px-0! text-foreground"
+                        style={{
+                          textDecorationLine: "none",
+                        }}
+                      >
+                        <p className="font-medium text-md">{user?.display}</p>
+                        {userInfoOpen ? <ChevronUp /> : <ChevronDown />}
+                      </Button>
+                    }
+                  />
+                  <PopoverContent side="bottom">
+                    <Profile user={user} />
+                  </PopoverContent>
+                </Popover>
+              </>
             )}
             loading={<Skeleton className="ml-3 w-40 h-5" />}
           />
