@@ -1,0 +1,7 @@
+{
+  "default": "./logo.svg",
+
+  "android_fg": "./logo.svg",
+  "android_bg": "./background.png",
+  "android_fg_scale": 80
+}

@@ -30,7 +30,7 @@
     "build:desktop:raw": "tauri build",
     "dev:desktop": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:desktop:raw; else bun dev:desktop:raw; fi",
     "build:desktop": "if command -v nix >/dev/null 2>&1; then nix develop --command bun build:desktop:raw; else bun build:desktop:raw; fi",
-    "gen-icons": "tauri icon ./logo.svg",
+    "gen-icons": "tauri icon ./logo.json",
     "format": "bunx prettier --write .",
     "lint": "eslint src"
   },
