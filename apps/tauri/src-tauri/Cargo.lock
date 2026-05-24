@@ -3,6 +3,23 @@
 version = 4
 
 [[package]]
+name = "Tensamin"
+version = "0.0.0"
+dependencies = [
+ "base64 0.22.1",
+ "image 0.25.10",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build 2.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tauri-plugin-app-events",
+ "tauri-plugin-barcode-scanner",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-opener",
+ "xcap",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4834,23 +4851,6 @@ checksum = "c4790fc369d5a530f4b544b094e31388b9b3a37c0f4652ade4505945f5660d24"
 dependencies = [
  "new_debug_unreachable",
  "utf-8",
-]
-
-[[package]]
-name = "tensamin"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "image 0.25.10",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build 2.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "tauri-plugin-app-events",
- "tauri-plugin-barcode-scanner",
- "tauri-plugin-deep-link",
- "tauri-plugin-opener",
- "xcap",
 ]
 
 [[package]]
