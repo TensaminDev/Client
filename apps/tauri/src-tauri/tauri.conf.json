@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Tensamin",
+  "productName": "tensamin",
   "version": "0.0.0",
   "mainBinaryName": "tensamin",
   "identifier": "net.tensamin.client",

@@ -1,5 +1,5 @@
 [package]
-name = "Tensamin"
+name = "tensamin"
 version = "0.0.0"
 description = "Privacy focused messanger"
 authors = ["methanium"]
