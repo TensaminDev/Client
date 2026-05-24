@@ -102,12 +102,6 @@ export default function Screen() {
   const virtualRowCount =
     messages.length + (shouldShowConversationStart ? 1 : 0);
 
-  const messagesRef = React.useRef(messages);
-
-  React.useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
   const getItemKey = React.useCallback(
     (index: number) => {
       if (shouldShowConversationStart && index === 0) {
@@ -115,9 +109,9 @@ export default function Screen() {
       }
 
       const messageIndex = shouldShowConversationStart ? index - 1 : index;
-      return messagesRef.current[messageIndex]?.send_time ?? index;
+      return messages[messageIndex]?.send_time ?? index;
     },
-    [shouldShowConversationStart],
+    [shouldShowConversationStart, messages],
   );
 
   const setMeasurementRef = React.useCallback(
