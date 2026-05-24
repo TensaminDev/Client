@@ -35,6 +35,7 @@ function MessageComponent({
 
   return (
     <div
+      // pt-3 is to get a gap between messages
       className={`${grouped ? "" : "pt-3"} w-full flex justify-start transition-opacity duration-150 ${actuallyFailed || message.message_state === "awaiting" ? "opacity-50" : ""}`}
     >
       <ContextMenu>

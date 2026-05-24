@@ -1,13 +1,13 @@
 import { RoomEvent } from "livekit-client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useCall } from "../../store";
+import { useCall, getRoom } from "../../store";
 import Base from "../../components/modals/base";
 
 const SECONDARY_ROW_HEIGHT_PX = 180;
 const STACK_GAP_PX = 12;
 
 export default function View() {
-  const room = useCall((state) => state.room);
+  const room = getRoom();
   const layoutVersion = useCall((state) => state.layoutVersion);
 
   const usersInFocusedViewHidden = useCall(

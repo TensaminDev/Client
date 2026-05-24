@@ -1,5 +1,12 @@
 import { Button } from "@tensamin/ui";
-import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  House,
+  Phone,
+  Settings,
+  User,
+} from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
@@ -62,7 +69,16 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           <Wrapper
             userId={id}
             component={(user) => (
-              <p className="font-medium text-md">{user?.display}</p>
+              <Button
+                variant="link"
+                className="px-0! text-foreground"
+                style={{
+                  textDecorationLine: "none",
+                }}
+              >
+                <p className="font-medium text-md">{user?.display}</p>
+                <ChevronDown />
+              </Button>
             )}
             loading={<Skeleton className="ml-3 w-40 h-5" />}
           />

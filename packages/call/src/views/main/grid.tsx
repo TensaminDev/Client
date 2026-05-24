@@ -1,6 +1,6 @@
 import { RoomEvent } from "livekit-client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useCall } from "../../store";
+import { useCall, getRoom } from "../../store";
 import Base from "../../components/modals/base";
 
 const TILE_ASPECT_RATIO = 16 / 9;
@@ -82,7 +82,7 @@ function calculateOptimalGridLayout(
 }
 
 export default function View() {
-  const room = useCall((state) => state.room);
+  const room = getRoom();
   const layoutVersion = useCall((state) => state.layoutVersion);
   const activeScreenShareParticipantIds = useCall(
     (state) => state.activeScreenShareParticipantIds,

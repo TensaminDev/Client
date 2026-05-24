@@ -1,6 +1,6 @@
 import { VideoTrack, useParticipantTracks } from "@livekit/components-react";
 import { TrackPublication } from "livekit-client";
-import { useCall } from "../store";
+import { getRoom } from "../store";
 import { cn } from "@tensamin/ui";
 import { Loader2 } from "lucide-react";
 
@@ -17,7 +17,7 @@ export default function VideoViewer({
   publication: TrackPublication;
   participantId: string;
 }) {
-  const room = useCall((state) => state.room);
+  const room = getRoom();
   const tracks = useParticipantTracks([publication.source], {
     participantIdentity: participantId,
     room,

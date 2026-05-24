@@ -167,11 +167,17 @@ export const ttp = {
     response: z.object({}),
   },
   message_state: {
-    request: z.object({
-      chat_partner_id: z.number(),
-      send_time: z.number(),
-      message_state: message.shape.message_state,
-    }),
+    request: z
+      .object({
+        chat_partner_id: z.number(),
+        send_time: z.number(),
+        message_state: message.shape.message_state,
+      })
+      .or(
+        z.object({
+          message_state: message.shape.message_state,
+        }),
+      ),
     response: z.object({
       chat_partner_id: z.number(),
       message_state: message.shape.message_state,
