@@ -156,7 +156,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             )}
           </>
         )}
-        <Controls className="mr-2 ring-border" />
+        <Controls className="mr-2" />
       </div>
     </div>
   );

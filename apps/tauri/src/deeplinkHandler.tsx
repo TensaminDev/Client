@@ -7,6 +7,7 @@ import {
 } from "react";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { isTauri } from "@tauri-apps/api/core";
+import { useIsMobile } from "@tensamin/ui";
 
 type DeeplinkContextValue = {
   deeplinks: readonly string[];
@@ -31,10 +32,10 @@ export default function DeeplinkProvider({
   children: ReactNode;
 }) {
   const [deeplinks, setDeeplinks] = useState<string[]>([]);
-  const isTauriEnv = isTauri();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (!isTauriEnv) return;
+    if (!isTauri() || !isMobile) return;
 
     let mounted = true;
     let unlisten: (() => void) | undefined;
@@ -57,7 +58,7 @@ export default function DeeplinkProvider({
       mounted = false;
       unlisten?.();
     };
-  }, [isTauriEnv]);
+  }, [isMobile]);
 
   return (
     <deeplinkContext.Provider

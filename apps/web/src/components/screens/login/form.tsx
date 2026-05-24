@@ -1,4 +1,4 @@
-import { Button, cn } from "@tensamin/ui";
+import { Button, cn, useIsMobile } from "@tensamin/ui";
 import { Input } from "@tensamin/ui";
 import { Label } from "@tensamin/ui";
 import { useStorage } from "@tensamin/storage/context";
@@ -84,6 +84,7 @@ function parseTuFileContent(rawFileContent: string): {
 }
 
 export default function Form() {
+  const isMobile = useIsMobile();
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const { save } = useStorage();
@@ -266,7 +267,7 @@ export default function Form() {
 
   return (
     <div className="relative flex md:flex-row flex-col gap-15">
-      {isTauri() ? (
+      {isTauri() && isMobile ? (
         <>
           <QrCodeScanner
             onData={async (data) => {
