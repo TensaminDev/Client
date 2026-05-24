@@ -168,7 +168,7 @@ jobs:
           test -d releases
           find releases -type f | grep -q .
 
-          LATEST_PROD_TAG="$(git tag --sort=-v:refname | head -n 1 || true)"
+          LATEST_PROD_TAG="$(git for-each-ref refs/tags --sort=-creatordate --format='%(refname:short)' | awk '!/-/' | head -n 1 || true)"
 
           if [ -n "$LATEST_PROD_TAG" ]; then
             RAW_LOG="$(git log "$LATEST_PROD_TAG"..HEAD --pretty=format:'- %s')"
