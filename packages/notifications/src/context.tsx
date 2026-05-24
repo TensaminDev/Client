@@ -23,7 +23,7 @@ function reduceDisplay(display: string) {
 }
 
 export default function Provider(props: { children: React.ReactNode }) {
-  const { subscribePush } = useTTP();
+  const { subscribePush, send } = useTTP();
   const { load } = useStorage();
   const { get } = useUser();
   const { decryptText, getSharedSecret } = useCrypto();
@@ -49,7 +49,32 @@ export default function Provider(props: { children: React.ReactNode }) {
           message.content,
         );
 
-        console.log(userId, sender_id, userId === sender_id);
+        // Update message state
+        if (
+          (await load("settings.read_confirmations")) &&
+          userId === sender_id
+        ) {
+          await send(
+            "message_state",
+            {
+              message_state: "read",
+            },
+            {
+              id: ttpMessage.id,
+            },
+          );
+        } else {
+          await send(
+            "message_state",
+            {
+              message_state: "received",
+            },
+            {
+              id: ttpMessage.id,
+            },
+          );
+        }
+
         if (userId === sender_id) {
           addLiveMessage({
             ...message,
@@ -60,7 +85,7 @@ export default function Provider(props: { children: React.ReactNode }) {
           return;
         }
 
-        // add notification symbol to conversation cards
+        // todo: add notification symbol to conversation cards (incl. message start)
 
         moveUserIdToTop(sender_id);
 
@@ -91,6 +116,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     addLiveMessage,
     userId,
     moveUserIdToTop,
+    send,
   ]);
 
   return (

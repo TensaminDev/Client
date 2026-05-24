@@ -28,6 +28,21 @@ const settings = {
         type: "boolean",
         default: false,
       },
+      read_confirmations: {
+        display: "Enable Read Confirmations",
+        type: "boolean",
+        default: true,
+      },
+      receive_confirmations: {
+        display: "Enable Receive Confirmations",
+        type: "boolean",
+        default: true,
+      },
+      show_start_of_last_message_in_sidebar: {
+        display: "Show Start of Last Message in Sidebar",
+        type: "boolean",
+        default: true,
+      },
     },
   },
   application: {
@@ -35,6 +50,7 @@ const settings = {
   },
 } as const satisfies SettingsSchema;
 
+// Assemble storage defaults
 export default settings;
 
 type BooleanSettingNames<T extends SettingsSchema> = {

@@ -438,7 +438,7 @@ export default function Screen() {
         className="min-h-0 flex-1 overflow-y-auto"
         style={{
           overflowAnchor: "none",
-          paddingBottom: "8px",
+          paddingBottom: "22px",
         }}
         onScroll={handleContainerScroll}
       >
@@ -461,7 +461,6 @@ export default function Screen() {
                     left: 0,
                     width: "100%",
                     transform: `translateY(${virtualRow.start + verticalOffset}px)`,
-                    padding: "4px 0",
                   }}
                 >
                   <div className="w-full flex justify-start">

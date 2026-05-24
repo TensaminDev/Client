@@ -36,7 +36,7 @@ export function Switch({
   label,
   id,
 }: {
-  label: string;
+  label: React.ReactNode;
   id: keyof typeof settingsStorageDefaults & BooleanStorageKey;
 }) {
   const { save, load } = useStorage();
