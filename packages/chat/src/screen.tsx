@@ -8,6 +8,7 @@ import Message from "./components/message";
 
 import { PAGE_SIZE } from "./values";
 import { useIsMobile } from "@tensamin/ui";
+import { Loader2 } from "lucide-react";
 
 function getDistanceFromBottom(element: HTMLDivElement) {
   return element.scrollHeight - (element.scrollTop + element.clientHeight);
@@ -360,9 +361,38 @@ export default function Screen() {
       return;
     }
 
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    isAtBottomRef.current = true;
-    setHasScrolledToBottomInitially(true);
+    let rafId: number;
+    let stableFrames = 0;
+    let lastScrollHeight = 0;
+
+    const settleToBottom = () => {
+      if (!scrollRef.current || hasScrolledToBottomInitially) {
+        return;
+      }
+
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const currentScrollHeight = scrollRef.current.scrollHeight;
+
+      if (currentScrollHeight === lastScrollHeight) {
+        stableFrames++;
+      } else {
+        stableFrames = 0;
+        lastScrollHeight = currentScrollHeight;
+      }
+
+      if (stableFrames >= 2) {
+        isAtBottomRef.current = true;
+        setHasScrolledToBottomInitially(true);
+      } else {
+        rafId = requestAnimationFrame(settleToBottom);
+      }
+    };
+
+    settleToBottom();
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
   }, [hasScrolledToBottomInitially, virtualRowCount]);
 
   React.useLayoutEffect(() => {
@@ -442,6 +472,19 @@ export default function Screen() {
         }}
         onScroll={handleContainerScroll}
       >
+        {messagesQuery.isPending && (
+          <div className="flex items-center justify-center pt-10">
+            <p className="text-foreground/45 flex gap-1 items-center justify-center">
+              <Loader2 size={18} className="animate-spin" />
+              Loading...
+            </p>
+          </div>
+        )}
+        {messagesQuery.isFetchingNextPage && (
+          <div className="flex items-center justify-center pt-3 pb-1">
+            <Loader2 size={16} className="animate-spin text-foreground/45" />
+          </div>
+        )}
         <div
           className="relative w-full"
           style={{
