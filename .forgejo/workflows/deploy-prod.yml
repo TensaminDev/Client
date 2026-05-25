@@ -90,7 +90,7 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm xz-utils
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
