@@ -741,6 +741,14 @@ let screenShareController: ReturnType<
   typeof createScreenShareController
 > | null = null;
 
+function getNoiseFilterAssetBaseUrl() {
+  if (window.location.protocol === "file:") {
+    return new URL("./assets", document.baseURI).href.replace(/\/$/, "");
+  }
+
+  return "/assets";
+}
+
 function getScreenShareController() {
   if (!screenShareController) {
     screenShareController = createScreenShareController({
@@ -1086,7 +1094,7 @@ export function useInitializeCall() {
         noiseReductionLevel: 60,
         sampleRate: 48000,
         assetConfig: {
-          cdnUrl: "/assets",
+          cdnUrl: getNoiseFilterAssetBaseUrl(),
         },
       }),
     [],

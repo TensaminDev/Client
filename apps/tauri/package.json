@@ -4,10 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./context": {
-      "types": "./src/context.tsx",
-      "default": "./src/context.tsx"
-    },
     "./controls": {
       "types": "./src/windowControls.tsx",
       "default": "./src/windowControls.tsx"
@@ -26,10 +22,6 @@
     "build:mobile:raw": "tauri android build",
     "dev:mobile": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:mobile:raw; else bun dev:mobile:raw; fi",
     "build:mobile": "bun run render-version.ts && if command -v nix >/dev/null 2>&1; then nix develop --command bun build:mobile:raw; else bun build:mobile:raw; fi && bun run render-version.ts --unrender",
-    "dev:desktop:raw": "tauri dev",
-    "build:desktop:raw": "tauri build",
-    "dev:desktop": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:desktop:raw; else bun dev:desktop:raw; fi",
-    "build:desktop": "if command -v nix >/dev/null 2>&1; then nix develop --command bun build:desktop:raw; else bun build:desktop:raw; fi",
     "gen-icons": "tauri icon ./logo.json",
     "format": "bunx prettier --write .",
     "lint": "eslint src"

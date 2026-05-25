@@ -8,6 +8,6 @@
 - Admin call actions
   - Timeout
   - Disconnect
-- Desktop-App screenshares
 - Context menus
 - Popout Window
+- Add quality selection

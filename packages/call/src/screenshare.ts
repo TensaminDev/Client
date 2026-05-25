@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { log } from "@tensamin/shared/log";
 import {
   type LocalTrack,
@@ -21,6 +20,39 @@ type ScreenShareStoreSetState = (
     | Partial<ScreenShareStoreState>
     | ((state: ScreenShareStoreState) => Partial<ScreenShareStoreState>),
 ) => void;
+
+declare global {
+  interface Window {
+    tensaminDesktop?: {
+      media?: {
+        getScreenShareCapabilities?: () => Promise<{
+          runtime?: "electron" | "tauri";
+          platform: "linux" | "macos" | "windows" | "other";
+          showAudioOutputSelector: boolean;
+          showAudioSwitch: boolean;
+          hasReliableSystemAudio: boolean;
+        }>;
+        listScreenShareSources?: () => Promise<
+          Array<{
+            id: string;
+            kind: "screen" | "window";
+            name: string;
+            subtitle?: string | null;
+            thumbnail?: string | null;
+          }>
+        >;
+        listScreenShareAudioOutputs?: () => Promise<
+          Array<{
+            id: string;
+            name: string;
+            isDefault: boolean;
+          }>
+        >;
+        selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
+      };
+    };
+  }
+}
 
 type ScreenShareControllerOptions = {
   room: Room;
@@ -128,84 +160,26 @@ export function createScreenShareController({
   async function startLinuxDesktopScreenShare(sourceId: string) {
     await clearPublishedScreenShare();
 
-    const canvas = document.createElement("canvas");
-    canvas.width = 1280;
-    canvas.height = 720;
-    canvas.style.display = "none";
-    document.body.appendChild(canvas);
-
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      canvas.remove();
-      throw new Error("Failed to initialize the screen share canvas.");
-    }
-
-    const stream = canvas.captureStream(8);
-    const videoTrack = stream.getVideoTracks()[0];
-
-    if (!videoTrack) {
-      canvas.remove();
-      throw new Error("Failed to create a video track for screen sharing.");
-    }
-
-    const image = new Image();
-    let stopped = false;
-    let frameRequestInFlight = false;
-
-    const renderFrame = async () => {
-      if (stopped || frameRequestInFlight) {
-        return;
-      }
-
-      frameRequestInFlight = true;
-
-      try {
-        const dataUrl = await invoke<string>("capture_screen_share_frame", {
-          sourceId,
-        });
-
-        await new Promise<void>((resolve, reject) => {
-          image.onload = () => resolve();
-          image.onerror = () =>
-            reject(new Error("Failed to decode screen share frame."));
-          image.src = dataUrl;
-        });
-
-        if (
-          canvas.width !== image.naturalWidth ||
-          canvas.height !== image.naturalHeight
-        ) {
-          canvas.width = image.naturalWidth;
-          canvas.height = image.naturalHeight;
-        }
-
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      } finally {
-        frameRequestInFlight = false;
-      }
-    };
-
-    await renderFrame();
-
-    const interval = window.setInterval(() => {
-      void renderFrame().catch((error) => {
-        log(
-          1,
-          "call",
-          "red",
-          "Failed to capture Linux screen share frame",
-          error,
-        );
+    if (window.tensaminDesktop?.media?.selectScreenShareSource) {
+      await window.tensaminDesktop.media.selectScreenShareSource(sourceId);
+      const tracks = await room.localParticipant.createScreenTracks({
+        audio: false,
+        video: true,
+        systemAudio: "exclude",
+        surfaceSwitching: "exclude",
+        selfBrowserSurface: "exclude",
+        contentHint: "detail",
       });
-    }, 125);
 
-    await publishScreenShareTracks([videoTrack], () => {
-      stopped = true;
-      window.clearInterval(interval);
-      stream.getTracks().forEach((track) => track.stop());
-      canvas.remove();
-    });
+      await publishScreenShareTracks(tracks, () => {
+        tracks.forEach((track) => track.stop());
+      });
+      return;
+    }
+
+    throw new Error(
+      `Electron desktop media bridge is unavailable. Cannot capture ${sourceId}.`,
+    );
   }
 
   async function stopScreenShare() {

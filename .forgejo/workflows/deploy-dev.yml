@@ -2,6 +2,8 @@ on:
   push:
     branches:
       - dev
+    paths-ignore:
+      - flake.nix
 
 jobs:
   build-web:
@@ -11,7 +13,7 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
 
       - name: Install Nix
         uses: https://github.com/cachix/install-nix-action@v30
@@ -44,7 +46,7 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
 
       - name: Install Nix
         uses: https://github.com/cachix/install-nix-action@v30
@@ -80,15 +82,15 @@ jobs:
 
   build-desktop:
     runs-on: docker
+    strategy:
+      matrix:
+        target: [linux]
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
         run: apt-get update && apt-get install -y sudo curl jq
-
-      - name: Install Nix
-        uses: https://github.com/cachix/install-nix-action@v30
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
@@ -102,14 +104,14 @@ jobs:
       - name: Build packages
         run: bun run build:packages
 
-      - name: Build desktop
+      - name: Build Electron desktop
         run: bun run build:desktop
 
       - name: Upload desktop artifacts
         uses: https://data.forgejo.org/actions/upload-artifact@v3
         with:
-          name: desktop-bundles
-          path: apps/tauri/src-tauri/target/release/bundle/
+          name: electron-desktop-${{ matrix.target }}
+          path: apps/electron/release/
 
   release:
     runs-on: docker
@@ -138,8 +140,8 @@ jobs:
       - name: Download desktop artifacts
         uses: https://data.forgejo.org/actions/download-artifact@v3
         with:
-          name: desktop-bundles
-          path: apps/tauri/src-tauri/target/release/bundle/
+          name: electron-desktop-linux
+          path: apps/electron/release/
 
       - name: Copy releases
         run: bun --bun run copy-releases
@@ -230,6 +232,19 @@ jobs:
                 }')")"
             RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
           fi
+
+          ASSET_BASE_URL="${API%/api/v1}/$REPO/releases/download/$TAG"
+          export ASSET_BASE_URL
+          node -e '
+            const fs = require("fs");
+            const path = "releases/electron-release-metadata.json";
+            const metadata = JSON.parse(fs.readFileSync(path, "utf8"));
+            metadata.tag = process.env.TAG;
+            for (const artifact of metadata.artifacts || []) {
+              artifact.url = `${process.env.ASSET_BASE_URL}/${encodeURIComponent(artifact.name)}`;
+            }
+            fs.writeFileSync(path, `${JSON.stringify(metadata, null, 2)}\n`);
+          '
 
           find releases -type f -print0 | while IFS= read -r -d '' file; do
             name="$(basename "$file")"
