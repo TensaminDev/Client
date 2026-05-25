@@ -20,6 +20,10 @@ function compareSemver(left: string, right: string) {
   return 0;
 }
 
+function isDevVersion(version: string) {
+  return /-dev[.-]/.test(version);
+}
+
 function platformName() {
   if (process.platform === "win32") return "windows";
   if (process.platform === "darwin") return "macos";
@@ -100,6 +104,23 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
 
   const metadata = JSON.parse(await requestText(metadataUrl)) as ReleaseMetadata;
   const artifact = selectArtifact(metadata);
+
+  if (isDevVersion(metadata.version) !== isDevVersion(currentVersion)) {
+    return { available: false, currentVersion, latestVersion: metadata.version };
+  }
+
+  if (isDevVersion(currentVersion)) {
+    if (!artifact || metadata.version === currentVersion) {
+      return { available: false, currentVersion, latestVersion: metadata.version };
+    }
+
+    return {
+      available: true,
+      currentVersion,
+      latestVersion: metadata.version,
+      artifact,
+    };
+  }
 
   if (!artifact || compareSemver(metadata.version, currentVersion) <= 0) {
     return { available: false, currentVersion, latestVersion: metadata.version };

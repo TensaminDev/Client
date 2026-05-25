@@ -104,6 +104,18 @@ jobs:
       - name: Build packages
         run: bun run build:packages
 
+      - name: Set Electron prod version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          export VERSION
+          node -e '
+            const fs = require("fs");
+            const path = "apps/electron/package.json";
+            const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+          '
+
       - name: Build Electron desktop
         run: bun run build:desktop
 
@@ -141,15 +153,21 @@ jobs:
           name: electron-desktop-linux
           path: apps/electron/release/
 
-      - name: Copy releases
-        run: bun --bun run copy-releases
-
       - name: Read version
         id: version
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
           echo "tag=$VERSION" >> "$FORGEJO_OUTPUT"
+
+      - name: Copy releases
+        env:
+          TENSAMIN_RELEASE_VERSION: ${{ steps.version.outputs.tag }}
+          TENSAMIN_RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          ASSET_BASE_URL="${{ forgejo.api_url }}"
+          ASSET_BASE_URL="${ASSET_BASE_URL%/api/v1}/${{ forgejo.repository }}/releases/download/${{ steps.version.outputs.tag }}"
+          FORGEJO_RELEASE_ASSET_BASE_URL="$ASSET_BASE_URL" bun --bun run copy-releases
 
       - name: Create release and upload files
         env:
@@ -198,6 +216,7 @@ jobs:
             const fs = require("fs");
             const path = "releases/electron-release-metadata.json";
             const metadata = JSON.parse(fs.readFileSync(path, "utf8"));
+            metadata.version = process.env.TAG;
             metadata.tag = process.env.TAG;
             for (const artifact of metadata.artifacts || []) {
               artifact.url = `${process.env.ASSET_BASE_URL}/${encodeURIComponent(artifact.name)}`;

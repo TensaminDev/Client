@@ -13,6 +13,8 @@ import { join } from "node:path";
 import packageJson from "../package.json" with { type: "json" };
 
 const { version } = packageJson;
+const releaseVersion = process.env.TENSAMIN_RELEASE_VERSION || version;
+const releaseTag = process.env.TENSAMIN_RELEASE_TAG || releaseVersion;
 const releasesDir = join("releases");
 const releaseAssetBaseUrl = process.env.FORGEJO_RELEASE_ASSET_BASE_URL;
 
@@ -64,7 +66,7 @@ const copyElectronArtifacts = () => {
 
   for (const file of readdirSync(electronReleaseDir)) {
     if (file.endsWith(".blockmap") || file.endsWith(".yml")) continue;
-    if (!file.includes(version)) continue;
+    if (!file.includes(version) && !file.includes(releaseVersion)) continue;
 
     const source = join(electronReleaseDir, file);
     if (!statSync(source).isFile()) continue;
@@ -98,7 +100,7 @@ const artifacts = await Promise.all(
 
 await Bun.write(
   join(releasesDir, "electron-release-metadata.json"),
-  `${JSON.stringify({ version, tag: version, publishedAt: new Date().toISOString(), artifacts: artifacts.filter((artifact) => artifact.platform !== "android") }, null, 2)}\n`,
+  `${JSON.stringify({ version: releaseVersion, tag: releaseTag, publishedAt: new Date().toISOString(), artifacts: artifacts.filter((artifact) => artifact.platform !== "android") }, null, 2)}\n`,
 );
 await Bun.write(
   join(releasesDir, "SHA256SUMS"),
