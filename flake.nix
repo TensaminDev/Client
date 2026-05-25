@@ -20,7 +20,7 @@
         inherit version;
         src = pkgs.fetchurl {
           url = "${forgejoBaseUrl}/${artifact}";
-          hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+          hash = "sha256-bzAwsO/zHDVkBxADMJeR8L0/Cnj06RbBzUGYYrTouw4=";
         };
       };
 
