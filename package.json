@@ -21,8 +21,9 @@
     "preview:web": "cd apps/web && bun run preview",
     "dev:mobile": "cd apps/tauri && bun dev:mobile",
     "build:mobile": "cd apps/tauri && bun run build:mobile",
-    "dev:desktop": "cd apps/tauri && bun dev:desktop",
-    "build:desktop": "cd apps/tauri && bun run build:desktop",
+    "dev:desktop": "cd apps/electron && bun run dev",
+    "build:desktop": "cd apps/electron && bun run package",
+    "run:desktop": "TENSAMIN_APPIMAGE=\"$PWD/apps/electron/release/Tensamin-0.0.3-linux-x86_64.AppImage\" nix run .#localPathForDev --impure",
     "delete:mobile": "cd apps/tauri && nix develop --command adb uninstall net.tensamin.client"
   },
   "devDependencies": {
@@ -40,7 +41,7 @@
     "jsonc-parser": "^3.3.1"
   },
   "overrides": {
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.34.tar.gz",
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.36.tar.gz",
     "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.19.tar.gz"
   },
   "dependencies": {

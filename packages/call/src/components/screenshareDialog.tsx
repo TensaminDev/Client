@@ -20,7 +20,7 @@ import {
   type DesktopScreenShareCapabilities,
   type DesktopScreenShareSource,
   useDesktopMedia,
-} from "@tensamin/tauri/context";
+} from "@tensamin/shared/desktopMedia";
 import { toast } from "@tensamin/shared/log";
 import { AppWindow, Loader2, MonitorUp } from "lucide-react";
 import type { ScreenShareCaptureOptions } from "livekit-client";
@@ -150,7 +150,9 @@ export default function ScreenShareDialog({
     setLoading(true);
 
     try {
-      if (capabilities.platform === "linux") {
+      if (capabilities.runtime === "electron") {
+        await startLinuxDesktopScreenShare(selectedSource.id);
+      } else if (capabilities.platform === "linux") {
         await startLinuxDesktopScreenShare(selectedSource.id);
       } else {
         await setScreenShareEnabled(

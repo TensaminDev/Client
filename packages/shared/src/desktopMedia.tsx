@@ -1,11 +1,11 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { invoke, isTauri } from "@tauri-apps/api/core";
 
 export type DesktopScreenShareSource = {
   id: string;
   kind: "screen" | "window";
   name: string;
   subtitle?: string | null;
+  thumbnail?: string | null;
 };
 
 export type DesktopScreenShareAudioOutput = {
@@ -15,11 +15,27 @@ export type DesktopScreenShareAudioOutput = {
 };
 
 export type DesktopScreenShareCapabilities = {
+  runtime?: "electron" | "tauri";
   platform: "linux" | "macos" | "windows" | "other";
   showAudioOutputSelector: boolean;
   showAudioSwitch: boolean;
   hasReliableSystemAudio: boolean;
 };
+
+type ElectronDesktopApi = {
+  media?: {
+    getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
+    listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
+    listScreenShareAudioOutputs?: () => Promise<DesktopScreenShareAudioOutput[]>;
+    selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
+  };
+};
+
+declare global {
+  interface Window {
+    tensaminDesktop?: ElectronDesktopApi;
+  }
+}
 
 type DesktopMediaContextValue = {
   getScreenShareCapabilities: () => Promise<DesktopScreenShareCapabilities>;
@@ -28,6 +44,7 @@ type DesktopMediaContextValue = {
 };
 
 const defaultCapabilities: DesktopScreenShareCapabilities = {
+  runtime: undefined,
   platform: "other",
   showAudioOutputSelector: false,
   showAudioSwitch: false,
@@ -39,33 +56,29 @@ const desktopMediaContext = createContext<DesktopMediaContextValue | undefined>(
 );
 
 async function listScreenShareSources(): Promise<DesktopScreenShareSource[]> {
-  if (!isTauri()) {
-    return [];
+  if (window.tensaminDesktop?.media?.listScreenShareSources) {
+    return window.tensaminDesktop.media.listScreenShareSources();
   }
 
-  return invoke<DesktopScreenShareSource[]>("list_screen_share_sources");
+  return [];
 }
 
 async function listScreenShareAudioOutputs(): Promise<
   DesktopScreenShareAudioOutput[]
 > {
-  if (!isTauri()) {
-    return [];
+  if (window.tensaminDesktop?.media?.listScreenShareAudioOutputs) {
+    return window.tensaminDesktop.media.listScreenShareAudioOutputs();
   }
 
-  return invoke<DesktopScreenShareAudioOutput[]>(
-    "list_screen_share_audio_outputs",
-  );
+  return [];
 }
 
 async function getScreenShareCapabilities(): Promise<DesktopScreenShareCapabilities> {
-  if (!isTauri()) {
-    return defaultCapabilities;
+  if (window.tensaminDesktop?.media?.getScreenShareCapabilities) {
+    return window.tensaminDesktop.media.getScreenShareCapabilities();
   }
 
-  return invoke<DesktopScreenShareCapabilities>(
-    "get_screen_share_capabilities",
-  );
+  return defaultCapabilities;
 }
 
 export function useDesktopMedia() {
@@ -78,7 +91,11 @@ export function useDesktopMedia() {
   return value;
 }
 
-export default function Provider({ children }: { children: ReactNode }) {
+export default function DesktopMediaProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const value = useMemo<DesktopMediaContextValue>(
     () => ({
       getScreenShareCapabilities,

@@ -8,7 +8,6 @@
 - Admin call actions
   - Timeout
   - Disconnect
-- Desktop-App screenshares
 - Context menus
 - Popout Window
-- If micGated=true & isSpeaking=false for 5 seconds show banner with mic detection
+- Add quality selection

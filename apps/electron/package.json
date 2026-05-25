@@ -1,0 +1,69 @@
+{
+  "name": "@tensamin/electron",
+  "private": true,
+  "version": "0.0.3",
+  "description": "Tensamin desktop client",
+  "author": "methanium",
+  "homepage": "https://git.methanium.net/tensamin/client",
+  "type": "module",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "clean": "rm -rf dist release",
+    "build:web": "cd ../.. && bun run build:web",
+    "build": "tsc -p tsconfig.json && esbuild src/preload/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload/preload.cjs",
+    "dev:raw": "cd ../.. && bun run build:web && cd apps/electron && bun run build && electron . --verbose",
+    "dev": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop --command bun run dev:raw; else bun run dev:raw; fi",
+    "start:raw": "bun run build && electron .",
+    "start": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop --command bun run start:raw; else bun run start:raw; fi",
+    "package:raw": "cd ../.. && bun run build:web && cd apps/electron && bun run build && electron-builder --publish never",
+    "package": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop --command bun run package:raw; else bun run package:raw; fi",
+    "package:linux:raw": "cd ../.. && bun run build:web && cd apps/electron && bun run build && electron-builder --linux --publish never",
+    "package:linux": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop --command bun run package:linux:raw; else bun run package:linux:raw; fi",
+    "package:windows:raw": "cd ../.. && bun run build:web && cd apps/electron && bun run build && electron-builder --win --publish never",
+    "package:windows": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop --command bun run package:windows:raw; else bun run package:windows:raw; fi",
+    "checksum": "bun scripts/generate-release-metadata.ts",
+    "generate-signing-key": "bun scripts/generate-signing-key.ts",
+    "validate:raw": "bun run build && bun run package:linux:raw",
+    "validate": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop --command bun run validate:raw; else bun run validate:raw; fi"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.11",
+    "typescript": "~6.0.3"
+  },
+  "build": {
+    "appId": "net.tensamin.client",
+    "productName": "Tensamin",
+    "artifactName": "Tensamin-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "web"
+      }
+    ],
+    "linux": {
+      "target": ["AppImage", "deb", "rpm"],
+      "category": "Network",
+      "maintainer": "methanium"
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "mac": {
+      "target": ["dmg"]
+    },
+    "publish": null
+  }
+}

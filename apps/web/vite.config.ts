@@ -51,6 +51,7 @@ function deepFilterAssetHeaders(rootDir: string): Plugin {
 }
 
 export default defineConfig({
+  base: "./",
   clearScreen: false,
   resolve: {
     tsconfigPaths: true,

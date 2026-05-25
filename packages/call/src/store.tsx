@@ -295,13 +295,15 @@ async function updateLocalParticipantAttributes(
     screenSharePreviewLength: attributes.screenSharePreview?.length ?? 0,
   });
 
-  await getRoom().localParticipant.setAttributes(attributes).catch((error) => {
-    log(1, "call", "red", "Failed to update local participant attributes", {
-      attributes: Object.keys(attributes),
-      error,
+  await getRoom()
+    .localParticipant.setAttributes(attributes)
+    .catch((error) => {
+      log(1, "call", "red", "Failed to update local participant attributes", {
+        attributes: Object.keys(attributes),
+        error,
+      });
+      throw error;
     });
-    throw error;
-  });
 
   log(2, "call", "purple", "Updated local participant attributes", {
     attributeKeys: Object.keys(attributes),
@@ -739,6 +741,14 @@ let screenShareController: ReturnType<
   typeof createScreenShareController
 > | null = null;
 
+function getNoiseFilterAssetBaseUrl() {
+  if (window.location.protocol === "file:") {
+    return new URL("./assets", document.baseURI).href.replace(/\/$/, "");
+  }
+
+  return "/assets";
+}
+
 function getScreenShareController() {
   if (!screenShareController) {
     screenShareController = createScreenShareController({
@@ -795,11 +805,13 @@ export async function connect(callId: string) {
 
   syncAllRemoteTrackSubscriptions();
 
-  await getRoom().localParticipant.setMicrophoneEnabled(true).catch((error) => {
-    log(1, "call", "red", "Failed to enable microphone", error);
-    toast("error", "Failed to enable microphone.");
-    throw error;
-  });
+  await getRoom()
+    .localParticipant.setMicrophoneEnabled(true)
+    .catch((error) => {
+      log(1, "call", "red", "Failed to enable microphone", error);
+      toast("error", "Failed to enable microphone.");
+      throw error;
+    });
 
   syncParticipantState();
 }
@@ -1082,7 +1094,7 @@ export function useInitializeCall() {
         noiseReductionLevel: 60,
         sampleRate: 48000,
         assetConfig: {
-          cdnUrl: "/assets",
+          cdnUrl: getNoiseFilterAssetBaseUrl(),
         },
       }),
     [],

@@ -12,9 +12,7 @@ const tauriConfigPath = path.resolve(__dirname, "./src-tauri/tauri.conf.json");
 const isUnrender = process.argv.includes("--unrender");
 
 // Version Source
-const packageJson = JSON.parse(
-  fs.readFileSync(rootPackageJsonPath, "utf8")
-);
+const packageJson = JSON.parse(fs.readFileSync(rootPackageJsonPath, "utf8"));
 
 const packageVersion: string = packageJson.version;
 
@@ -22,9 +20,7 @@ if (!packageVersion && !isUnrender) {
   throw new Error("No version found in package.json");
 }
 
-const targetVersion = isUnrender
-  ? PLACEHOLDER_VERSION
-  : packageVersion;
+const targetVersion = isUnrender ? PLACEHOLDER_VERSION : packageVersion;
 
 // Helpers
 function updateCargoToml(content: string): string {
@@ -34,10 +30,7 @@ function updateCargoToml(content: string): string {
     throw new Error("Could not find version field in Cargo.toml");
   }
 
-  return content.replace(
-    regex,
-    `version = "${targetVersion}"`
-  );
+  return content.replace(regex, `version = "${targetVersion}"`);
 }
 
 function updateTauriConfig(content: string): string {
@@ -47,10 +40,7 @@ function updateTauriConfig(content: string): string {
     throw new Error("Could not find version field in tauri.conf.json");
   }
 
-  return content.replace(
-    regex,
-    `"version": "${targetVersion}"`
-  );
+  return content.replace(regex, `"version": "${targetVersion}"`);
 }
 
 // Update Cargo.toml

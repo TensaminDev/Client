@@ -4,6 +4,7 @@ import {
   RouterProvider,
   createRootRoute,
   createRoute,
+  createHashHistory,
   createRouter,
 } from "@tanstack/react-router";
 
@@ -37,7 +38,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Storage from "@tensamin/storage/context";
 import Session from "@tensamin/storage/session";
 import Crypto from "@tensamin/crypto/context";
-import Mobile from "@tensamin/tauri/context";
+import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
 
 import LegalWrapper from "@/features/legal/screen";
 
@@ -126,9 +127,9 @@ function RootShell() {
               <LoginWrapper>
                 <LegalWrapper>
                   <Crypto>
-                    <Mobile>
+                    <DesktopMediaProvider>
                       <Outlet />
-                    </Mobile>
+                    </DesktopMediaProvider>
                   </Crypto>
                 </LegalWrapper>
               </LoginWrapper>
@@ -271,6 +272,8 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({
   routeTree,
+  history:
+    window.location.protocol === "file:" ? createHashHistory() : undefined,
   defaultNotFoundComponent: NotFound,
 });
 

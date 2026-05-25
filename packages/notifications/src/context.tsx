@@ -10,16 +10,17 @@ import { message as messageSchema } from "@tensamin/shared/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@tensamin/ui";
 import { isTauri } from "@tauri-apps/api/core";
 import { useSession } from "@tensamin/storage/session";
+import { useNavigate } from "@tanstack/react-router";
 
 export const context = createContext<contextType | undefined>(undefined);
 
-function reduceDisplay(display: string) {
-  const words = display.split(" ");
-  if (words.length === 1) {
-    return display.slice(0, 2).toUpperCase();
-  } else {
-    return words[0].charAt(0).toUpperCase() + words[1].charAt(0).toUpperCase();
-  }
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return false;
+
+  if (Notification.permission === "granted") return true;
+
+  const permission = await Notification.requestPermission();
+  return permission === "granted";
 }
 
 export default function Provider(props: { children: React.ReactNode }) {
@@ -29,6 +30,7 @@ export default function Provider(props: { children: React.ReactNode }) {
   const { decryptText, getSharedSecret } = useCrypto();
   const { addLiveMessage, userId } = useChat();
   const { moveUserIdToTop } = useSession();
+  const navigate = useNavigate();
 
   useEffect(() => {
     return subscribePush(async (ttpMessage) => {
@@ -54,7 +56,7 @@ export default function Provider(props: { children: React.ReactNode }) {
           (await load("settings.read_confirmations")) &&
           userId === sender_id
         ) {
-          await send(
+          void send(
             "message_state",
             {
               message_state: "read",
@@ -64,7 +66,7 @@ export default function Provider(props: { children: React.ReactNode }) {
             },
           );
         } else {
-          await send(
+          void send(
             "message_state",
             {
               message_state: "received",
@@ -92,18 +94,41 @@ export default function Provider(props: { children: React.ReactNode }) {
         if (isTauri()) {
           console.log("weewoo");
         } else {
-          sonnerToast(user.display, {
-            classNames: {
-              content: "pl-4",
-            },
-            description: decryptedContent,
-            icon: (
-              <Avatar>
-                <AvatarImage src={user.avatar} />
-                <AvatarFallback>{reduceDisplay(user.display)}</AvatarFallback>
-              </Avatar>
-            ),
-          });
+          const hasPermissions = await requestNotificationPermission();
+
+          if (hasPermissions) {
+            const notification = new Notification(user.display, {
+              body: decryptedContent,
+              icon: user.avatar || user.display.slice(0, 2).toUpperCase(),
+              badge: user.avatar || user.display.slice(0, 2).toUpperCase(),
+              tag: `message-${user.user_id}`,
+              silent: true,
+            });
+
+            notification.onclick = () => {
+              window.focus();
+              navigate({
+                to: `/chat?id=${user.user_id}`,
+              });
+
+              notification.close();
+            };
+          } else {
+            sonnerToast(user.display, {
+              classNames: {
+                content: "pl-4",
+              },
+              description: decryptedContent,
+              icon: (
+                <Avatar>
+                  <AvatarImage src={user.avatar} />
+                  <AvatarFallback>
+                    {user.display.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ),
+            });
+          }
         }
       }
     });
@@ -117,6 +142,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     userId,
     moveUserIdToTop,
     send,
+    navigate,
   ]);
 
   return (

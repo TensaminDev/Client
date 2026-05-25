@@ -2,6 +2,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - flake.nix
 
 jobs:
   build-web:
@@ -11,7 +13,7 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
 
       - name: Install Nix
         uses: https://github.com/cachix/install-nix-action@v30
@@ -44,7 +46,7 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
 
       - name: Install Nix
         uses: https://github.com/cachix/install-nix-action@v30
@@ -80,15 +82,15 @@ jobs:
 
   build-desktop:
     runs-on: docker
+    strategy:
+      matrix:
+        target: [linux]
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
-
-      - name: Install Nix
-        uses: https://github.com/cachix/install-nix-action@v30
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm xz-utils
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
@@ -102,14 +104,26 @@ jobs:
       - name: Build packages
         run: bun run build:packages
 
-      - name: Build desktop
+      - name: Set Electron prod version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          export VERSION
+          node -e '
+            const fs = require("fs");
+            const path = "apps/electron/package.json";
+            const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+          '
+
+      - name: Build Electron desktop
         run: bun run build:desktop
 
       - name: Upload desktop artifacts
         uses: https://data.forgejo.org/actions/upload-artifact@v3
         with:
-          name: desktop-bundles
-          path: apps/tauri/src-tauri/target/release/bundle/
+          name: electron-desktop-${{ matrix.target }}
+          path: apps/electron/release/
 
   release:
     runs-on: docker
@@ -136,11 +150,8 @@ jobs:
       - name: Download desktop artifacts
         uses: https://data.forgejo.org/actions/download-artifact@v3
         with:
-          name: desktop-bundles
-          path: apps/tauri/src-tauri/target/release/bundle/
-
-      - name: Copy releases
-        run: bun --bun run copy-releases
+          name: electron-desktop-linux
+          path: apps/electron/release/
 
       - name: Read version
         id: version
@@ -148,6 +159,15 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
           echo "tag=$VERSION" >> "$FORGEJO_OUTPUT"
+
+      - name: Copy releases
+        env:
+          TENSAMIN_RELEASE_VERSION: ${{ steps.version.outputs.tag }}
+          TENSAMIN_RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          ASSET_BASE_URL="${{ forgejo.api_url }}"
+          ASSET_BASE_URL="${ASSET_BASE_URL%/api/v1}/${{ forgejo.repository }}/releases/download/${{ steps.version.outputs.tag }}"
+          FORGEJO_RELEASE_ASSET_BASE_URL="$ASSET_BASE_URL" bun --bun run copy-releases
 
       - name: Create release and upload files
         env:
@@ -190,9 +210,54 @@ jobs:
               }')")"
           RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
 
+          ASSET_BASE_URL="${API%/api/v1}/$REPO/releases/download/$TAG"
+          export ASSET_BASE_URL
+          node -e '
+            const fs = require("fs");
+            const path = "releases/electron-release-metadata.json";
+            const metadata = JSON.parse(fs.readFileSync(path, "utf8"));
+            metadata.version = process.env.TAG;
+            metadata.tag = process.env.TAG;
+            for (const artifact of metadata.artifacts || []) {
+              artifact.url = `${process.env.ASSET_BASE_URL}/${encodeURIComponent(artifact.name)}`;
+            }
+            fs.writeFileSync(path, `${JSON.stringify(metadata, null, 2)}\n`);
+          '
+
           find releases -type f -print0 | while IFS= read -r -d '' file; do
             name="$(basename "$file")"
             curl -fsS -X POST "$API/repos/$REPO/releases/$RELEASE_ID/assets?name=$name" \
               -H "Authorization: token $TOKEN" \
               -F "attachment=@$file"
           done
+
+      - name: Update root flake release hash
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -eu
+
+          APPIMAGE="$(find releases -maxdepth 1 -type f -name 'Tensamin-*-linux-x86_64.AppImage' -print -quit)"
+          test -n "$APPIMAGE"
+
+          HASH="$(node -e 'const fs = require("fs"); const crypto = require("crypto"); const file = process.argv[1]; console.log("sha256-" + crypto.createHash("sha256").update(fs.readFileSync(file)).digest("base64"));' "$APPIMAGE")"
+          export HASH
+
+          node -e '
+            const fs = require("fs");
+            const version = process.env.TAG;
+            const hash = process.env.HASH;
+            let content = fs.readFileSync("flake.nix", "utf8");
+            content = content.replace(/version = "[^"]+";/, `version = "${version}";`);
+            content = content.replace(/hash = "sha256-[^"]+";/, `hash = "${hash}";`);
+            fs.writeFileSync("flake.nix", content);
+          '
+
+          if git diff --quiet -- flake.nix; then
+            echo "flake.nix already has the current release hash."
+            exit 0
+          fi
+
+          git add flake.nix
+          git -c user.name="forgejo-actions" -c user.email="forgejo-actions@localhost" commit -m "(qol): update release flake hash"
+          git push

@@ -12,6 +12,7 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@tanstack/react-router": "^1.169.1",
     "@tauri-apps/api": "^2.11.0",
     "@tensamin/crypto": "workspace:*",
     "@tensamin/shared": "workspace:*",
