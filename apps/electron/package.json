@@ -39,6 +39,7 @@
   "build": {
     "appId": "net.tensamin.client",
     "productName": "Tensamin",
+    "executableName": "tensamin",
     "artifactName": "Tensamin-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
@@ -55,8 +56,15 @@
     ],
     "linux": {
       "target": ["AppImage", "deb", "rpm"],
+      "executableName": "tensamin",
       "category": "Network",
-      "maintainer": "methanium"
+      "maintainer": "Methanium",
+      "desktop": {
+        "entry": {
+          "Name": "Tensamin",
+          "StartupWMClass": "Tensamin"
+        }
+      }
     },
     "win": {
       "target": ["nsis", "portable"]
