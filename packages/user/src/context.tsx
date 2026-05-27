@@ -51,7 +51,7 @@ export default function UserProvider(props: { children: React.ReactNode }) {
         const user = {
           ...userData.data,
           avatar: userData.data.avatar
-            ? `data:image/png;base64,${userData.data.avatar}`
+            ? `data:image/webp;base64,${atob(userData.data.avatar)}`
             : undefined,
         };
 

@@ -76,6 +76,16 @@ export default function List() {
                 </div>
               );
             })}
+          <p
+            className="text-center text-sm px-2 text-muted-foreground transition-all duration-200 ease-in-out"
+            hidden={contacts.length !== 0 || category !== "conversations"}
+            style={{
+              opacity:
+                contacts.length === 0 && category === "conversations" ? 1 : 0,
+            }}
+          >
+            Get started by adding a conversation
+          </p>
         </div>
       </div>
     </div>

@@ -23,6 +23,7 @@ import {
   indentWithTab,
 } from "@codemirror/commands";
 import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 
 import { collectInlineRanges, ensureMarkdownStyles } from "./markdown";
 
@@ -33,7 +34,35 @@ export type InputProps = {
   setValue: (value: string) => void;
   onSubmit?: () => void;
   invertEnterBehavior?: boolean;
+  styled?: boolean;
+  fontSize?: CSSProperties["fontSize"];
+  paddingX?: CSSProperties["padding"];
+  paddingY?: CSSProperties["padding"];
+  className?: string;
 };
+
+type InputStyle = CSSProperties & {
+  "--tm-md-content-padding"?: string;
+};
+
+function toCssLength(value: CSSProperties["padding"]): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return typeof value === "number" ? `${value}px` : value;
+}
+
+function toCssPadding(
+  vertical: CSSProperties["padding"],
+  horizontal: CSSProperties["padding"],
+  styled: boolean,
+): string {
+  const defaultVertical = styled ? "0.25rem" : "0";
+  const defaultHorizontal = styled ? "0.625rem" : "0";
+
+  return `${toCssLength(vertical) ?? defaultVertical} ${toCssLength(horizontal) ?? defaultHorizontal}`;
+}
 
 type TokenRange = {
   from: number;
@@ -79,6 +108,10 @@ const markdownDecorations = ViewPlugin.fromClass(
  */
 export default function Input(props: InputProps) {
   ensureMarkdownStyles();
+
+  const shellClassName = props.styled
+    ? "min-h-8 w-full min-w-0 rounded-lg border border-input bg-transparent text-base transition-colors outline-none placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+    : "";
 
   const elementRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | undefined>(undefined);
@@ -143,7 +176,22 @@ export default function Input(props: InputProps) {
     });
   }, [props.value]);
 
-  return <div ref={elementRef} className="tm-md-root w-full" />;
+  return (
+    <div
+      ref={elementRef}
+      className={`tm-md-root ${shellClassName} ${props.className ?? ""}`}
+      style={
+        {
+          fontSize: props.fontSize ?? "1rem",
+          "--tm-md-content-padding": toCssPadding(
+            props.paddingY,
+            props.paddingX,
+            Boolean(props.styled),
+          ),
+        } as InputStyle
+      }
+    />
+  );
 }
 
 /**
@@ -204,7 +252,7 @@ function createEditorExtensions(
     }),
     EditorView.theme({
       "&": {
-        fontSize: "1rem",
+        fontSize: "inherit",
       },
       "&.cm-editor": {
         width: "100%",

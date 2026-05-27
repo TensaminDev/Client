@@ -1,4 +1,6 @@
 import {
+  copyFileSync,
+  createReadStream,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -6,11 +8,39 @@ import {
   rmSync,
   statSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import packageJson from "../package.json" with { type: "json" };
 
 const { version } = packageJson;
+const releaseVersion = process.env.TENSAMIN_RELEASE_VERSION || version;
+const releaseTag = process.env.TENSAMIN_RELEASE_TAG || releaseVersion;
 const releasesDir = join("releases");
+const releaseAssetBaseUrl = process.env.FORGEJO_RELEASE_ASSET_BASE_URL;
+
+function sha256(filePath: string) {
+  const hash = createHash("sha256");
+  const stream = createReadStream(filePath);
+
+  return new Promise<string>((resolve, reject) => {
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("error", reject);
+    stream.on("end", () => resolve(hash.digest("hex")));
+  });
+}
+
+function platformFor(file: string) {
+  if (/\.apk$/i.test(file)) return "android";
+  if (/win|nsis|portable|\.exe$/i.test(file)) return "windows";
+  if (/mac|darwin|\.dmg$/i.test(file)) return "macos";
+  return "linux";
+}
+
+function archFor(file: string) {
+  if (/arm64|aarch64/i.test(file)) return "arm64";
+  if (/\.apk$/i.test(file)) return "universal";
+  return "x64";
+}
 
 // directory
 rmSync(releasesDir, { recursive: true, force: true });
@@ -25,56 +55,56 @@ if (existsSync(apkSrc)) {
   console.warn(`Skipping .apk: ${apkSrc} does not exist.`);
 }
 
-// deb & rpm
-const debDir = "apps/tauri/src-tauri/target/release/bundle/deb";
-const rpmDir = "apps/tauri/src-tauri/target/release/bundle/rpm";
+// Electron desktop artifacts
+const electronReleaseDir = "apps/electron/release";
 
-const moveBundleArtifact = (
-  sourceDir: string,
-  extension: ".deb" | ".rpm",
-  destinationFileName: string,
-) => {
-  if (!existsSync(sourceDir)) {
-    console.warn(`Skipping ${extension}: ${sourceDir} does not exist.`);
+const copyElectronArtifacts = () => {
+  if (!existsSync(electronReleaseDir)) {
+    console.warn(`Skipping Electron artifacts: ${electronReleaseDir} does not exist.`);
     return;
   }
 
-  const candidates = readdirSync(sourceDir)
-    .filter((file) => file.endsWith(extension))
-    .map((file) => {
-      const filePath = join(sourceDir, file);
+  for (const file of readdirSync(electronReleaseDir)) {
+    if (file.endsWith(".blockmap") || file.endsWith(".yml")) continue;
+    if (!file.includes(version) && !file.includes(releaseVersion)) continue;
 
-      return {
-        file,
-        filePath,
-        matchesVersion: file.includes(version),
-        modifiedAt: statSync(filePath).mtimeMs,
-      };
-    })
-    .sort((a, b) => {
-      if (a.matchesVersion !== b.matchesVersion) {
-        return Number(b.matchesVersion) - Number(a.matchesVersion);
-      }
+    const source = join(electronReleaseDir, file);
+    if (!statSync(source).isFile()) continue;
 
-      return b.modifiedAt - a.modifiedAt;
-    });
-
-  const selected = candidates[0];
-  if (!selected) {
-    console.warn(`Skipping ${extension}: no files found in ${sourceDir}.`);
-    return;
+    copyFileSync(source, join(releasesDir, file));
   }
-
-  if (!selected.matchesVersion) {
-    console.warn(
-      `Using ${selected.file} for ${extension} even though it does not include version ${version}.`,
-    );
-  }
-
-  renameSync(selected.filePath, join(releasesDir, destinationFileName));
 };
 
-moveBundleArtifact(debDir, ".deb", `Tensamin-${version}.deb`);
-moveBundleArtifact(rpmDir, ".rpm", `Tensamin-${version}.rpm`);
+copyElectronArtifacts();
+
+const artifacts = await Promise.all(
+  readdirSync(releasesDir)
+    .map((file) => join(releasesDir, file))
+    .filter((file) => statSync(file).isFile())
+    .filter((file) => !file.endsWith("electron-release-metadata.json") && !file.endsWith("SHA256SUMS"))
+    .map(async (filePath) => {
+      const name = filePath.split(/[\\/]/).at(-1)!;
+
+      return {
+        name,
+        platform: platformFor(name),
+        arch: archFor(name),
+        url: releaseAssetBaseUrl
+          ? `${releaseAssetBaseUrl.replace(/\/$/, "")}/${encodeURIComponent(name)}`
+          : `__FORGEJO_RELEASE_ASSET_URL__/${encodeURIComponent(name)}`,
+        sha256: await sha256(filePath),
+        size: statSync(filePath).size,
+      };
+    }),
+);
+
+await Bun.write(
+  join(releasesDir, "electron-release-metadata.json"),
+  `${JSON.stringify({ version: releaseVersion, tag: releaseTag, publishedAt: new Date().toISOString(), artifacts: artifacts.filter((artifact) => artifact.platform !== "android") }, null, 2)}\n`,
+);
+await Bun.write(
+  join(releasesDir, "SHA256SUMS"),
+  `${artifacts.map((artifact) => `${artifact.sha256}  ${artifact.name}`).join("\n")}\n`,
+);
 
 console.log("Releases copied successfully.");

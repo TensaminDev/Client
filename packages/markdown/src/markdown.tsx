@@ -560,7 +560,7 @@ export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
         }
 
         return (
-          <p key={blockIndex} className="tm-md-p">
+          <p key={blockIndex}>
             {block.text.split("\n").map((line, lineIndex) => (
               <React.Fragment key={lineIndex}>
                 {lineIndex > 0 ? <br /> : null}
@@ -645,7 +645,6 @@ export const markdownStyles = `
 .tm-md-h4 { font-size: 1.1rem; }
 .tm-md-h5 { font-size: 1rem; }
 .tm-md-h6 { font-size: 0.95rem; opacity: 0.9; }
-.tm-md-p { margin: 0.25rem 0; }
 .tm-md-blockquote { margin: 0.45rem 0; padding-left: 0.75rem; opacity: 0.95; }
 .tm-md-blockquote p { margin: 0.2rem 0; }
 .tm-md-pre { margin: 0.45rem 0; padding: 0.65rem 0.75rem; border-radius: 0.5rem; background: hsl(var(--muted)); overflow-x: auto; }
@@ -665,12 +664,12 @@ export const markdownStyles = `
 .tm-md-table th { background: hsl(var(--muted)); font-weight: 600; }
 .tm-md-hr { margin: 0.55rem 0; }
 
-.cm-editor.tm-md-editor { border-radius: 0.65rem; background: hsl(var(--card)); caret-color: var(--foreground); }
+.cm-editor.tm-md-editor { border-radius: inherit; background: transparent; caret-color: var(--foreground); }
 .cm-editor.tm-md-editor.cm-focused { outline: none; box-shadow: none; }
 .cm-editor.tm-md-editor .cm-scroller { font-family: inherit; line-height: 1.55; max-height: 30vh; overflow-y: auto; overflow-x: hidden; }
 .cm-editor.tm-md-editor .cm-content { caret-color: var(--foreground); }
-.cm-editor.tm-md-editor .cm-content { padding: 0.7rem 0.85rem; min-height: 2.75rem; }
-.cm-editor.tm-md-editor .cm-line { padding: 0 1px; color: hsl(var(--foreground)); }
+.cm-editor.tm-md-editor .cm-content { padding: var(--tm-md-content-padding, 0.25rem 0.625rem); min-height: 2rem; }
+.cm-editor.tm-md-editor .cm-line { padding: 0; color: hsl(var(--foreground)); }
 .cm-editor.tm-md-editor .tm-md-hidden-token { color: transparent; opacity: 0; font-size: inherit; }
 .cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: hsl(var(--muted)); border-radius: 0.3rem; }
 `;

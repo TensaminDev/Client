@@ -1,5 +1,5 @@
 import { useUser, type User } from "@tensamin/user/context";
-import { useCall } from "../store";
+import { useCall, getRoom } from "../store";
 import { useEffect, useState } from "react";
 import { useStorage } from "@tensamin/storage/context";
 import {
@@ -14,7 +14,7 @@ import {
 export default function TopBar() {
   const { get } = useUser();
   const { load } = useStorage();
-  const room = useCall((state) => state.room);
+  const room = getRoom();
   const screenRef = useCall((state) => state.screenRef);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
 

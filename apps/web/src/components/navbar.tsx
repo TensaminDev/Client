@@ -1,5 +1,13 @@
-import { Button } from "@tensamin/ui";
-import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  House,
+  Phone,
+  Settings,
+  User,
+} from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
@@ -10,6 +18,7 @@ import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@tensamin/ui";
 import { WindowControls as Controls } from "@tensamin/ui";
 import { useSession } from "@tensamin/storage/session";
+import Profile from "./modals/profile";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
@@ -23,9 +32,10 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const currentCalls = calls.filter((call) =>
     call.call_members.some((member) => member === id),
   );
-  //const currentCalls = ["leck", "schleck", "und", "eck"];
 
   const [selectOpen, setSelectOpen] = useState(false);
+
+  const [userInfoOpen, setUserInfoOpen] = useState(false);
 
   return (
     <div
@@ -63,7 +73,27 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           <Wrapper
             userId={id}
             component={(user) => (
-              <p className="font-medium text-md">{user?.display}</p>
+              <>
+                <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="link"
+                        className="px-0! text-foreground"
+                        style={{
+                          textDecorationLine: "none",
+                        }}
+                      >
+                        <p className="font-medium text-md">{user?.display}</p>
+                        {userInfoOpen ? <ChevronUp /> : <ChevronDown />}
+                      </Button>
+                    }
+                  />
+                  <PopoverContent side="bottom">
+                    <Profile user={user} />
+                  </PopoverContent>
+                </Popover>
+              </>
             )}
             loading={<Skeleton className="ml-3 w-40 h-5" />}
           />
@@ -126,7 +156,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             )}
           </>
         )}
-        <Controls className="mr-2 ring-border" />
+        <Controls className="mr-2" />
       </div>
     </div>
   );

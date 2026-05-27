@@ -18,10 +18,12 @@ export default function ScreenshareButton({
   className,
   iconSize,
   tooltip,
+  defaultPortal,
 }: {
   className?: string;
   iconSize?: number;
   tooltip?: string;
+  defaultPortal?: boolean;
 }) {
   const isScreensharing = useCall((state) => state.screenShareEnabled);
   const screenRef = useCall((state) => state.screenRef);
@@ -30,8 +32,9 @@ export default function ScreenshareButton({
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (defaultPortal) return;
     setPortalContainer(screenRef?.current ?? undefined);
-  }, [screenRef]);
+  }, [screenRef, defaultPortal]);
 
   async function startWebShare() {
     try {
@@ -110,7 +113,9 @@ export default function ScreenshareButton({
           />
           <PopoverContent
             className="flex w-40 flex-col gap-2"
-            portalProps={{ container: portalContainer }}
+            portalProps={{
+              container: defaultPortal ? undefined : portalContainer,
+            }}
           >
             <Button
               disabled={isScreensharing}
@@ -141,7 +146,11 @@ export default function ScreenshareButton({
           </PopoverContent>
         </Popover>
         {tooltip && (
-          <TooltipContent portalProps={{ container: portalContainer }}>
+          <TooltipContent
+            portalProps={{
+              container: defaultPortal ? undefined : portalContainer,
+            }}
+          >
             {tooltip}
           </TooltipContent>
         )}

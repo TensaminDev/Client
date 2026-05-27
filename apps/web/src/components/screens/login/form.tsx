@@ -1,4 +1,4 @@
-import { Button } from "@tensamin/ui";
+import { Button, cn, useIsMobile } from "@tensamin/ui";
 import { Input } from "@tensamin/ui";
 import { Label } from "@tensamin/ui";
 import { useStorage } from "@tensamin/storage/context";
@@ -83,25 +83,19 @@ function parseTuFileContent(rawFileContent: string): {
   return { userId, privateKey, domain };
 }
 
-/**
- * Renders the login form for file upload and manual credential login.
- * @returns Login form JSX.
- */
 export default function Form() {
+  const isMobile = useIsMobile();
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
   const { save } = useStorage();
 
-  /**
-   * Handles uploaded .tu files and stores resolved credentials.
-   * @param event Change event from the hidden file input.
-   * @returns Promise that resolves when processing has finished.
-   */
-  const handleFileInputChange = React.useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  // Process dropped files
+  const processDroppedFile = React.useCallback(
+    async (file: globalThis.File): Promise<void> => {
       try {
-        const file = event.currentTarget.files?.[0];
-        if (!file) {
-          throw new Error("No file selected");
+        if (!file.name.endsWith(".tu")) {
+          toast("error", "Please upload a .tu file");
+          return;
         }
 
         const raw = await file.text();
@@ -123,13 +117,94 @@ export default function Form() {
     [save],
   );
 
+  // Handle .tu files
+  const handleFileInputChange = React.useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+      const file = event.currentTarget.files?.[0];
+
+      if (!file) {
+        toast("error", "No file selected");
+        return;
+      }
+
+      await processDroppedFile(file);
+    },
+    [processDroppedFile],
+  );
+
+  // Drag and drop listener
+  React.useEffect(() => {
+    let dragCounter = 0;
+
+    const handleDragEnter = (event: DragEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      dragCounter++;
+
+      if (event.dataTransfer?.items?.length) {
+        setIsDragging(true);
+      }
+    };
+
+    const handleDragLeave = (event: DragEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      dragCounter--;
+
+      if (dragCounter <= 0) {
+        setIsDragging(false);
+      }
+    };
+
+    const handleDragOver = (event: DragEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy";
+      }
+    };
+
+    const handleDrop = async (event: DragEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      dragCounter = 0;
+
+      setIsDragging(false);
+
+      const file = event.dataTransfer?.files?.[0];
+
+      if (!file) {
+        toast("error", "No file dropped");
+        return;
+      }
+
+      await processDroppedFile(file);
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("drop", handleDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, [processDroppedFile]);
+
   /**
    * Handles username and private key login submission.
    * @param event Form submit event.
    * @returns Promise that resolves after login processing.
    */
   const handleCredentialsSubmit = React.useCallback(
-    async (event: React.SubmitEvent<HTMLFormElement>): Promise<void> => {
+    async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
       event.preventDefault();
 
       const formData = new FormData(event.currentTarget);
@@ -190,34 +265,35 @@ export default function Form() {
     [save],
   );
 
-  const isTauriEnv = isTauri();
-
   return (
-    <div className="flex md:flex-row flex-col gap-15">
-      {isTauriEnv ? (
+    <div className="relative flex md:flex-row flex-col gap-15">
+      {isTauri() && isMobile ? (
         <>
           <QrCodeScanner
             onData={async (data) => {
               if (!data.startsWith("tensamin://tu::")) {
                 toast("error", "Invalid QR code");
                 return;
-              } else {
-                const decoded = data.replace("tensamin://tu::", "");
+              }
 
-                try {
-                  const { userId, privateKey, domain } =
-                    parseTuFileContent(decoded);
-                  await save("session_id", Date.now());
-                  await save("user_id", userId);
-                  await save("private_key", privateKey);
-                  if (domain) {
-                    await save("ttp_url", `https://${domain}/`);
-                  }
-                  location.href = "/";
-                } catch (error) {
-                  log(0, "login", "red", error);
-                  toast("error", "Failed to parse QR code data");
+              const decoded = data.replace("tensamin://tu::", "");
+
+              try {
+                const { userId, privateKey, domain } =
+                  parseTuFileContent(decoded);
+
+                await save("session_id", Date.now());
+                await save("user_id", userId);
+                await save("private_key", privateKey);
+
+                if (domain) {
+                  await save("ttp_url", `https://${domain}/`);
                 }
+
+                location.href = "/";
+              } catch (error) {
+                log(0, "login", "red", error);
+                toast("error", "Failed to parse QR code data");
               }
             }}
           />
@@ -228,10 +304,30 @@ export default function Form() {
       ) : (
         <div
           onClick={() => uploadRef.current?.click()}
-          className="flex flex-col gap-3 cursor-pointer w-55 aspect-square bg-input/13 hover:bg-input/30 transition-all duration-300 ease-in-out border-3 items-center justify-center rounded-lg"
+          className={cn(
+            "flex flex-col gap-3 cursor-pointer w-55 aspect-square",
+            "border-3 items-center justify-center rounded-lg",
+            "transition-all duration-300 ease-in-out",
+            "border-input",
+            "bg-input/13 hover:bg-input/30",
+            isDragging ? "animate-wiggle" : "",
+          )}
         >
-          <File className="text-foreground" size={27} />
-          <p className="text-md">Select .tu file</p>
+          <File
+            className={["transition-all duration-300 text-foreground"].join(
+              " ",
+            )}
+            size={27}
+          />
+
+          <p
+            className={[
+              "text-md transition-all duration-300",
+              isDragging ? "font-medium" : "",
+            ].join(" ")}
+          >
+            Select .tu file
+          </p>
         </div>
       )}
       <input

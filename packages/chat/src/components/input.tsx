@@ -97,6 +97,9 @@ export default function InputComponent({
     >
       <CardHeader className="relative p-0 flex flex-col">
         <Input
+          className="w-full"
+          paddingY="13px"
+          paddingX="13px"
           placeholder="Send a message..."
           value={value}
           setValue={setValue}

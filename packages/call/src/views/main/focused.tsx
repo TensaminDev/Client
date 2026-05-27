@@ -1,13 +1,13 @@
 import { RoomEvent } from "livekit-client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useCall } from "../../store";
+import { useCall, getRoom } from "../../store";
 import Base from "../../components/modals/base";
 
 const SECONDARY_ROW_HEIGHT_PX = 180;
 const STACK_GAP_PX = 12;
 
 export default function View() {
-  const room = useCall((state) => state.room);
+  const room = getRoom();
   const layoutVersion = useCall((state) => state.layoutVersion);
 
   const usersInFocusedViewHidden = useCall(
@@ -16,6 +16,9 @@ export default function View() {
   const callIsFullscreen = useCall((state) => state.callIsFullscreen);
 
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
+  const focusedParticipantType = useCall(
+    (state) => state.focusedParticipantType,
+  );
   const activeScreenShareParticipantIds = useCall(
     (state) => state.activeScreenShareParticipantIds,
   );
@@ -157,6 +160,11 @@ export default function View() {
   const focusedParticipant = getParticipantById(focusedParticipantId);
   const focusedParticipantHasActiveScreenShare =
     activeScreenShareParticipantIdSet.has(focusedParticipantId);
+  const focusedTileType: "user" | "stream" =
+    focusedParticipantType === "stream" &&
+    focusedParticipantHasActiveScreenShare
+      ? "stream"
+      : "user";
   const isImmersiveFocusedView = callIsFullscreen && usersInFocusedViewHidden;
 
   return (
@@ -179,7 +187,7 @@ export default function View() {
             <Base
               fill={isImmersiveFocusedView}
               flush={isImmersiveFocusedView || isFocusedTileFlush}
-              type={focusedParticipantHasActiveScreenShare ? "stream" : "user"}
+              type={focusedTileType}
               participant={focusedParticipant}
             />
           </div>

@@ -2,17 +2,18 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - flake.nix
 
 jobs:
-  deploy:
+  build-web:
     runs-on: docker
-
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
 
       - name: Install Nix
         uses: https://github.com/cachix/install-nix-action@v30
@@ -23,16 +24,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Setup Android Keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
-        run: |
-          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
-          bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\\\n/g, '\n').replace(/\\r/g, '').split('\n').map(l => l.trim()).filter(l => l).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
+      - name: Copy licenses
+        run: bun run copy-licenses
 
-      - name: Build
-        run: bun run build:apps
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Build web
+        run: bun run build:web
 
       - name: Install rsync
         run: apt-get update && apt-get install -y rsync
@@ -40,12 +39,135 @@ jobs:
       - name: Deploy
         run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-prod/
 
+  build-mobile:
+    runs-on: docker
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
+
+      - name: Install Nix
+        uses: https://github.com/cachix/install-nix-action@v30
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Copy licenses
+        run: bun run copy-licenses
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Setup Android Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
+        run: |
+          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
+          bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\n/g, '\n').replace(/\r/g, '').split('\n').map(l => l.trim()).filter(l => l).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
+
+      - name: Build mobile
+        run: bun run build:mobile
+
+      - name: Upload mobile artifact
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
+        with:
+          name: mobile-apk
+          path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+
+  build-desktop:
+    runs-on: docker
+    strategy:
+      matrix:
+        target: [linux]
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm xz-utils
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Copy licenses
+        run: bun run copy-licenses
+
+      - name: Build packages
+        run: bun run build:packages
+
+      - name: Set Electron prod version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          export VERSION
+          node -e '
+            const fs = require("fs");
+            const path = "apps/electron/package.json";
+            const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+          '
+
+      - name: Build Electron desktop
+        run: bun run build:desktop
+
+      - name: Upload desktop artifacts
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
+        with:
+          name: electron-desktop-${{ matrix.target }}
+          path: apps/electron/release/
+
+  release:
+    runs-on: docker
+    needs: [build-web, build-mobile, build-desktop]
+    steps:
+      - name: Check out repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install Packages
+        run: apt-get update && apt-get install -y sudo curl jq
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download mobile artifact
+        uses: https://data.forgejo.org/actions/download-artifact@v3
+        with:
+          name: mobile-apk
+          path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/
+
+      - name: Download desktop artifacts
+        uses: https://data.forgejo.org/actions/download-artifact@v3
+        with:
+          name: electron-desktop-linux
+          path: apps/electron/release/
+
       - name: Read version
         id: version
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
-          echo "tag=v$VERSION" >> "$FORGEJO_OUTPUT"
+          echo "tag=$VERSION" >> "$FORGEJO_OUTPUT"
+
+      - name: Copy releases
+        env:
+          TENSAMIN_RELEASE_VERSION: ${{ steps.version.outputs.tag }}
+          TENSAMIN_RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          ASSET_BASE_URL="${{ forgejo.api_url }}"
+          ASSET_BASE_URL="${ASSET_BASE_URL%/api/v1}/${{ forgejo.repository }}/releases/download/${{ steps.version.outputs.tag }}"
+          FORGEJO_RELEASE_ASSET_BASE_URL="$ASSET_BASE_URL" bun --bun run copy-releases
 
       - name: Create release and upload files
         env:
@@ -54,38 +176,53 @@ jobs:
           REPO: ${{ forgejo.repository }}
           SHA: ${{ forgejo.sha }}
           TAG: ${{ steps.version.outputs.tag }}
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -eu
 
           test -d releases
           find releases -type f | grep -q .
 
+          COMMIT_MSG="$(git log -1 --pretty=%B | sed 's/$/  /')"
+
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o release_out.json -H "Authorization: token $TOKEN" "$API/repos/$REPO/releases/tags/$TAG")
 
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "Release $TAG already exists."
-            RELEASE_ID="$(jq -r .id release_out.json)"
-          else
-            echo "Creating new release for $TAG"
-            RELEASE_JSON="$(curl -f -sS -X POST "$API/repos/$REPO/releases" \
-              -H "Authorization: token $TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "$(jq -n \
-                --arg tag "$TAG" \
-                --arg name "$TAG" \
-                --arg body "Release $VERSION" \
-                --arg target "$SHA" \
-                '{
-                  tag_name: $tag,
-                  name: $name,
-                  body: $body,
-                  target_commitish: $target,
-                  draft: false,
-                  prerelease: false
-                }')")"
-            RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
+            exit 0
           fi
+
+          echo "Creating new release for $TAG"
+          RELEASE_JSON="$(curl -f -sS -X POST "$API/repos/$REPO/releases" \
+            -H "Authorization: token $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg tag "$TAG" \
+              --arg name "$TAG" \
+              --arg body "$COMMIT_MSG" \
+              --arg target "$SHA" \
+              '{
+                tag_name: $tag,
+                name: $name,
+                body: $body,
+                target_commitish: $target,
+                draft: false,
+                prerelease: false
+              }')")"
+          RELEASE_ID="$(echo "$RELEASE_JSON" | jq -r .id)"
+
+          ASSET_BASE_URL="${API%/api/v1}/$REPO/releases/download/$TAG"
+          export ASSET_BASE_URL
+          node -e '
+            const fs = require("fs");
+            const path = "releases/electron-release-metadata.json";
+            const metadata = JSON.parse(fs.readFileSync(path, "utf8"));
+            metadata.version = process.env.TAG;
+            metadata.tag = process.env.TAG;
+            for (const artifact of metadata.artifacts || []) {
+              artifact.url = `${process.env.ASSET_BASE_URL}/${encodeURIComponent(artifact.name)}`;
+            }
+            fs.writeFileSync(path, `${JSON.stringify(metadata, null, 2)}\n`);
+          '
 
           find releases -type f -print0 | while IFS= read -r -d '' file; do
             name="$(basename "$file")"
@@ -93,3 +230,34 @@ jobs:
               -H "Authorization: token $TOKEN" \
               -F "attachment=@$file"
           done
+
+      - name: Update root flake release hash
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -eu
+
+          APPIMAGE="$(find releases -maxdepth 1 -type f -name 'Tensamin-*-linux-x86_64.AppImage' -print -quit)"
+          test -n "$APPIMAGE"
+
+          HASH="$(node -e 'const fs = require("fs"); const crypto = require("crypto"); const file = process.argv[1]; console.log("sha256-" + crypto.createHash("sha256").update(fs.readFileSync(file)).digest("base64"));' "$APPIMAGE")"
+          export HASH
+
+          node -e '
+            const fs = require("fs");
+            const version = process.env.TAG;
+            const hash = process.env.HASH;
+            let content = fs.readFileSync("flake.nix", "utf8");
+            content = content.replace(/version = "[^"]+";/, `version = "${version}";`);
+            content = content.replace(/hash = "sha256-[^"]+";/, `hash = "${hash}";`);
+            fs.writeFileSync("flake.nix", content);
+          '
+
+          if git diff --quiet -- flake.nix; then
+            echo "flake.nix already has the current release hash."
+            exit 0
+          fi
+
+          git add flake.nix
+          git -c user.name="forgejo-actions" -c user.email="forgejo-actions@localhost" commit -m "(qol): update release flake hash"
+          git push

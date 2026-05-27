@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-05-04T13:05:17.472Z",
+    "timestamp": "2026-05-21T10:15:15.541Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -580,15 +580,15 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tensamin/ttp-core@0.0.15",
+      "bomRef": "pkg:npm/%40tensamin/ttp-core@0.0.19",
       "name": "@tensamin/ttp-core",
-      "version": "0.0.15",
-      "purl": "pkg:npm/%40tensamin/ttp-core@0.0.15",
+      "version": "0.0.19",
+      "purl": "pkg:npm/%40tensamin/ttp-core@0.0.19",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tensamin_ttp-core@0.0.15"
+          "value": "licenses/@tensamin_ttp-core@0.0.19"
         },
         {
           "name": "local:sourcePackageDir",
@@ -598,15 +598,15 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tensamin/ui@0.0.30",
+      "bomRef": "pkg:npm/%40tensamin/ui@0.0.34",
       "name": "@tensamin/ui",
-      "version": "0.0.30",
-      "purl": "pkg:npm/%40tensamin/ui@0.0.30",
+      "version": "0.0.34",
+      "purl": "pkg:npm/%40tensamin/ui@0.0.34",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tensamin_ui@0.0.30"
+          "value": "licenses/@tensamin_ui@0.0.34"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1559,6 +1559,41 @@
         {
           "name": "local:sourcePackageDir",
           "value": "apps/web/node_modules/tailwindcss"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/tauri-plugin-app-events-api@0.2.0",
+      "name": "tauri-plugin-app-events-api",
+      "version": "0.2.0",
+      "purl": "pkg:npm/tauri-plugin-app-events-api@0.2.0",
+      "description": "A plugin for tauri@v2 to listen some events on iOS and Android.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/wtto00/tauri-plugin-app-events#readme"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/wtto00/tauri-plugin-app-events.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/tauri-plugin-app-events-api@0.2.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/tauri-plugin-app-events-api"
         }
       ]
     },

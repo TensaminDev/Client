@@ -8,6 +8,7 @@ import Message from "./components/message";
 
 import { PAGE_SIZE } from "./values";
 import { useIsMobile } from "@tensamin/ui";
+import { Loader2 } from "lucide-react";
 
 function getDistanceFromBottom(element: HTMLDivElement) {
   return element.scrollHeight - (element.scrollTop + element.clientHeight);
@@ -101,12 +102,6 @@ export default function Screen() {
   const virtualRowCount =
     messages.length + (shouldShowConversationStart ? 1 : 0);
 
-  const messagesRef = React.useRef(messages);
-
-  React.useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
   const getItemKey = React.useCallback(
     (index: number) => {
       if (shouldShowConversationStart && index === 0) {
@@ -114,9 +109,9 @@ export default function Screen() {
       }
 
       const messageIndex = shouldShowConversationStart ? index - 1 : index;
-      return messagesRef.current[messageIndex]?.send_time ?? index;
+      return messages[messageIndex]?.send_time ?? index;
     },
-    [shouldShowConversationStart],
+    [shouldShowConversationStart, messages],
   );
 
   const setMeasurementRef = React.useCallback(
@@ -360,9 +355,38 @@ export default function Screen() {
       return;
     }
 
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    isAtBottomRef.current = true;
-    setHasScrolledToBottomInitially(true);
+    let rafId: number;
+    let stableFrames = 0;
+    let lastScrollHeight = 0;
+
+    const settleToBottom = () => {
+      if (!scrollRef.current || hasScrolledToBottomInitially) {
+        return;
+      }
+
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const currentScrollHeight = scrollRef.current.scrollHeight;
+
+      if (currentScrollHeight === lastScrollHeight) {
+        stableFrames++;
+      } else {
+        stableFrames = 0;
+        lastScrollHeight = currentScrollHeight;
+      }
+
+      if (stableFrames >= 2) {
+        isAtBottomRef.current = true;
+        setHasScrolledToBottomInitially(true);
+      } else {
+        rafId = requestAnimationFrame(settleToBottom);
+      }
+    };
+
+    settleToBottom();
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
   }, [hasScrolledToBottomInitially, virtualRowCount]);
 
   React.useLayoutEffect(() => {
@@ -435,13 +459,26 @@ export default function Screen() {
       <div
         ref={scrollRef}
         id="chat_container"
-        className="min-h-0 flex-1 overflow-y-auto px-2.5"
+        className="min-h-0 flex-1 overflow-y-auto"
         style={{
           overflowAnchor: "none",
-          paddingBottom: "8px",
+          paddingBottom: "22px",
         }}
         onScroll={handleContainerScroll}
       >
+        {messagesQuery.isPending && (
+          <div className="flex items-center justify-center pt-10">
+            <p className="text-foreground/45 flex gap-1 items-center justify-center">
+              <Loader2 size={18} className="animate-spin" />
+              Loading...
+            </p>
+          </div>
+        )}
+        {messagesQuery.isFetchingNextPage && (
+          <div className="flex items-center justify-center pt-3 pb-1">
+            <Loader2 size={16} className="animate-spin text-foreground/45" />
+          </div>
+        )}
         <div
           className="relative w-full"
           style={{
@@ -461,12 +498,11 @@ export default function Screen() {
                     left: 0,
                     width: "100%",
                     transform: `translateY(${virtualRow.start + verticalOffset}px)`,
-                    padding: "4px 0",
                   }}
                 >
                   <div className="w-full flex justify-start">
-                    <div className="max-w-[80%] rounded-lg bg-muted px-2 py-px text-sm text-foreground/55 whitespace-pre-wrap break-all">
-                      This is the start of your conversation with{" "}
+                    <div className="text-sm text-foreground/55 px-2.5">
+                      Conversation start
                     </div>
                   </div>
                 </div>
@@ -481,6 +517,13 @@ export default function Screen() {
               return null;
             }
 
+            const lastMessage = messages[messageIndex - 1];
+            const isGrouped =
+              lastMessage &&
+              lastMessage.sent_by_self === message.sent_by_self &&
+              Math.round(lastMessage.send_time / 10000) ===
+                Math.round(message.send_time / 10000);
+
             return (
               <div
                 key={message.send_time}
@@ -492,10 +535,9 @@ export default function Screen() {
                   left: 0,
                   width: "100%",
                   transform: `translateY(${virtualRow.start + verticalOffset}px)`,
-                  padding: "4px 0",
                 }}
               >
-                <Message message={message} />
+                <Message grouped={isGrouped} message={message} />
               </div>
             );
           })}
@@ -509,17 +551,25 @@ export default function Screen() {
         className="pointer-events-none absolute left-0 top-0 -z-10 overflow-hidden opacity-0"
         style={{ width: scrollWidth > 0 ? `${scrollWidth}px` : "100%" }}
       >
-        {messages.map((message) => (
-          <div
-            key={`measure-${message.send_time}`}
-            ref={(element) => {
-              setMeasurementRef(message.send_time, element);
-            }}
-            style={{ padding: "4px 0" }}
-          >
-            <Message message={message} />
-          </div>
-        ))}
+        {messages.map((message, messageIndex) => {
+          const lastMessage = messages[messageIndex - 1];
+          const isGrouped =
+            lastMessage &&
+            lastMessage.sent_by_self === message.sent_by_self &&
+            Math.round(lastMessage.send_time / 10000) ===
+              Math.round(message.send_time / 10000);
+
+          return (
+            <div
+              key={`measure-${message.send_time}`}
+              ref={(element) => {
+                setMeasurementRef(message.send_time, element);
+              }}
+            >
+              <Message grouped={isGrouped} message={message} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
