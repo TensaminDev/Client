@@ -6,7 +6,7 @@
   outputs = {nixpkgs, ...}: let
     systems = ["x86_64-linux" "aarch64-linux"];
     forAllSystems = nixpkgs.lib.genAttrs systems;
-    version = "0.0.4";
+    version = "0.0.5";
     forgejoBaseUrl = "https://git.methanium.net/tensamin/client/releases/download/${version}";
   in {
     packages = forAllSystems (system: let
@@ -31,7 +31,7 @@
     in {
       default = wrapAppImage (pkgs.fetchurl {
         url = "${forgejoBaseUrl}/${artifact}";
-        hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+        hash = "sha256-WnDuEnwaZiHKh+1iOD0hU6TuYhGNQH82WxvW7sGdoAo=";
       });
 
       localPathForDev = wrapAppImage appImagePath;
