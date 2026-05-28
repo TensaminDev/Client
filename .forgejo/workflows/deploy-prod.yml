@@ -238,10 +238,10 @@ jobs:
         run: |
           set -eu
 
-          APPIMAGE="$(find releases -maxdepth 1 -type f -name 'Tensamin-*-linux-x86_64.AppImage' -print -quit)"
-          test -n "$APPIMAGE"
+          DEB="$(find releases -maxdepth 1 -type f -name 'Tensamin-*-linux-amd64.deb' -print -quit)"
+          test -n "$DEB"
 
-          HASH="$(node -e 'const fs = require("fs"); const crypto = require("crypto"); const file = process.argv[1]; console.log("sha256-" + crypto.createHash("sha256").update(fs.readFileSync(file)).digest("base64"));' "$APPIMAGE")"
+          HASH="$(node -e 'const fs = require("fs"); const crypto = require("crypto"); const file = process.argv[1]; console.log("sha256-" + crypto.createHash("sha256").update(fs.readFileSync(file)).digest("base64"));' "$DEB")"
           export HASH
 
           node -e '
@@ -250,15 +250,37 @@ jobs:
             const hash = process.env.HASH;
             let content = fs.readFileSync("flake.nix", "utf8");
             content = content.replace(/version = "[^"]+";/, `version = "${version}";`);
-            content = content.replace(/hash = "sha256-[^"]+";/, `hash = "${hash}";`);
+            content = content.replace(/x86_64DebHash = "sha256-[^"]+";/, `x86_64DebHash = "${hash}";`);
             fs.writeFileSync("flake.nix", content);
           '
 
           if git diff --quiet -- flake.nix; then
-            echo "flake.nix already has the current release hash."
+            echo "flake.nix already has the current release hash on main."
+          else
+            git add flake.nix
+            git -c user.name="forgejo-actions" -c user.email="forgejo-actions@localhost" commit -m "(qol): update release flake hash"
+            git push
+          fi
+
+          git fetch origin dev
+          git worktree add ../dev-flake-update origin/dev
+          cd ../dev-flake-update
+
+          node -e '
+            const fs = require("fs");
+            const version = process.env.TAG;
+            const hash = process.env.HASH;
+            let content = fs.readFileSync("flake.nix", "utf8");
+            content = content.replace(/version = "[^"]+";/, `version = "${version}";`);
+            content = content.replace(/x86_64DebHash = "sha256-[^"]+";/, `x86_64DebHash = "${hash}";`);
+            fs.writeFileSync("flake.nix", content);
+          '
+
+          if git diff --quiet -- flake.nix; then
+            echo "flake.nix already has the current release hash on dev."
             exit 0
           fi
 
           git add flake.nix
           git -c user.name="forgejo-actions" -c user.email="forgejo-actions@localhost" commit -m "(qol): update release flake hash"
-          git push
+          git push origin HEAD:dev
