@@ -3,13 +3,21 @@ import { createReadStream } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { app, net } from "electron";
-import type { ReleaseArtifact, ReleaseMetadata, UpdateCheckResult } from "../shared/ipc.js";
+import type {
+  ReleaseArtifact,
+  ReleaseMetadata,
+  UpdateCheckResult,
+} from "../shared/ipc.js";
 
 const metadataUrl = process.env.TENSAMIN_UPDATE_METADATA_URL;
 
 function compareSemver(left: string, right: string) {
-  const leftParts = left.split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
-  const rightParts = right.split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
+  const leftParts = left
+    .split(/[.-]/)
+    .map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = right
+    .split(/[.-]/)
+    .map((part) => Number.parseInt(part, 10) || 0);
   const length = Math.max(leftParts.length, rightParts.length);
 
   for (let index = 0; index < length; index += 1) {
@@ -42,7 +50,9 @@ function requestText(url: string): Promise<string> {
     const request = net.request(url);
     request.on("response", (response) => {
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        reject(new Error(`Update request failed with HTTP ${response.statusCode}.`));
+        reject(
+          new Error(`Update request failed with HTTP ${response.statusCode}.`),
+        );
         return;
       }
 
@@ -86,7 +96,9 @@ async function sha256File(filePath: string) {
   return hash.digest("hex");
 }
 
-function selectArtifact(metadata: ReleaseMetadata): ReleaseArtifact | undefined {
+function selectArtifact(
+  metadata: ReleaseMetadata,
+): ReleaseArtifact | undefined {
   const platform = platformName();
   const arch = archName();
 
@@ -102,16 +114,26 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
     return { available: false, currentVersion, latestVersion: currentVersion };
   }
 
-  const metadata = JSON.parse(await requestText(metadataUrl)) as ReleaseMetadata;
+  const metadata = JSON.parse(
+    await requestText(metadataUrl),
+  ) as ReleaseMetadata;
   const artifact = selectArtifact(metadata);
 
   if (isDevVersion(metadata.version) !== isDevVersion(currentVersion)) {
-    return { available: false, currentVersion, latestVersion: metadata.version };
+    return {
+      available: false,
+      currentVersion,
+      latestVersion: metadata.version,
+    };
   }
 
   if (isDevVersion(currentVersion)) {
     if (!artifact || metadata.version === currentVersion) {
-      return { available: false, currentVersion, latestVersion: metadata.version };
+      return {
+        available: false,
+        currentVersion,
+        latestVersion: metadata.version,
+      };
     }
 
     return {
@@ -123,7 +145,11 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
   }
 
   if (!artifact || compareSemver(metadata.version, currentVersion) <= 0) {
-    return { available: false, currentVersion, latestVersion: metadata.version };
+    return {
+      available: false,
+      currentVersion,
+      latestVersion: metadata.version,
+    };
   }
 
   return {
@@ -140,7 +166,9 @@ export async function downloadVerifiedArtifact(artifact: ReleaseArtifact) {
   await mkdir(updatesDir, { recursive: true });
 
   const destination = join(updatesDir, basename(artifact.name));
-  await writeFile(destination, await requestBuffer(artifact.url), { mode: 0o600 });
+  await writeFile(destination, await requestBuffer(artifact.url), {
+    mode: 0o600,
+  });
 
   const actualHash = await sha256File(destination);
   if (actualHash !== artifact.sha256) {

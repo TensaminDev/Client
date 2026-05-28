@@ -60,7 +60,9 @@ const electronReleaseDir = "apps/electron/release";
 
 const copyElectronArtifacts = () => {
   if (!existsSync(electronReleaseDir)) {
-    console.warn(`Skipping Electron artifacts: ${electronReleaseDir} does not exist.`);
+    console.warn(
+      `Skipping Electron artifacts: ${electronReleaseDir} does not exist.`,
+    );
     return;
   }
 
@@ -81,7 +83,11 @@ const artifacts = await Promise.all(
   readdirSync(releasesDir)
     .map((file) => join(releasesDir, file))
     .filter((file) => statSync(file).isFile())
-    .filter((file) => !file.endsWith("electron-release-metadata.json") && !file.endsWith("SHA256SUMS"))
+    .filter(
+      (file) =>
+        !file.endsWith("electron-release-metadata.json") &&
+        !file.endsWith("SHA256SUMS"),
+    )
     .map(async (filePath) => {
       const name = filePath.split(/[\\/]/).at(-1)!;
 

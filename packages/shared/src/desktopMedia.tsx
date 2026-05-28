@@ -26,7 +26,9 @@ type ElectronDesktopApi = {
   media?: {
     getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
     listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
-    listScreenShareAudioOutputs?: () => Promise<DesktopScreenShareAudioOutput[]>;
+    listScreenShareAudioOutputs?: () => Promise<
+      DesktopScreenShareAudioOutput[]
+    >;
     selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
   };
 };

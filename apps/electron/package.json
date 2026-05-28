@@ -60,7 +60,11 @@
       }
     ],
     "linux": {
-      "target": ["AppImage", "deb", "rpm"],
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
       "icon": "build/icons",
       "executableName": "tensamin",
       "category": "Network",
@@ -73,11 +77,16 @@
       }
     },
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icons/icon.ico"
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "icon": "build/icons/icon.icns"
     },
     "publish": null

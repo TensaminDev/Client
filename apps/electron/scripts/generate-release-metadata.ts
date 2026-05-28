@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
-import { createReadStream, existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  createReadStream,
+  existsSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, join } from "node:path";
 import rootPackage from "../../../package.json" with { type: "json" };
 
@@ -55,7 +61,10 @@ const metadata = {
   artifacts,
 };
 
-writeFileSync(join(outDir, "electron-release-metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`);
+writeFileSync(
+  join(outDir, "electron-release-metadata.json"),
+  `${JSON.stringify(metadata, null, 2)}\n`,
+);
 writeFileSync(
   join(outDir, "SHA256SUMS"),
   `${artifacts.map((artifact) => `${artifact.sha256}  ${artifact.name}`).join("\n")}\n`,

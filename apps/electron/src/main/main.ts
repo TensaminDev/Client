@@ -1,9 +1,19 @@
 import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
-import { app, BrowserWindow, desktopCapturer, ipcMain, session, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  desktopCapturer,
+  ipcMain,
+  session,
+  shell,
+} from "electron";
 import { checkForUpdates } from "./updates.js";
-import { ipcChannels, type DesktopScreenShareCapabilities } from "../shared/ipc.js";
+import {
+  ipcChannels,
+  type DesktopScreenShareCapabilities,
+} from "../shared/ipc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const verbose = process.argv.includes("--verbose");
@@ -16,7 +26,11 @@ if (verbose) {
   app.commandLine.appendSwitch("log-level", "0");
 }
 
-if (process.platform === "linux" && process.env.XDG_SESSION_TYPE === "wayland" && !process.env.TENSAMIN_ENABLE_VULKAN) {
+if (
+  process.platform === "linux" &&
+  process.env.XDG_SESSION_TYPE === "wayland" &&
+  !process.env.TENSAMIN_ENABLE_VULKAN
+) {
   app.commandLine.appendSwitch("disable-features", "Vulkan");
 }
 
@@ -87,7 +101,8 @@ async function listAudioOutputs() {
       if (!sink || typeof sink !== "object") return null;
       const record = sink as Record<string, unknown>;
       const id = record.index == null ? undefined : String(record.index);
-      const name = typeof record.description === "string" ? record.description : id;
+      const name =
+        typeof record.description === "string" ? record.description : id;
       if (!id || !name) return null;
       return { id, name, isDefault: false };
     })
@@ -113,30 +128,34 @@ async function listScreenShareSources() {
 }
 
 function registerDisplayMediaHandler() {
-  session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
-    verboseLog("display media request", { selectedScreenShareSourceId });
+  session.defaultSession.setDisplayMediaRequestHandler(
+    async (_request, callback) => {
+      verboseLog("display media request", { selectedScreenShareSourceId });
 
-    const sources = await desktopCapturer.getSources({
-      types: ["screen", "window"],
-      thumbnailSize: { width: 0, height: 0 },
-    });
+      const sources = await desktopCapturer.getSources({
+        types: ["screen", "window"],
+        thumbnailSize: { width: 0, height: 0 },
+      });
 
-    const selected = sources.find((source) => source.id === selectedScreenShareSourceId);
-    selectedScreenShareSourceId = null;
-    const video = selected ?? sources[0];
+      const selected = sources.find(
+        (source) => source.id === selectedScreenShareSourceId,
+      );
+      selectedScreenShareSourceId = null;
+      const video = selected ?? sources[0];
 
-    if (!video) {
-      callback({});
-      return;
-    }
+      if (!video) {
+        callback({});
+        return;
+      }
 
-    if (process.platform === "win32") {
-      callback({ video, audio: "loopback" });
-      return;
-    }
+      if (process.platform === "win32") {
+        callback({ video, audio: "loopback" });
+        return;
+      }
 
-    callback({ video });
-  });
+      callback({ video });
+    },
+  );
 }
 
 function registerIpc() {
@@ -144,16 +163,26 @@ function registerIpc() {
 
   ipcMain.handle(ipcChannels.listScreenShareSources, listScreenShareSources);
   ipcMain.handle(ipcChannels.listScreenShareAudioOutputs, listAudioOutputs);
-  ipcMain.handle(ipcChannels.getScreenShareCapabilities, getScreenShareCapabilities);
-  ipcMain.handle(ipcChannels.selectScreenShareSource, (_event, sourceId: unknown) => {
-    if (typeof sourceId !== "string" || sourceId.length === 0 || sourceId.length > 256) {
-      throw new Error("Invalid screen share source id.");
-    }
+  ipcMain.handle(
+    ipcChannels.getScreenShareCapabilities,
+    getScreenShareCapabilities,
+  );
+  ipcMain.handle(
+    ipcChannels.selectScreenShareSource,
+    (_event, sourceId: unknown) => {
+      if (
+        typeof sourceId !== "string" ||
+        sourceId.length === 0 ||
+        sourceId.length > 256
+      ) {
+        throw new Error("Invalid screen share source id.");
+      }
 
-    selectedScreenShareSourceId = sourceId;
-    verboseLog("selected screen share source", sourceId);
-    return true;
-  });
+      selectedScreenShareSourceId = sourceId;
+      verboseLog("selected screen share source", sourceId);
+      return true;
+    },
+  );
   ipcMain.handle(ipcChannels.getVersion, () => app.getVersion());
   ipcMain.handle(ipcChannels.checkForUpdates, checkForUpdates);
   ipcMain.handle(ipcChannels.minimizeWindow, () => {
@@ -217,18 +246,24 @@ async function createWindow() {
   });
 
   if (verbose) {
-    mainWindow.webContents.on("console-message", (_event, level, message, line, sourceId) => {
-      const target = level >= 2 ? console.error : console.log;
-      target("[tensamin:renderer]", message, { level, line, sourceId });
-    });
+    mainWindow.webContents.on(
+      "console-message",
+      (_event, level, message, line, sourceId) => {
+        const target = level >= 2 ? console.error : console.log;
+        target("[tensamin:renderer]", message, { level, line, sourceId });
+      },
+    );
 
-    mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
-      console.error("[tensamin:electron] renderer failed to load", {
-        errorCode,
-        errorDescription,
-        validatedURL,
-      });
-    });
+    mainWindow.webContents.on(
+      "did-fail-load",
+      (_event, errorCode, errorDescription, validatedURL) => {
+        console.error("[tensamin:electron] renderer failed to load", {
+          errorCode,
+          errorDescription,
+          validatedURL,
+        });
+      },
+    );
 
     mainWindow.webContents.on("did-finish-load", () => {
       verboseLog("renderer finished loading", mainWindow?.webContents.getURL());
