@@ -34,6 +34,12 @@ function getRendererIndex() {
   return join(process.resourcesPath, "web", "index.html");
 }
 
+function getWindowIcon() {
+  if (process.platform === "darwin") return undefined;
+  if (app.isPackaged) return join(process.resourcesPath, "icons", "icon.png");
+  return resolve(__dirname, "../../build/icons/icon.png");
+}
+
 function getPlatform(): DesktopScreenShareCapabilities["platform"] {
   if (process.platform === "linux") return "linux";
   if (process.platform === "darwin") return "macos";
@@ -191,6 +197,7 @@ async function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: "Tensamin",
+    icon: getWindowIcon(),
     frame: false,
     autoHideMenuBar: true,
     webPreferences: {
