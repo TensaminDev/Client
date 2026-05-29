@@ -232,6 +232,46 @@ jobs:
               -F "attachment=@$file"
           done
 
+      - name: Delete dev releases for prod version
+        env:
+          TOKEN: ${{ forgejo.token }}
+          API: ${{ forgejo.api_url }}
+          REPO: ${{ forgejo.repository }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -eu
+
+          PAGE=1
+          PREFIX="$TAG-dev-"
+          DELETE_RELEASES=delete-dev-releases.tsv
+
+          : > "$DELETE_RELEASES"
+
+          while :; do
+            curl -fsS \
+              -H "Authorization: token $TOKEN" \
+              "$API/repos/$REPO/releases?page=$PAGE&limit=50&pre-release=true" \
+              -o releases.json
+
+            COUNT="$(jq 'length' releases.json)"
+            test "$COUNT" -gt 0 || break
+
+            jq -r \
+              --arg prefix "$PREFIX" \
+              '.[] | select(.prerelease == true) | select(.tag_name | startswith($prefix)) | [.id, .tag_name] | @tsv' releases.json \
+              >> "$DELETE_RELEASES"
+
+            PAGE="$((PAGE + 1))"
+          done
+
+          while IFS="$(printf '\t')" read -r release_id release_tag; do
+            test -n "$release_id" || continue
+            echo "Deleting dev release $release_tag"
+            curl -fsS -X DELETE \
+              -H "Authorization: token $TOKEN" \
+              "$API/repos/$REPO/releases/$release_id"
+          done < "$DELETE_RELEASES"
+
       - name: Update root flake release hash
         env:
           TAG: ${{ steps.version.outputs.tag }}
