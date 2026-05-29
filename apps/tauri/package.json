@@ -22,7 +22,7 @@
     "build:mobile:raw": "tauri android build",
     "dev:mobile": "if command -v nix >/dev/null 2>&1; then nix develop --command bun dev:mobile:raw; else bun dev:mobile:raw; fi",
     "build:mobile": "bun run render-version.ts && if command -v nix >/dev/null 2>&1; then nix develop --command bun build:mobile:raw; else bun build:mobile:raw; fi && bun run render-version.ts --unrender",
-    "gen-icons": "tauri icon ./logo.json",
+    "gen-icons": "tauri icon ./logo.json && bun scripts/sync-electron-icons.ts",
     "format": "bunx prettier --write .",
     "lint": "eslint src"
   },

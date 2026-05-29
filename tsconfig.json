@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "nodenext",
     "lib": ["ES2020"],
-    "rootDir": "./scripts",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,6 +12,6 @@
     "moduleResolution": "nodenext",
     "types": ["node"]
   },
-  "include": ["scripts"],
+  "include": ["scripts", "eslint.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

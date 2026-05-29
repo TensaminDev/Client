@@ -41,6 +41,7 @@
     "productName": "Tensamin",
     "executableName": "tensamin",
     "artifactName": "Tensamin-${version}-${os}-${arch}.${ext}",
+    "icon": "build/icons/icon.png",
     "directories": {
       "output": "release"
     },
@@ -52,10 +53,19 @@
       {
         "from": "../web/dist",
         "to": "web"
+      },
+      {
+        "from": "build/icons/icon.png",
+        "to": "icons/icon.png"
       }
     ],
     "linux": {
-      "target": ["AppImage", "deb", "rpm"],
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "build/icons",
       "executableName": "tensamin",
       "category": "Network",
       "maintainer": "Methanium",
@@ -67,10 +77,17 @@
       }
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icons/icon.ico"
     },
     "mac": {
-      "target": ["dmg"]
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icons/icon.icns"
     },
     "publish": null
   }

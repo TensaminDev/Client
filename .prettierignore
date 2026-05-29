@@ -5,4 +5,5 @@ coverage
 *.tsbuildinfo
 bun.lock
 apps/tauri/src-tauri
+apps/electron/release
 licenses
