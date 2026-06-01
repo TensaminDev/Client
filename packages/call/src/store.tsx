@@ -6,6 +6,7 @@ import { log, toast } from "@tensamin/shared/log";
 import { ttp } from "@tensamin/shared/data";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useStorage } from "@tensamin/storage/context";
+import { useSession } from "@tensamin/storage/session";
 import { useUser } from "@tensamin/user/context";
 import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
@@ -890,7 +891,7 @@ export async function joinCall(
   log(2, "call", "purple", "Call creation initialised");
   useCall.setState({
     state: "encrypting",
-    invitedUserId: sendInvite ? userId : null,
+    invitedUserId: sendInvite && !existingCallId ? userId : null,
   });
 
   if (callSecret) {
@@ -1089,6 +1090,7 @@ export function useInitializeCall() {
   const { send, subscribePush } = useTTP();
   const { getSharedSecret, decryptText, encryptText } = useCrypto();
   const { load } = useStorage();
+  const { insertCall } = useSession();
   const { get } = useUser();
 
   const callId = useCall((state) => state.callId);
@@ -1137,29 +1139,41 @@ export function useInitializeCall() {
     }
   }, []);
 
-  const respondToInvite = useCallback((accepted: boolean) => {
-    const invite = useCall.getState().incomingCallInvite;
+  const respondToInvite = useCallback(
+    (accepted: boolean) => {
+      const invite = useCall.getState().incomingCallInvite;
 
-    useCall.setState({ incomingCallInvite: null });
+      useCall.setState({ incomingCallInvite: null });
 
-    if (!invite) {
-      return;
-    }
+      if (!invite) {
+        return;
+      }
 
-    if (accepted) {
-      joinCall(invite.senderId, invite.callSecret, invite.callId, false).catch(
-        (err) => {
+      insertCall({
+        call_id: invite.callId,
+        call_secret: invite.callSecret,
+        call_members: [invite.senderId],
+      });
+
+      if (accepted) {
+        joinCall(
+          invite.senderId,
+          invite.callSecret,
+          invite.callId,
+          false,
+        ).catch((err) => {
           log(1, "call", "red", "Failed to join call", err);
-        },
-      );
-      return;
-    }
+        });
+        return;
+      }
 
-    log(2, "call", "purple", "Declined call invite", {
-      callId: invite.callId,
-      senderId: invite.senderId,
-    });
-  }, []);
+      log(2, "call", "purple", "Declined call invite", {
+        callId: invite.callId,
+        senderId: invite.senderId,
+      });
+    },
+    [insertCall],
+  );
 
   // listen to call invites
   useEffect(() => {

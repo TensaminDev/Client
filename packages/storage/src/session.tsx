@@ -15,6 +15,7 @@ interface SessionContextType {
   calls: Calls;
   moveUserIdToTop: (userId: number) => void;
   insertContact: (userId: number) => void;
+  insertCall: (call: Calls[number]) => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -24,6 +25,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const { load, save } = useStorage();
   const [contacts, setContacts] = useState<Contacts>([]);
   const [communities, setCommunities] = useState<Communities>([]);
+  const [calls, setCalls] = useState<Calls>([]);
 
   // Get cached data and merge fresh data
   useEffect(() => {
@@ -50,6 +52,15 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
       }
     });
   }, [load, freshContacts, freshCommunities]);
+
+  useEffect(() => {
+    setCalls((prevCalls) => [
+      ...freshCalls,
+      ...prevCalls.filter(
+        (call) => !freshCalls.some((fresh) => fresh.call_id === call.call_id),
+      ),
+    ]);
+  }, [freshCalls]);
 
   // Save data
   useEffect(() => {
@@ -86,14 +97,25 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const insertCall = (call: Calls[number]) => {
+    setCalls((prevCalls) => {
+      if (prevCalls.some((prevCall) => prevCall.call_id === call.call_id)) {
+        return prevCalls;
+      }
+
+      return [call, ...prevCalls];
+    });
+  };
+
   return (
     <SessionContext.Provider
       value={{
         contacts,
         communities,
-        calls: freshCalls,
+        calls,
         moveUserIdToTop,
         insertContact,
+        insertCall,
       }}
     >
       {children}
