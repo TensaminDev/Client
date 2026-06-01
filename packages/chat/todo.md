@@ -1,3 +1,2 @@
 - Implement context menu features
 - Add default-emoji-hotkey in settings
-- On mobile, turn ContextMenu into Drawer
