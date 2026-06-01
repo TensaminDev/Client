@@ -12,14 +12,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@tensamin/ui";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@tensamin/ui";
 import Wrapper from "@tensamin/user/wrapper";
 import { useChat } from "../context";
+import MessageContextMenu from "./messageContextMenu";
 
 function MessageComponent({
   grouped,
@@ -38,72 +33,66 @@ function MessageComponent({
       // pt-3 is to get a gap between messages
       className={`${grouped ? "" : "pt-3"} w-full flex justify-start transition-opacity duration-150 ${actuallyFailed || message.message_state === "awaiting" ? "opacity-50" : ""}`}
     >
-      <ContextMenu>
-        <ContextMenuTrigger
-          render={
-            <div
-              className={cn(
-                "group hover:bg-muted/50 select-text! justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
-                {
-                  "bg-(--destructive)/15 text-destructive-foreground":
-                    actuallyFailed,
-                },
-              )}
-            >
-              <Wrapper
-                loading={"State not achievable"}
-                userId={message.sent_by_self ? "own" : userId}
-                component={(user) => (
-                  <>
-                    {grouped ? (
-                      <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
+      <MessageContextMenu
+        content={message.content}
+        messageId={message.send_time}
+      >
+        <div
+          className={cn(
+            "group hover:bg-muted/50 select-text! justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
+            {
+              "bg-(--destructive)/15 text-destructive-foreground":
+                actuallyFailed,
+            },
+          )}
+        >
+          <Wrapper
+            loading={"State not achievable"}
+            userId={message.sent_by_self ? "own" : userId}
+            component={(user) => (
+              <>
+                {grouped ? (
+                  <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
+                    {new Date(message.send_time).toLocaleString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                ) : (
+                  <Avatar className="mr-1 mb-auto mt-1 w-10">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback>
+                      {user.display.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                {message.failed && message.message_state === "awaiting" && (
+                  <Tooltip>
+                    <TooltipContent>
+                      <p>Failed to send message</p>
+                    </TooltipContent>
+                    <TooltipTrigger render={<AlertTriangle size={17} />} />
+                  </Tooltip>
+                )}
+                <div className="flex flex-col">
+                  {!grouped && (
+                    <div className="flex items-center gap-1">
+                      <p className="font-medium">{user.display}</p>
+                      <p className="text-xs text-muted-foreground">
                         {new Date(message.send_time).toLocaleString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </p>
-                    ) : (
-                      <Avatar className="mr-1 mb-auto mt-1 w-10">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback>
-                          {user.display.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    {message.failed && message.message_state === "awaiting" && (
-                      <Tooltip>
-                        <TooltipContent>
-                          <p>Failed to send message</p>
-                        </TooltipContent>
-                        <TooltipTrigger render={<AlertTriangle size={17} />} />
-                      </Tooltip>
-                    )}
-                    <div className="flex flex-col">
-                      {!grouped && (
-                        <div className="flex items-center gap-1">
-                          <p className="font-medium">{user.display}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(message.send_time).toLocaleString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                      )}
-                      <Text value={message.content} />
                     </div>
-                  </>
-                )}
-              />
-            </div>
-          }
-        />
-        <ContextMenuContent>
-          <ContextMenuItem>
-            <Text value={message.content} />
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+                  )}
+                  <Text value={message.content} />
+                </div>
+              </>
+            )}
+          />
+        </div>
+      </MessageContextMenu>
     </div>
   );
 }
