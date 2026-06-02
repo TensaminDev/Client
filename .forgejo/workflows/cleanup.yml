@@ -39,7 +39,8 @@ jobs:
               --arg current "$CURRENT_RUN_ID" \
               '.workflow_runs[]
                 | select((.id | tostring) != $current)
-                | select(["success", "failure", "cancelled", "skipped", "succeeded", "failed"] | index(.status))
+                | .status as $status
+                | select(["success", "failure", "cancelled", "skipped", "succeeded", "failed"] | index($status))
                 | select(.created < $cutoff)
                 | .id' runs.json \
               >> "$DELETE_IDS"
