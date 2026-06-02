@@ -1,1 +1,2 @@
-- Add context menu to messages
+- Implement context menu features
+- Add default-emoji-hotkey in settings

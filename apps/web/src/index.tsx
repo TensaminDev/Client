@@ -163,9 +163,7 @@ function AppShell() {
 }
 
 function CallInit() {
-  useInitializeCall();
-
-  return null;
+  return useInitializeCall();
 }
 
 const rootRoute = createRootRoute({

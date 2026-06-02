@@ -10,6 +10,7 @@
   "scripts": {
     "format": "bunx prettier --write .",
     "lint": "bun scripts/lint-packages.ts",
+    "check": "fallow && bun run lint",
     "copy-licenses": "bun scripts/copy-licenses.ts",
     "copy-releases": "bun scripts/copy-releases.ts",
     "pre-build": "bun run lint && bun run build:packages",
@@ -34,11 +35,12 @@
     "@typescript-eslint/parser": "^8.59.1",
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "fallow": "^2.86.0",
     "globals": "^17.5.0",
+    "jsonc-parser": "^3.3.1",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.1",
-    "jsonc-parser": "^3.3.1"
+    "typescript-eslint": "^8.59.1"
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.36.tar.gz",

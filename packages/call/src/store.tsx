@@ -6,6 +6,7 @@ import { log, toast } from "@tensamin/shared/log";
 import { ttp } from "@tensamin/shared/data";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useStorage } from "@tensamin/storage/context";
+import { useSession } from "@tensamin/storage/session";
 import { useUser } from "@tensamin/user/context";
 import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
@@ -24,7 +25,6 @@ import {
   getLogger,
 } from "livekit-client";
 import z from "zod";
-import { toast as sonnerToast } from "sonner";
 import {
   createScreenShareController,
   type ScreenShareSession,
@@ -33,6 +33,7 @@ import {
   getSpeakingDetector,
   disposeSpeakingDetector,
 } from "./speakingIndicator";
+import InvitePopup from "./components/invitePopup";
 
 // logging
 setLogExtension(
@@ -45,6 +46,11 @@ setLogExtension(
 
 type CallState = "closed" | "closing" | "connecting" | "open" | "encrypting";
 type CallView = "preview" | "focused" | "grid";
+type IncomingCallInvite = {
+  callId: string;
+  callSecret: string;
+  senderId: number;
+};
 type CurrentCallData =
   | (z.infer<typeof ttp.call_data.response> & { exists: boolean })
   | null;
@@ -83,6 +89,7 @@ type CallStore = {
   view: CallView;
   invitedUserId: number | null;
   callId: string | null;
+  incomingCallInvite: IncomingCallInvite | null;
   callSecret: string | null;
   livekitToken: string | null;
   currentCallData: CurrentCallData;
@@ -837,6 +844,7 @@ export async function disconnect() {
     state: "closing",
     invitedUserId: null,
     callId: null,
+    incomingCallInvite: null,
     callSecret: null,
     livekitToken: null,
     currentCallData: null,
@@ -883,7 +891,7 @@ export async function joinCall(
   log(2, "call", "purple", "Call creation initialised");
   useCall.setState({
     state: "encrypting",
-    invitedUserId: sendInvite ? userId : null,
+    invitedUserId: sendInvite && !existingCallId ? userId : null,
   });
 
   if (callSecret) {
@@ -999,6 +1007,7 @@ export function resetCallState() {
     view: "preview",
     invitedUserId: null,
     callId: null,
+    incomingCallInvite: null,
     callSecret: null,
     livekitToken: null,
     currentCallData: null,
@@ -1050,6 +1059,7 @@ export const useCall = create<CallStore>(() => ({
   view: "preview",
   invitedUserId: null,
   callId: null,
+  incomingCallInvite: null,
   callSecret: null,
   livekitToken: null,
   currentCallData: null,
@@ -1080,10 +1090,12 @@ export function useInitializeCall() {
   const { send, subscribePush } = useTTP();
   const { getSharedSecret, decryptText, encryptText } = useCrypto();
   const { load } = useStorage();
+  const { insertCall } = useSession();
   const { get } = useUser();
 
   const callId = useCall((state) => state.callId);
   const view = useCall((state) => state.view);
+  const incomingCallInvite = useCall((state) => state.incomingCallInvite);
 
   const listenersRegistered = useRef(false);
   const noiseFilter = useMemo(
@@ -1113,30 +1125,54 @@ export function useInitializeCall() {
   }, [decryptText, encryptText, get, getSharedSecret, load, navigate, send]);
 
   const showCallingScreen = useCallback(
-    async (callId: string, callSecret: string, senderId: number) => {
-      const senderName = await get(senderId).then((data) => data.display);
-
-      sonnerToast(`Incoming call from ${senderName}`, {
-        action: {
-          label: "Accept",
-          onClick: () => {
-            joinCall(senderId, callSecret, callId, false).catch((err) => {
-              log(1, "call", "red", "Failed to join call", err);
-            });
-          },
-        },
-        cancel: {
-          label: "Decline",
-          onClick: () => {
-            log(2, "call", "purple", "Declined call invite", {
-              callId,
-              senderId,
-            });
-          },
-        },
+    (callId: string, callSecret: string, senderId: number) => {
+      useCall.setState({
+        incomingCallInvite: { callId, callSecret, senderId },
       });
     },
-    [get],
+    [],
+  );
+
+  const setInvitePopupOpen = useCallback((open: boolean) => {
+    if (!open) {
+      useCall.setState({ incomingCallInvite: null });
+    }
+  }, []);
+
+  const respondToInvite = useCallback(
+    (accepted: boolean) => {
+      const invite = useCall.getState().incomingCallInvite;
+
+      useCall.setState({ incomingCallInvite: null });
+
+      if (!invite) {
+        return;
+      }
+
+      insertCall({
+        call_id: invite.callId,
+        call_secret: invite.callSecret,
+        call_members: [invite.senderId],
+      });
+
+      if (accepted) {
+        joinCall(
+          invite.senderId,
+          invite.callSecret,
+          invite.callId,
+          false,
+        ).catch((err) => {
+          log(1, "call", "red", "Failed to join call", err);
+        });
+        return;
+      }
+
+      log(2, "call", "purple", "Declined call invite", {
+        callId: invite.callId,
+        senderId: invite.senderId,
+      });
+    },
+    [insertCall],
   );
 
   // listen to call invites
@@ -1482,4 +1518,13 @@ export function useInitializeCall() {
         });
       });
   }, [callId, send, view]);
+
+  return incomingCallInvite ? (
+    <InvitePopup
+      open
+      setOpen={setInvitePopupOpen}
+      onAccept={respondToInvite}
+      user={incomingCallInvite.senderId}
+    />
+  ) : null;
 }
