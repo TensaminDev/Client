@@ -103,7 +103,6 @@
       "dependencies": {
         "@livekit/components-react": "^2.9.20",
         "@tanstack/react-router": "^1.169.1",
-        "@tanstack/react-virtual": "^3.13.24",
         "@tauri-apps/api": "^2",
         "@tensamin/crypto": "workspace:*",
         "@tensamin/shared": "workspace:*",
@@ -213,13 +212,13 @@
         "@tensamin/crypto": "workspace:*",
         "@tensamin/shared": "workspace:*",
         "@tensamin/storage": "workspace:*",
+        "@tensamin/tauri": "workspace:*",
         "@tensamin/ttp": "workspace:*",
         "@tensamin/ui": "*",
         "@tensamin/user": "workspace:*",
         "lucide-react": "^1.8.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
-        "zod": "^4.3.6",
       },
     },
     "packages/ttp": {
