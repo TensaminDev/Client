@@ -11,6 +11,8 @@ import {
   ContextMenuTrigger,
   Drawer,
   DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
   DrawerTrigger,
   useIsMobile,
 } from "@tensamin/ui";
@@ -41,6 +43,12 @@ type MenuComponents = {
   SubContent: (props: { children: ReactNode }) => ReactElement;
 };
 
+function blurActiveElement() {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+}
+
 const desktopMenuComponents: MenuComponents = {
   Content: ContextMenuContent,
   Group: ContextMenuGroup,
@@ -51,10 +59,20 @@ const desktopMenuComponents: MenuComponents = {
   SubContent: ContextMenuSubContent,
 };
 
-function getMobileMenuComponents(onClose: () => void): MenuComponents {
+function getMobileMenuComponents({
+  description,
+  onClose,
+  title,
+}: {
+  description: string;
+  onClose: () => void;
+  title: string;
+}): MenuComponents {
   return {
     Content: ({ className, children }) => (
       <DrawerContent>
+        <DrawerTitle className="sr-only">{title}</DrawerTitle>
+        <DrawerDescription className="sr-only">{description}</DrawerDescription>
         <div className={cn("p-3!", className)}>{children}</div>
       </DrawerContent>
     ),
@@ -62,6 +80,7 @@ function getMobileMenuComponents(onClose: () => void): MenuComponents {
     Item: ({ children, className, disabled, onClick, variant = "default" }) => {
       async function handleClick() {
         await onClick?.();
+        blurActiveElement();
         onClose();
       }
 
@@ -86,8 +105,9 @@ function getMobileMenuComponents(onClose: () => void): MenuComponents {
     Sub: ({ children }) => <div>{children}</div>,
     SubTrigger: ({ children, onClick }) => {
       async function handleClick() {
-        await onClick?.();
+        blurActiveElement();
         onClose();
+        await onClick?.();
       }
 
       return (
@@ -198,11 +218,23 @@ export default function MessageContextMenu({
   );
   const [mainDrawerOpen, setMainDrawerOpen] = useState(false);
   const [reactionDrawerOpen, setReactionDrawerOpen] = useState(false);
-  const mainDrawerComponents = getMobileMenuComponents(() =>
-    setMainDrawerOpen(false),
+  const mainDrawerComponents = useMemo(
+    () =>
+      getMobileMenuComponents({
+        description: "Actions available for this message.",
+        onClose: () => setMainDrawerOpen(false),
+        title: "Message actions",
+      }),
+    [],
   );
-  const reactionDrawerComponents = getMobileMenuComponents(() =>
-    setReactionDrawerOpen(false),
+  const reactionDrawerComponents = useMemo(
+    () =>
+      getMobileMenuComponents({
+        description: "Choose a reaction to add to this message.",
+        onClose: () => setReactionDrawerOpen(false),
+        title: "Add reaction",
+      }),
+    [],
   );
 
   if (isMobile) {
@@ -221,7 +253,13 @@ export default function MessageContextMenu({
         </Drawer>
         <Drawer open={reactionDrawerOpen} onOpenChange={setReactionDrawerOpen}>
           <DrawerContent>
-            <ReactionItems Item={reactionDrawerComponents.Item} />
+            <DrawerTitle className="sr-only">Add reaction</DrawerTitle>
+            <DrawerDescription className="sr-only">
+              Choose a reaction to add to this message.
+            </DrawerDescription>
+            <div className="p-3!">
+              <ReactionItems Item={reactionDrawerComponents.Item} />
+            </div>
           </DrawerContent>
         </Drawer>
       </>
