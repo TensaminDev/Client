@@ -80,7 +80,7 @@ const INLINE_TOKEN_REGEX =
  * @param input Parameter input.
  * @returns InlineNode[].
  */
-export function parseInlineNodes(input: string): InlineNode[] {
+function parseInlineNodes(input: string): InlineNode[] {
   const nodes: InlineNode[] = [];
 
   let cursor = 0;
@@ -369,7 +369,7 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
  * @param nodes Parameter nodes.
  * @returns React.ReactNode[].
  */
-export function renderInline(nodes: InlineNode[]): React.ReactNode[] {
+function renderInline(nodes: InlineNode[]): React.ReactNode[] {
   return nodes.map((node, index) => {
     if (node.type === "text") {
       return node.value;
@@ -636,7 +636,7 @@ function readTable(
   };
 }
 
-export const markdownStyles = `
+const markdownStyles = `
 .tm-md-root { color: hsl(var(--foreground)); line-height: 1.55; font-size: 0.95rem; }
 .tm-md-heading { margin: 0.2rem 0 0.35rem; font-weight: 700; line-height: 1.25; }
 .tm-md-h1 { font-size: 1.65rem; }

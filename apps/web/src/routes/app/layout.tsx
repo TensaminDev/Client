@@ -2,17 +2,12 @@ import { type ReactNode } from "react";
 
 import Sidebar from "@/components/sidebar";
 import Navbar, { MobileNavbar } from "@/components/navbar";
+import { useShowMobileNavbar } from "./useShowMobileNavbar";
 
 import { useIsMobile, cn, SidebarProvider } from "@tensamin/ui";
 
 import { isTauri } from "@tauri-apps/api/core";
-import { useLocation, useMatches } from "@tanstack/react-router";
 
-/**
- * Executes Layout.
- * @param props Parameter props.
- * @returns unknown.
- */
 export default function Layout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
   const showMobileNavbar = useShowMobileNavbar();
@@ -46,18 +41,4 @@ export default function Layout({ children }: { children: ReactNode }) {
       </SidebarProvider>
     </div>
   );
-}
-
-export function useShowMobileNavbar(): boolean {
-  const matches = useMatches();
-  const location = useLocation();
-
-  const value = matches.some(
-    (match) =>
-      match.pathname === location.pathname &&
-      // @ts-expect-error Stuff
-      match.staticData?.showMobileNavbar === true,
-  );
-
-  return value;
 }

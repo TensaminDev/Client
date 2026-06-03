@@ -1,5 +1,10 @@
 import { log } from "@tensamin/shared/log";
-import { useCall } from "./store";
+import {
+  clearSpeakingParticipants,
+  removeSpeakingParticipant,
+  setMicGated,
+  updateSpeakingParticipants,
+} from "./speakingState";
 
 const SPEAKING_THRESHOLD = 0.01;
 const SPEAKING_HANGTIME_MS = 500;
@@ -85,12 +90,7 @@ class SpeakingDetector {
     }
     this.entries.delete(participantId);
 
-    useCall.setState((state) => {
-      if (!state.speakingParticipantIds.has(participantId)) return state;
-      const next = new Set(state.speakingParticipantIds);
-      next.delete(participantId);
-      return { speakingParticipantIds: next };
-    });
+    removeSpeakingParticipant(participantId);
 
     if (participantId === this.localParticipantId && this.localMicGateClosed) {
       this.muteLocalTrack(false);
@@ -104,7 +104,7 @@ class SpeakingDetector {
         entry.isSpeaking = false;
         entry.lastSpeakingTime = 0;
       }
-      useCall.setState({ speakingParticipantIds: new Set() });
+      clearSpeakingParticipants();
     }
   }
 
@@ -131,7 +131,7 @@ class SpeakingDetector {
     }
 
     this.localMicGateClosed = muted;
-    useCall.setState({ micGated: muted });
+    setMicGated(muted);
   }
 
   private applyNoiseGate(rms: number) {
@@ -197,24 +197,7 @@ class SpeakingDetector {
     }
 
     if (changed.size > 0) {
-      useCall.setState((state) => {
-        let hasDiff = false;
-        const next = new Set(state.speakingParticipantIds);
-        for (const [id, speaking] of changed) {
-          if (speaking) {
-            if (!next.has(id)) {
-              next.add(id);
-              hasDiff = true;
-            }
-          } else {
-            if (next.has(id)) {
-              next.delete(id);
-              hasDiff = true;
-            }
-          }
-        }
-        return hasDiff ? { speakingParticipantIds: next } : state;
-      });
+      updateSpeakingParticipants(changed);
     }
   }
 
@@ -245,8 +228,4 @@ export function disposeSpeakingDetector(): void {
     detectorInstance.dispose();
     detectorInstance = null;
   }
-}
-
-export function useIsSpeaking(participantId: number): boolean {
-  return useCall((state) => state.speakingParticipantIds.has(participantId));
 }

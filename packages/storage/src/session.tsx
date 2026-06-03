@@ -25,9 +25,15 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const { load, save } = useStorage();
   const [contacts, setContacts] = useState<Contacts>([]);
   const [communities, setCommunities] = useState<Communities>([]);
-  const [calls, setCalls] = useState<Calls>([]);
+  const [localCalls, setLocalCalls] = useState<Calls>([]);
+  const calls = [
+    ...freshCalls,
+    ...localCalls.filter(
+      (call) => !freshCalls.some((fresh) => fresh.call_id === call.call_id),
+    ),
+  ];
 
-  // Get cached data and merge fresh data
+  // Cached session data fills in items the server did not return freshly.
   useEffect(() => {
     load("cached_contacts").then((cachedData) => {
       setContacts([
@@ -53,16 +59,6 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, [load, freshContacts, freshCommunities]);
 
-  useEffect(() => {
-    setCalls((prevCalls) => [
-      ...freshCalls,
-      ...prevCalls.filter(
-        (call) => !freshCalls.some((fresh) => fresh.call_id === call.call_id),
-      ),
-    ]);
-  }, [freshCalls]);
-
-  // Save data
   useEffect(() => {
     save("cached_contacts", contacts);
   }, [contacts, save]);
@@ -98,7 +94,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   };
 
   const insertCall = (call: Calls[number]) => {
-    setCalls((prevCalls) => {
+    setLocalCalls((prevCalls) => {
       if (prevCalls.some((prevCall) => prevCall.call_id === call.call_id)) {
         return prevCalls;
       }

@@ -109,8 +109,6 @@ type CallStore = {
   layoutVersion: number;
   screenRef: React.RefObject<HTMLDivElement | null> | null;
   runtime: Runtime | null;
-  speakingParticipantIds: Set<number>;
-  micGated: boolean;
 };
 
 let _keyProvider: ExternalE2EEKeyProvider | null = null;
@@ -857,7 +855,6 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
-    micGated: false,
   });
 
   getRoom().remoteParticipants.forEach((participant) => {
@@ -1079,8 +1076,6 @@ export const useCall = create<CallStore>(() => ({
   layoutVersion: 0,
   screenRef: null,
   runtime: null,
-  speakingParticipantIds: new Set(),
-  micGated: false,
 }));
 
 // Register app-level call listeners and wire React dependencies into the store.

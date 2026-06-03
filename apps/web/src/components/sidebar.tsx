@@ -33,7 +33,7 @@ import { useIsMobile } from "@tensamin/ui";
 import { MobileNavbar } from "./navbar";
 
 import SidebarBox from "@tensamin/call/sidebarBox";
-import { useShowMobileNavbar } from "@/routes/app/layout";
+import { useShowMobileNavbar } from "@/routes/app/useShowMobileNavbar";
 import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
 import type { User } from "@tensamin/user/context";

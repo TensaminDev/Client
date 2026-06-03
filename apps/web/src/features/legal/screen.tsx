@@ -220,7 +220,7 @@ function ContinueButton({
   );
 }
 
-export function BigCheckbox({
+function BigCheckbox({
   id,
   label,
   checked,

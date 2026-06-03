@@ -18,7 +18,7 @@ import {
 import { Track, type Participant } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
-import { useIsSpeaking } from "../../speakingIndicator";
+import { useIsSpeaking } from "../../speakingState";
 import VideoViewer from "../videoViewer";
 import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
 

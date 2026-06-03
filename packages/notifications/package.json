@@ -19,9 +19,11 @@
     "@tensamin/chat": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "@tensamin/ttp": "workspace:*",
+    "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "sonner": "^2.0.7",
     "zod": "^4.3.6"
   }
 }
