@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
+    "./code": "./src/code.ts",
     "./data": "./src/data.ts",
     "./desktopMedia": "./src/desktopMedia.tsx",
     "./log": "./src/log.tsx",
