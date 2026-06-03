@@ -1,13 +1,11 @@
-import { Button, Popover, PopoverContent, PopoverTrigger } from "@tensamin/ui";
 import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp,
-  House,
-  Phone,
-  Settings,
-  User,
-} from "lucide-react";
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  useIsMobile,
+} from "@tensamin/ui";
+import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
@@ -32,6 +30,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const currentCalls = calls.filter((call) =>
     call.call_members.some((member) => member === id),
   );
+
+  const isMobile = useIsMobile();
 
   const [selectOpen, setSelectOpen] = useState(false);
 
@@ -72,8 +72,10 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
         {pathname === "/chat" && id && (
           <Wrapper
             userId={id}
-            component={(user) => (
-              <>
+            component={(user) =>
+              isMobile ? (
+                <p className="font-medium text-md">{user?.display}</p>
+              ) : (
                 <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
                   <PopoverTrigger
                     render={
@@ -85,7 +87,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                         }}
                       >
                         <p className="font-medium text-md">{user?.display}</p>
-                        {userInfoOpen ? <ChevronUp /> : <ChevronDown />}
                       </Button>
                     }
                   />
@@ -93,8 +94,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                     <Profile user={user} />
                   </PopoverContent>
                 </Popover>
-              </>
-            )}
+              )
+            }
             loading={<Skeleton className="ml-3 w-40 h-5" />}
           />
         )}
