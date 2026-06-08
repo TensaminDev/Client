@@ -1,14 +1,9 @@
 - Overlay for stream modals
-- User modals
-  - Bg based on avatar
 - Mobile
-- Call invite popup
-  - Save call invite in `calls` array
 - Sounds
 - Admin call actions
   - Timeout
   - Disconnect
-- Context menus
-- Popout Window
+- Implement context menu features
 - Add quality selection
 - Good preview page

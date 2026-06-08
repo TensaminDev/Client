@@ -28,6 +28,7 @@ import {
   SquareArrowOutDownLeft,
   SquareArrowOutUpRight,
 } from "lucide-react";
+import { useStorage } from "@tensamin/storage/context";
 
 export default function Actions() {
   const sharedClasses = "w-14 h-10";
@@ -41,6 +42,12 @@ export default function Actions() {
     view === "focused" &&
     focusedParticipantId != null &&
     watchedStreamParticipantIds.includes(focusedParticipantId);
+
+  const { load } = useStorage();
+  const [ownId, setOwnId] = useState(0);
+  useEffect(() => {
+    load("user_id").then(setOwnId);
+  }, [load]);
 
   // Fullscreen stuff
   const callIsPopout = useCall((state) => state.callIsPopout);
@@ -122,7 +129,7 @@ export default function Actions() {
             iconSize={sharedIconSize}
             tooltip="Invite"
           />
-          {isWatchingFocusedStream ? (
+          {isWatchingFocusedStream && focusedParticipantId !== ownId ? (
             <Tooltip>
               <TooltipTrigger
                 render={

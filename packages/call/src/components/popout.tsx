@@ -120,7 +120,6 @@ export function Popout({ participant }: { participant: Participant }) {
   useEffect(() => {
     if (isDragging) return;
 
-    // eslint-disable-next-line
     setCoordsSafe(getCoordsForPosition(position));
   }, [position, size, isDragging, getCoordsForPosition]);
 

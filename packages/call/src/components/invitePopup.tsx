@@ -7,7 +7,7 @@ import {
   DialogContent,
 } from "@tensamin/ui";
 import Wrapper from "@tensamin/user/wrapper";
-import { PhoneIncoming, PhoneMissed } from "lucide-react";
+import { PhoneIncoming, X } from "lucide-react";
 
 export default function InvitePopup({
   open,
@@ -37,17 +37,17 @@ export default function InvitePopup({
             <div className="w-full flex justify-center gap-3">
               <Button
                 className="w-14 h-14"
+                variant="destructive"
+                onClick={() => onAccept(false)}
+              >
+                <X className="size-5" />
+              </Button>
+              <Button
+                className="w-14 h-14"
                 variant="subtleDefault"
                 onClick={() => onAccept(true)}
               >
                 <PhoneIncoming className="size-5" />
-              </Button>
-              <Button
-                className="w-14 h-14"
-                variant="destructive"
-                onClick={() => onAccept(false)}
-              >
-                <PhoneMissed className="size-5" />
               </Button>
             </div>
           </DialogContent>
