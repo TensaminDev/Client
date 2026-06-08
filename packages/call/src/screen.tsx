@@ -37,9 +37,7 @@ function syncDocumentClasses(targetDocument: Document) {
 }
 
 function PopoutScreen() {
-  const closeCheckRef = useRef<ReturnType<typeof window.setInterval> | null>(
-    null,
-  );
+  const closeCheckRef = useRef<number | null>(null);
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {

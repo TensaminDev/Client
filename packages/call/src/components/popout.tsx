@@ -172,7 +172,6 @@ export function Popout({ participant }: { participant: Participant }) {
   };
 
   const getCornerResizeDelta = (
-    e: React.PointerEvent,
     horizontalDelta: number,
     verticalDelta: number,
   ) => {
@@ -193,25 +192,21 @@ export function Popout({ participant }: { participant: Participant }) {
         return (e.clientY - resizeRef.current.clientY) / ASPECT_RATIO;
       case "top-left":
         return getCornerResizeDelta(
-          e,
           resizeRef.current.clientX - e.clientX,
           (resizeRef.current.clientY - e.clientY) / ASPECT_RATIO,
         );
       case "top-right":
         return getCornerResizeDelta(
-          e,
           e.clientX - resizeRef.current.clientX,
           (resizeRef.current.clientY - e.clientY) / ASPECT_RATIO,
         );
       case "bottom-right":
         return getCornerResizeDelta(
-          e,
           e.clientX - resizeRef.current.clientX,
           (e.clientY - resizeRef.current.clientY) / ASPECT_RATIO,
         );
       case "bottom-left":
         return getCornerResizeDelta(
-          e,
           resizeRef.current.clientX - e.clientX,
           (e.clientY - resizeRef.current.clientY) / ASPECT_RATIO,
         );
