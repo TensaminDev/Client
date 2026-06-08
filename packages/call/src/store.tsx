@@ -857,6 +857,7 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
+    callIsFullscreen: false,
     lastFocusedParticipantId: null,
   });
 

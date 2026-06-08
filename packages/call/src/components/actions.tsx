@@ -53,10 +53,13 @@ export default function Actions() {
   }, [screenRef]);
 
   const toggleFullscreen = async () => {
+    const screen = screenRef?.current;
+    const fullscreenDocument = screen?.ownerDocument ?? document;
+
     if (callIsFullscreen) {
-      await document.exitFullscreen().catch(() => undefined);
+      await fullscreenDocument.exitFullscreen().catch(() => undefined);
     } else {
-      await screenRef?.current?.requestFullscreen().catch(() => undefined);
+      await screen?.requestFullscreen().catch(() => undefined);
     }
 
     triggerCallLayoutCalculation();

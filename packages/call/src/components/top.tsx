@@ -75,7 +75,7 @@ export default function TopBar() {
               <TooltipTrigger
                 render={
                   <Avatar className="size-7">
-                    <AvatarImage />
+                    <AvatarImage src={user.avatar} />
                     <AvatarFallback className="text-xs">
                       {user.display.slice(0, 2).toUpperCase()}
                     </AvatarFallback>

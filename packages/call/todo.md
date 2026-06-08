@@ -11,3 +11,4 @@
 - Context menus
 - Popout Window
 - Add quality selection
+- Good preview page
