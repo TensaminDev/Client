@@ -7,7 +7,8 @@
     "./store": "./src/store.tsx",
     "./screen": "./src/screen.tsx",
     "./utils": "./src/utils.ts",
-    "./sidebarBox": "./src/components/sidebarBox.tsx"
+    "./sidebarBox": "./src/components/sidebarBox.tsx",
+    "./popout": "./src/components/popout.tsx"
   },
   "scripts": {
     "format": "bunx prettier --write .",

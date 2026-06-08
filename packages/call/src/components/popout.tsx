@@ -1,0 +1,485 @@
+import { Participant, Track } from "livekit-client";
+import VideoViewer from "./videoViewer";
+import { useLocation } from "@tanstack/react-router";
+import { getRoom, stopWatchingStream, useCall } from "../store";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Button, cn } from "@tensamin/ui";
+import { ScreenShareOff } from "lucide-react";
+
+function getTrackPublicationBySource(
+  participant: Participant | undefined,
+  source: Track.Source,
+) {
+  if (!participant) {
+    return undefined;
+  }
+
+  return [...participant.trackPublications.values()].find(
+    (publication) => publication.source === source,
+  );
+}
+
+type Positions = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+type ResizeEdge =
+  | "top"
+  | "right"
+  | "bottom"
+  | "left"
+  | "top-left"
+  | "top-right"
+  | "bottom-right"
+  | "bottom-left";
+type Point = {
+  x: number;
+  y: number;
+};
+
+const MARGIN = 40;
+const MIN_SIZE = 240;
+const MAX_SIZE = 1000;
+const ASPECT_RATIO = 9 / 16;
+
+export function Popout({ participant }: { participant: Participant }) {
+  const screenSharePublication = getTrackPublicationBySource(
+    participant,
+    Track.Source.ScreenShare,
+  );
+
+  const popoutRef = useRef<HTMLDivElement>(null);
+  const coordsRef = useRef<Point>({ x: MARGIN, y: MARGIN });
+  const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
+  const sizeRef = useRef(400);
+  const hideOverlayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const resizeRef = useRef<{
+    size: number;
+    clientX: number;
+    clientY: number;
+    edge: ResizeEdge;
+  }>({ size: 400, clientX: 0, clientY: 0, edge: "right" });
+
+  const [size, setSize] = useState(400);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [position, setPosition] = useState<Positions>("top-left");
+  const [coords, setCoords] = useState<Point>({ x: MARGIN, y: MARGIN });
+
+  const setCoordsSafe = (next: Point) => {
+    coordsRef.current = next;
+    setCoords(next);
+  };
+
+  const setSizeSafe = (next: number) => {
+    sizeRef.current = next;
+    setSize(next);
+  };
+
+  const getMaxSize = useCallback(() => {
+    const maxWidth = window.innerWidth - MARGIN * 2;
+    const maxHeightWidth = (window.innerHeight - MARGIN * 2) / ASPECT_RATIO;
+
+    return Math.max(MIN_SIZE, Math.min(MAX_SIZE, maxWidth, maxHeightWidth));
+  }, []);
+
+  const clampSize = useCallback(
+    (nextSize: number) => {
+      return Math.min(getMaxSize(), Math.max(MIN_SIZE, nextSize));
+    },
+    [getMaxSize],
+  );
+
+  const getPositionFromPoint = (
+    clientX: number,
+    clientY: number,
+  ): Positions => {
+    const height = window.innerHeight / 2 > clientY ? "top" : "bottom";
+    const width = window.innerWidth / 2 > clientX ? "left" : "right";
+
+    return `${height}-${width}` as Positions;
+  };
+
+  const getCoordsForPosition = useCallback(
+    (nextPosition: Positions, nextSize = size): Point => {
+      const width = nextSize;
+      const height = nextSize * ASPECT_RATIO;
+
+      return {
+        x: nextPosition.endsWith("right")
+          ? window.innerWidth - width - MARGIN
+          : MARGIN,
+        y: nextPosition.startsWith("bottom")
+          ? window.innerHeight - height - MARGIN
+          : MARGIN,
+      };
+    },
+    [size],
+  );
+
+  useEffect(() => {
+    if (isDragging) return;
+
+    // eslint-disable-next-line
+    setCoordsSafe(getCoordsForPosition(position));
+  }, [position, size, isDragging, getCoordsForPosition]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (isDragging) return;
+
+      const nextSize = clampSize(size);
+
+      setSizeSafe(nextSize);
+      setCoordsSafe(getCoordsForPosition(position, nextSize));
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [position, size, isDragging, getCoordsForPosition, clampSize]);
+
+  useEffect(() => {
+    return () => {
+      if (hideOverlayTimeoutRef.current) {
+        clearTimeout(hideOverlayTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleOverlayHide = () => {
+    if (hideOverlayTimeoutRef.current) {
+      clearTimeout(hideOverlayTimeoutRef.current);
+    }
+
+    hideOverlayTimeoutRef.current = setTimeout(() => {
+      setIsOverlayVisible(false);
+      hideOverlayTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const showOverlay = () => {
+    setIsOverlayVisible(true);
+    scheduleOverlayHide();
+  };
+
+  const hideOverlay = () => {
+    if (hideOverlayTimeoutRef.current) {
+      clearTimeout(hideOverlayTimeoutRef.current);
+      hideOverlayTimeoutRef.current = null;
+    }
+
+    setIsOverlayVisible(false);
+  };
+
+  const getCornerResizeDelta = (
+    e: React.PointerEvent,
+    horizontalDelta: number,
+    verticalDelta: number,
+  ) => {
+    return Math.abs(horizontalDelta) > Math.abs(verticalDelta)
+      ? horizontalDelta
+      : verticalDelta;
+  };
+
+  const getResizeDelta = (e: React.PointerEvent, edge: ResizeEdge) => {
+    switch (edge) {
+      case "left":
+        return resizeRef.current.clientX - e.clientX;
+      case "right":
+        return e.clientX - resizeRef.current.clientX;
+      case "top":
+        return (resizeRef.current.clientY - e.clientY) / ASPECT_RATIO;
+      case "bottom":
+        return (e.clientY - resizeRef.current.clientY) / ASPECT_RATIO;
+      case "top-left":
+        return getCornerResizeDelta(
+          e,
+          resizeRef.current.clientX - e.clientX,
+          (resizeRef.current.clientY - e.clientY) / ASPECT_RATIO,
+        );
+      case "top-right":
+        return getCornerResizeDelta(
+          e,
+          e.clientX - resizeRef.current.clientX,
+          (resizeRef.current.clientY - e.clientY) / ASPECT_RATIO,
+        );
+      case "bottom-right":
+        return getCornerResizeDelta(
+          e,
+          e.clientX - resizeRef.current.clientX,
+          (e.clientY - resizeRef.current.clientY) / ASPECT_RATIO,
+        );
+      case "bottom-left":
+        return getCornerResizeDelta(
+          e,
+          resizeRef.current.clientX - e.clientX,
+          (e.clientY - resizeRef.current.clientY) / ASPECT_RATIO,
+        );
+    }
+  };
+
+  const startResize = (
+    e: React.PointerEvent<HTMLDivElement>,
+    edge: ResizeEdge,
+  ) => {
+    if (e.button !== 0) return;
+
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+
+    resizeRef.current = {
+      size,
+      clientX: e.clientX,
+      clientY: e.clientY,
+      edge,
+    };
+
+    setIsResizing(true);
+  };
+
+  const resizePopout = (e: React.PointerEvent) => {
+    if (!isResizing) return;
+
+    const nextSize = clampSize(
+      resizeRef.current.size + getResizeDelta(e, resizeRef.current.edge),
+    );
+
+    setSizeSafe(nextSize);
+    setCoordsSafe(getCoordsForPosition(position, nextSize));
+  };
+
+  const stopResize = (e: React.PointerEvent) => {
+    if (!isResizing) return;
+
+    e.stopPropagation();
+    setIsResizing(false);
+    setCoordsSafe(getCoordsForPosition(position, sizeRef.current));
+  };
+
+  const resizeEdgeClassName = "absolute z-10 bg-transparent";
+  const resizeCornerClassName = "absolute z-20 h-4 w-4 bg-transparent";
+
+  if (!screenSharePublication) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={popoutRef}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        if (isResizing) return;
+
+        e.currentTarget.setPointerCapture(e.pointerId);
+
+        const current = coordsRef.current;
+
+        dragOffsetRef.current = {
+          x: e.clientX - current.x,
+          y: e.clientY - current.y,
+        };
+
+        setIsDragging(true);
+      }}
+      onPointerMove={(e) => {
+        if (!isDragging) return;
+
+        setCoordsSafe({
+          x: e.clientX - dragOffsetRef.current.x,
+          y: e.clientY - dragOffsetRef.current.y,
+        });
+      }}
+      onPointerUp={(e) => {
+        if (!isDragging) return;
+
+        const nextPosition = getPositionFromPoint(e.clientX, e.clientY);
+
+        setPosition(nextPosition);
+        setIsDragging(false);
+
+        requestAnimationFrame(() => {
+          setCoordsSafe(getCoordsForPosition(nextPosition));
+        });
+      }}
+      onPointerCancel={() => {
+        setIsDragging(false);
+
+        requestAnimationFrame(() => {
+          setCoordsSafe(getCoordsForPosition(position));
+        });
+      }}
+      onMouseEnter={showOverlay}
+      onMouseMove={showOverlay}
+      onMouseLeave={hideOverlay}
+      className={cn(
+        "fixed left-0 top-0 aspect-video z-200 rounded-lg border-2 border-muted-foreground bg-black",
+        "select-none touch-none",
+        isDragging ? "cursor-grabbing" : "cursor-grab",
+      )}
+      style={{
+        width: size,
+        transform: `translate3d(${coords.x}px, ${coords.y}px, 0)`,
+        transition:
+          isDragging || isResizing
+            ? "none"
+            : "transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+        willChange: "transform",
+      }}
+    >
+      <VideoViewer
+        participantId={participant.identity}
+        publication={screenSharePublication}
+      />
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 z-40 transition-opacity duration-200",
+          isOverlayVisible ? "opacity-100" : "opacity-0",
+        )}
+      >
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/55 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/65 to-transparent" />
+      </div>
+      <div
+        className={cn(
+          "absolute bottom-3 right-3 z-50 transition-all duration-200",
+          isOverlayVisible
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-2 pointer-events-none",
+        )}
+      >
+        <div className="bg-[#070707] h-10 w-14 rounded-lg">
+          <Button
+            className="w-full h-full border-0!"
+            variant="destructive"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              stopWatchingStream(Number(participant.identity ?? 0));
+            }}
+          >
+            <ScreenShareOff style={{ scale: "115%" }} />
+          </Button>
+        </div>
+      </div>
+      <div
+        aria-label="Resize popout from top edge"
+        role="separator"
+        className={cn(
+          resizeEdgeClassName,
+          "inset-x-4 -top-1 h-2 cursor-n-resize",
+        )}
+        onPointerDown={(e) => startResize(e, "top")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+      <div
+        aria-label="Resize popout from right edge"
+        role="separator"
+        className={cn(
+          resizeEdgeClassName,
+          "-right-1 inset-y-4 w-2 cursor-e-resize",
+        )}
+        onPointerDown={(e) => startResize(e, "right")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+      <div
+        aria-label="Resize popout from bottom edge"
+        role="separator"
+        className={cn(
+          resizeEdgeClassName,
+          "inset-x-4 -bottom-1 h-2 cursor-s-resize",
+        )}
+        onPointerDown={(e) => startResize(e, "bottom")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+      <div
+        aria-label="Resize popout from left edge"
+        role="separator"
+        className={cn(
+          resizeEdgeClassName,
+          "-left-1 inset-y-4 w-2 cursor-w-resize",
+        )}
+        onPointerDown={(e) => startResize(e, "left")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+      <div
+        aria-label="Resize popout from top left corner"
+        role="separator"
+        className={cn(resizeCornerClassName, "-left-1 -top-1 cursor-nw-resize")}
+        onPointerDown={(e) => startResize(e, "top-left")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+      <div
+        aria-label="Resize popout from top right corner"
+        role="separator"
+        className={cn(
+          resizeCornerClassName,
+          "-right-1 -top-1 cursor-ne-resize",
+        )}
+        onPointerDown={(e) => startResize(e, "top-right")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+      <div
+        aria-label="Resize popout from bottom right corner"
+        role="separator"
+        className={cn(
+          resizeCornerClassName,
+          "-bottom-1 -right-1 cursor-se-resize",
+        )}
+        onPointerDown={(e) => startResize(e, "bottom-right")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+      <div
+        aria-label="Resize popout from bottom left corner"
+        role="separator"
+        className={cn(
+          resizeCornerClassName,
+          "-bottom-1 -left-1 cursor-sw-resize",
+        )}
+        onPointerDown={(e) => startResize(e, "bottom-left")}
+        onPointerMove={resizePopout}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
+    </div>
+  );
+}
+
+export default function Wrapper() {
+  const room = getRoom();
+  const { pathname } = useLocation();
+  const state = useCall((state) => state.state);
+  const watchedStreamParticipantIds = useCall(
+    (state) => state.watchedStreamParticipantIds,
+  );
+  const lastFocusedParticipantId = useCall(
+    (state) => state.lastFocusedParticipantId,
+  );
+  const participant = room.getParticipantByIdentity(
+    String(lastFocusedParticipantId),
+  );
+
+  if (!participant || !lastFocusedParticipantId) {
+    return null;
+  }
+
+  const active =
+    !pathname.startsWith("/call") &&
+    state === "open" &&
+    watchedStreamParticipantIds.includes(Number(participant.identity ?? 0));
+
+  return active && <Popout participant={participant} />;
+}
