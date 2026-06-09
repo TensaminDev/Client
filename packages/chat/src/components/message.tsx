@@ -2,6 +2,7 @@ import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
 import { AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import {
   Avatar,
@@ -15,6 +16,7 @@ import {
 import Wrapper from "@tensamin/user/wrapper";
 import { useChat } from "../context";
 import MessageContextMenu from "./messageContextMenu";
+import Media from "./media";
 
 function MessageComponent({
   grouped,
@@ -27,6 +29,18 @@ function MessageComponent({
 }) {
   const { userId } = useChat();
   const actuallyFailed = message.failed && message.message_state === "awaiting";
+
+  const [isValidURL, setIsValidURL] = useState(false);
+  useEffect(() => {
+    try {
+      if (message.content.split(" ").length > 1) throw new Error();
+
+      new URL(message.content);
+      setIsValidURL(true);
+    } catch {
+      setIsValidURL(false);
+    }
+  }, [message.content]);
 
   return (
     <div
@@ -86,7 +100,11 @@ function MessageComponent({
                       </p>
                     </div>
                   )}
-                  <Text value={message.content} />
+                  {isValidURL ? (
+                    <Media link={message.content} />
+                  ) : (
+                    <Text value={message.content} />
+                  )}
                 </div>
               </>
             )}

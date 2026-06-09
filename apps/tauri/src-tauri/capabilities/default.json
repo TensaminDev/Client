@@ -15,6 +15,7 @@
     "core:window:allow-minimize",
     "core:event:default",
     "deep-link:default",
-    "notification:default"
+    "notification:default",
+    "log:default"
   ]
 }
