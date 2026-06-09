@@ -5,7 +5,7 @@ import {
   ContextMenuSeparator,
   Slider,
 } from "@tensamin/ui";
-import { User } from "@tensamin/user/context";
+import type { User } from "@tensamin/user/context";
 import { useCall } from "../../store";
 import { useState } from "react";
 
