@@ -30,10 +30,11 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-barcode-scanner": "~2",
     "@tauri-apps/plugin-deep-link": "~2",
-    "react-dom": "^19.2.0",
-    "@tensamin/ui": "*",
+    "@tauri-apps/plugin-notification": "~2",
     "@tensamin/shared": "workspace:*",
-    "react": "^19.2.0"
+    "@tensamin/ui": "*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
