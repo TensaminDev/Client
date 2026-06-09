@@ -3371,9 +3371,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.12.3"
+version = "1.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e10754a14b9137dd7b1e3e5b0493cc9171fdd105e0ab477f51b72e7f3ac0e276"
+checksum = "f1292b7759ae1cb9ec195452d1390a074f0cd8541ab7a5a8c31cd6db45d4a6ba"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -3394,9 +3394,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.10"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
+checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "rend"
@@ -4664,7 +4664,7 @@ dependencies = [
  "tauri-plugin-notification",
  "tauri-plugin-opener",
  "ttp-core",
- "ttp-native",
+ "ttp-tauri",
 ]
 
 [[package]]
@@ -5042,7 +5042,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "ttp-core"
 version = "0.1.0"
-source = "git+https://git.methanium.net/tensamin/ttp.git#23438fa8f884e6ad0d32ca1004c0dedcce0cc8d2"
+source = "git+https://git.methanium.net/tensamin/ttp.git#6723254543f08211c02960dbfd8990b83fc261ae"
 dependencies = [
  "base64 0.22.1",
  "byteorder",
@@ -5055,7 +5055,7 @@ dependencies = [
 [[package]]
 name = "ttp-native"
 version = "0.1.0"
-source = "git+https://git.methanium.net/tensamin/ttp.git#23438fa8f884e6ad0d32ca1004c0dedcce0cc8d2"
+source = "git+https://git.methanium.net/tensamin/ttp.git#6723254543f08211c02960dbfd8990b83fc261ae"
 dependencies = [
  "quinn",
  "rustls",
@@ -5063,7 +5063,23 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "ttp-core",
+ "webpki-roots",
  "wtransport",
+]
+
+[[package]]
+name = "ttp-tauri"
+version = "0.1.0"
+source = "git+https://git.methanium.net/tensamin/ttp.git#6723254543f08211c02960dbfd8990b83fc261ae"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.18",
+ "tokio",
+ "ttp-core",
+ "ttp-native",
 ]
 
 [[package]]
@@ -5472,6 +5488,15 @@ dependencies = [
  "pkg-config",
  "soup3-sys",
  "system-deps",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52f5ee44c96cf55f1b349600768e3ece3a8f26010c05265ab73f945bb1a2eb9d"
+dependencies = [
+ "rustls-pki-types",
 ]
 
 [[package]]

@@ -96,6 +96,9 @@ export default defineConfig({
     },
   },
   envPrefix: ["VITE_", "TAURI_ENV_*"],
+  optimizeDeps: {
+    exclude: ["@tensamin/ttp-core"],
+  },
   build: {
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,

@@ -14,6 +14,10 @@
     "barcode-scanner:allow-scan",
     "barcode-scanner:allow-cancel",
     "notification:default",
-    "log:default"
+    "log:default",
+    "ttp-tauri:allow-connect",
+    "ttp-tauri:allow-send",
+    "ttp-tauri:allow-close",
+    "ttp-tauri:allow-ready-state"
   ]
 }

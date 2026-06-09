@@ -257,6 +257,7 @@ export interface Storage extends SettingsStorageDefaults {
   cached_contacts: Contacts;
   cached_communities: Communities;
   ttp_url: string;
+  ttp_server_cert: string;
   call_mute_range_start: number;
   call_mute_range_end: number;
   chat_trusted_domains: string[];
@@ -293,6 +294,7 @@ export const storageDefaults: Storage = {
   cached_contacts: [],
   cached_communities: [],
   ttp_url: "https://tensamin.net:959",
+  ttp_server_cert: "",
   call_mute_range_start: -55,
   call_mute_range_end: -45,
   chat_trusted_domains: ["tenor.com", "c.tenor.com"],

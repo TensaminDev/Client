@@ -195,9 +195,13 @@ export function Provider(props: {
 
   // Load ttp url
   const [ttpUrl, setTtpUrl] = useState<string | null>(null);
+  const [ttpServerCert, setTtpServerCert] = useState<string>("");
   useEffect(() => {
     load("ttp_url").then((url) => {
       setTtpUrl(url);
+    });
+    load("ttp_server_cert").then((cert) => {
+      setTtpServerCert(cert.trim());
     });
   }, [load]);
 
@@ -373,6 +377,7 @@ export function Provider(props: {
     const transportClient = !props.blockConnection
       ? createTransportClient(schemas, {
           url: ttpUrl,
+          serverCert: ttpServerCert || undefined,
           onReadyStateChange: (state) => {
             currentReadyState = state;
             setReadyState(state);
@@ -494,7 +499,7 @@ export function Provider(props: {
       setIdentifying(false);
       identificationStartedRef.current = false;
     };
-  }, [props.blockConnection, ttpUrl]);
+  }, [props.blockConnection, ttpServerCert, ttpUrl]);
 
   useEffect(() => {
     if (!connected) {

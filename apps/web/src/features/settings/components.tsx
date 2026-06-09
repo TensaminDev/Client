@@ -98,7 +98,9 @@ export function List<K extends ListStorageKey>({
   };
 
   const deleteItems = (indexes: Set<number>) => {
-    const nextItems = items.filter((_, index) => !indexes.has(index)) as Storage[K];
+    const nextItems = items.filter(
+      (_, index) => !indexes.has(index),
+    ) as Storage[K];
 
     setItems(nextItems);
     setSelectedItems(new Set());
