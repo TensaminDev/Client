@@ -5042,7 +5042,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "ttp-core"
 version = "0.1.0"
-source = "git+https://git.methanium.net/tensamin/ttp.git#6723254543f08211c02960dbfd8990b83fc261ae"
+source = "git+https://git.methanium.net/tensamin/ttp.git#0ccc2b808c1f8ff38ede906491ef703a51bd7786"
 dependencies = [
  "base64 0.22.1",
  "byteorder",
@@ -5055,7 +5055,7 @@ dependencies = [
 [[package]]
 name = "ttp-native"
 version = "0.1.0"
-source = "git+https://git.methanium.net/tensamin/ttp.git#6723254543f08211c02960dbfd8990b83fc261ae"
+source = "git+https://git.methanium.net/tensamin/ttp.git#0ccc2b808c1f8ff38ede906491ef703a51bd7786"
 dependencies = [
  "quinn",
  "rustls",
@@ -5070,7 +5070,7 @@ dependencies = [
 [[package]]
 name = "ttp-tauri"
 version = "0.1.0"
-source = "git+https://git.methanium.net/tensamin/ttp.git#6723254543f08211c02960dbfd8990b83fc261ae"
+source = "git+https://git.methanium.net/tensamin/ttp.git#0ccc2b808c1f8ff38ede906491ef703a51bd7786"
 dependencies = [
  "serde",
  "serde_json",

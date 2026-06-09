@@ -256,7 +256,7 @@
     },
   },
   "overrides": {
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.23.tar.gz",
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.24.tar.gz",
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.36.tar.gz",
   },
   "packages": {
@@ -748,7 +748,7 @@
 
     "@tensamin/ttp": ["@tensamin/ttp@workspace:packages/ttp"],
 
-    "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.23.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@tauri-apps/api": "^2.9.0", "@typescript-eslint/parser": "^8.59.1", "@webtransport-bun/webtransport": "^0.3.0", "globals": "^17.5.0", "typescript": "^6.0.3", "typescript-eslint": "^8.59.1", "zod": "^4.4.1" } }, "sha512-6KsUQmJvA95Y23pGI5C1akphIi4CIosDeyNGZeIn5wcGVdU36ds1p4O1WhRmfts1UggcpYXbF46BvLZ7eEE0oQ=="],
+    "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.24.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@tauri-apps/api": "^2.9.0", "@typescript-eslint/parser": "^8.59.1", "@webtransport-bun/webtransport": "^0.3.0", "globals": "^17.5.0", "typescript": "^6.0.3", "typescript-eslint": "^8.59.1", "zod": "^4.4.1" } }, "sha512-Db94CDOTYvzJSQDZGDgziUXRvXx9PiEfYDQt6sYe8Nyg+KD/aiKnyQx7NeEiG03TfYE3ogNxXOsrcsip4di8+g=="],
 
     "@tensamin/ui": ["@tensamin/ui@https://git.methanium.net/tensamin/ui/archive/0.0.36.tar.gz", { "dependencies": { "@base-ui/react": "^1.3.0", "@fontsource-variable/inter": "^5.2.6", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "lucide-react": "^1.8.0", "next-themes": "^0.4.6", "react-day-picker": "^9.14.0", "react-resizable-panels": "^4.10.0", "recharts": "3.8.0", "shadcn": "^3.5.0", "sonner": "^2.0.7", "tailwind-merge": "^3.5.0", "tw-animate-css": "^1.3.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" } }, "sha512-5zql8LtBKVn7WuQDCIdLbthKvLEyxjWShAceXCYbk+kwO41VVILhS1EWuDvjgvv2BBdyuxoVWvdblPIW4BcdSQ=="],
 
