@@ -7,6 +7,8 @@
 @source "../../../packages/**/src/**/*.{ts,tsx}";
 
 @theme {
+  --font-sans: "Inter Variable", sans-serif;
+
   --animate-wiggle: wiggle 0.5s ease-in-out infinite;
 
   @keyframes wiggle {
@@ -26,6 +28,10 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
+}
+
+body {
+  font-family: "Inter Variable", sans-serif;
 }
 
 #root {

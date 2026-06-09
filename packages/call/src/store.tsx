@@ -109,8 +109,7 @@ type CallStore = {
   layoutVersion: number;
   screenRef: React.RefObject<HTMLDivElement | null> | null;
   runtime: Runtime | null;
-  speakingParticipantIds: Set<number>;
-  micGated: boolean;
+  lastFocusedParticipantId: number | null;
 };
 
 let _keyProvider: ExternalE2EEKeyProvider | null = null;
@@ -697,6 +696,7 @@ export function focusParticipant(
 ) {
   useCall.setState({
     focusedParticipantId: participantId,
+    lastFocusedParticipantId: participantId,
     focusedParticipantType: type,
     view: "focused",
   });
@@ -857,7 +857,8 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
-    micGated: false,
+    callIsFullscreen: false,
+    lastFocusedParticipantId: null,
   });
 
   getRoom().remoteParticipants.forEach((participant) => {
@@ -1019,6 +1020,7 @@ export function resetCallState() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
+    lastFocusedParticipantId: null,
   });
 
   syncParticipantState();
@@ -1079,8 +1081,7 @@ export const useCall = create<CallStore>(() => ({
   layoutVersion: 0,
   screenRef: null,
   runtime: null,
-  speakingParticipantIds: new Set(),
-  micGated: false,
+  lastFocusedParticipantId: null,
 }));
 
 // Register app-level call listeners and wire React dependencies into the store.

@@ -14,6 +14,7 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-minimize",
     "core:event:default",
-    "deep-link:default"
+    "deep-link:default",
+    "notification:default"
   ]
 }

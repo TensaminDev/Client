@@ -395,49 +395,12 @@ export async function getSharedSecret(
     return out;
   };
 
-  /**
-   * Returns WebCrypto subtle API when available.
-   * @returns SubtleCrypto instance or undefined.
-   */
   const getSubtle = () => globalThis.crypto?.subtle;
-
-  {
-    /*
-    const hkdfAesGcmFromShared = async (
-      sharedSecret: BufferSource,
-      infoStr: string
-    ): Promise<CryptoKey> => {
-      const subtle = getSubtle();
-      if (!subtle) throw new Error("WebCrypto subtle not available");
-      const info = textEncoder.encode(infoStr);
-      const baseKey = await subtle.importKey(
-        "raw",
-        sharedSecret,
-        "HKDF",
-        false,
-        ["deriveKey"]
-      );
-      return await subtle.deriveKey(
-        {
-          name: "HKDF",
-          hash: "SHA-256",
-          salt: new Uint8Array(0),
-          info,
-        },
-        baseKey,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"]
-      );
-    };
-    */
-  }
 
   const myJwk: JWK = normalizeOkpX448Jwk(ownJwk, "own_jwk");
   const peerJwk: JWK = normalizeOkpX448Jwk(otherJwk, "other_jwk");
 
   const subtle = getSubtle();
-  //const infoStr = `ECDH-X448-AES-GCM-v1|my=${myJwk.x}|peer=${peerJwk.x}`;
 
   if (subtle) {
     const algorithms = [{ name: "ECDH", namedCurve: "X448" }, { name: "X448" }];

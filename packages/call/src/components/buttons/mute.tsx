@@ -1,18 +1,14 @@
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
+import { Button } from "@tensamin/ui";
 import { toggleMute, useCall } from "../../store";
 import { Mic, MicOff } from "lucide-react";
+import { type CallButtonProps, iconScale, withTooltip } from "./tooltipButton";
 
 export default function MuteButton({
   className,
   iconSize,
   tooltip,
   portalContainer,
-}: {
-  className?: string;
-  iconSize?: number;
-  tooltip?: string;
-  portalContainer?: HTMLElement;
-}) {
+}: CallButtonProps) {
   const micEnabled = useCall((state) => state.micEnabled);
 
   const button = (
@@ -22,23 +18,12 @@ export default function MuteButton({
       onClick={() => void toggleMute()}
     >
       {micEnabled ? (
-        <Mic style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }} />
+        <Mic style={iconScale(iconSize)} />
       ) : (
-        <MicOff style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }} />
+        <MicOff style={iconScale(iconSize)} />
       )}
     </Button>
   );
 
-  if (!tooltip) {
-    return button;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger render={button} />
-      <TooltipContent portalProps={{ container: portalContainer }}>
-        {tooltip}
-      </TooltipContent>
-    </Tooltip>
-  );
+  return withTooltip(button, tooltip, portalContainer);
 }

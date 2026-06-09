@@ -3,9 +3,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
+  ContextMenu as UIContextMenu,
   ContextMenuTrigger,
 } from "@tensamin/ui";
 import {
@@ -18,9 +16,11 @@ import {
 import { Track, type Participant } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
 import { useUser, type User } from "@tensamin/user/context";
-import { useIsSpeaking } from "../../speakingIndicator";
+import { useIsSpeaking } from "../../speakingState";
 import VideoViewer from "../videoViewer";
 import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
+import ContextMenu from "./contextMenu";
+import { useStorage } from "@tensamin/storage/context";
 
 function getTrackPublicationBySource(
   participant: Participant | undefined,
@@ -41,6 +41,69 @@ function TransparentButton({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   );
+}
+
+function getAverageImageColor(src: string) {
+  return new Promise<string | undefined>((resolve) => {
+    const image = new Image();
+
+    image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+
+      if (!context) {
+        resolve(undefined);
+        return;
+      }
+
+      canvas.width = 32;
+      canvas.height = 32;
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      try {
+        const { data } = context.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
+        let red = 0;
+        let green = 0;
+        let blue = 0;
+        let total = 0;
+
+        for (let index = 0; index < data.length; index += 4) {
+          const alpha = data[index + 3];
+
+          if (alpha < 128) {
+            continue;
+          }
+
+          red += data[index] * alpha;
+          green += data[index + 1] * alpha;
+          blue += data[index + 2] * alpha;
+          total += alpha;
+        }
+
+        if (total === 0) {
+          resolve(undefined);
+          return;
+        }
+
+        const darken = 0.7;
+
+        resolve(
+          `rgb(${Math.round((red / total) * darken)}, ${Math.round((green / total) * darken)}, ${Math.round((blue / total) * darken)})`,
+        );
+      } catch {
+        resolve(undefined);
+      }
+    };
+    image.onerror = () => resolve(undefined);
+    image.src = src;
+  });
 }
 
 function Overlay({
@@ -100,16 +163,25 @@ export default function Base({
   flush?: boolean;
 }) {
   const { get } = useUser();
+  const { load } = useStorage();
 
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
   const view = useCall((state) => state.view);
   const [user, setUser] = useState<User | null>(null);
+  const [avatarBackgroundColor, setAvatarBackgroundColor] = useState<
+    string | undefined
+  >(undefined);
   const isSpeaking = useIsSpeaking(user?.user_id ?? -1);
   const screenSharePublication = getTrackPublicationBySource(
     participant,
     Track.Source.ScreenShare,
   );
   const screenSharePreview = participant?.attributes["screenSharePreview"];
+
+  const [ownId, setOwnId] = useState(0);
+  useEffect(() => {
+    load("user_id").then(setOwnId);
+  }, [load]);
 
   useEffect(() => {
     const participantId = Number(participant?.identity);
@@ -119,7 +191,6 @@ export default function Base({
       !Number.isInteger(participantId) ||
       participantId <= 0
     ) {
-      // eslint-disable-next-line
       setUser(null);
       return;
     }
@@ -136,6 +207,25 @@ export default function Base({
       active = false;
     };
   }, [participant, get]);
+
+  useEffect(() => {
+    if (type !== "user" || !user?.avatar) {
+      setAvatarBackgroundColor(undefined);
+      return;
+    }
+
+    let active = true;
+
+    void getAverageImageColor(user.avatar).then((color) => {
+      if (active) {
+        setAvatarBackgroundColor(color);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [type, user?.avatar]);
 
   // Avatar calc
   const currentCard = useRef<HTMLDivElement>(null);
@@ -169,7 +259,7 @@ export default function Base({
     view === "focused" && user.user_id === focusedParticipantId;
 
   return (
-    <ContextMenu>
+    <UIContextMenu>
       <ContextMenuTrigger
         render={
           <div
@@ -216,7 +306,10 @@ export default function Base({
               className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
                 flush ? "rounded-none" : "rounded-sm"
               } ${type === "user" && isSpeaking ? "border-4 border-(--primary-foreground-alt)/75" : "border-0"}`}
-              style={{ containerType: "size" }}
+              style={{
+                backgroundColor: avatarBackgroundColor,
+                containerType: "size",
+              }}
             >
               {/* Detect video / user and place here */}
 
@@ -264,9 +357,7 @@ export default function Base({
           </div>
         }
       />
-      <ContextMenuContent>
-        <ContextMenuItem>Stop Watching</ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+      <ContextMenu user={user} ownId={ownId} />
+    </UIContextMenu>
   );
 }

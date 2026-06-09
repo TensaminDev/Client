@@ -9,6 +9,7 @@
   "main": "dist/main/main.js",
   "scripts": {
     "clean": "rm -rf dist release",
+    "lint": "eslint src",
     "build:web": "cd ../.. && bun run build:web",
     "build": "tsc -p tsconfig.json && esbuild src/preload/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload/preload.cjs",
     "dev:raw": "cd ../.. && bun run build:web && cd apps/electron && bun run build && electron . --verbose",
@@ -26,9 +27,7 @@
     "validate:raw": "bun run build && bun run package:linux:raw",
     "validate": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop --command bun run validate:raw; else bun run validate:raw; fi"
   },
-  "dependencies": {
-    "electron-updater": "^6.6.2"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^25.9.1",
     "electron": "^39.2.7",

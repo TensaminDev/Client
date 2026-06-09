@@ -123,7 +123,6 @@ export default function Wrapper({ children }: { children: ReactNode }) {
     const redirect = params.get("redirect");
     const challenge = params.get("challenge");
     if (!identifier || !redirect) {
-      // eslint-disable-next-line
       setAllowChildern(true);
       return;
     }

@@ -92,7 +92,6 @@ export default function ScreenShareDialog({
 
     let active = true;
 
-    // eslint-disable-next-line
     setLoading(true);
     setSelectedSourceId(null);
     setSelectedAudioOutputId(NONE_AUDIO_OUTPUT);

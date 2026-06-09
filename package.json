@@ -1,6 +1,6 @@
 {
   "name": "tensamin",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -44,7 +44,7 @@
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.36.tar.gz",
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.19.tar.gz"
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.20.tar.gz"
   },
   "dependencies": {
     "@tensamin/ttp-core": "*",

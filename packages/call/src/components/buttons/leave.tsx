@@ -1,18 +1,14 @@
 import { LeaveIcon } from "@livekit/components-react";
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
+import { Button } from "@tensamin/ui";
 import { disconnect, useCall } from "../../store";
+import { type CallButtonProps, iconScale, withTooltip } from "./tooltipButton";
 
 export default function LeaveButton({
   className,
   iconSize,
   tooltip,
   portalContainer,
-}: {
-  className?: string;
-  iconSize?: number;
-  tooltip?: string;
-  portalContainer?: HTMLElement;
-}) {
+}: CallButtonProps) {
   const state = useCall((store) => store.state);
 
   const button = (
@@ -22,20 +18,9 @@ export default function LeaveButton({
       disabled={state === "closing" || state === "closed"}
       variant="destructive"
     >
-      <LeaveIcon style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }} />
+      <LeaveIcon style={iconScale(iconSize)} />
     </Button>
   );
 
-  if (!tooltip) {
-    return button;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger render={button} />
-      <TooltipContent portalProps={{ container: portalContainer }}>
-        {tooltip}
-      </TooltipContent>
-    </Tooltip>
-  );
+  return withTooltip(button, tooltip, portalContainer);
 }

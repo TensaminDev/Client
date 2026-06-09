@@ -33,8 +33,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
 
   const isMobile = useIsMobile();
 
-  const [selectOpen, setSelectOpen] = useState(false);
-
   const [userInfoOpen, setUserInfoOpen] = useState(false);
 
   return (
@@ -74,7 +72,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             userId={id}
             component={(user) =>
               isMobile ? (
-                <p className="font-medium text-md">{user?.display}</p>
+                <p className="font-medium text-[1.07rem]">{user?.display}</p>
               ) : (
                 <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
                   <PopoverTrigger
@@ -86,7 +84,9 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                           textDecorationLine: "none",
                         }}
                       >
-                        <p className="font-medium text-md">{user?.display}</p>
+                        <p className="font-medium text-[1.07rem]">
+                          {user?.display}
+                        </p>
                       </Button>
                     }
                   />
@@ -131,15 +131,20 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               </Button>
             ) : (
               <>
-                <Button
-                  onClick={() => setSelectOpen((prev) => !prev)}
-                  className="w-9! h-9! aspect-square rounded-lg"
-                >
-                  <Phone />
-                </Button>
-                <Select onOpenChange={setSelectOpen} open={selectOpen}>
-                  <SelectTrigger hidden />
-                  <SelectContent>
+                <Select>
+                  <SelectTrigger
+                    // eslint-disable-next-line
+                    render={({ className, ...props }) => (
+                      <Button
+                        {...props}
+                        className="w-9! h-9! aspect-square rounded-lg px-0! flex! justify-center!"
+                        variant="default"
+                      >
+                        <Phone />
+                      </Button>
+                    )}
+                  />
+                  <SelectContent className="p-1">
                     {currentCalls.map((call) => (
                       <SelectItem
                         value={call.call_id}

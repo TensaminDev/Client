@@ -1,7 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Actions from "../../components/actions";
 import TopBar from "../../components/top";
-import { setScreenRef, useCall } from "../../store";
+import {
+  setCallIsFullscreen,
+  setScreenRef,
+  triggerCallLayoutCalculation,
+  useCall,
+} from "../../store";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const screenRef = useRef<HTMLDivElement>(null);
@@ -16,6 +21,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setScreenRef(screenRef);
+
+    const screen = screenRef.current;
+    const fullscreenDocument = screen?.ownerDocument;
+
+    if (!screen || !fullscreenDocument) {
+      return;
+    }
+
+    const handleFullscreenChange = () => {
+      setCallIsFullscreen(fullscreenDocument.fullscreenElement === screen);
+      triggerCallLayoutCalculation();
+    };
+
+    fullscreenDocument.addEventListener(
+      "fullscreenchange",
+      handleFullscreenChange,
+    );
+
+    return () => {
+      fullscreenDocument.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange,
+      );
+    };
   }, []);
 
   const usersInFocusedViewHidden = useCall(

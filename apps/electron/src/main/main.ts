@@ -12,6 +12,7 @@ import {
 import { checkForUpdates } from "./updates.js";
 import {
   ipcChannels,
+  type DesktopScreenShareAudioOutput,
   type DesktopScreenShareCapabilities,
 } from "../shared/ipc.js";
 
@@ -88,7 +89,7 @@ function execJson(command: string, args: string[]) {
   });
 }
 
-async function listAudioOutputs() {
+async function listAudioOutputs(): Promise<DesktopScreenShareAudioOutput[]> {
   verboseLog("listAudioOutputs", { platform: process.platform });
 
   if (process.platform !== "linux") return [];
@@ -106,7 +107,9 @@ async function listAudioOutputs() {
       if (!id || !name) return null;
       return { id, name, isDefault: false };
     })
-    .filter(Boolean);
+    .filter(
+      (output): output is DesktopScreenShareAudioOutput => output != null,
+    );
 }
 
 async function listScreenShareSources() {

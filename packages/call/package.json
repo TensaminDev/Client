@@ -7,7 +7,8 @@
     "./store": "./src/store.tsx",
     "./screen": "./src/screen.tsx",
     "./utils": "./src/utils.ts",
-    "./sidebarBox": "./src/components/sidebarBox.tsx"
+    "./sidebarBox": "./src/components/sidebarBox.tsx",
+    "./popout": "./src/components/popout.tsx"
   },
   "scripts": {
     "format": "bunx prettier --write .",
@@ -16,15 +17,11 @@
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.20",
-    "@tanstack/react-query": "^5.100.7",
     "@tanstack/react-router": "^1.169.1",
-    "@tanstack/react-virtual": "^3.13.24",
     "@tauri-apps/api": "^2",
     "@tensamin/crypto": "workspace:*",
-    "@tensamin/markdown": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/tauri": "workspace:*",
     "@tensamin/ttp": "workspace:*",
     "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
@@ -34,7 +31,6 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.8.1",
-    "sonner": "^2.0.7",
     "zod": "^4.3.6",
     "zustand": "^5.0.8"
   }
