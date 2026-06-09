@@ -6,8 +6,8 @@
   outputs = {nixpkgs, ...}: let
     systems = ["x86_64-linux"];
     forAllSystems = nixpkgs.lib.genAttrs systems;
-    version = "0.0.8";
-    x86_64DebHash = "sha256-xC8YHVk+JpeMvXHB1dZihYLFyzFDXne4bkV6TZiOFrE=";
+    version = "0.0.9";
+    x86_64DebHash = "sha256-8rVb12SGGSac6l1NVPGyRLsAKAGDAOJVUwG8l+hoRCU=";
     forgejoBaseUrl = "https://git.methanium.net/tensamin/client/releases/download/${version}";
   in {
     packages = forAllSystems (system: let
