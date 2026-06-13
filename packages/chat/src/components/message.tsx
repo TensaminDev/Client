@@ -3,6 +3,7 @@ import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
 import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { User } from "@tensamin/user/context";
 
 import {
   Avatar,
@@ -13,21 +14,20 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@tensamin/ui";
-import Wrapper from "@tensamin/user/wrapper";
-import { useChat } from "../context";
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 
 function MessageComponent({
   grouped,
   message,
+  user,
 }: {
   grouped: boolean;
   message: RawMessage & {
     failed?: boolean;
   };
+  user: User | null;
 }) {
-  const { userId } = useChat();
   const actuallyFailed = message.failed && message.message_state === "awaiting";
 
   const [isValidURL, setIsValidURL] = useState(false);
@@ -60,55 +60,53 @@ function MessageComponent({
             },
           )}
         >
-          <Wrapper
-            loading={"State not achievable"}
-            userId={message.sent_by_self ? "own" : userId}
-            component={(user) => (
-              <>
-                {grouped ? (
-                  <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
-                    {new Date(message.send_time).toLocaleString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+          {user ? (
+            <>
+              {grouped ? (
+                <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
+                  {new Date(message.send_time).toLocaleString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              ) : (
+                <Avatar className="mr-1 mb-auto mt-1 w-10">
+                  <AvatarImage src={user.avatar} />
+                  <AvatarFallback>
+                    {user.display.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              {message.failed && message.message_state === "awaiting" && (
+                <Tooltip>
+                  <TooltipContent>
+                    <p>Failed to send message</p>
+                  </TooltipContent>
+                  <TooltipTrigger render={<AlertTriangle size={17} />} />
+                </Tooltip>
+              )}
+              <div className="flex flex-col">
+                {!grouped && (
+                  <div className="flex items-center gap-1">
+                    <p className="font-medium">{user.display}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(message.send_time).toLocaleString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                )}
+                {isValidURL ? (
+                  <Media link={message.content} />
                 ) : (
-                  <Avatar className="mr-1 mb-auto mt-1 w-10">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback>
-                      {user.display.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <Text value={message.content} />
                 )}
-                {message.failed && message.message_state === "awaiting" && (
-                  <Tooltip>
-                    <TooltipContent>
-                      <p>Failed to send message</p>
-                    </TooltipContent>
-                    <TooltipTrigger render={<AlertTriangle size={17} />} />
-                  </Tooltip>
-                )}
-                <div className="flex flex-col">
-                  {!grouped && (
-                    <div className="flex items-center gap-1">
-                      <p className="font-medium">{user.display}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(message.send_time).toLocaleString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  )}
-                  {isValidURL ? (
-                    <Media link={message.content} />
-                  ) : (
-                    <Text value={message.content} />
-                  )}
-                </div>
-              </>
-            )}
-          />
+              </div>
+            </>
+          ) : (
+            "Loading"
+          )}
         </div>
       </MessageContextMenu>
     </div>
@@ -122,6 +120,8 @@ export default React.memo(MessageComponent, (prev, next) => {
     prev.message.height === next.message.height &&
     prev.message.sent_by_self === next.message.sent_by_self &&
     prev.message.message_state === next.message.message_state &&
-    prev.message.failed === next.message.failed
+    prev.message.failed === next.message.failed &&
+    prev.grouped === next.grouped &&
+    prev.user === next.user
   );
 });
