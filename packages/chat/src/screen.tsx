@@ -56,6 +56,9 @@ export default function Screen() {
   const isAtBottomRef = React.useRef(true);
   const smoothScrollFrameRef = React.useRef<number | null>(null);
   const smoothScrollTargetRef = React.useRef(0);
+  const hasNextPageRef = React.useRef(false);
+  const isFetchingNextPageRef = React.useRef(false);
+  const fetchNextPageRef = React.useRef<(() => void) | null>(null);
 
   const [messageUsers, setMessageUsers] = React.useState<
     Record<string, User | undefined>
@@ -81,6 +84,23 @@ export default function Screen() {
       return allPages.length * PAGE_SIZE;
     },
   });
+  const {
+    fetchNextPage: fetchMessagesNextPage,
+    hasNextPage: hasMessagesNextPage,
+    isFetchingNextPage: isFetchingMessagesNextPage,
+  } = messagesQuery;
+
+  React.useEffect(() => {
+    hasNextPageRef.current = hasMessagesNextPage;
+    isFetchingNextPageRef.current = isFetchingMessagesNextPage;
+    fetchNextPageRef.current = () => {
+      void fetchMessagesNextPage();
+    };
+  }, [
+    fetchMessagesNextPage,
+    hasMessagesNextPage,
+    isFetchingMessagesNextPage,
+  ]);
 
   React.useEffect(() => {
     clearLiveMessages();
@@ -373,6 +393,21 @@ export default function Screen() {
       smoothScrollFrameRef.current = requestAnimationFrame(animateScroll);
     };
 
+    const fetchNextPageNearTop = (scrollTop: number, maxScrollTop: number) => {
+      if (didInitialScrollRef.current && scrollTop > 140) {
+        userScrolledUpRef.current = true;
+      }
+
+      if (
+        scrollTop >= maxScrollTop - 240 &&
+        userScrolledUpRef.current &&
+        hasNextPageRef.current &&
+        !isFetchingNextPageRef.current
+      ) {
+        fetchNextPageRef.current?.();
+      }
+    };
+
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
       event.stopPropagation();
@@ -389,6 +424,7 @@ export default function Screen() {
         Math.max(0, smoothScrollTargetRef.current - event.deltaY),
         maxScrollTop,
       );
+      fetchNextPageNearTop(smoothScrollTargetRef.current, maxScrollTop);
 
       if (smoothScrollFrameRef.current === null) {
         smoothScrollFrameRef.current = requestAnimationFrame(animateScroll);
