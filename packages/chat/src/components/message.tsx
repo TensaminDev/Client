@@ -29,8 +29,24 @@ function MessageComponent({
   user: User | null;
 }) {
   const actuallyFailed = message.failed && message.message_state === "awaiting";
+  const [hasFadedIn, setHasFadedIn] = useState(false);
+  const opacityClass = !hasFadedIn
+    ? "opacity-0"
+    : actuallyFailed || message.message_state === "awaiting"
+      ? "opacity-50"
+      : "opacity-100";
 
   const [isValidURL, setIsValidURL] = useState(false);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setHasFadedIn(true);
+    }, 100);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, []);
+
   useEffect(() => {
     try {
       if (message.content.split(" ").length > 1) throw new Error();
@@ -45,7 +61,7 @@ function MessageComponent({
   return (
     <div
       // pt-3 is to get a gap between messages
-      className={`${grouped ? "" : "pt-3"} w-full flex justify-start transition-opacity duration-150 ${actuallyFailed || message.message_state === "awaiting" ? "opacity-50" : ""}`}
+      className={`${grouped ? "" : "pt-3"} w-full flex justify-start transition-opacity duration-150 ${opacityClass}`}
     >
       <MessageContextMenu
         content={message.content}

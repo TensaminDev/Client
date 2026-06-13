@@ -3,7 +3,6 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { failedUser } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
-import { Loader2 } from "lucide-react";
 import { useUser, type User } from "@tensamin/user/context";
 
 import InputComponent from "./components/input";
@@ -55,6 +54,8 @@ export default function Screen() {
   const didInitialScrollRef = React.useRef(false);
   const userScrolledUpRef = React.useRef(false);
   const isAtBottomRef = React.useRef(true);
+  const smoothScrollFrameRef = React.useRef<number | null>(null);
+  const smoothScrollTargetRef = React.useRef(0);
 
   const [messageUsers, setMessageUsers] = React.useState<
     Record<string, User | undefined>
@@ -356,17 +357,52 @@ export default function Screen() {
       return;
     }
 
+    smoothScrollTargetRef.current = element.scrollTop;
+
+    const animateScroll = () => {
+      const distance = smoothScrollTargetRef.current - element.scrollTop;
+      if (Math.abs(distance) < 0.5) {
+        element.scrollTop = smoothScrollTargetRef.current;
+        smoothScrollFrameRef.current = null;
+        handleContainerScroll();
+        return;
+      }
+
+      element.scrollTop += distance * 0.35;
+      handleContainerScroll();
+      smoothScrollFrameRef.current = requestAnimationFrame(animateScroll);
+    };
+
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
       event.stopPropagation();
-      element.scrollTop -= event.deltaY;
-      handleContainerScroll();
+
+      if (smoothScrollFrameRef.current === null) {
+        smoothScrollTargetRef.current = element.scrollTop;
+      }
+
+      const maxScrollTop = Math.max(
+        0,
+        element.scrollHeight - element.clientHeight,
+      );
+      smoothScrollTargetRef.current = Math.min(
+        Math.max(0, smoothScrollTargetRef.current - event.deltaY),
+        maxScrollTop,
+      );
+
+      if (smoothScrollFrameRef.current === null) {
+        smoothScrollFrameRef.current = requestAnimationFrame(animateScroll);
+      }
     };
 
     element.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
       element.removeEventListener("wheel", handleWheel);
+      if (smoothScrollFrameRef.current !== null) {
+        cancelAnimationFrame(smoothScrollFrameRef.current);
+        smoothScrollFrameRef.current = null;
+      }
     };
   }, [handleContainerScroll]);
 
@@ -391,19 +427,6 @@ export default function Screen() {
         }}
         onScroll={handleContainerScroll}
       >
-        {messagesQuery.isPending && (
-          <div className="flex items-center justify-center pt-10 scale-y-[-1]">
-            <p className="text-foreground/45 flex gap-1 items-center justify-center">
-              <Loader2 size={18} className="animate-spin" />
-              Loading...
-            </p>
-          </div>
-        )}
-        {messagesQuery.isFetchingNextPage && (
-          <div className="flex items-center justify-center pt-3 pb-1 scale-y-[-1]">
-            <Loader2 size={16} className="animate-spin text-foreground/45" />
-          </div>
-        )}
         <div
           className="relative w-full"
           style={{ height: `${contentHeight}px` }}
