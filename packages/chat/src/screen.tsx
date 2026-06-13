@@ -12,7 +12,15 @@ import {
   PAGE_SIZE,
   FALLBACK_MESSAGE_HEIGHT,
   MESSAGES_PER_VIRTUAL_ROW,
+  type LiveMessage,
+  type RawMessage,
 } from "./values";
+
+type MessageChunk = {
+  key: string;
+  messages: Array<RawMessage | LiveMessage>;
+  startIndex: number;
+};
 
 function getEstimatedMessageHeight(message: { height?: number }) {
   return typeof message.height === "number" && Number.isFinite(message.height)
@@ -37,6 +45,34 @@ function shouldFetchPreviousPage({
     hasNextPage,
     !isFetchingNextPage,
   ].every(Boolean);
+}
+
+function getMessageRenderKey(message: RawMessage | LiveMessage) {
+  return "localId" in message ? message.localId : String(message.send_time);
+}
+
+function buildMessageChunks(
+  messages: Array<RawMessage | LiveMessage>,
+  keyPrefix: string,
+  startOffset = 0,
+) {
+  const chunks: MessageChunk[] = [];
+
+  for (let end = messages.length; end > 0; end -= MESSAGES_PER_VIRTUAL_ROW) {
+    const start = Math.max(0, end - MESSAGES_PER_VIRTUAL_ROW);
+    const chunkMessages = messages.slice(start, end);
+    const firstMessage = chunkMessages[0];
+
+    if (firstMessage) {
+      chunks.push({
+        key: `${keyPrefix}-${getMessageRenderKey(firstMessage)}`,
+        messages: chunkMessages,
+        startIndex: startOffset + start,
+      });
+    }
+  }
+
+  return chunks;
 }
 
 /**
@@ -148,49 +184,52 @@ export default function Screen() {
 
   const historicalMessages = React.useMemo(() => {
     const pages = messagesQuery.data?.pages ?? [];
-    return [...pages].reverse().flat();
+    const seenSendTimes = new Set<number>();
+    const dedupedMessages: RawMessage[] = [];
+
+    for (const message of [...pages].reverse().flat()) {
+      if (seenSendTimes.has(message.send_time)) {
+        continue;
+      }
+
+      seenSendTimes.add(message.send_time);
+      dedupedMessages.push(message);
+    }
+
+    return dedupedMessages;
   }, [messagesQuery.data]);
 
   const liveMessagesSnapshot = liveMessages();
 
-  const messages = React.useMemo(() => {
-    if (historicalMessages.length === 0) {
-      return liveMessagesSnapshot;
-    }
-
+  const liveWithoutDuplicates = React.useMemo(() => {
     const historicalSendTimes = new Set(
       historicalMessages.map((message) => message.send_time),
     );
-    const liveWithoutDuplicates = liveMessagesSnapshot.filter(
+
+    return liveMessagesSnapshot.filter(
       (message) => !historicalSendTimes.has(message.send_time),
     );
-
-    return [...historicalMessages, ...liveWithoutDuplicates];
   }, [historicalMessages, liveMessagesSnapshot]);
 
+  const messages = React.useMemo(() => {
+    return [...historicalMessages, ...liveWithoutDuplicates];
+  }, [historicalMessages, liveWithoutDuplicates]);
+
+  const historicalMessageChunks = React.useMemo(() => {
+    return buildMessageChunks(historicalMessages, "history");
+  }, [historicalMessages]);
+
+  const liveMessageChunks = React.useMemo(() => {
+    return buildMessageChunks(
+      liveWithoutDuplicates,
+      "live",
+      historicalMessages.length,
+    );
+  }, [historicalMessages.length, liveWithoutDuplicates]);
+
   const messageChunks = React.useMemo(() => {
-    const chunks: Array<{
-      key: number;
-      messages: typeof messages;
-      startIndex: number;
-    }> = [];
-
-    for (let end = messages.length; end > 0; end -= MESSAGES_PER_VIRTUAL_ROW) {
-      const start = Math.max(0, end - MESSAGES_PER_VIRTUAL_ROW);
-      const chunkMessages = messages.slice(start, end);
-      const firstMessage = chunkMessages[0];
-
-      if (firstMessage) {
-        chunks.push({
-          key: firstMessage.send_time,
-          messages: chunkMessages,
-          startIndex: start,
-        });
-      }
-    }
-
-    return chunks;
-  }, [messages]);
+    return [...liveMessageChunks, ...historicalMessageChunks];
+  }, [historicalMessageChunks, liveMessageChunks]);
 
   const shouldShowConversationStart =
     !!messagesQuery.data && !messagesQuery.hasNextPage;
@@ -530,7 +569,7 @@ export default function Screen() {
 
                     return (
                       <Message
-                        key={message.send_time}
+                        key={getMessageRenderKey(message)}
                         grouped={isGrouped}
                         message={message}
                         user={

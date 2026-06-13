@@ -266,7 +266,11 @@ export default function Provider(props: { children: ReactNode }) {
         return updated ? next : prev;
       });
 
-      const queryKey = ["chat-messages", String(userIdValue)] as const;
+      const queryKey = [
+        "chat-messages",
+        String(userIdValue),
+        currentSharedSecret.length > 0,
+      ] as const;
       queryClient.setQueryData<InfiniteData<RawMessages>>(
         queryKey,
         (current) => {
@@ -301,7 +305,7 @@ export default function Provider(props: { children: ReactNode }) {
         },
       );
     });
-  }, [subscribePush, userIdValue]);
+  }, [currentSharedSecret, subscribePush, userIdValue]);
 
   return (
     <QueryClientProvider client={queryClient}>
