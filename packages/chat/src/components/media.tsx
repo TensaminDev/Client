@@ -22,7 +22,7 @@ export default function Media({ link }: { link: string }) {
         src={link}
         hidden={hidden}
         onLoad={() => setHidden(false)}
-        className="max-h-70 max-w-70"
+        className="max-h-70 max-w-70 py-1 rounded-lg"
       />
     </>
   ) : (

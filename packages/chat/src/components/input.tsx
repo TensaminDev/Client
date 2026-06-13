@@ -91,8 +91,8 @@ export default function InputComponent({
     <Card
       ref={inputBoxRef}
       className={cn(
-        "rounded-none border-b-0 pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
-        isMobile ? "border-0 border-t w-full mx-0 px-2" : "rounded-t-xl",
+        "ring-0! rounded-none border-b-0 border-t border-x border-input/70 pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
+        isMobile ? "border-0 border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
       )}
     >
       <CardHeader className="relative p-0 flex flex-col">
