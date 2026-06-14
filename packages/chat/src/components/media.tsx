@@ -3,6 +3,7 @@ import { useStorage } from "@tensamin/storage/context";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
 import { TriangleAlert } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
+import MediaSaveButton from "./mediaSaveButton";
 
 export default function Media({ link }: { link: string }) {
   const { load } = useStorage();
@@ -16,15 +17,19 @@ export default function Media({ link }: { link: string }) {
   }, [load]);
 
   return trustedDomains.includes(hostname) ? (
-    <>
-      {hidden && <Text value={link} />}
+    <div className="group relative inline-block">
+      {hidden ? (
+        <Text value={link} />
+      ) : (
+        <MediaSaveButton className="top-2" url={link} />
+      )}
       <img
         src={link}
         hidden={hidden}
         onLoad={() => setHidden(false)}
         className="max-h-70 max-w-70 py-1 rounded-lg"
       />
-    </>
+    </div>
   ) : (
     <div className="flex gap-1 items-center">
       <Tooltip>
@@ -32,8 +37,8 @@ export default function Media({ link }: { link: string }) {
           render={<TriangleAlert className="size-4 stroke-yellow-400" />}
         />
         <TooltipContent>
-          Link embeds can expose your ip address. You can configure trusted
-          domains in the settings.
+          Link embeds can get your IP-Address! You can configure trusted domains
+          in the settings.
         </TooltipContent>
       </Tooltip>
       <Text value={link} />

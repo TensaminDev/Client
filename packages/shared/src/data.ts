@@ -261,6 +261,12 @@ export interface Storage extends SettingsStorageDefaults {
   call_mute_range_start: number;
   call_mute_range_end: number;
   chat_trusted_domains: string[];
+  chat_picker_saved_media: string[];
+  chat_picker_last_tab: "gif" | "meme" | "saved";
+  chat_picker_size: {
+    width: number;
+    height: number;
+  } | null;
 }
 
 export const storageDefaults: Storage = {
@@ -297,7 +303,33 @@ export const storageDefaults: Storage = {
   ttp_server_cert: "",
   call_mute_range_start: -55,
   call_mute_range_end: -45,
-  chat_trusted_domains: ["tenor.com", "c.tenor.com"],
+  chat_trusted_domains: [
+    // Other platforms
+    "cdn.discordapp.com",
+
+    // Tenor
+    "tenor.com",
+    "c.tenor.com",
+
+    // Klipy
+    "static.klipy.com",
+    "static1.klipy.com",
+    "static2.klipy.com",
+
+    // Giphy
+    "giphy.com",
+    "www.giphy.com",
+    "media.giphy.com",
+    "i.giphy.com",
+    "media0.giphy.com",
+    "media1.giphy.com",
+    "media2.giphy.com",
+    "media3.giphy.com",
+    "media4.giphy.com",
+  ],
+  chat_picker_saved_media: [],
+  chat_picker_last_tab: "gif",
+  chat_picker_size: null,
 };
 
 // User Status

@@ -25,6 +25,10 @@ export default function Page() {
         label="Sidebar message preview"
         id="settings.show_start_of_last_message_in_sidebar"
       />
+      <p className="text-destructive pt-6">
+        Trusted embed domains can get your IP-Address! Only add domains if you
+        really trust them!
+      </p>
       <List label="Trusted embed domains" id="chat_trusted_domains" />
     </div>
   );

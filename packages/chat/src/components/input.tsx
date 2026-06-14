@@ -1,16 +1,23 @@
 import Input from "@tensamin/markdown/input";
-import { Card, CardHeader } from "@tensamin/ui";
+import {
+  Card,
+  CardHeader,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@tensamin/ui";
 import { useStorage } from "@tensamin/storage/context";
 import * as React from "react";
 import { Button } from "@tensamin/ui";
 
-import { Plus, Laugh, Clapperboard } from "lucide-react";
+import { Plus, Laugh, FileVideo } from "lucide-react";
 import { useChat } from "../context";
 import { useTTP } from "@tensamin/ttp";
 import { log, toast } from "@tensamin/shared/log";
 import { cn, useIsMobile } from "@tensamin/ui";
 import { encryptText } from "@tensamin/crypto/worker";
 import { useSession } from "@tensamin/storage/session";
+import GifPicker from "./gifPicker";
 
 export default function InputComponent({
   value,
@@ -23,8 +30,14 @@ export default function InputComponent({
 
   const { send } = useTTP();
   const { addLiveMessage, sharedSecret, userId, inputBoxRef } = useChat();
-  const { load } = useStorage();
+  const { load, save } = useStorage();
   const { moveUserIdToTop } = useSession();
+  const gifPopoverRef = React.useRef<HTMLDivElement>(null);
+  const [gifPopoverOpen, setGifPopoverOpen] = React.useState(false);
+  const [gifPopoverSize, setGifPopoverSize] = React.useState<{
+    width: number;
+    height: number;
+  }>();
 
   React.useEffect(() => {
     void load("settings.reverse_enter_behavior").then((shouldInvert) => {
@@ -32,16 +45,19 @@ export default function InputComponent({
     });
   }, [load]);
 
-  /**
-   * Executes handleSubmit.
-   * @param none This function has no parameters.
-   * @returns unknown.
-   */
-  async function handleSubmit() {
-    if (value.trim() === "") return;
+  React.useEffect(() => {
+    void load("chat_picker_size").then((size) => {
+      if (size) {
+        setGifPopoverSize(size);
+      }
+    });
+  }, [load]);
+
+  async function handleSubmit(content = value, preserveContent = false) {
+    if (content.trim() === "") return;
 
     const time = Date.now();
-    const currentValue = value;
+    const currentValue = content;
 
     if (!Number.isSafeInteger(userId) || userId <= 0) {
       toast("error", "No conversation selected");
@@ -82,10 +98,63 @@ export default function InputComponent({
 
     moveUserIdToTop(userId);
 
-    setValue("");
+    if (!preserveContent) {
+      setValue("");
+    }
   }
 
   const isMobile = useIsMobile();
+
+  function handleGifPopoverResizeStart(
+    event: React.PointerEvent<HTMLDivElement>,
+  ) {
+    const popover = gifPopoverRef.current;
+
+    if (!popover) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rect = popover.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startWidth = rect.width;
+    const startHeight = rect.height;
+    const minSize = 40;
+    const maxSize = 720;
+
+    function clampSize(size: number) {
+      return Math.min(Math.max(size, minSize), maxSize);
+    }
+
+    function handlePointerMove(moveEvent: PointerEvent) {
+      const nextSize = {
+        width: clampSize(startWidth + startX - moveEvent.clientX),
+        height: clampSize(startHeight + startY - moveEvent.clientY),
+      };
+
+      setGifPopoverSize(nextSize);
+    }
+
+    function handlePointerUp() {
+      const popover = gifPopoverRef.current;
+
+      if (popover) {
+        const rect = popover.getBoundingClientRect();
+
+        void save("chat_picker_size", {
+          width: clampSize(rect.width),
+          height: clampSize(rect.height),
+        });
+      }
+
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    }
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  }
 
   return (
     <Card
@@ -119,9 +188,38 @@ export default function InputComponent({
             <Button className="w-9 h-9 p-0" variant="ghost">
               <Laugh size={20} />
             </Button>
-            <Button className="w-9 h-9 p-0" variant="ghost">
-              <Clapperboard size={20} />
-            </Button>
+            <Popover open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
+              <PopoverTrigger
+                render={
+                  <Button className="w-9 h-9 p-0" variant="ghost">
+                    <FileVideo size={20} />
+                  </Button>
+                }
+              />
+              <PopoverContent
+                ref={gifPopoverRef}
+                className="relative min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
+                onTouchMoveCapture={(event) => event.stopPropagation()}
+                onWheelCapture={(event) => event.stopPropagation()}
+                style={{
+                  ...gifPopoverSize,
+                  maxHeight: gifPopoverSize?.height,
+                }}
+              >
+                <div
+                  className="absolute left-0 top-0 z-10 h-4 w-4 cursor-nwse-resize"
+                  onPointerDown={handleGifPopoverResizeStart}
+                />
+                <GifPicker
+                  resizeHeight={gifPopoverSize?.height}
+                  resizeWidth={gifPopoverSize?.width}
+                  onSelect={(url) => {
+                    void handleSubmit(url, true);
+                    setGifPopoverOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </CardHeader>
