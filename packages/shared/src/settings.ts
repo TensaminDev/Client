@@ -46,6 +46,7 @@ const settings = {
     },
   },
   application: {
+    theme: {},
     licenses: {},
   },
 } as const satisfies SettingsSchema;
