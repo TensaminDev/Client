@@ -13,8 +13,7 @@
     packages = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
       debArtifact = "Tensamin-${version}-linux-amd64.deb";
-      localDebPath = builtins.getEnv "TENSAMIN_DEB";
-      debPath = /. + localDebPath;
+
       electronRuntimeLibs = with pkgs; [
         alsa-lib
         at-spi2-atk
@@ -55,9 +54,8 @@
       packageDeb = src:
         pkgs.stdenv.mkDerivation {
           pname = "tensamin";
-          inherit version;
+          inherit version src;
 
-          inherit src;
           nativeBuildInputs = with pkgs; [
             autoPatchelfHook
             dpkg
@@ -70,21 +68,21 @@
 
           unpackPhase = ''
             runHook preUnpack
-            dpkg-deb -x $src .
+            dpkg-deb -x "$src" .
             runHook postUnpack
           '';
 
           installPhase = ''
             runHook preInstall
 
-            mkdir -p $out
-            cp -r opt $out/
-            cp -r usr/* $out/
+            mkdir -p "$out"
+            cp -r opt "$out/"
+            cp -r usr/* "$out/"
 
-            mkdir -p $out/bin
-            makeWrapper $out/opt/Tensamin/tensamin $out/bin/tensamin
+            mkdir -p "$out/bin"
+            makeWrapper "$out/opt/Tensamin/tensamin" "$out/bin/tensamin"
 
-            substituteInPlace $out/share/applications/tensamin.desktop \
+            substituteInPlace "$out/share/applications/tensamin.desktop" \
               --replace-fail "Exec=/opt/Tensamin/tensamin" "Exec=tensamin"
 
             runHook postInstall
@@ -96,8 +94,6 @@
       });
     in {
       default = defaultPackage;
-
-      localPathForDev = if localDebPath == "" then defaultPackage else packageDeb debPath;
     });
   };
 }

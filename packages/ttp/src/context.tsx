@@ -195,9 +195,13 @@ export function Provider(props: {
 
   // Load ttp url
   const [ttpUrl, setTtpUrl] = useState<string | null>(null);
+  const [ttpServerCert, setTtpServerCert] = useState<string>("");
   useEffect(() => {
     load("ttp_url").then((url) => {
       setTtpUrl(url);
+    });
+    load("ttp_server_cert").then((cert) => {
+      setTtpServerCert(cert.trim());
     });
   }, [load]);
 
@@ -301,7 +305,6 @@ export function Provider(props: {
     let reconnectScheduled = false;
     let disposed = false;
     let resumeListenerRegistered = false;
-    let currentReadyState: number = READY_STATE.CLOSED;
 
     /**
      * Clears any scheduled reconnect timeout and resets scheduling flags.
@@ -373,8 +376,8 @@ export function Provider(props: {
     const transportClient = !props.blockConnection
       ? createTransportClient(schemas, {
           url: ttpUrl,
+          serverCert: ttpServerCert || undefined,
           onReadyStateChange: (state) => {
-            currentReadyState = state;
             setReadyState(state);
 
             if (state === READY_STATE.OPEN) {
@@ -447,13 +450,6 @@ export function Provider(props: {
         return;
       }
 
-      if (
-        currentReadyState === READY_STATE.OPEN ||
-        currentReadyState === READY_STATE.CONNECTING
-      ) {
-        return;
-      }
-
       clearReconnectTimer();
       clearReconnectResetTimer();
       attempts = 0;
@@ -487,14 +483,13 @@ export function Provider(props: {
       }
 
       void transportClient?.close("context-dispose");
-      currentReadyState = READY_STATE.CLOSED;
       setReadyState(READY_STATE.CLOSED);
       setConnected(false);
       setIdentified(false);
       setIdentifying(false);
       identificationStartedRef.current = false;
     };
-  }, [props.blockConnection, ttpUrl]);
+  }, [props.blockConnection, ttpServerCert, ttpUrl]);
 
   useEffect(() => {
     if (!connected) {

@@ -47,6 +47,26 @@ export type Communities = z.infer<
 >;
 export type Calls = z.infer<typeof ttp.challenge_response.response.shape.calls>;
 
+type Base16Palette = Record<
+  | "base00"
+  | "base01"
+  | "base02"
+  | "base03"
+  | "base04"
+  | "base05"
+  | "base06"
+  | "base07"
+  | "base08"
+  | "base09"
+  | "base0A"
+  | "base0B"
+  | "base0C"
+  | "base0D"
+  | "base0E"
+  | "base0F",
+  string
+>;
+
 // TTP
 const user = z.object({
   about: z.string().max(255).optional(),
@@ -257,8 +277,21 @@ export interface Storage extends SettingsStorageDefaults {
   cached_contacts: Contacts;
   cached_communities: Communities;
   ttp_url: string;
+  ttp_server_cert: string;
   call_mute_range_start: number;
   call_mute_range_end: number;
+  theme_color: string;
+  theme_palette: Base16Palette | null;
+  theme_primary_color: string;
+  theme_polarity: "dark" | "light" | "system";
+  theme_tint: "soft" | "hard" | "extreme";
+  chat_trusted_domains: string[];
+  chat_picker_saved_media: string[];
+  chat_picker_last_tab: "gif" | "meme" | "saved";
+  chat_picker_size: {
+    width: number;
+    height: number;
+  } | null;
 }
 
 export const storageDefaults: Storage = {
@@ -292,8 +325,41 @@ export const storageDefaults: Storage = {
   cached_contacts: [],
   cached_communities: [],
   ttp_url: "https://tensamin.net:959",
+  ttp_server_cert: "",
   call_mute_range_start: -55,
   call_mute_range_end: -45,
+  theme_color: "",
+  theme_palette: null,
+  theme_primary_color: "",
+  theme_polarity: "system",
+  theme_tint: "soft",
+  chat_trusted_domains: [
+    // Other platforms
+    "cdn.discordapp.com",
+
+    // Tenor
+    "tenor.com",
+    "c.tenor.com",
+
+    // Klipy
+    "static.klipy.com",
+    "static1.klipy.com",
+    "static2.klipy.com",
+
+    // Giphy
+    "giphy.com",
+    "www.giphy.com",
+    "media.giphy.com",
+    "i.giphy.com",
+    "media0.giphy.com",
+    "media1.giphy.com",
+    "media2.giphy.com",
+    "media3.giphy.com",
+    "media4.giphy.com",
+  ],
+  chat_picker_saved_media: [],
+  chat_picker_last_tab: "gif",
+  chat_picker_size: null,
 };
 
 // User Status

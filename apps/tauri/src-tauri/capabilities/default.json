@@ -15,6 +15,11 @@
     "core:window:allow-minimize",
     "core:event:default",
     "deep-link:default",
-    "notification:default"
+    "notification:default",
+    "log:default",
+    "ttp-tauri:allow-connect",
+    "ttp-tauri:allow-send",
+    "ttp-tauri:allow-close",
+    "ttp-tauri:allow-ready-state"
   ]
 }

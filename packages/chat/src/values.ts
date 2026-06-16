@@ -10,4 +10,6 @@ export type LiveMessage = RawMessage & {
   localId: string;
 };
 
-export const PAGE_SIZE = 50;
+export const PAGE_SIZE = 30;
+export const FALLBACK_MESSAGE_HEIGHT = 28;
+export const MESSAGES_PER_VIRTUAL_ROW = 30;

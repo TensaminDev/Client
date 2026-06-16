@@ -1,56 +1,108 @@
 import * as React from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useChat } from "./context";
+import { failedUser } from "@tensamin/shared/data";
+import { useStorage } from "@tensamin/storage/context";
+import { useUser, type User } from "@tensamin/user/context";
 
 import InputComponent from "./components/input";
 import Message from "./components/message";
+import { useChat } from "./context";
+import {
+  PAGE_SIZE,
+  FALLBACK_MESSAGE_HEIGHT,
+  MESSAGES_PER_VIRTUAL_ROW,
+  type LiveMessage,
+  type RawMessage,
+} from "./values";
 
-import { PAGE_SIZE } from "./values";
-import { useIsMobile } from "@tensamin/ui";
-import { Loader2 } from "lucide-react";
+type MessageChunk = {
+  key: string;
+  messages: Array<RawMessage | LiveMessage>;
+  startIndex: number;
+};
 
-function getDistanceFromBottom(element: HTMLDivElement) {
-  return element.scrollHeight - (element.scrollTop + element.clientHeight);
+function getEstimatedMessageHeight(message: { height?: number }) {
+  return typeof message.height === "number" && Number.isFinite(message.height)
+    ? Math.max(1, Math.ceil(message.height))
+    : FALLBACK_MESSAGE_HEIGHT;
 }
 
-const FALLBACK_MESSAGE_HEIGHT = 56;
+function shouldFetchPreviousPage({
+  entry,
+  hasNextPage,
+  isFetchingNextPage,
+  userScrolledUp,
+}: {
+  entry: IntersectionObserverEntry | undefined;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  userScrolledUp: boolean;
+}) {
+  return [
+    entry?.isIntersecting === true,
+    userScrolledUp,
+    hasNextPage,
+    !isFetchingNextPage,
+  ].every(Boolean);
+}
+
+function getMessageRenderKey(message: RawMessage | LiveMessage) {
+  return "localId" in message ? message.localId : String(message.send_time);
+}
+
+function buildMessageChunks(
+  messages: Array<RawMessage | LiveMessage>,
+  keyPrefix: string,
+  startOffset = 0,
+) {
+  const chunks: MessageChunk[] = [];
+
+  for (let end = messages.length; end > 0; end -= MESSAGES_PER_VIRTUAL_ROW) {
+    const start = Math.max(0, end - MESSAGES_PER_VIRTUAL_ROW);
+    const chunkMessages = messages.slice(start, end);
+    const firstMessage = chunkMessages[0];
+
+    if (firstMessage) {
+      chunks.push({
+        key: `${keyPrefix}-${getMessageRenderKey(firstMessage)}`,
+        messages: chunkMessages,
+        startIndex: startOffset + start,
+      });
+    }
+  }
+
+  return chunks;
+}
 
 /**
  * Renders the chat screen with virtualized history and live message updates.
  * @returns Chat screen JSX.
  */
 export default function Screen() {
-  const {
-    getMessages,
-    liveMessages,
-    clearLiveMessages,
-    userId,
-    sharedSecret,
-    inputBoxRef,
-  } = useChat();
+  const { getMessages, liveMessages, clearLiveMessages, userId, sharedSecret } =
+    useChat();
+  const { get: getUser } = useUser();
+  const { load } = useStorage();
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
-  const isMobile = useIsMobile();
-  const stickyBottomThreshold = isMobile ? 220 : 140;
-
-  const [hasScrolledToBottomInitially, setHasScrolledToBottomInitially] =
-    React.useState(false);
-  const [lastLiveMessageCount, setLastLiveMessageCount] = React.useState(0);
-  const [prependAnchor, setPrependAnchor] = React.useState<{
-    totalSize: number;
-    scrollTop: number;
-  } | null>(null);
-  const [scrollWidth, setScrollWidth] = React.useState(0);
-  const [scrollHeight, setScrollHeight] = React.useState(0);
-  const [inputHeight, setInputHeight] = React.useState(0);
-  const [measuredHeights, setMeasuredHeights] = React.useState<
-    Record<number, number>
-  >({});
-  const measurementRefs = React.useRef(new Map<number, HTMLDivElement>());
-  const shouldRestoreBottomOnResizeRef = React.useRef(false);
+  const topSentinelRef = React.useRef<HTMLDivElement | null>(null);
+  const didInitialScrollRef = React.useRef(false);
+  const userScrolledUpRef = React.useRef(false);
   const isAtBottomRef = React.useRef(true);
-  const shouldRestoreBottomOnFocusResizeRef = React.useRef(false);
+  const smoothScrollFrameRef = React.useRef<number | null>(null);
+  const smoothScrollTargetRef = React.useRef(0);
+  const hasNextPageRef = React.useRef(false);
+  const isFetchingNextPageRef = React.useRef(false);
+  const fetchNextPageRef = React.useRef<(() => void) | null>(null);
+
+  const [messageUsers, setMessageUsers] = React.useState<
+    Record<string, User | undefined>
+  >({});
+  const [lastLiveMessageCount, setLastLiveMessageCount] = React.useState(0);
+  const [didInitialScroll, setDidInitialScroll] = React.useState(false);
+  const [viewportHeight, setViewportHeight] = React.useState(0);
+  const [value, setValue] = React.useState("");
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasSharedSecret = sharedSecret.length > 0;
@@ -68,80 +120,153 @@ export default function Screen() {
       return allPages.length * PAGE_SIZE;
     },
   });
+  const {
+    fetchNextPage: fetchMessagesNextPage,
+    hasNextPage: hasMessagesNextPage,
+    isFetchingNextPage: isFetchingMessagesNextPage,
+  } = messagesQuery;
 
-  const historicalMessages = React.useMemo(() => {
-    const pages = messagesQuery.data?.pages ?? [];
-    return [...pages].reverse().flat();
-  }, [messagesQuery.data]);
+  React.useEffect(() => {
+    hasNextPageRef.current = hasMessagesNextPage;
+    isFetchingNextPageRef.current = isFetchingMessagesNextPage;
+    fetchNextPageRef.current = () => {
+      void fetchMessagesNextPage();
+    };
+  }, [
+    fetchMessagesNextPage,
+    hasMessagesNextPage,
+    isFetchingMessagesNextPage,
+  ]);
 
   React.useEffect(() => {
     clearLiveMessages();
-    setHasScrolledToBottomInitially(false);
+    didInitialScrollRef.current = false;
+    userScrolledUpRef.current = false;
+    isAtBottomRef.current = true;
+    setDidInitialScroll(false);
     setLastLiveMessageCount(0);
-    setPrependAnchor(null);
-  }, [userId, clearLiveMessages]);
+  }, [clearLiveMessages, userId]);
+
+  React.useEffect(() => {
+    if (!hasValidChatUser) {
+      setMessageUsers({});
+      return;
+    }
+
+    let active = true;
+
+    const loadMessageUser = async (
+      key: string,
+      resolveUserId: () => Promise<number>,
+    ) => {
+      try {
+        const resolvedUserId = await resolveUserId();
+        const value = await getUser(resolvedUserId);
+
+        if (active) {
+          setMessageUsers((prev) => ({ ...prev, [key]: value }));
+        }
+      } catch {
+        if (active) {
+          setMessageUsers((prev) => ({ ...prev, [key]: failedUser }));
+        }
+      }
+    };
+
+    setMessageUsers({});
+    void loadMessageUser("peer", async () => userId);
+    void loadMessageUser("own", async () => Number(await load("user_id")));
+
+    return () => {
+      active = false;
+    };
+  }, [getUser, hasValidChatUser, load, userId]);
+
+  const historicalMessages = React.useMemo(() => {
+    const pages = messagesQuery.data?.pages ?? [];
+    const seenSendTimes = new Set<number>();
+    const dedupedMessages: RawMessage[] = [];
+
+    for (const message of [...pages].reverse().flat()) {
+      if (seenSendTimes.has(message.send_time)) {
+        continue;
+      }
+
+      seenSendTimes.add(message.send_time);
+      dedupedMessages.push(message);
+    }
+
+    return dedupedMessages;
+  }, [messagesQuery.data]);
 
   const liveMessagesSnapshot = liveMessages();
 
-  const messages = React.useMemo(() => {
-    if (historicalMessages.length === 0) {
-      return liveMessagesSnapshot;
-    }
-
+  const liveWithoutDuplicates = React.useMemo(() => {
     const historicalSendTimes = new Set(
       historicalMessages.map((message) => message.send_time),
     );
-    const liveWithoutDuplicates = liveMessagesSnapshot.filter(
+
+    return liveMessagesSnapshot.filter(
       (message) => !historicalSendTimes.has(message.send_time),
     );
-
-    return [...historicalMessages, ...liveWithoutDuplicates];
   }, [historicalMessages, liveMessagesSnapshot]);
+
+  const messages = React.useMemo(() => {
+    return [...historicalMessages, ...liveWithoutDuplicates];
+  }, [historicalMessages, liveWithoutDuplicates]);
+
+  const historicalMessageChunks = React.useMemo(() => {
+    return buildMessageChunks(historicalMessages, "history");
+  }, [historicalMessages]);
+
+  const liveMessageChunks = React.useMemo(() => {
+    return buildMessageChunks(
+      liveWithoutDuplicates,
+      "live",
+      historicalMessages.length,
+    );
+  }, [historicalMessages.length, liveWithoutDuplicates]);
+
+  const messageChunks = React.useMemo(() => {
+    return [...liveMessageChunks, ...historicalMessageChunks];
+  }, [historicalMessageChunks, liveMessageChunks]);
+
   const shouldShowConversationStart =
     !!messagesQuery.data && !messagesQuery.hasNextPage;
   const virtualRowCount =
-    messages.length + (shouldShowConversationStart ? 1 : 0);
+    messageChunks.length + (shouldShowConversationStart ? 1 : 0);
 
   const getItemKey = React.useCallback(
     (index: number) => {
-      if (shouldShowConversationStart && index === 0) {
+      if (shouldShowConversationStart && index === messageChunks.length) {
         return "conversation-start";
       }
 
-      const messageIndex = shouldShowConversationStart ? index - 1 : index;
-      return messages[messageIndex]?.send_time ?? index;
+      return messageChunks[index]?.key ?? index;
     },
-    [shouldShowConversationStart, messages],
+    [messageChunks, shouldShowConversationStart],
   );
 
-  const setMeasurementRef = React.useCallback(
-    (sendTime: number, element: HTMLDivElement | null) => {
-      if (!element) {
-        measurementRefs.current.delete(sendTime);
-        return;
-      }
-
-      measurementRefs.current.set(sendTime, element);
-    },
-    [],
-  );
-
-  const estimateMessageSize = React.useCallback(
+  const estimateSize = React.useCallback(
     (index: number) => {
-      if (shouldShowConversationStart && index === 0) {
+      const isConversationStart =
+        shouldShowConversationStart && index === messageChunks.length;
+      if (isConversationStart) {
         return FALLBACK_MESSAGE_HEIGHT;
       }
 
-      const messageIndex = shouldShowConversationStart ? index - 1 : index;
-      const sendTime = messages[messageIndex]?.send_time;
+      const chunk = messageChunks[index];
 
-      if (sendTime === undefined) {
+      if (!chunk) {
         return FALLBACK_MESSAGE_HEIGHT;
       }
 
-      return measuredHeights[sendTime] ?? FALLBACK_MESSAGE_HEIGHT;
+      return chunk.messages.reduce(
+        (total, message) => total + getEstimatedMessageHeight(message),
+        0,
+      );
     },
-    [measuredHeights, messages, shouldShowConversationStart],
+    [messageChunks, shouldShowConversationStart],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -149,9 +274,12 @@ export default function Screen() {
     count: virtualRowCount,
     getScrollElement: () => scrollRef.current,
     getItemKey,
-    estimateSize: estimateMessageSize,
-    overscan: isMobile ? 10 : 6,
+    estimateSize,
+    overscan: 2,
   });
+  const totalSize = virtualizer.getTotalSize();
+  const contentHeight = Math.max(totalSize, viewportHeight);
+  const verticalOffset = Math.max(0, viewportHeight - totalSize);
 
   React.useLayoutEffect(() => {
     const element = scrollRef.current;
@@ -159,14 +287,13 @@ export default function Screen() {
       return;
     }
 
-    const updateDimensions = () => {
-      setScrollWidth(element.clientWidth);
-      setScrollHeight(element.clientHeight);
+    const updateViewportHeight = () => {
+      setViewportHeight(element.clientHeight);
     };
 
-    updateDimensions();
+    updateViewportHeight();
 
-    const observer = new ResizeObserver(updateDimensions);
+    const observer = new ResizeObserver(updateViewportHeight);
     observer.observe(element);
 
     return () => {
@@ -175,277 +302,185 @@ export default function Screen() {
   }, []);
 
   React.useLayoutEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      virtualizer.measure();
-    });
-
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [inputHeight, measuredHeights, scrollWidth, virtualizer]);
-
-  React.useLayoutEffect(() => {
-    if (typeof ResizeObserver === "undefined") {
+    if (didInitialScrollRef.current || virtualRowCount === 0) {
       return;
     }
 
-    const measureHeights = () => {
-      setMeasuredHeights((prev) => {
-        let changed = false;
-        const next: Record<number, number> = {};
-
-        for (const message of messages) {
-          const element = measurementRefs.current.get(message.send_time);
-          const measuredHeight = element?.getBoundingClientRect().height;
-          const nextHeight =
-            typeof measuredHeight === "number" &&
-            Number.isFinite(measuredHeight)
-              ? Math.ceil(measuredHeight)
-              : (prev[message.send_time] ?? FALLBACK_MESSAGE_HEIGHT);
-
-          next[message.send_time] = nextHeight;
-
-          if (prev[message.send_time] !== nextHeight) {
-            changed = true;
-          }
-        }
-
-        if (!changed && Object.keys(prev).length === messages.length) {
-          return prev;
-        }
-
-        return next;
-      });
-    };
-
-    measureHeights();
-
-    const observer = new ResizeObserver(() => {
-      measureHeights();
-    });
-
-    for (const message of messages) {
-      const element = measurementRefs.current.get(message.send_time);
-      if (element) {
-        observer.observe(element);
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = 0;
       }
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [messages, scrollWidth]);
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const restoreBottomAfterResize = () => {
-      shouldRestoreBottomOnResizeRef.current =
-        isAtBottomRef.current || shouldRestoreBottomOnFocusResizeRef.current;
 
       requestAnimationFrame(() => {
-        virtualizer.measure();
-
-        requestAnimationFrame(() => {
-          if (!scrollRef.current || !shouldRestoreBottomOnResizeRef.current) {
-            return;
-          }
-
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-          isAtBottomRef.current = true;
-          shouldRestoreBottomOnFocusResizeRef.current = false;
-          shouldRestoreBottomOnResizeRef.current = false;
-        });
+        didInitialScrollRef.current = true;
+        setDidInitialScroll(true);
       });
-    };
-
-    window.addEventListener("resize", restoreBottomAfterResize);
-    window.visualViewport?.addEventListener("resize", restoreBottomAfterResize);
-
-    return () => {
-      window.removeEventListener("resize", restoreBottomAfterResize);
-      window.visualViewport?.removeEventListener(
-        "resize",
-        restoreBottomAfterResize,
-      );
-    };
-  }, [virtualizer]);
-
-  React.useLayoutEffect(() => {
-    const element = inputBoxRef.current;
-    if (!element || typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const updateHeight = () => {
-      setInputHeight(element.getBoundingClientRect().height);
-    };
-
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [inputBoxRef]);
-
-  React.useEffect(() => {
-    const element = inputBoxRef.current;
-    if (!element) {
-      return;
-    }
-
-    const handleFocusIn = () => {
-      if (!scrollRef.current) {
-        return;
-      }
-
-      shouldRestoreBottomOnFocusResizeRef.current =
-        getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
-    };
-
-    const handleFocusOut = () => {
-      shouldRestoreBottomOnFocusResizeRef.current = false;
-    };
-
-    element.addEventListener("focusin", handleFocusIn);
-    element.addEventListener("focusout", handleFocusOut);
-
-    return () => {
-      element.removeEventListener("focusin", handleFocusIn);
-      element.removeEventListener("focusout", handleFocusOut);
-    };
-  }, [inputBoxRef, stickyBottomThreshold]);
-
-  /**
-   * Loads the next page when the scroll container reaches the top.
-   * @returns Promise that resolves once pagination handling completes.
-   */
-  const onScroll = React.useCallback(async () => {
-    if (!scrollRef.current) {
-      return;
-    }
-
-    if (scrollRef.current.scrollTop > 96) {
-      return;
-    }
-
-    if (messagesQuery.isFetchingNextPage || !messagesQuery.hasNextPage) {
-      return;
-    }
-
-    setPrependAnchor({
-      totalSize: virtualizer.getTotalSize(),
-      scrollTop: scrollRef.current.scrollTop,
     });
-
-    await messagesQuery.fetchNextPage();
-  }, [messagesQuery, virtualizer]);
-
-  React.useLayoutEffect(() => {
-    if (
-      !scrollRef.current ||
-      hasScrolledToBottomInitially ||
-      virtualRowCount === 0
-    ) {
-      return;
-    }
-
-    let rafId: number;
-    let stableFrames = 0;
-    let lastScrollHeight = 0;
-
-    const settleToBottom = () => {
-      if (!scrollRef.current || hasScrolledToBottomInitially) {
-        return;
-      }
-
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      const currentScrollHeight = scrollRef.current.scrollHeight;
-
-      if (currentScrollHeight === lastScrollHeight) {
-        stableFrames++;
-      } else {
-        stableFrames = 0;
-        lastScrollHeight = currentScrollHeight;
-      }
-
-      if (stableFrames >= 2) {
-        isAtBottomRef.current = true;
-        setHasScrolledToBottomInitially(true);
-      } else {
-        rafId = requestAnimationFrame(settleToBottom);
-      }
-    };
-
-    settleToBottom();
-
-    return () => {
-      cancelAnimationFrame(rafId);
-    };
-  }, [hasScrolledToBottomInitially, virtualRowCount]);
+  }, [virtualizer, virtualRowCount]);
 
   React.useLayoutEffect(() => {
     const count = liveMessagesSnapshot.length;
 
-    if (!scrollRef.current) {
-      return;
-    }
-
-    if (count > lastLiveMessageCount) {
-      const shouldStickToBottom =
-        getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
-
-      if (shouldStickToBottom) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        isAtBottomRef.current = true;
-      }
+    if (count > lastLiveMessageCount && isAtBottomRef.current) {
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = 0;
+        }
+      });
     }
 
     setLastLiveMessageCount(count);
   }, [
     lastLiveMessageCount,
     liveMessagesSnapshot.length,
-    stickyBottomThreshold,
+    virtualRowCount,
+    virtualizer,
   ]);
 
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     if (
-      !scrollRef.current ||
-      !prependAnchor ||
-      messagesQuery.isFetchingNextPage
+      viewportHeight === 0 ||
+      totalSize > viewportHeight ||
+      messagesQuery.isFetchingNextPage ||
+      !messagesQuery.hasNextPage
     ) {
       return;
     }
 
-    const delta = virtualizer.getTotalSize() - prependAnchor.totalSize;
-    scrollRef.current.scrollTop = prependAnchor.scrollTop + delta;
-    setPrependAnchor(null);
-  }, [messagesQuery.isFetchingNextPage, prependAnchor, virtualizer]);
+    void messagesQuery.fetchNextPage();
+  }, [didInitialScroll, messagesQuery, totalSize, viewportHeight]);
 
-  /**
-   * Triggers asynchronous scroll pagination without returning a promise to JSX.
-   * @returns Void.
-   */
-  const handleContainerScroll = React.useCallback((): void => {
-    if (scrollRef.current) {
-      isAtBottomRef.current =
-        getDistanceFromBottom(scrollRef.current) <= stickyBottomThreshold;
+  React.useLayoutEffect(() => {
+    if (
+      !didInitialScroll ||
+      userScrolledUpRef.current ||
+      virtualRowCount === 0
+    ) {
+      return;
     }
 
-    void onScroll();
-  }, [onScroll, stickyBottomThreshold]);
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = 0;
+      }
+    });
+  }, [didInitialScroll, virtualRowCount]);
 
-  const [value, setValue] = React.useState("");
-  const totalSize = virtualizer.getTotalSize();
-  const verticalOffset = Math.max(0, scrollHeight - totalSize);
-  const contentHeight = Math.max(totalSize, scrollHeight);
+  React.useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = topSentinelRef.current;
 
-  // Render
+    if (!root || !sentinel || !didInitialScroll) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (
+          shouldFetchPreviousPage({
+            entry,
+            hasNextPage: messagesQuery.hasNextPage,
+            isFetchingNextPage: messagesQuery.isFetchingNextPage,
+            userScrolledUp: userScrolledUpRef.current,
+          })
+        ) {
+          void messagesQuery.fetchNextPage();
+        }
+      },
+      { root, rootMargin: "240px 0px 0px 0px" },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [didInitialScroll, messagesQuery, virtualRowCount]);
+
+  const handleContainerScroll = React.useCallback(() => {
+    if (!scrollRef.current) {
+      return;
+    }
+
+    isAtBottomRef.current = scrollRef.current.scrollTop <= 140;
+
+    if (didInitialScrollRef.current && scrollRef.current.scrollTop > 140) {
+      userScrolledUpRef.current = true;
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) {
+      return;
+    }
+
+    smoothScrollTargetRef.current = element.scrollTop;
+
+    const animateScroll = () => {
+      const distance = smoothScrollTargetRef.current - element.scrollTop;
+      if (Math.abs(distance) < 0.5) {
+        element.scrollTop = smoothScrollTargetRef.current;
+        smoothScrollFrameRef.current = null;
+        handleContainerScroll();
+        return;
+      }
+
+      element.scrollTop += distance * 0.35;
+      handleContainerScroll();
+      smoothScrollFrameRef.current = requestAnimationFrame(animateScroll);
+    };
+
+    const fetchNextPageNearTop = (scrollTop: number, maxScrollTop: number) => {
+      if (didInitialScrollRef.current && scrollTop > 140) {
+        userScrolledUpRef.current = true;
+      }
+
+      if (
+        scrollTop >= maxScrollTop - 240 &&
+        userScrolledUpRef.current &&
+        hasNextPageRef.current &&
+        !isFetchingNextPageRef.current
+      ) {
+        fetchNextPageRef.current?.();
+      }
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (smoothScrollFrameRef.current === null) {
+        smoothScrollTargetRef.current = element.scrollTop;
+      }
+
+      const maxScrollTop = Math.max(
+        0,
+        element.scrollHeight - element.clientHeight,
+      );
+      smoothScrollTargetRef.current = Math.min(
+        Math.max(0, smoothScrollTargetRef.current - event.deltaY),
+        maxScrollTop,
+      );
+      fetchNextPageNearTop(smoothScrollTargetRef.current, maxScrollTop);
+
+      if (smoothScrollFrameRef.current === null) {
+        smoothScrollFrameRef.current = requestAnimationFrame(animateScroll);
+      }
+    };
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      element.removeEventListener("wheel", handleWheel);
+      if (smoothScrollFrameRef.current !== null) {
+        cancelAnimationFrame(smoothScrollFrameRef.current);
+        smoothScrollFrameRef.current = null;
+      }
+    };
+  }, [handleContainerScroll]);
+
   if (!hasValidChatUser) {
     return (
       <div className="w-full h-full flex items-center justify-center text-xl text-foreground/80">
@@ -462,31 +497,24 @@ export default function Screen() {
         className="min-h-0 flex-1 overflow-y-auto"
         style={{
           overflowAnchor: "none",
-          paddingBottom: "22px",
+          paddingTop: "22px",
+          transform: "scaleY(-1)",
         }}
         onScroll={handleContainerScroll}
       >
-        {messagesQuery.isPending && (
-          <div className="flex items-center justify-center pt-10">
-            <p className="text-foreground/45 flex gap-1 items-center justify-center">
-              <Loader2 size={18} className="animate-spin" />
-              Loading...
-            </p>
-          </div>
-        )}
-        {messagesQuery.isFetchingNextPage && (
-          <div className="flex items-center justify-center pt-3 pb-1">
-            <Loader2 size={16} className="animate-spin text-foreground/45" />
-          </div>
-        )}
         <div
           className="relative w-full"
-          style={{
-            height: `${contentHeight}px`,
-          }}
+          style={{ height: `${contentHeight}px` }}
         >
+          <div
+            ref={topSentinelRef}
+            className="absolute bottom-0 left-0 h-px w-full"
+          />
           {virtualizer.getVirtualItems().map((virtualRow) => {
-            if (shouldShowConversationStart && virtualRow.index === 0) {
+            if (
+              shouldShowConversationStart &&
+              virtualRow.index === messageChunks.length
+            ) {
               return (
                 <div
                   key="conversation-start"
@@ -497,10 +525,10 @@ export default function Screen() {
                     top: 0,
                     left: 0,
                     width: "100%",
-                    transform: `translateY(${virtualRow.start + verticalOffset}px)`,
+                    transform: `translateY(${verticalOffset + virtualRow.start}px)`,
                   }}
                 >
-                  <div className="w-full flex justify-start">
+                  <div className="w-full flex justify-start scale-y-[-1]">
                     <div className="text-sm text-foreground/55 px-2.5">
                       Conversation start
                     </div>
@@ -509,35 +537,50 @@ export default function Screen() {
               );
             }
 
-            const messageIndex = shouldShowConversationStart
-              ? virtualRow.index - 1
-              : virtualRow.index;
-            const message = messages[messageIndex];
-            if (!message) {
+            const chunkIndex = virtualRow.index;
+            const chunk = messageChunks[chunkIndex];
+            if (!chunk) {
               return null;
             }
 
-            const lastMessage = messages[messageIndex - 1];
-            const isGrouped =
-              lastMessage &&
-              lastMessage.sent_by_self === message.sent_by_self &&
-              Math.round(lastMessage.send_time / 10000) ===
-                Math.round(message.send_time / 10000);
-
             return (
               <div
-                key={message.send_time}
+                key={chunk.key}
                 data-index={virtualRow.index}
+                className="flex flex-col"
                 ref={virtualizer.measureElement}
                 style={{
                   position: "absolute",
                   top: 0,
                   left: 0,
                   width: "100%",
-                  transform: `translateY(${virtualRow.start + verticalOffset}px)`,
+                  transform: `translateY(${verticalOffset + virtualRow.start}px)`,
                 }}
               >
-                <Message grouped={isGrouped} message={message} />
+                <div className="flex flex-col scale-y-[-1]">
+                  {chunk.messages.map((message, chunkMessageIndex) => {
+                    const messageIndex = chunk.startIndex + chunkMessageIndex;
+                    const lastMessage = messages[messageIndex - 1];
+                    const isGrouped =
+                      lastMessage &&
+                      lastMessage.sent_by_self === message.sent_by_self &&
+                      Math.round(lastMessage.send_time / 10000) ===
+                        Math.round(message.send_time / 10000);
+
+                    return (
+                      <Message
+                        key={getMessageRenderKey(message)}
+                        grouped={isGrouped}
+                        message={message}
+                        user={
+                          message.sent_by_self
+                            ? (messageUsers.own ?? null)
+                            : (messageUsers.peer ?? null)
+                        }
+                      />
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -545,31 +588,6 @@ export default function Screen() {
       </div>
       <div className="z-10 shrink-0">
         <InputComponent setValue={setValue} value={value} />
-      </div>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 -z-10 overflow-hidden opacity-0"
-        style={{ width: scrollWidth > 0 ? `${scrollWidth}px` : "100%" }}
-      >
-        {messages.map((message, messageIndex) => {
-          const lastMessage = messages[messageIndex - 1];
-          const isGrouped =
-            lastMessage &&
-            lastMessage.sent_by_self === message.sent_by_self &&
-            Math.round(lastMessage.send_time / 10000) ===
-              Math.round(message.send_time / 10000);
-
-          return (
-            <div
-              key={`measure-${message.send_time}`}
-              ref={(element) => {
-                setMeasurementRef(message.send_time, element);
-              }}
-            >
-              <Message grouped={isGrouped} message={message} />
-            </div>
-          );
-        })}
       </div>
     </div>
   );

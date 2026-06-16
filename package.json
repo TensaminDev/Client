@@ -1,6 +1,6 @@
 {
   "name": "tensamin",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -22,6 +22,7 @@
     "preview:web": "cd apps/web && bun run preview",
     "dev:mobile": "cd apps/tauri && bun dev:mobile",
     "build:mobile": "cd apps/tauri && bun run build:mobile",
+    "start-adb:mobile": "cd apps/tauri && bun run start-adb:mobile",
     "dev:desktop": "cd apps/electron && bun run dev",
     "build:desktop": "cd apps/electron && bun run package",
     "run:desktop": "TENSAMIN_DEB=\"$PWD/apps/electron/release/Tensamin-$(node -p \\\"require('./package.json').version\\\")-linux-amd64.deb\" nix run .#localPathForDev --impure",
@@ -43,8 +44,8 @@
     "typescript-eslint": "^8.59.1"
   },
   "overrides": {
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.36.tar.gz",
-    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.20.tar.gz"
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.37.tar.gz",
+    "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.24.tar.gz"
   },
   "dependencies": {
     "@tensamin/ttp-core": "*",

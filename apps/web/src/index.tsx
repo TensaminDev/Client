@@ -31,10 +31,10 @@ import NotificationsProvider from "@tensamin/notifications/context";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
-import { ThemeProvider } from "@tensamin/ui";
+import { ThemeProvider, useTheme } from "@tensamin/ui";
 import z from "zod";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import Storage from "@tensamin/storage/context";
 import Session from "@tensamin/storage/session";
@@ -106,12 +106,111 @@ function LoginWrapper({ children }: { children: ReactNode }) {
   return children;
 }
 
+function ThemeStorageBridge() {
+  const { load, save } = useStorage();
+  const {
+    themeColor,
+    setThemeColor,
+    themePalette,
+    setThemePalette,
+    themePrimaryColor,
+    setThemePrimaryColor,
+    themePolarity,
+    setThemePolarity,
+    themeTint,
+    setThemeTint,
+  } = useTheme();
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.all([
+      load("theme_color"),
+      load("theme_palette"),
+      load("theme_primary_color"),
+      load("theme_polarity"),
+      load("theme_tint"),
+    ]).then(([color, palette, primaryColor, polarity, tint]) => {
+      if (!active) {
+        return;
+      }
+
+      setThemeColor(color);
+      setThemePalette(palette);
+      setThemePrimaryColor(primaryColor);
+      setThemePolarity(polarity);
+      setThemeTint(tint);
+      loadedRef.current = true;
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    load,
+    setThemeColor,
+    setThemePalette,
+    setThemePolarity,
+    setThemePrimaryColor,
+    setThemeTint,
+  ]);
+
+  useEffect(() => {
+    if (!loadedRef.current) {
+      return;
+    }
+
+    save("theme_color", themeColor);
+  }, [save, themeColor]);
+
+  useEffect(() => {
+    if (!loadedRef.current) {
+      return;
+    }
+
+    save("theme_palette", themePalette);
+  }, [save, themePalette]);
+
+  useEffect(() => {
+    if (!loadedRef.current) {
+      return;
+    }
+
+    save("theme_primary_color", themePrimaryColor);
+  }, [save, themePrimaryColor]);
+
+  useEffect(() => {
+    if (!loadedRef.current) {
+      return;
+    }
+
+    save("theme_polarity", themePolarity);
+  }, [save, themePolarity]);
+
+  useEffect(() => {
+    if (!loadedRef.current) {
+      return;
+    }
+
+    save("theme_tint", themeTint);
+  }, [save, themeTint]);
+
+  return null;
+}
+
 function RootShell() {
   const isMobile = useIsMobile();
 
   return (
     <DeeplinkContext>
-      <ThemeProvider>
+      <ThemeProvider
+        storageKey={null}
+        colorStorageKey={null}
+        paletteStorageKey={null}
+        primaryColorStorageKey={null}
+        tintStorageKey={null}
+      >
         <div className="w-screen h-dvh overflow-hidden">
           <Toaster
             position={isMobile ? "top-center" : "bottom-right"}
@@ -125,6 +224,7 @@ function RootShell() {
           />
           <TooltipProvider>
             <Storage>
+              <ThemeStorageBridge />
               <LoginWrapper>
                 <LegalWrapper>
                   <Crypto>

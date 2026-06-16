@@ -1,13 +1,13 @@
 @import "tailwindcss";
 @import "tailwind-scrollbar-hide/v4";
 @import "tw-animate-css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/public-sans";
 
 @source "./**/*.{ts,tsx}";
 @source "../../../packages/**/src/**/*.{ts,tsx}";
 
 @theme {
-  --font-sans: "Inter Variable", sans-serif;
+  --font-sans: "Public Sans Variable", sans-serif;
 
   --animate-wiggle: wiggle 0.5s ease-in-out infinite;
 
@@ -31,7 +31,7 @@ body,
 }
 
 body {
-  font-family: "Inter Variable", sans-serif;
+  font-family: "Public Sans Variable", sans-serif;
 }
 
 #root {
