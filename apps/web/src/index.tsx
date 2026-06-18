@@ -119,6 +119,8 @@ function ThemeStorageBridge() {
     setThemePolarity,
     themeTint,
     setThemeTint,
+    themeBorderRadius,
+    setThemeBorderRadius,
   } = useTheme();
   const loadedRef = useRef(false);
 
@@ -131,7 +133,8 @@ function ThemeStorageBridge() {
       load("theme_primary_color"),
       load("theme_polarity"),
       load("theme_tint"),
-    ]).then(([color, palette, primaryColor, polarity, tint]) => {
+      load("theme_border_radius"),
+    ]).then(([color, palette, primaryColor, polarity, tint, borderRadius]) => {
       if (!active) {
         return;
       }
@@ -141,6 +144,7 @@ function ThemeStorageBridge() {
       setThemePrimaryColor(primaryColor);
       setThemePolarity(polarity);
       setThemeTint(tint);
+      setThemeBorderRadius(borderRadius);
       loadedRef.current = true;
     });
 
@@ -149,6 +153,7 @@ function ThemeStorageBridge() {
     };
   }, [
     load,
+    setThemeBorderRadius,
     setThemeColor,
     setThemePalette,
     setThemePolarity,
@@ -196,6 +201,14 @@ function ThemeStorageBridge() {
     save("theme_tint", themeTint);
   }, [save, themeTint]);
 
+  useEffect(() => {
+    if (!loadedRef.current) {
+      return;
+    }
+
+    save("theme_border_radius", themeBorderRadius);
+  }, [save, themeBorderRadius]);
+
   return null;
 }
 
@@ -210,6 +223,7 @@ function RootShell() {
         paletteStorageKey={null}
         primaryColorStorageKey={null}
         tintStorageKey={null}
+        borderRadiusStorageKey={null}
       >
         <div className="w-screen h-dvh overflow-hidden">
           <Toaster

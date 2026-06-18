@@ -285,6 +285,7 @@ export interface Storage extends SettingsStorageDefaults {
   theme_primary_color: string;
   theme_polarity: "dark" | "light" | "system";
   theme_tint: "soft" | "hard" | "extreme";
+  theme_border_radius: number;
   chat_trusted_domains: string[];
   chat_picker_saved_media: string[];
   chat_picker_last_tab: "gif" | "meme" | "saved";
@@ -333,6 +334,7 @@ export const storageDefaults: Storage = {
   theme_primary_color: "",
   theme_polarity: "system",
   theme_tint: "soft",
+  theme_border_radius: 0.5,
   chat_trusted_domains: [
     // Other platforms
     "cdn.discordapp.com",
