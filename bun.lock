@@ -258,7 +258,7 @@
   },
   "overrides": {
     "@tensamin/ttp-core": "https://git.methanium.net/tensamin/ttp/archive/0.0.24.tar.gz",
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.38.tar.gz",
+    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/archive/0.0.39.tar.gz",
   },
   "packages": {
     "@antfu/ni": ["@antfu/ni@25.0.0", "", { "dependencies": { "ansis": "^4.0.0", "fzf": "^0.5.2", "package-manager-detector": "^1.3.0", "tinyexec": "^1.0.1" }, "bin": { "na": "bin/na.mjs", "ni": "bin/ni.mjs", "nr": "bin/nr.mjs", "nci": "bin/nci.mjs", "nlx": "bin/nlx.mjs", "nun": "bin/nun.mjs", "nup": "bin/nup.mjs" } }, "sha512-9q/yCljni37pkMr4sPrI3G4jqdIk074+iukc5aFJl7kmDCCsiJrbZ6zKxnES1Gwg+i9RcDZwvktl23puGslmvA=="],
@@ -759,7 +759,7 @@
 
     "@tensamin/ttp-core": ["@tensamin/ttp-core@https://git.methanium.net/tensamin/ttp/archive/0.0.24.tar.gz", { "dependencies": { "@eslint/js": "^10.0.1", "@tauri-apps/api": "^2.9.0", "@typescript-eslint/parser": "^8.59.1", "@webtransport-bun/webtransport": "^0.3.0", "globals": "^17.5.0", "typescript": "^6.0.3", "typescript-eslint": "^8.59.1", "zod": "^4.4.1" } }, "sha512-Db94CDOTYvzJSQDZGDgziUXRvXx9PiEfYDQt6sYe8Nyg+KD/aiKnyQx7NeEiG03TfYE3ogNxXOsrcsip4di8+g=="],
 
-    "@tensamin/ui": ["@tensamin/ui@https://git.methanium.net/tensamin/ui/archive/0.0.38.tar.gz", { "dependencies": { "@base-ui/react": "^1.3.0", "@fontsource-variable/inter": "^5.2.6", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "lucide-react": "^1.8.0", "next-themes": "^0.4.6", "react-day-picker": "^9.14.0", "react-resizable-panels": "^4.10.0", "recharts": "3.8.0", "shadcn": "^3.5.0", "sonner": "^2.0.7", "tailwind-merge": "^3.5.0", "tw-animate-css": "^1.3.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" } }, "sha512-CnWhEsP07AbDAZfjogpZ7aifBPw9FjGe5QUr9siEdReGzy1ojF0/Mu674lVz7xT9h0oduUFocHX4e8XtPGv3ng=="],
+    "@tensamin/ui": ["@tensamin/ui@https://git.methanium.net/tensamin/ui/archive/0.0.39.tar.gz", { "dependencies": { "@base-ui/react": "^1.3.0", "@fontsource-variable/inter": "^5.2.6", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "date-fns": "^4.1.0", "embla-carousel-react": "^8.6.0", "input-otp": "^1.4.2", "lucide-react": "^1.8.0", "next-themes": "^0.4.6", "react-day-picker": "^9.14.0", "react-resizable-panels": "^4.10.0", "recharts": "3.8.0", "shadcn": "^3.5.0", "sonner": "^2.0.7", "tailwind-merge": "^3.5.0", "tw-animate-css": "^1.3.0", "vaul": "^1.1.2" }, "peerDependencies": { "react": "^19.2.0", "react-dom": "^19.2.0" } }, "sha512-7GtOjH6H+8Go8tPJmnlbmmo9Chn2wbZ/pZdUydEc8fS5XPh8qdPTI3PhUpBuyuay60pRsfoUHpCVK5DqdQUACA=="],
 
     "@tensamin/user": ["@tensamin/user@workspace:packages/user"],
 
@@ -1517,7 +1517,7 @@
 
     "mute-stream": ["mute-stream@3.0.0", "", {}, "sha512-dkEJPVvun4FryqBmZ5KhDo0K9iDXAwn08tMLDinNdRBNPcYEDiWYysLcc6k3mjTMlbP9KyylvRpd4wFtwrT9rw=="],
 
-    "nanoid": ["nanoid@3.3.12", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ=="],
+    "nanoid": ["nanoid@3.3.13", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-sPdqC6ByMVVGvF1ynvvMo0/o+oD1VX7DaHhijt1bFgjvBkHBib4t49GoNDhf2NDta4oeUNlaGbSt5K7qjZ955Q=="],
 
     "natural-compare": ["natural-compare@1.4.0", "", {}, "sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw=="],
 
@@ -1743,7 +1743,7 @@
 
     "sdp-transform": ["sdp-transform@2.15.0", "", { "bin": { "sdp-verify": "checker.js" } }, "sha512-KrOH82c/W+GYQ0LHqtr3caRpM3ITglq3ljGUIb8LTki7ByacJZ9z+piSGiwZDsRyhQbYBOBJgr2k6X4BZXi3Kw=="],
 
-    "semver": ["semver@7.8.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-rUCObTnP32Q08R2uuIrt7r9PlEonuTmtuXYcW6s5kjdlj3xbnwe+21yXptAUYcMAABLkYYTtnmzb3w3EDZfueA=="],
+    "semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
 
     "semver-compare": ["semver-compare@1.0.0", "", {}, "sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow=="],
 
@@ -2050,8 +2050,6 @@
     "app-builder-lib/ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
 
     "app-builder-lib/ci-info": ["ci-info@4.3.1", "", {}, "sha512-Wdy2Igu8OcBpI2pZePZ5oWjPC38tmDVx5WKUXKwlLYkA0ozo85sLsLvkBbBn/sZaSCMFOGZJ14fvW9t5/d7kdA=="],
-
-    "app-builder-lib/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
 
     "app-builder-lib/which": ["which@5.0.0", "", { "dependencies": { "isexe": "^3.1.1" }, "bin": { "node-which": "bin/which.js" } }, "sha512-JEdGzHwwkrbWoGOlIHqQ5gtprKGOenpDHpxE9zVR1bWbOtYRyPPHMe9FaP6x61CmNaTThSkb0DAJte5jD+DmzQ=="],
 

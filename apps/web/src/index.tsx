@@ -121,6 +121,8 @@ function ThemeStorageBridge() {
     setThemeTint,
     themeBorderRadius,
     setThemeBorderRadius,
+    themeCustomCss,
+    setThemeCustomCss,
   } = useTheme();
   const loadedRef = useRef(false);
 
@@ -134,7 +136,16 @@ function ThemeStorageBridge() {
       load("theme_polarity"),
       load("theme_tint"),
       load("theme_border_radius"),
-    ]).then(([color, palette, primaryColor, polarity, tint, borderRadius]) => {
+      load("theme_custom_css"),
+    ]).then(([
+      color,
+      palette,
+      primaryColor,
+      polarity,
+      tint,
+      borderRadius,
+      customCss,
+    ]) => {
       if (!active) {
         return;
       }
@@ -145,6 +156,7 @@ function ThemeStorageBridge() {
       setThemePolarity(polarity);
       setThemeTint(tint);
       setThemeBorderRadius(borderRadius);
+      setThemeCustomCss(customCss);
       loadedRef.current = true;
     });
 
@@ -155,6 +167,7 @@ function ThemeStorageBridge() {
     load,
     setThemeBorderRadius,
     setThemeColor,
+    setThemeCustomCss,
     setThemePalette,
     setThemePolarity,
     setThemePrimaryColor,
@@ -209,6 +222,14 @@ function ThemeStorageBridge() {
     save("theme_border_radius", themeBorderRadius);
   }, [save, themeBorderRadius]);
 
+  useEffect(() => {
+    if (!loadedRef.current) {
+      return;
+    }
+
+    save("theme_custom_css", themeCustomCss);
+  }, [save, themeCustomCss]);
+
   return null;
 }
 
@@ -224,6 +245,7 @@ function RootShell() {
         primaryColorStorageKey={null}
         tintStorageKey={null}
         borderRadiusStorageKey={null}
+        customCssStorageKey={null}
       >
         <div className="w-screen h-dvh overflow-hidden">
           <Toaster
