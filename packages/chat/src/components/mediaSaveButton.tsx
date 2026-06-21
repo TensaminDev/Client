@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 
 export default function MediaSaveButton({
   ariaLabel,
+  className,
   defaultSaved = false,
   onSavedMediaChange,
   url,
 }: {
   ariaLabel?: string;
+  className?: string;
   defaultSaved?: boolean;
   onSavedMediaChange?: (savedMedia: string[]) => void;
   url: string;
@@ -39,7 +41,10 @@ export default function MediaSaveButton({
   return (
     <Button
       aria-label={ariaLabel ?? (isSaved ? "Unsave media" : "Save media")}
-      className="h-full w-full rounded-sm border-0! p-0 absolute right-1 top-1 z-10 h-9 w-9 -translate-y-2 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100 bg-card"
+      className={cn(
+        "rounded-sm border-0! p-0 absolute right-1 top-1 z-10 h-9 w-9 -translate-y-2 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100 bg-card",
+        className,
+      )}
       onClick={handleClick}
     >
       <Save
