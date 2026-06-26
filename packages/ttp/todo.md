@@ -1,0 +1,3 @@
+- Replace with MTP
+  - Remove queue
+  - Use Date.now() for message id

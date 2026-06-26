@@ -69,6 +69,8 @@ export default function InputComponent({
       return;
     }
 
+    log(3, "chat", "purple", "Message send init, adding live message ...");
+
     const reference = addLiveMessage({
       height: 0,
       not_encrypted: true,
@@ -78,7 +80,19 @@ export default function InputComponent({
       message_state: "awaiting",
     });
 
-    const encryptedContext = await encryptText(sharedSecret, currentValue);
+    log(3, "chat", "purple", "Live message added, encrypting...");
+
+    const encryptedContext = await encryptText(
+      sharedSecret,
+      currentValue,
+    ).catch((err) => {
+      toast("error", "Failed to encrypt message", String(err));
+      reference.setFailed(true);
+    });
+
+    if (!encryptedContext) return;
+
+    log(3, "chat", "purple", "Content encrypted, sending message...");
 
     send("message_send", {
       height: 0,
@@ -95,6 +109,8 @@ export default function InputComponent({
       reference.setFailed(true);
       toast("error", "Failed to send message");
     });
+
+    log(3, "chat", "purple", "Message sent");
 
     moveUserIdToTop(userId);
 

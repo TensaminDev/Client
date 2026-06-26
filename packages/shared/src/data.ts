@@ -23,8 +23,8 @@ export const message = z.object({
   avatar: z.boolean().optional(),
   display: z.boolean().optional(),
   message_state: z
-    .enum(["read", "received", "sent", "sending", "awaiting"])
-    .default("received"), // awaiting for 'internal' use
+    .enum(["read", "received", "sent", "sending", "awaiting"]) // awaiting for 'internal' use
+    .default("received"),
 });
 
 export const failedUser = {

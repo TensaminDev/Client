@@ -52,20 +52,20 @@ export default function Provider(props: { children: React.ReactNode }) {
         );
 
         // Update message state
-        if (
-          (await load("settings.read_confirmations")) &&
-          userId === sender_id
-        ) {
-          void send(
-            "message_state",
-            {
-              message_state: "read",
-            },
-            {
-              id: ttpMessage.id,
-            },
-          );
-        } else {
+        if (userId === sender_id) {
+          addLiveMessage({
+            ...message,
+            content: decryptedContent,
+            sent_by_self: false,
+          });
+          return;
+        }
+
+        // todo: add notification symbol to conversation cards (incl. message start)
+
+        moveUserIdToTop(sender_id);
+
+        if (await load("settings.receive_confirmations")) {
           void send(
             "message_state",
             {
@@ -76,20 +76,6 @@ export default function Provider(props: { children: React.ReactNode }) {
             },
           );
         }
-
-        if (userId === sender_id) {
-          addLiveMessage({
-            ...message,
-            content: decryptedContent,
-            sent_by_self: false,
-          });
-
-          return;
-        }
-
-        // todo: add notification symbol to conversation cards (incl. message start)
-
-        moveUserIdToTop(sender_id);
 
         if (isTauri()) {
           console.log("weewoo");

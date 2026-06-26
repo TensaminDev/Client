@@ -1,8 +1,8 @@
 import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import { AlertTriangle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertTriangle, Check, CheckCheck } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
 import {
@@ -16,6 +16,8 @@ import {
 } from "@tensamin/ui";
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
+import { useStorage } from "@tensamin/storage/context";
+import { useTTP } from "@tensamin/ttp";
 
 function MessageComponent({
   grouped,
@@ -29,14 +31,14 @@ function MessageComponent({
   user: User | null;
 }) {
   const actuallyFailed = message.failed && message.message_state === "awaiting";
+
+  // Fade-in
   const [hasFadedIn, setHasFadedIn] = useState(false);
   const opacityClass = !hasFadedIn
     ? "opacity-0"
     : actuallyFailed || message.message_state === "awaiting"
       ? "opacity-50"
       : "opacity-100";
-
-  const [isValidURL, setIsValidURL] = useState(false);
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setHasFadedIn(true);
@@ -47,6 +49,8 @@ function MessageComponent({
     };
   }, []);
 
+  // Check if message is a url
+  const [isValidURL, setIsValidURL] = useState(false);
   useEffect(() => {
     try {
       if (message.content.split(" ").length > 1) throw new Error();
@@ -57,6 +61,58 @@ function MessageComponent({
       setIsValidURL(false);
     }
   }, [message.content]);
+
+  // Message states
+  const { load } = useStorage();
+  const { send } = useTTP();
+  const messageStateReadUpdate = useCallback(async () => {
+    const readConfirmations = await load("settings.read_confirmations");
+
+    if (readConfirmations) {
+      if (!user?.user_id) return;
+
+      await send("message_state", {
+        chat_partner_id: user?.user_id,
+        send_time: message.send_time,
+        message_state: "read",
+      });
+    } else {
+      await send("message_state", {
+        chat_partner_id: user?.user_id,
+        send_time: message.send_time,
+        message_state: "received",
+      });
+    }
+  }, [load, message.send_time, user?.user_id, send]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      const receiveConfirmations = await load("settings.receive_confirmations");
+      if (cancelled) return;
+
+      switch (message.message_state) {
+        case "sent":
+          if (receiveConfirmations) {
+            messageStateReadUpdate();
+          }
+          break;
+
+        case "received":
+          messageStateReadUpdate();
+          break;
+
+        default:
+          break;
+      }
+    }
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [message.message_state, load, messageStateReadUpdate]);
 
   return (
     <div
@@ -111,6 +167,17 @@ function MessageComponent({
                         minute: "2-digit",
                       })}
                     </p>
+                    <div>
+                      {message.message_state === "read" ? (
+                        <CheckCheck size={14} color="var(--primary)" />
+                      ) : message.message_state === "received" ? (
+                        <CheckCheck size={14} color="var(--muted-foreground)" />
+                      ) : message.message_state === "sent" ? (
+                        <Check size={14} color="var(--muted-foreground)" />
+                      ) : message.message_state === "sending" ? (
+                        <div>IDK</div>
+                      ) : null}
+                    </div>
                   </div>
                 )}
                 {isValidURL ? (

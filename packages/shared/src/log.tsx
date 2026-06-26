@@ -67,26 +67,31 @@ const size = 20;
 export function toast(
   type: "error" | "info" | "warn" | "success",
   message: string,
+  description?: string,
 ) {
   switch (type) {
     case "error":
       sonnerToast(message, {
         icon: <Ban size={size} />,
+        description,
       });
       break;
     case "info":
       sonnerToast(message, {
         icon: <Info size={size} />,
+        description,
       });
       break;
     case "warn":
       sonnerToast(message, {
         icon: <TriangleAlert size={size} />,
+        description,
       });
       break;
     case "success":
       sonnerToast(message, {
         icon: <Check size={size} />,
+        description,
       });
       break;
   }
