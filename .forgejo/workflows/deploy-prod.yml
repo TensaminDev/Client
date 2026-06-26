@@ -69,8 +69,31 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
-          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
-          bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\n/g, '\n').replace(/\r/g, '').split('\n').map(l => l.trim()).filter(l => l).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
+          set -eu
+
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 secret is missing or empty"
+            exit 1
+          fi
+
+          if [ -z "$KEYSTORE_PROPERTIES" ]; then
+            echo "ANDROID_KEYSTORE_PROPERTIES secret is missing or empty"
+            exit 1
+          fi
+
+          printf '%s' "$KEYSTORE_BASE64" \
+            | tr -d '[:space:]' \
+            | base64 -d > keystore.jks
+
+          printf '%s' "$KEYSTORE_PROPERTIES" \
+            | sed 's/\\n/\n/g' \
+            | tr -d '\r' \
+            | sed 's|^[[:space:]]*storeFile[[:space:]]*=.*|storeFile=keystore.jks|' \
+            > keystore.properties
+
+          grep -q '^[[:space:]]*storeFile[[:space:]]*=' keystore.properties || printf '\nstoreFile=keystore.jks\n' >> keystore.properties
+          test -s keystore.jks
+          test -s keystore.properties
 
       - name: Build mobile
         run: bun run build:mobile
