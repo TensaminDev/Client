@@ -68,7 +68,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
-          set -eu
+          set -euo pipefail
 
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "ANDROID_KEYSTORE_BASE64 secret is missing or empty"
@@ -91,8 +91,31 @@ jobs:
             > keystore.properties
 
           grep -q '^[[:space:]]*storeFile[[:space:]]*=' keystore.properties || printf '\nstoreFile=keystore.jks\n' >> keystore.properties
-          test -s keystore.jks
-          test -s keystore.properties
+
+          if [ ! -s keystore.jks ]; then
+            echo "Decoded keystore.jks is missing or empty"
+            exit 1
+          fi
+
+          if [ ! -s keystore.properties ]; then
+            echo "Generated keystore.properties is missing or empty"
+            exit 1
+          fi
+
+          if ! grep -q '^[[:space:]]*keyAlias[[:space:]]*=' keystore.properties; then
+            echo "keystore.properties is missing keyAlias"
+            exit 1
+          fi
+
+          if ! grep -Eq '^[[:space:]]*(keyPassword|password)[[:space:]]*=' keystore.properties; then
+            echo "keystore.properties is missing keyPassword or password"
+            exit 1
+          fi
+
+          if ! grep -Eq '^[[:space:]]*(storePassword|password)[[:space:]]*=' keystore.properties; then
+            echo "keystore.properties is missing storePassword or password"
+            exit 1
+          fi
 
       - name: Build mobile
         run: bun run build:mobile
