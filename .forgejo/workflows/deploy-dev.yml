@@ -68,22 +68,8 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
-          set -eu
-
-          ANDROID_DIR="$PWD/apps/tauri/src-tauri/gen/android"
-
-          printf '%s' "$KEYSTORE_BASE64" \
-            | tr -d '[:space:]' \
-            | base64 -d > "$ANDROID_DIR/keystore.jks"
-
-          printf '%s' "$KEYSTORE_PROPERTIES" \
-            | sed 's|storeFile=.*|storeFile=keystore.jks|' \
-            | sed 's/\\n/\n/g' \
-            | tr -d '\r' \
-            > "$ANDROID_DIR/keystore.properties"
-
-          test -s "$ANDROID_DIR/keystore.jks"
-          cat "$ANDROID_DIR/keystore.properties" | sed 's/password=.*/password=***REDACTED***/'
+          bun -e "require('fs').writeFileSync('keystore.jks', Buffer.from(process.env.KEYSTORE_BASE64.replace(/\s+/g, ''), 'base64'))"
+          bun -e "const content = process.env.KEYSTORE_PROPERTIES.replace(/\\n/g, '\n').replace(/\r/g, '').split('\n').map(l => l.trim()).filter(l => l).join('\n'); require('fs').writeFileSync('keystore.properties', content)"
 
       - name: Build mobile
         run: bun run build:mobile
