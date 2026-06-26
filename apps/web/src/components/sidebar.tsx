@@ -12,7 +12,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuGroup,
-  DropdownMenuLabel,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -228,7 +227,6 @@ export default function Sidebar() {
                         />
                         <DropdownMenuContent>
                           <DropdownMenuGroup>
-                            <DropdownMenuLabel>Profile</DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => {
                                 setDraftStatus(user.status ?? "");

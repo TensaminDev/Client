@@ -335,7 +335,7 @@ export const storageDefaults: Storage = {
   theme_primary_color: "",
   theme_polarity: "system",
   theme_tint: "soft",
-  theme_border_radius: 0.5,
+  theme_border_radius: 0.55,
   theme_custom_css: "",
   chat_trusted_domains: [
     // Other platforms

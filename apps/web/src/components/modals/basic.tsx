@@ -19,7 +19,7 @@ export function Basic({
   extra?: React.ReactNode;
 }) {
   return (
-    <Card className="animate-in fade-in duration-300 rounded-2xl py-0 m-px">
+    <Card className="animate-in fade-in duration-300 rounded-xl py-0 m-px">
       <CardHeader className="flex flex-row gap-2.5 items-center justify-start p-2">
         <div className="relative shrink-0 overflow-visible">
           <Avatar>

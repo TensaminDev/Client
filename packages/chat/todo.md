@@ -1,2 +1,3 @@
 - Implement context menu features
-- Add default-emoji-hotkey in settings
+- Add default-emoji-hotkey
+- Placeholder image if media fails to load
