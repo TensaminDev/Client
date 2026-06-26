@@ -378,6 +378,10 @@ export function Provider(props: {
           url: ttpUrl,
           serverCert: ttpServerCert || undefined,
           onReadyStateChange: (state) => {
+            if (state === READY_STATE.CONNECTING) {
+              log(2, "ttp", "blue", ttpUrl);
+            }
+
             setReadyState(state);
 
             if (state === READY_STATE.OPEN) {

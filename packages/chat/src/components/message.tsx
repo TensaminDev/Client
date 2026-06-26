@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import { AlertTriangle, Check, CheckCheck } from "lucide-react";
+import { AlertTriangle, Check, Ellipse, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
@@ -169,13 +169,16 @@ function MessageComponent({
                     </p>
                     <div>
                       {message.message_state === "read" ? (
-                        <CheckCheck size={14} color="var(--primary)" />
+                        <Check
+                          size={12}
+                          color="var(--primary-foreground-alt)"
+                        />
                       ) : message.message_state === "received" ? (
-                        <CheckCheck size={14} color="var(--muted-foreground)" />
+                        <Check size={12} color="var(--muted-foreground)" />
                       ) : message.message_state === "sent" ? (
-                        <Check size={14} color="var(--muted-foreground)" />
+                        <RefreshCw size={12} color="var(--muted-foreground)" />
                       ) : message.message_state === "sending" ? (
-                        <div>IDK</div>
+                        <Ellipse size={12} color="var(--muted-foreground)" />
                       ) : null}
                     </div>
                   </div>
