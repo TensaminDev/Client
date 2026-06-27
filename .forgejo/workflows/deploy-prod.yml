@@ -278,17 +278,15 @@ jobs:
               -F "attachment=@$file"
           done
 
-      - name: Delete dev releases for prod version
+      - name: Delete dev releases
         env:
           TOKEN: ${{ forgejo.token }}
           API: ${{ forgejo.api_url }}
           REPO: ${{ forgejo.repository }}
-          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -eu
 
           PAGE=1
-          PREFIX="$TAG-dev-"
           DELETE_RELEASES=delete-dev-releases.tsv
 
           : > "$DELETE_RELEASES"
@@ -303,8 +301,7 @@ jobs:
             test "$COUNT" -gt 0 || break
 
             jq -r \
-              --arg prefix "$PREFIX" \
-              '.[] | select(.prerelease == true) | select(.tag_name | startswith($prefix)) | [.id, .tag_name] | @tsv' releases.json \
+              '.[] | select(.prerelease == true) | select(.tag_name | contains("-dev-")) | [.id, .tag_name] | @tsv' releases.json \
               >> "$DELETE_RELEASES"
 
             PAGE="$((PAGE + 1))"
