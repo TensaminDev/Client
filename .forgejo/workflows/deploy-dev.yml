@@ -121,7 +121,7 @@ jobs:
           path: apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 
   build-desktop:
-    runs-on: docker
+    runs-on: nixos
     strategy:
       matrix:
         target: [linux]
@@ -168,7 +168,7 @@ jobs:
           path: apps/electron/release/
 
   release:
-    runs-on: docker
+    runs-on: nixos
     needs: [build-web, build-mobile, build-desktop]
     steps:
       - name: Check out repo

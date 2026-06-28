@@ -67,6 +67,11 @@
           dpkg
           rpm
           fpm
+          sudo
+          curl
+          jq
+          fakeroot
+          xz-utils
         ] ++ electronRuntimeLibs;
 
         shellHook = ''
