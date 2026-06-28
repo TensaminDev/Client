@@ -36,7 +36,7 @@ for (const targetDir of targetDirs) {
     const entry = relative(rootDir, fullPath);
     console.log(`Linting ${entry}...`);
     try {
-      execSync("bun run lint", { cwd: fullPath, stdio: "inherit" });
+      execSync("bun --bun run lint", { cwd: fullPath, stdio: "inherit" });
       console.log(`${entry} linted successfully.`);
     } catch {
       console.error(`Failed to lint ${entry}.`);
