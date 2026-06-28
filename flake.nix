@@ -181,12 +181,13 @@
         libxcb
       ];
 
+      buildToolsVersion = "35.0.0";
       ndkVersion = "29.0.14206865";
       android = pkgs.androidenv.composeAndroidPackages {
         cmdLineToolsVersion = "8.0";
         toolsVersion = "26.1.1";
         platformToolsVersion = "35.0.2";
-        buildToolsVersions = ["35.0.0"];
+        buildToolsVersions = [buildToolsVersion];
         platformVersions = ["35" "36"];
         includeSources = false;
         includeSystemImages = false;
@@ -308,6 +309,18 @@
           export NDK_HOME="$ANDROID_NDK_ROOT"
           export NDK_PATH="$ANDROID_NDK_ROOT"
           export JAVA_HOME="${pkgs.jdk17}"
+
+          aapt2Path="''${sdkRootAbs}/build-tools/${buildToolsVersion}/aapt2"
+          if [ -x "$aapt2Path" ]; then
+            mkdir -p "$HOME/.gradle"
+            gradleProperties="$HOME/.gradle/gradle.properties"
+            touch "$gradleProperties"
+            if grep -q '^android\.aapt2FromMavenOverride=' "$gradleProperties"; then
+              sed -i "s|^android\.aapt2FromMavenOverride=.*|android.aapt2FromMavenOverride=$aapt2Path|" "$gradleProperties"
+            else
+              printf '\nandroid.aapt2FromMavenOverride=%s\n' "$aapt2Path" >> "$gradleProperties"
+            fi
+          fi
         '';
       };
     });
