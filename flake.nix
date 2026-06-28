@@ -212,6 +212,7 @@
           [
             nodejs_22
             corepack_22
+            coreutils
             bun
             pkgs.electron
             pkg-config
@@ -256,6 +257,7 @@
             gradle
             bun
             nodejs
+            coreutils
             pkg-config
             git
             jq
