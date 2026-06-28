@@ -137,28 +137,30 @@ function ThemeStorageBridge() {
       load("theme_tint"),
       load("theme_border_radius"),
       load("theme_custom_css"),
-    ]).then(([
-      color,
-      palette,
-      primaryColor,
-      polarity,
-      tint,
-      borderRadius,
-      customCss,
-    ]) => {
-      if (!active) {
-        return;
-      }
+    ]).then(
+      ([
+        color,
+        palette,
+        primaryColor,
+        polarity,
+        tint,
+        borderRadius,
+        customCss,
+      ]) => {
+        if (!active) {
+          return;
+        }
 
-      setThemeColor(color);
-      setThemePalette(palette);
-      setThemePrimaryColor(primaryColor);
-      setThemePolarity(polarity);
-      setThemeTint(tint);
-      setThemeBorderRadius(borderRadius);
-      setThemeCustomCss(customCss);
-      loadedRef.current = true;
-    });
+        setThemeColor(color);
+        setThemePalette(palette);
+        setThemePrimaryColor(primaryColor);
+        setThemePolarity(polarity);
+        setThemeTint(tint);
+        setThemeBorderRadius(borderRadius);
+        setThemeCustomCss(customCss);
+        loadedRef.current = true;
+      },
+    );
 
     return () => {
       active = false;

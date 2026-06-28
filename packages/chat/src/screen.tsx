@@ -132,11 +132,7 @@ export default function Screen() {
     fetchNextPageRef.current = () => {
       void fetchMessagesNextPage();
     };
-  }, [
-    fetchMessagesNextPage,
-    hasMessagesNextPage,
-    isFetchingMessagesNextPage,
-  ]);
+  }, [fetchMessagesNextPage, hasMessagesNextPage, isFetchingMessagesNextPage]);
 
   React.useEffect(() => {
     clearLiveMessages();
