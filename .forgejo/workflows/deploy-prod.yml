@@ -6,12 +6,15 @@ on:
     paths-ignore:
       - flake.nix
 
+env:
+  NIX_CONFIG: experimental-features = nix-command flakes
+
 jobs:
   build-web:
     runs-on: nixos
     steps:
       - name: Install node
-        run: nix profile install nixpkgs#nodejs_24
+        run: nix profile add nixpkgs#nodejs_24
 
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -35,7 +38,7 @@ jobs:
     runs-on: nixos
     steps:
       - name: Install node
-        run: nix profile install nixpkgs#nodejs_24
+        run: nix profile add nixpkgs#nodejs_24
 
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -119,7 +122,7 @@ jobs:
         target: [linux]
     steps:
       - name: Install node
-        run: nix profile install nixpkgs#nodejs_24
+        run: nix profile add nixpkgs#nodejs_24
 
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -162,7 +165,7 @@ jobs:
     needs: [build-web, build-mobile, build-desktop]
     steps:
       - name: Install node
-        run: nix profile install nixpkgs#nodejs_24
+        run: nix profile add nixpkgs#nodejs_24
 
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
