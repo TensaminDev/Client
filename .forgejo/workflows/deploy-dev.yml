@@ -56,6 +56,8 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
+          nix profile add nixpkgs#gnused
+
           set -euo pipefail
 
           if [ -z "$KEYSTORE_BASE64" ]; then
