@@ -26,7 +26,7 @@
     "dev:desktop": "cd apps/electron && bun run dev",
     "build:desktop": "cd apps/electron && bun run package",
     "run:desktop": "TENSAMIN_DEB=\"$PWD/apps/electron/release/Tensamin-$(node -p \\\"require('./package.json').version\\\")-linux-amd64.deb\" nix run .#localPathForDev --impure",
-    "delete:mobile": "cd apps/tauri && nix develop --command adb uninstall net.tensamin.client"
+    "delete:mobile": "cd apps/tauri && nix develop ../..#tauri --command adb uninstall net.tensamin.client"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

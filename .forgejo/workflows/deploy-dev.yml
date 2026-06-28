@@ -12,29 +12,20 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix develop .#electron --command bun install --frozen-lockfile
 
       - name: Copy licenses
-        run: bun run copy-licenses
+        run: nix develop .#electron --command bun run copy-licenses
 
       - name: Build packages
-        run: bun run build:packages
+        run: nix develop .#electron --command bun run build:packages
 
       - name: Build web
-        run: bun run build:web
-
-      - name: Install rsync
-        run: apt-get update && apt-get install -y rsync
+        run: nix develop .#electron --command bun run build:web
 
       - name: Deploy
-        run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-dev/
+        run: nix develop .#electron --command rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-dev/
 
   build-mobile:
     runs-on: nixos
@@ -42,20 +33,14 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix develop .#tauri --command bun install --frozen-lockfile
 
       - name: Copy licenses
-        run: bun run copy-licenses
+        run: nix develop .#tauri --command bun run copy-licenses
 
       - name: Build packages
-        run: bun run build:packages
+        run: nix develop .#tauri --command bun run build:packages
 
       - name: Setup Android Keystore
         env:
@@ -112,7 +97,7 @@ jobs:
           fi
 
       - name: Build mobile
-        run: bun run build:mobile
+        run: nix develop .#tauri --command bun run build:mobile
 
       - name: Upload mobile artifact
         uses: https://data.forgejo.org/actions/upload-artifact@v3
@@ -129,23 +114,19 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm xz-utils
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix develop .#electron --command bun install --frozen-lockfile
 
       - name: Copy licenses
-        run: bun run copy-licenses
+        run: nix develop .#electron --command bun run copy-licenses
 
       - name: Build packages
-        run: bun run build:packages
+        run: nix develop .#electron --command bun run build:packages
 
       - name: Set Electron dev version
         run: |
+          nix develop .#electron --command bash <<'EOF'
+          set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           SHORT_SHA="$(git rev-parse --short HEAD)"
           DEV_VERSION="$VERSION-dev-$SHORT_SHA"
@@ -157,9 +138,10 @@ jobs:
             pkg.version = process.env.DEV_VERSION;
             fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
           '
+          EOF
 
       - name: Build Electron desktop
-        run: bun run build:desktop
+        run: nix develop .#electron --command bun run build:desktop
 
       - name: Upload desktop artifacts
         uses: https://data.forgejo.org/actions/upload-artifact@v3
@@ -176,14 +158,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Packages
-        run: apt-get update && apt-get install -y sudo curl jq
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: nix develop .#electron --command bun install --frozen-lockfile
 
       - name: Download mobile artifact
         uses: https://data.forgejo.org/actions/download-artifact@v3
@@ -200,21 +176,27 @@ jobs:
       - name: Read version and hash
         id: version
         run: |
+          nix develop .#electron --command bash <<'EOF'
+          set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           SHORT_SHA="$(git rev-parse --short HEAD)"
           echo "version=$VERSION" >> "$FORGEJO_OUTPUT"
           echo "short_sha=$SHORT_SHA" >> "$FORGEJO_OUTPUT"
           echo "tag=${VERSION}-dev-${SHORT_SHA}" >> "$FORGEJO_OUTPUT"
           echo "title=${VERSION}-dev-${SHORT_SHA}" >> "$FORGEJO_OUTPUT"
+          EOF
 
       - name: Copy releases
         env:
           TENSAMIN_RELEASE_VERSION: ${{ steps.version.outputs.tag }}
           TENSAMIN_RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: |
+          nix develop .#electron --command bash <<'EOF'
+          set -euo pipefail
           ASSET_BASE_URL="${{ forgejo.api_url }}"
           ASSET_BASE_URL="${ASSET_BASE_URL%/api/v1}/${{ forgejo.repository }}/releases/download/${{ steps.version.outputs.tag }}"
           FORGEJO_RELEASE_ASSET_BASE_URL="$ASSET_BASE_URL" bun --bun run copy-releases
+          EOF
 
       - name: Create pre-release and upload files
         env:
@@ -225,6 +207,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           TITLE: ${{ steps.version.outputs.title }}
         run: |
+          nix develop .#electron --command bash <<'EOF'
           set -eu
 
           test -d releases
@@ -313,3 +296,4 @@ jobs:
               -H "Authorization: token $TOKEN" \
               -F "attachment=@$file"
           done
+          EOF
