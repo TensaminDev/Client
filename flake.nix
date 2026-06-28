@@ -208,12 +208,12 @@
       default = electron;
 
       electron = pkgs.mkShell {
-        packages = with pkgs;
+          packages = with pkgs;
           [
             nodejs_22
             corepack_22
             bun
-            electron
+            pkgs.electron
             pkg-config
             python3
             gcc
