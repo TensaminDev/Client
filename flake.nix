@@ -228,7 +228,7 @@
             curl
             fakeroot
             rsync
-            xz-utils
+            xz
           ]
           ++ electronRuntimeLibs;
 
