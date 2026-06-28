@@ -17,13 +17,13 @@ jobs:
         run: nix develop .#electron --command bun install --frozen-lockfile
 
       - name: Copy licenses
-        run: nix develop .#electron --command bun run copy-licenses
+        run: nix develop .#electron --command bun --bun run copy-licenses
 
       - name: Build packages
-        run: nix develop .#electron --command bun run build:packages
+        run: nix develop .#electron --command bun --bun run build:packages
 
       - name: Build web
-        run: nix develop .#electron --command bun run build:web
+        run: nix develop .#electron --command bun --bun run build:web
 
       - name: Deploy
         run: nix develop .#electron --command rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-prod/
@@ -38,10 +38,10 @@ jobs:
         run: nix develop .#tauri --command bun install --frozen-lockfile
 
       - name: Copy licenses
-        run: nix develop .#tauri --command bun run copy-licenses
+        run: nix develop .#tauri --command bun --bun run copy-licenses
 
       - name: Build packages
-        run: nix develop .#tauri --command bun run build:packages
+        run: nix develop .#tauri --command bun --bun run build:packages
 
       - name: Setup Android Keystore
         env:
@@ -98,7 +98,7 @@ jobs:
           fi
 
       - name: Build mobile
-        run: nix develop .#tauri --command bun run build:mobile
+        run: nix develop .#tauri --command bun --bun run build:mobile
 
       - name: Upload mobile artifact
         uses: https://data.forgejo.org/actions/upload-artifact@v3
@@ -119,10 +119,10 @@ jobs:
         run: nix develop .#electron --command bun install --frozen-lockfile
 
       - name: Copy licenses
-        run: nix develop .#electron --command bun run copy-licenses
+        run: nix develop .#electron --command bun --bun run copy-licenses
 
       - name: Build packages
-        run: nix develop .#electron --command bun run build:packages
+        run: nix develop .#electron --command bun --bun run build:packages
 
       - name: Set Electron prod version
         run: |
@@ -140,7 +140,7 @@ jobs:
           EOF
 
       - name: Build Electron desktop
-        run: nix develop .#electron --command bun run build:desktop
+        run: nix develop .#electron --command bun --bun run build:desktop
 
       - name: Upload desktop artifacts
         uses: https://data.forgejo.org/actions/upload-artifact@v3
