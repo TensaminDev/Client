@@ -10,6 +10,9 @@ jobs:
   build-web:
     runs-on: nixos
     steps:
+      - name: Install node
+        run: nix profile install nixpkgs#nodejs_24
+
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
@@ -31,6 +34,9 @@ jobs:
   build-mobile:
     runs-on: nixos
     steps:
+      - name: Install node
+        run: nix profile install nixpkgs#nodejs_24
+
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
@@ -112,6 +118,9 @@ jobs:
       matrix:
         target: [linux]
     steps:
+      - name: Install node
+        run: nix profile install nixpkgs#nodejs_24
+
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
