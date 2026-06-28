@@ -8,16 +8,13 @@ on:
 
 jobs:
   build-web:
-    runs-on: docker
+    runs-on: nixos
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
         run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
-
-      - name: Install Nix
-        uses: https://github.com/cachix/install-nix-action@v30
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
@@ -41,16 +38,13 @@ jobs:
         run: rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-prod/
 
   build-mobile:
-    runs-on: docker
+    runs-on: nixos
     steps:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install Packages
         run: apt-get update && apt-get install -y sudo curl jq fakeroot dpkg rpm
-
-      - name: Install Nix
-        uses: https://github.com/cachix/install-nix-action@v30
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2

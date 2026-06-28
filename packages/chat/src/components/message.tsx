@@ -1,7 +1,15 @@
 import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import { AlertTriangle, Check, Ellipse, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Ellipse,
+  Forward,
+  Laugh,
+  RefreshCw,
+  Reply,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
@@ -9,7 +17,10 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
+  Button,
+  Card,
   cn,
+  Separator,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -125,7 +136,7 @@ function MessageComponent({
       >
         <div
           className={cn(
-            "group hover:bg-muted/50 select-text! justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
+            "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
             {
               "bg-(--destructive)/15 text-destructive-foreground":
                 actuallyFailed,
@@ -157,7 +168,26 @@ function MessageComponent({
                   <TooltipTrigger render={<AlertTriangle size={17} />} />
                 </Tooltip>
               )}
-              <div className="flex flex-col">
+              <div className="flex flex-col group">
+                <Card className="absolute right-4 -top-3 opacity-0 group-hover:opacity-100 flex flex-row justify-end gap-0! z-10 p-0! shadow-lg rounded-lg!">
+                  {[0, 1, 2].map((item) => (
+                    <Button key={item} variant="ghost" className="h-8 w-8">
+                      {item === 0 && "👍"}
+                      {item === 1 && "🔥"}
+                      {item === 2 && "✅"}
+                    </Button>
+                  ))}
+                  <Separator orientation="vertical" className="my-1" />
+                  <Button variant="ghost" className="h-8 w-8">
+                    <Laugh />
+                  </Button>
+                  <Button variant="ghost" className="h-8 w-8">
+                    <Reply />
+                  </Button>
+                  <Button variant="ghost" className="h-8 w-8">
+                    <Forward />
+                  </Button>
+                </Card>
                 {!grouped && (
                   <div className="flex items-center gap-1">
                     <p className="font-medium">{user.display}</p>
