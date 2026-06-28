@@ -152,6 +152,9 @@ jobs:
     runs-on: nixos
     needs: [build-web, build-mobile, build-desktop]
     steps:
+      - name: Install node
+        run: nix profile install nixpkgs#nodejs_24
+
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
