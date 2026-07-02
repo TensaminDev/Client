@@ -347,7 +347,7 @@
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz",
-    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-c4a52c6/mtp-0.1.0.tgz",
+    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8ae8377/mtp-0.1.0.tgz",
   },
   "packages": {
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
@@ -1540,7 +1540,7 @@
 
     "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
 
-    "mtp": ["mtp@https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-c4a52c6/mtp-0.1.0.tgz", {}, "sha512-KIhmkIlALo0PdMnx/QzhM87jNCuC90DaQ7uEWpMjbkI3xvGWmkiX75zqt0UZcO03JYWfBAsCO4+51egoOUq6TA=="],
+    "mtp": ["mtp@https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8ae8377/mtp-0.1.0.tgz", {}, "sha512-W0l7Jc+1XI8BdrmRP9rlY/di6kZ5a/srv4mQvzwyJd+Tfg7BWZ9IUYUXIPze6ayx9dLY1f9Y71OgbhjstMzYjA=="],
 
     "nanoid": ["nanoid@3.3.15", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA=="],
 

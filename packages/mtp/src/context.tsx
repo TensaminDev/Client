@@ -13,8 +13,6 @@ import { onResume } from "tauri-plugin-app-events-api";
 import { MTPClient } from "mtp";
 import type { z } from "zod";
 
-import { decryptText } from "@tensamin/crypto/worker";
-import { useCrypto } from "@tensamin/crypto/context";
 import {
   type Calls,
   type Communities,
@@ -33,19 +31,21 @@ import {
   RETRY_INTERVAL,
 } from "./values";
 
-const APP_VERSION = "0.0.10";
-
 const READY_STATE = {
   CLOSED: 0,
   CONNECTING: 1,
   OPEN: 2,
 } as const;
 
-const PUSH_TYPES = ["message_live", "message_state", "call_invite", "error_no_iota"] as const;
+const PUSH_TYPES = [
+  "message_live",
+  "message_state",
+  "call_invite",
+  "error_no_iota",
+] as const;
 
 const WIRE_TYPES = {
-  identification: "AppIdentification",
-  challenge_response: "AppChallengeResponse",
+  temp_cool_type: "TempCoolType",
   get_user_data: "GetUserData",
   change_user_data: "ChangeUserData",
   ping: "AppPing",
@@ -67,18 +67,9 @@ const APP_TYPES = Object.fromEntries(
   Object.entries(WIRE_TYPES).map(([appType, wireType]) => [wireType, appType]),
 ) as Record<string, keyof Schemas & string>;
 
-const FATAL_IDENTIFICATION_ERROR_TYPES = new Set([
-  "error",
-  "error_invalid_user_id",
-  "error_no_user_id",
-  "error_invalid_challenge",
-  "error_invalid_secret",
-  "error_invalid_private_key",
-  "error_invalid_public_key",
-  "error_not_authenticated",
-]);
-
-export type ProtocolMessage<T extends keyof Schemas & string = keyof Schemas & string> = {
+export type ProtocolMessage<
+  T extends keyof Schemas & string = keyof Schemas & string,
+> = {
   id?: number;
   type: T | string;
   data: z.infer<Schemas[T]["response"]>;
@@ -114,29 +105,16 @@ function isTauriMobile() {
   return isTauri() && /Android|iPhone|iPad|iPod/.test(navigator.userAgent);
 }
 
-function isFatalIdentificationError(error: unknown) {
-  if (typeof error === "object" && error !== null && "type" in error) {
-    const type = (error as { type?: unknown }).type;
-    if (typeof type === "string" && FATAL_IDENTIFICATION_ERROR_TYPES.has(type)) {
-      return true;
-    }
-  }
-
-  return error instanceof Error && (
-    error.message.includes("Missing or invalid user id") ||
-    error.message.includes("Missing private key") ||
-    error.message.includes("Identification challenge was rejected") ||
-    error.message.includes("timed out after") ||
-    error.message.includes("Response validation failed")
-  );
-}
-
 function getProtocolErrorDetails(error: unknown) {
   if (typeof error !== "object" || error === null || !("type" in error)) {
     return null;
   }
 
-  const protocolError = error as { id?: unknown; type?: unknown; data?: unknown };
+  const protocolError = error as {
+    id?: unknown;
+    type?: unknown;
+    data?: unknown;
+  };
   return {
     id: protocolError.id,
     type: protocolError.type,
@@ -193,7 +171,9 @@ function validateResponse<T extends keyof Schemas & string>(
 
   const parsed = schema.safeParse(data);
   if (!parsed.success) {
-    throw new Error(`Response validation failed for ${type}: ${parsed.error.message}`);
+    throw new Error(
+      `Response validation failed for ${type}: ${parsed.error.message}`,
+    );
   }
 
   return {
@@ -203,9 +183,11 @@ function validateResponse<T extends keyof Schemas & string>(
   } as ProtocolMessage<T>;
 }
 
-export function Provider(props: { children: ReactNode; blockConnection?: boolean }) {
+export function Provider(props: {
+  children: ReactNode;
+  blockConnection?: boolean;
+}) {
   const { load } = useStorage();
-  const { decrypt, getSharedSecret } = useCrypto();
 
   const [readyState, setReadyState] = useState<number>(READY_STATE.CLOSED);
   const [connected, setConnected] = useState<boolean>(false);
@@ -222,9 +204,9 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
 
-  const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(null);
-  const identificationStartedRef = useRef(false);
-  const identificationCancelRef = useRef(false);
+  const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
+    null,
+  );
 
   const [mtpUrl, setMtpUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -281,7 +263,6 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
     if (!connected) return;
 
     return subscribe("error_no_iota", () => {
-      identificationCancelRef.current = true;
       setIdentified(false);
       setIdentifying(false);
       setError("We couldn't reach your Iota");
@@ -381,13 +362,14 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
         setConnected(false);
         setIdentified(false);
         setIdentifying(false);
-        identificationStartedRef.current = false;
 
         await MTPClient.init();
         const client = await MTPClient.create({
           url,
           pings: true,
-          logger: (event) => log(event.hint === "error" ? 0 : 2, "mtp", "blue", event),
+          logger: (event) => {
+            log(2, "mtp", event.type === "state" ? "cyan" : "blue", event.type === "state" ? event.data : event.type, event);
+          },
         });
 
         if (disposed) {
@@ -403,13 +385,40 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
           return;
         }
 
+        const authPayload = new Promise<ProtocolMessage<"temp_cool_type">>(
+          (resolve, reject) => {
+            const unsubscribe = client.subscribe("TempCoolType", (message) => {
+              try {
+                unsubscribe();
+                resolve(validateResponse("temp_cool_type", message));
+              } catch (authPayloadError) {
+                unsubscribe();
+                reject(authPayloadError);
+              }
+            });
+          },
+        );
+
         clearReconnectTimer();
         scheduleReconnectReset();
-        identificationCancelRef.current = false;
         setReadyState(READY_STATE.OPEN);
         setConnected(true);
+        setIdentifying(true);
         setError("");
         setErrorDescription("");
+
+        await client.auth();
+        const finalResponse = await authPayload;
+
+        if (disposed || clientRef.current !== client) {
+          return;
+        }
+
+        setFreshContacts(finalResponse.data.contacts);
+        setFreshCommunities(finalResponse.data.communities ?? []);
+        setFreshCalls(finalResponse.data.calls);
+        setIdentifying(false);
+        setIdentified(true);
       } catch (connectError) {
         if (disposed) return;
 
@@ -420,7 +429,13 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
         setConnected(false);
         setIdentified(false);
         setIdentifying(false);
-        log(0, "mtp", "red", "Connection attempt failed", connectError);
+        log(
+          0,
+          "mtp",
+          "red",
+          "Connection/authentication attempt failed",
+          getProtocolErrorDetails(connectError) ?? connectError,
+        );
         scheduleReconnect(connectError);
       }
     }
@@ -464,115 +479,8 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
       setConnected(false);
       setIdentified(false);
       setIdentifying(false);
-      identificationStartedRef.current = false;
     };
   }, [mtpUrl, props.blockConnection]);
-
-  useEffect(() => {
-    if (!connected) {
-      identificationStartedRef.current = false;
-      return;
-    }
-
-    if (identificationCancelRef.current || identificationStartedRef.current) {
-      return;
-    }
-
-    identificationStartedRef.current = true;
-    let cancelled = false;
-    setIdentifying(true);
-    setIdentified(false);
-
-    const identify = async () => {
-      try {
-        const sessionId = await load("session_id");
-        const userId = await load("user_id");
-        const privateKey = await load("private_key");
-
-        if (
-          !Number.isSafeInteger(userId) ||
-          userId <= 0 ||
-          privateKey.trim() === "" ||
-          !Number.isSafeInteger(sessionId) ||
-          sessionId <= 0
-        ) {
-          throw new Error("Invalid credentials");
-        }
-
-        const challengeEnvelope = await send("identification", {
-          version: APP_VERSION,
-          session_id: sessionId,
-          user_id: userId,
-        });
-
-        const sharedSecret = await getSharedSecret(
-          privateKey,
-          "",
-          challengeEnvelope.data.public_key,
-        );
-
-        const decryptedChallenge = await decryptText(
-          sharedSecret,
-          challengeEnvelope.data.challenge,
-        );
-
-        const finalResponse = await send("challenge_response", {
-          challenge: decryptedChallenge,
-        }).catch((challengeError) => {
-          if (!identificationCancelRef.current) {
-            setError("Identification Failed");
-            setErrorDescription(
-              "Unable to complete secure identification. Please verify your credentials and try again.",
-            );
-          }
-          throw challengeError;
-        });
-
-        setFreshContacts(finalResponse.data.contacts);
-        setFreshCommunities(finalResponse.data.communities ?? []);
-        setFreshCalls(finalResponse.data.calls);
-
-        if (cancelled || identificationCancelRef.current) {
-          return;
-        }
-
-        setError("");
-        setErrorDescription("");
-        setIdentified(true);
-      } catch (identificationError) {
-        if (cancelled || identificationCancelRef.current) {
-          return;
-        }
-
-        const isFatal = isFatalIdentificationError(identificationError);
-        log(
-          isFatal ? 0 : 1,
-          "mtp",
-          isFatal ? "red" : "yellow",
-          "Identification handshake failed",
-          getProtocolErrorDetails(identificationError) ?? identificationError,
-        );
-
-        setIdentified(false);
-        setError("Identification Failed");
-        setErrorDescription(
-          isFatal
-            ? "Unable to complete secure identification. Please verify your credentials and try again."
-            : "Unable to complete secure identification because the transport request failed.",
-        );
-      } finally {
-        if (!cancelled && !identificationCancelRef.current) {
-          setIdentifying(false);
-        }
-      }
-    };
-
-    void identify();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [connected, decrypt, getSharedSecret, load, send]);
 
   const progress = useMemo(() => {
     if (!mtpUrl) return 10;
@@ -585,7 +493,8 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
 
   const loadingTitle = useMemo(() => {
     if (!mtpUrl) return "Looking up configuration";
-    if (readyState === READY_STATE.CONNECTING || !connected) return "Connecting to Tensamin";
+    if (readyState === READY_STATE.CONNECTING || !connected)
+      return "Connecting to Tensamin";
     if (identifying || !identified) return "Identifying secure session";
     return "Loading";
   }, [connected, identified, identifying, readyState, mtpUrl]);
@@ -595,7 +504,7 @@ export function Provider(props: { children: ReactNode; blockConnection?: boolean
     if (readyState === READY_STATE.CONNECTING || !connected) {
       return "Establishing transport channel";
     }
-    if (identifying || !identified) return "Verifying challenge-response handshake";
+    if (identifying || !identified) return "Waiting for authenticated session";
     return undefined;
   }, [connected, identified, identifying, readyState, mtpUrl]);
 

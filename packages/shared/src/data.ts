@@ -39,13 +39,33 @@ export const failedUser = {
   username: "unknown",
 } as z.infer<typeof mtp.get_user_data.response>;
 
-export type Contacts = z.infer<
-  typeof mtp.challenge_response.response.shape.contacts
->;
-export type Communities = z.infer<
-  typeof mtp.challenge_response.response.shape.communities
->;
-export type Calls = z.infer<typeof mtp.challenge_response.response.shape.calls>;
+const authPayload = z.object({
+  communities: z.array(z.object({})).optional(),
+  contacts: z.array(
+    z.object({
+      last_message_at: z.number(),
+      user_id: z.number(),
+      last_message: z
+        .object({
+          content: z.base64(),
+          sender_id: z.number(),
+        })
+        .optional(),
+      messages: z.array(message),
+    }),
+  ),
+  calls: z.array(
+    z.object({
+      call_id: z.string(),
+      call_secret: z.base64().optional(),
+      call_members: z.array(z.number()),
+    }),
+  ),
+});
+
+export type Contacts = z.infer<typeof authPayload.shape.contacts>;
+export type Communities = z.infer<typeof authPayload.shape.communities>;
+export type Calls = z.infer<typeof authPayload.shape.calls>;
 
 type Base16Palette = Record<
   | "base00"
@@ -94,44 +114,9 @@ const user = z.object({
   username: z.string().min(1).max(15),
 });
 export const mtp = {
-  identification: {
-    request: z.object({
-      version: z.string(),
-      session_id: z.number(),
-      user_id: z.number(),
-    }),
-    response: z.object({
-      challenge: z.string(),
-      public_key: z.base64(),
-    }),
-  },
-  challenge_response: {
-    request: z.object({
-      challenge: z.base64(),
-    }),
-    response: z.object({
-      communities: z.array(z.object({})).optional(),
-      contacts: z.array(
-        z.object({
-          last_message_at: z.number(),
-          user_id: z.number(),
-          last_message: z
-            .object({
-              content: z.base64(),
-              sender_id: z.number(),
-            })
-            .optional(),
-          messages: z.array(message),
-        }),
-      ),
-      calls: z.array(
-        z.object({
-          call_id: z.string(),
-          call_secret: z.base64().optional(),
-          call_members: z.array(z.number()),
-        }),
-      ),
-    }),
+  temp_cool_type: {
+    request: z.object({}).optional(),
+    response: authPayload,
   },
   get_user_data: {
     request: z.object({

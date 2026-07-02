@@ -44,7 +44,7 @@
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz",
-    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-c4a52c6/mtp-0.1.0.tgz"
+    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8ae8377/mtp-0.1.0.tgz"
   },
   "dependencies": {
     "@tensamin/ui": "*",

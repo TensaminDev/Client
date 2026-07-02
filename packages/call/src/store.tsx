@@ -52,8 +52,7 @@ type IncomingCallInvite = {
   senderId: number;
 };
 type CurrentCallData =
-  | (z.infer<typeof mtp.call_data.response> & { exists: boolean })
-  | null;
+  (z.infer<typeof mtp.call_data.response> & { exists: boolean }) | null;
 
 type NavigateFn = (options: {
   to: string;

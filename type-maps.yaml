@@ -3,8 +3,7 @@ protocol_version: "0.0"
 type_maps:
   "0.0":
     CommunicationTypes:
-      AppIdentification: 32
-      AppChallengeResponse: 33
+      TempCoolType: 32
       GetUserData: 34
       ChangeUserData: 35
       MessageLive: 36

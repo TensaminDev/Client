@@ -238,19 +238,9 @@ function RootShell() {
               <LoginWrapper>
                 <LegalWrapper>
                   <Crypto>
-                    <MTPProvider>
-                      <Session>
-                        <UserContext>
-                          <CallInit />
-                          <CallPopout />
-                          <TAuthWrapper>
-                            <DesktopMediaProvider>
-                              <Outlet />
-                            </DesktopMediaProvider>
-                          </TAuthWrapper>
-                        </UserContext>
-                      </Session>
-                    </MTPProvider>
+                    <DesktopMediaProvider>
+                      <Outlet />
+                    </DesktopMediaProvider>
                   </Crypto>
                 </LegalWrapper>
               </LoginWrapper>
@@ -264,13 +254,23 @@ function RootShell() {
 
 function AppShell() {
   return (
-    <AppLayout>
-      <ChatContext>
-        <NotificationsProvider>
-          <Outlet />
-        </NotificationsProvider>
-      </ChatContext>
-    </AppLayout>
+    <MTPProvider>
+      <Session>
+        <UserContext>
+          <CallInit />
+          <CallPopout />
+          <TAuthWrapper>
+            <AppLayout>
+              <ChatContext>
+                <NotificationsProvider>
+                  <Outlet />
+                </NotificationsProvider>
+              </ChatContext>
+            </AppLayout>
+          </TAuthWrapper>
+        </UserContext>
+      </Session>
+    </MTPProvider>
   );
 }
 
