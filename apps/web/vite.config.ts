@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { mtp } from "mtp/vite";
 
 const host = process.env.TAURI_DEV_HOST;
 const appDir = dirname(fileURLToPath(import.meta.url));
@@ -74,6 +75,13 @@ export default defineConfig({
       },
     ],
     dedupe: [
+      "react",
+      "react-dom",
+      "react-redux",
+      "use-sync-external-store",
+      "@tensamin/crypto",
+      "@tensamin/storage",
+      "@tensamin/mtp",
       "@codemirror/commands",
       "@codemirror/lang-markdown",
       "@codemirror/state",
@@ -97,7 +105,16 @@ export default defineConfig({
   },
   envPrefix: ["VITE_", "TAURI_ENV_*"],
   optimizeDeps: {
-    exclude: ["@tensamin/ttp-core"],
+    // Annoying Vite 8 stuff
+    include: [
+      "react-redux",
+      "use-sync-external-store/shim/with-selector",
+      "use-sync-external-store/with-selector",
+      "decimal.js-light",
+      "eventemitter3",
+      "react-is",
+    ],
+    exclude: ["mtp", "mtp/raw", "mtp/type-map", "@tensamin/shared"],
   },
   build: {
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
@@ -105,6 +122,7 @@ export default defineConfig({
   },
   plugins: [
     deepFilterAssetHeaders(resolve(appDir, "public")),
+    mtp({ typeMaps: resolve(appDir, "../../type-maps.yaml") }),
     react(),
     tailwindcss(),
   ],

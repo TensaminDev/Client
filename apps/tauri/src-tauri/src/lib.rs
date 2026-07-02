@@ -2,8 +2,7 @@
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::new().level(tauri_plugin_log::log::LevelFilter::Info).build())
-        .plugin(tauri_plugin_notification::init())
-        .plugin(ttp_tauri::init());
+        .plugin(tauri_plugin_notification::init());
 
     let builder = builder
         .plugin(tauri_plugin_deep_link::init())

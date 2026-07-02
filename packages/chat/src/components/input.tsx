@@ -12,7 +12,7 @@ import { Button } from "@tensamin/ui";
 
 import { Plus, Laugh, FileVideo } from "lucide-react";
 import { useChat } from "../context";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { cn, useIsMobile } from "@tensamin/ui";
 import { encryptText } from "@tensamin/crypto/worker";
@@ -28,7 +28,7 @@ export default function InputComponent({
 }) {
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
 
-  const { send } = useTTP();
+  const { send } = useMTP();
   const { addLiveMessage, sharedSecret, userId, inputBoxRef } = useChat();
   const { load, save } = useStorage();
   const { moveUserIdToTop } = useSession();

@@ -24,7 +24,7 @@ import Login from "@/routes/screens/login";
 import CallPopout from "@tensamin/call/popout";
 import ChatContext from "@tensamin/chat/context";
 import { useInitializeCall } from "@tensamin/call/store";
-import { Provider as TTPProvider } from "@tensamin/ttp";
+import { Provider as MTPProvider } from "@tensamin/mtp";
 import UserContext from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
@@ -177,59 +177,31 @@ function ThemeStorageBridge() {
   ]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_color", themeColor);
+    if (loadedRef.current) save("theme_color", themeColor);
   }, [save, themeColor]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_palette", themePalette);
+    if (loadedRef.current) save("theme_palette", themePalette);
   }, [save, themePalette]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_primary_color", themePrimaryColor);
+    if (loadedRef.current) save("theme_primary_color", themePrimaryColor);
   }, [save, themePrimaryColor]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_polarity", themePolarity);
+    if (loadedRef.current) save("theme_polarity", themePolarity);
   }, [save, themePolarity]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_tint", themeTint);
+    if (loadedRef.current) save("theme_tint", themeTint);
   }, [save, themeTint]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_border_radius", themeBorderRadius);
+    if (loadedRef.current) save("theme_border_radius", themeBorderRadius);
   }, [save, themeBorderRadius]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_custom_css", themeCustomCss);
+    if (loadedRef.current) save("theme_custom_css", themeCustomCss);
   }, [save, themeCustomCss]);
 
   return null;
@@ -266,9 +238,19 @@ function RootShell() {
               <LoginWrapper>
                 <LegalWrapper>
                   <Crypto>
-                    <DesktopMediaProvider>
-                      <Outlet />
-                    </DesktopMediaProvider>
+                    <MTPProvider>
+                      <Session>
+                        <UserContext>
+                          <CallInit />
+                          <CallPopout />
+                          <TAuthWrapper>
+                            <DesktopMediaProvider>
+                              <Outlet />
+                            </DesktopMediaProvider>
+                          </TAuthWrapper>
+                        </UserContext>
+                      </Session>
+                    </MTPProvider>
                   </Crypto>
                 </LegalWrapper>
               </LoginWrapper>
@@ -282,28 +264,19 @@ function RootShell() {
 
 function AppShell() {
   return (
-    <TTPProvider>
-      <Session>
-        <UserContext>
-          <CallInit />
-          <CallPopout />
-          <TAuthWrapper>
-            <AppLayout>
-              <ChatContext>
-                <NotificationsProvider>
-                  <Outlet />
-                </NotificationsProvider>
-              </ChatContext>
-            </AppLayout>
-          </TAuthWrapper>
-        </UserContext>
-      </Session>
-    </TTPProvider>
+    <AppLayout>
+      <ChatContext>
+        <NotificationsProvider>
+          <Outlet />
+        </NotificationsProvider>
+      </ChatContext>
+    </AppLayout>
   );
 }
 
 function CallInit() {
-  return useInitializeCall();
+  useInitializeCall();
+  return null;
 }
 
 const rootRoute = createRootRoute({

@@ -22,7 +22,7 @@
     "@tensamin/crypto": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/ttp": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
     "deepfilternet3-noise-filter": "^1.2.1",

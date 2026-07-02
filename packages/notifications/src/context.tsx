@@ -2,7 +2,7 @@ import { useCrypto } from "@tensamin/crypto/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useUser } from "@tensamin/user/context";
 import { useChat } from "@tensamin/chat/context";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { createContext, useEffect, useContext } from "react";
 import z from "zod";
 import { toast as sonnerToast } from "sonner";
@@ -24,7 +24,7 @@ async function requestNotificationPermission() {
 }
 
 export default function Provider(props: { children: React.ReactNode }) {
-  const { subscribePush, send } = useTTP();
+  const { subscribePush, send } = useMTP();
   const { load } = useStorage();
   const { get } = useUser();
   const { decryptText, getSharedSecret } = useCrypto();

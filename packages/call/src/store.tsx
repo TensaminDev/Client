@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { create } from "zustand";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
-import { ttp } from "@tensamin/shared/data";
+import { mtp } from "@tensamin/shared/data";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useSession } from "@tensamin/storage/session";
@@ -52,7 +52,7 @@ type IncomingCallInvite = {
   senderId: number;
 };
 type CurrentCallData =
-  | (z.infer<typeof ttp.call_data.response> & { exists: boolean })
+  | (z.infer<typeof mtp.call_data.response> & { exists: boolean })
   | null;
 
 type NavigateFn = (options: {
@@ -1088,7 +1088,7 @@ export const useCall = create<CallStore>(() => ({
 export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { send, subscribePush } = useTTP();
+  const { send, subscribePush } = useMTP();
   const { getSharedSecret, decryptText, encryptText } = useCrypto();
   const { load } = useStorage();
   const { insertCall } = useSession();
@@ -1504,7 +1504,7 @@ export function useInitializeCall() {
     send("call_data", { call_id: callId })
       .then((data) => {
         setCurrentCallData({
-          ...(data.data as z.infer<typeof ttp.call_data.response>),
+          ...(data.data as z.infer<typeof mtp.call_data.response>),
           exists: true,
         });
       })

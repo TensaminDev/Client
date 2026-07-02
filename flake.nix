@@ -205,11 +205,13 @@
           "wasm32-unknown-unknown"
         ];
       };
+
+      commonDeps = [pkgs.wasm-pack pkgs.lld];
     in rec {
       default = electron;
 
       electron = pkgs.mkShell {
-          packages = with pkgs;
+        packages = with pkgs;
           [
             nodejs_22
             corepack_22
@@ -232,7 +234,7 @@
             rsync
             xz
           ]
-          ++ electronRuntimeLibs;
+          ++ electronRuntimeLibs ++ commonDeps;
 
         shellHook = ''
           export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath electronRuntimeLibs}:$LD_LIBRARY_PATH"
@@ -267,7 +269,8 @@
           ++ [
             android.androidsdk
             android-studio-tools
-          ];
+          ]
+          ++ commonDeps;
 
         shellHook = ''
           sdkSource="${android.androidsdk}/libexec/android-sdk"

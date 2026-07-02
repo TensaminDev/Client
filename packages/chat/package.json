@@ -23,7 +23,7 @@
     "@tensamin/markdown": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/ttp": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
     "lucide-react": "^1.14.0",

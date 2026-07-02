@@ -1,0 +1,70 @@
+protocol_version: "0.0"
+
+type_maps:
+  "0.0":
+    CommunicationTypes:
+      AppIdentification: 32
+      AppChallengeResponse: 33
+      GetUserData: 34
+      ChangeUserData: 35
+      MessageLive: 36
+      MessagesGet: 37
+      MessageSend: 38
+      AddConversation: 39
+      MessageState: 40
+      LoadTxtRecord: 41
+      AuthenticateApp: 42
+      CreateApp: 43
+      CallToken: 44
+      CallData: 45
+      CallInvite: 46
+      AppPing: 47
+      ErrorNoIota: 48
+    DataTypes:
+      About: 32
+      AppIdentifier: 33
+      AppPublicKey: 34
+      Avatar: 35
+      CallId: 36
+      CallMembers: 37
+      CallSecret: 38
+      CallToken: 39
+      Calls: 40
+      Challenge: 41
+      ChatPartnerId: 42
+      ChatPartnerName: 43
+      Communities: 44
+      CommunityId: 45
+      Contacts: 46
+      Content: 47
+      Display: 48
+      Files: 49
+      Height: 50
+      IotaId: 51
+      LastMessage: 52
+      LastMessageAt: 53
+      LastPing: 54
+      Message: 55
+      MessageState: 56
+      Messages: 57
+      Name: 58
+      Offset: 59
+      OmikronConnections: 60
+      OmikronId: 61
+      OnlineStatus: 62
+      Path: 63
+      PingIota: 64
+      PublicKey: 65
+      ReceiverId: 66
+      SendTime: 67
+      SenderId: 68
+      SessionId: 69
+      Status: 70
+      SubEnd: 71
+      SubLevel: 72
+      Tint: 73
+      Type: 74
+      UserId: 75
+      UserIds: 76
+      Username: 77
+      AppVersion: 78

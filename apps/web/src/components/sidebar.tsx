@@ -37,11 +37,11 @@ import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
 import type { User } from "@tensamin/user/context";
 import type z from "zod";
-import { ttp } from "@tensamin/shared/data";
-import { useTTP } from "@tensamin/ttp";
+import { mtp } from "@tensamin/shared/data";
+import { useMTP } from "@tensamin/mtp";
 
 type OnlineStatus = z.infer<
-  typeof ttp.get_user_data.response.shape.online_status
+  typeof mtp.get_user_data.response.shape.online_status
 >;
 
 const onlineStatusLabels: Record<OnlineStatus, string> = {
@@ -73,7 +73,7 @@ function StatusDialog({
   user: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  send: ReturnType<typeof useTTP>["send"];
+  send: ReturnType<typeof useMTP>["send"];
   draftStatus: string;
   setDraftStatus: (value: string) => void;
   draftOnlineStatus: OnlineStatus;
@@ -148,7 +148,7 @@ function StatusDialog({
               };
 
               const validation =
-                ttp.change_user_data.request.safeParse(payload);
+                mtp.change_user_data.request.safeParse(payload);
 
               if (!validation.success) {
                 setSaveSucceeded(false);
@@ -194,7 +194,7 @@ export default function Sidebar() {
   const [statusErrorMessage, setStatusErrorMessage] = useState("");
   const [statusSaveSucceeded, setStatusSaveSucceeded] = useState(false);
 
-  const { send } = useTTP();
+  const { send } = useMTP();
 
   const content = (
     <>

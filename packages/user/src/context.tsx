@@ -1,7 +1,7 @@
 import * as React from "react";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 
-import { ttp as schemas } from "@tensamin/shared/data";
+import { mtp as schemas } from "@tensamin/shared/data";
 import type z from "zod";
 
 export type User = z.infer<typeof schemas.get_user_data.response>;
@@ -23,7 +23,7 @@ export default function UserProvider(props: { children: React.ReactNode }) {
     {},
   );
 
-  const { send } = useTTP();
+  const { send } = useMTP();
 
   /**
    * Executes get.

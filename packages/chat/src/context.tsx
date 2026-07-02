@@ -15,7 +15,7 @@ import type { LiveMessage, RawMessage, RawMessages } from "./values";
 import { useCrypto } from "@tensamin/crypto/context";
 import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { log } from "@tensamin/shared/log";
 import { useSession } from "@tensamin/storage/session";
 
@@ -59,7 +59,7 @@ export default function Provider(props: { children: ReactNode }) {
   const { getSharedSecret, decryptText } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
-  const { send, subscribePush } = useTTP();
+  const { send, subscribePush } = useMTP();
   const { moveUserIdToTop } = useSession();
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);

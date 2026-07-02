@@ -28,7 +28,7 @@ import {
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 import { useStorage } from "@tensamin/storage/context";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 
 function MessageComponent({
   grouped,
@@ -75,7 +75,7 @@ function MessageComponent({
 
   // Message states
   const { load } = useStorage();
-  const { send } = useTTP();
+  const { send } = useMTP();
   const messageStateReadUpdate = useCallback(async () => {
     const readConfirmations = await load("settings.read_confirmations");
 

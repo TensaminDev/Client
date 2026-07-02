@@ -37,15 +37,15 @@ export const failedUser = {
   sub_level: 0,
   user_id: 0,
   username: "unknown",
-} as z.infer<typeof ttp.get_user_data.response>;
+} as z.infer<typeof mtp.get_user_data.response>;
 
 export type Contacts = z.infer<
-  typeof ttp.challenge_response.response.shape.contacts
+  typeof mtp.challenge_response.response.shape.contacts
 >;
 export type Communities = z.infer<
-  typeof ttp.challenge_response.response.shape.communities
+  typeof mtp.challenge_response.response.shape.communities
 >;
-export type Calls = z.infer<typeof ttp.challenge_response.response.shape.calls>;
+export type Calls = z.infer<typeof mtp.challenge_response.response.shape.calls>;
 
 type Base16Palette = Record<
   | "base00"
@@ -67,7 +67,7 @@ type Base16Palette = Record<
   string
 >;
 
-// TTP
+// MTP
 const user = z.object({
   about: z.string().max(255).optional(),
   avatar: z.string().optional(),
@@ -93,7 +93,7 @@ const user = z.object({
   user_id: z.number(),
   username: z.string().min(1).max(15),
 });
-export const ttp = {
+export const mtp = {
   identification: {
     request: z.object({
       version: z.string(),
@@ -258,9 +258,13 @@ export const ttp = {
       sender_id: z.number().optional(),
     }),
   },
+  error_no_iota: {
+    request: z.object({}).optional(),
+    response: z.object({}),
+  },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;
 
-export type TTP = typeof ttp;
+export type MTP = typeof mtp;
 
 // Storage
 export interface Storage extends SettingsStorageDefaults {
@@ -276,8 +280,7 @@ export interface Storage extends SettingsStorageDefaults {
   legal_docs: z.infer<typeof legalDocsSchema>;
   cached_contacts: Contacts;
   cached_communities: Communities;
-  ttp_url: string;
-  ttp_server_cert: string;
+  mtp_url: string;
   call_mute_range_start: number;
   call_mute_range_end: number;
   theme_color: string;
@@ -326,8 +329,7 @@ export const storageDefaults: Storage = {
   },
   cached_contacts: [],
   cached_communities: [],
-  ttp_url: "https://tensamin.net:959",
-  ttp_server_cert: "",
+  mtp_url: "https://tensamin.net:959",
   call_mute_range_start: -55,
   call_mute_range_end: -45,
   theme_color: "",
@@ -368,7 +370,7 @@ export const storageDefaults: Storage = {
 
 // User Status
 export function getStatusColor(
-  status: z.infer<typeof ttp.get_user_data.response.shape.online_status>,
+  status: z.infer<typeof mtp.get_user_data.response.shape.online_status>,
 ) {
   switch (status) {
     case "user_online":

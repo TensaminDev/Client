@@ -1,5 +1,4 @@
-import type { BoundSendFn } from "@tensamin/ttp";
-import type { TTP } from "@tensamin/shared/data";
+import type { BoundSendFn } from "@tensamin/mtp";
 import type { RawMessages } from "../values";
 
 /**
@@ -11,7 +10,7 @@ import type { RawMessages } from "../values";
  * @returns Promise<RawMessages>.
  */
 export async function getMessages(
-  send: BoundSendFn<TTP>,
+  send: BoundSendFn,
   amount: number,
   offset: number,
   user_id: number,

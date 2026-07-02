@@ -105,7 +105,7 @@ export default function Form() {
         await save("user_id", parsed.userId);
         await save("private_key", parsed.privateKey);
         if (parsed.domain) {
-          await save("ttp_url", `https://${parsed.domain}/`);
+          await save("mtp_url", `https://${parsed.domain}/`);
         }
 
         location.href = "/";
@@ -253,7 +253,7 @@ export default function Form() {
         await save("user_id", user.user_id);
         await save("private_key", inputParse.data.private_key);
         if (domain) {
-          await save("ttp_url", `https://${domain}/`);
+          await save("mtp_url", `https://${domain}/`);
         }
 
         location.href = "/";
@@ -287,7 +287,7 @@ export default function Form() {
                 await save("private_key", privateKey);
 
                 if (domain) {
-                  await save("ttp_url", `https://${domain}/`);
+                  await save("mtp_url", `https://${domain}/`);
                 }
 
                 location.href = "/";

@@ -59,7 +59,7 @@ function QrCodeLogin() {
         setUserId(value);
       }
     });
-    load("ttp_url")
+    load("mtp_url")
       .then((value) => {
         if (value) {
           const url = new URL(value);

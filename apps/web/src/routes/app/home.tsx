@@ -11,7 +11,7 @@ import {
   useIsMobile,
 } from "@tensamin/ui";
 import z from "zod";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
@@ -31,7 +31,7 @@ export default function Page() {
 
 // Add Conversation Button Component
 function AddConversationButton() {
-  const { send } = useTTP();
+  const { send } = useMTP();
   const { contacts, insertContact } = useSession();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);

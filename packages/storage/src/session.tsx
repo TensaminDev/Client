@@ -1,4 +1,4 @@
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import {
   createContext,
   type ReactNode,
@@ -21,7 +21,7 @@ interface SessionContextType {
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export default function SessionProvider({ children }: { children: ReactNode }) {
-  const { freshContacts, freshCommunities, freshCalls } = useTTP();
+  const { freshContacts, freshCommunities, freshCalls } = useMTP();
   const { load, save } = useStorage();
   const [contacts, setContacts] = useState<Contacts>([]);
   const [communities, setCommunities] = useState<Communities>([]);

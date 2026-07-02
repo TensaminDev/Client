@@ -11,8 +11,8 @@ import {
 import { useUser, type User } from "@tensamin/user/context";
 import { useEffect, useRef, useState } from "react";
 import MDInput from "@tensamin/markdown/input";
-import { ttp } from "@tensamin/shared/data";
-import { useTTP } from "@tensamin/ttp";
+import { mtp } from "@tensamin/shared/data";
+import { useMTP } from "@tensamin/mtp";
 import { Check } from "lucide-react";
 
 async function prepImage(
@@ -43,7 +43,7 @@ async function prepImage(
 export default function Page() {
   const { get } = useUser();
   const { load } = useStorage();
-  const { send } = useTTP();
+  const { send } = useMTP();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [draftUser, setDraftUser] = useState<Partial<User>>({});
   const [errorMessage, setErrorMessage] = useState("");
@@ -178,7 +178,7 @@ export default function Page() {
                 : {}),
             };
 
-            const validation = ttp.change_user_data.request.safeParse(payload);
+            const validation = mtp.change_user_data.request.safeParse(payload);
 
             if (!validation.success) {
               setSaveSucceeded(false);

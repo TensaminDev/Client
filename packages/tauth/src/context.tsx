@@ -13,7 +13,7 @@ import {
 } from "@tensamin/ui";
 import { useLocation } from "@tanstack/react-router";
 import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
@@ -22,7 +22,7 @@ import { decryptText } from "@tensamin/crypto/worker";
 export default function Wrapper({ children }: { children: ReactNode }) {
   const { get } = useUser();
   const { load } = useStorage();
-  const { send } = useTTP();
+  const { send } = useMTP();
   const { getSharedSecret } = useCrypto();
   const { searchStr } = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
