@@ -34,7 +34,7 @@ export function Basic({
                 <div className="absolute -bottom-0.5 -right-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-card">
                   <div
                     style={{
-                      backgroundColor: getStatusColor(user.online_status),
+                      backgroundColor: getStatusColor(user.OnlineStatus),
                     }}
                     className="h-2.25 w-2.25 rounded-full"
                   />
@@ -42,8 +42,7 @@ export function Basic({
               }
             />
             <TooltipContent>
-              {user.online_status
-                .split("_")
+              {user.OnlineStatus.split("_")
                 .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(" ")}
             </TooltipContent>

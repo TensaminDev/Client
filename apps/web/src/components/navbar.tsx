@@ -28,7 +28,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const { id } = useSearch({ strict: false });
 
   const currentCalls = calls.filter((call) =>
-    call.call_members.some((member) => member === id),
+    call.CallMembers.some((member) => member === id),
   );
 
   const isMobile = useIsMobile();
@@ -121,8 +121,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 onClick={() => {
                   void joinCall(
                     id,
-                    currentCalls[0].call_secret,
-                    currentCalls[0].call_id,
+                    currentCalls[0].CallSecret,
+                    currentCalls[0].CallId,
                   );
                 }}
                 className="w-9 h-9 aspect-square rounded-lg"
@@ -147,13 +147,13 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                   <SelectContent className="p-1">
                     {currentCalls.map((call) => (
                       <SelectItem
-                        value={call.call_id}
-                        key={call.call_id}
+                        value={call.CallId}
+                        key={call.CallId}
                         onSelect={() => {
-                          void joinCall(id, call.call_secret, call.call_id);
+                          void joinCall(id, call.CallSecret, call.CallId);
                         }}
                       >
-                        {displayCallId(call.call_id)}
+                        {displayCallId(call.CallId)}
                       </SelectItem>
                     ))}
                   </SelectContent>

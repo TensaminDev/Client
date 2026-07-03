@@ -35,41 +35,41 @@ export default function Provider(props: { children: React.ReactNode }) {
   useEffect(() => {
     return subscribePush(async (ttpMessage) => {
       if (ttpMessage.type === "message_live") {
-        const { message, sender_id } = ttpMessage.data as {
+        const { message, SenderId } = ttpMessage.data as {
           message: z.infer<typeof messageSchema>;
-          sender_id: number;
+          SenderId: number;
         };
 
-        const user = await get(sender_id);
+        const user = await get(SenderId);
 
         const decryptedContent = await decryptText(
           await getSharedSecret(
             await load("private_key"),
-            await get(await load("user_id")).then((data) => data.public_key),
-            user.public_key,
+            await get(await load("user_id")).then((data) => data.PublicKey),
+            user.PublicKey,
           ),
           message.content,
         );
 
         // Update message state
-        if (userId === sender_id) {
+        if (userId === SenderId) {
           addLiveMessage({
             ...message,
             content: decryptedContent,
-            sent_by_self: false,
+            SentBySelf: false,
           });
           return;
         }
 
         // todo: add notification symbol to conversation cards (incl. message start)
 
-        moveUserIdToTop(sender_id);
+        moveUserIdToTop(SenderId);
 
         if (await load("settings.receive_confirmations")) {
           void send(
             "message_state",
             {
-              message_state: "received",
+              MessageState: "received",
             },
             {
               id: ttpMessage.id,
@@ -87,14 +87,14 @@ export default function Provider(props: { children: React.ReactNode }) {
               body: decryptedContent,
               icon: user.avatar || user.display.slice(0, 2).toUpperCase(),
               badge: user.avatar || user.display.slice(0, 2).toUpperCase(),
-              tag: `message-${user.user_id}`,
+              tag: `message-${user.UserId}`,
               silent: true,
             });
 
             notification.onclick = () => {
               window.focus();
               navigate({
-                to: `/chat?id=${user.user_id}`,
+                to: `/chat?id=${user.UserId}`,
               });
 
               notification.close();

@@ -14,28 +14,28 @@ const fileFromMessage = z.object({
 
 export const message = z.object({
   height: z.number(),
-  not_encrypted: z.boolean().optional(),
-  sent_by_self: z.boolean().optional(),
-  send_time: z.number(),
+  NotEncrypted: z.boolean().optional(),
+  SentBySelf: z.boolean().optional(),
+  SendTime: z.number(),
   content: z.base64(),
   files: z.array(fileFromMessage).optional(),
   tint: z.string().length(7).startsWith("#").optional(),
   avatar: z.boolean().optional(),
   display: z.boolean().optional(),
-  message_state: z
+  MessageState: z
     .enum(["read", "received", "sent", "sending", "awaiting"]) // awaiting for 'internal' use
     .default("received"),
 });
 
 export const failedUser = {
   display: "Failed",
-  iota_id: 0,
-  omikron_connections: [],
-  online_status: "user_borked",
-  public_key: "",
-  sub_end: 0,
-  sub_level: 0,
-  user_id: 0,
+  IotaId: 0,
+  OmikronConnections: [],
+  OnlineStatus: "user_borked",
+  PublicKey: "",
+  SubEnd: 0,
+  SubLevel: 0,
+  UserId: 0,
   username: "unknown",
 } as z.infer<typeof mtp.get_user_data.response>;
 
@@ -43,12 +43,12 @@ const authPayload = z.object({
   communities: z.array(z.object({})).optional(),
   contacts: z.array(
     z.object({
-      last_message_at: z.number(),
-      user_id: z.number(),
-      last_message: z
+      LastMessageAt: z.number(),
+      UserId: z.number(),
+      LastMessage: z
         .object({
           content: z.base64(),
-          sender_id: z.number(),
+          SenderId: z.number(),
         })
         .optional(),
       messages: z.array(message),
@@ -56,9 +56,9 @@ const authPayload = z.object({
   ),
   calls: z.array(
     z.object({
-      call_id: z.string(),
-      call_secret: z.base64().optional(),
-      call_members: z.array(z.number()),
+      CallId: z.string(),
+      CallSecret: z.base64().optional(),
+      CallMembers: z.array(z.number()),
     }),
   ),
 });
@@ -92,10 +92,10 @@ const user = z.object({
   about: z.string().max(255).optional(),
   avatar: z.string().optional(),
   display: z.string().min(1).max(15),
-  iota_id: z.number(),
-  omikron_connections: z.array(z.number()),
-  omikron_id: z.number().optional(),
-  online_status: z.enum([
+  IotaId: z.number(),
+  OmikronConnections: z.array(z.number()),
+  OmikronId: z.number().optional(),
+  OnlineStatus: z.enum([
     "user_offline",
     "user_online",
     "user_dnd",
@@ -106,11 +106,11 @@ const user = z.object({
     "iota_online",
     "iota_borked",
   ]),
-  public_key: z.base64(),
+  PublicKey: z.base64(),
   status: z.string().max(15).optional(),
-  sub_end: z.number(),
-  sub_level: z.number(),
-  user_id: z.number(),
+  SubEnd: z.number(),
+  SubLevel: z.number(),
+  UserId: z.number(),
   username: z.string().min(1).max(15),
 });
 export const mtp = {
@@ -120,7 +120,7 @@ export const mtp = {
   },
   get_user_data: {
     request: z.object({
-      user_id: z.number().optional(),
+      UserId: z.number().optional(),
       username: z.string().optional(),
     }),
     response: user,
@@ -131,22 +131,22 @@ export const mtp = {
   },
   ping: {
     request: z.object({
-      last_ping: z.number(),
+      LastPing: z.number(),
     }),
     response: z.object({
-      ping_iota: z.number(),
+      PingIota: z.number(),
     }),
   },
   message_live: {
     request: z.object({}).optional(),
     response: z.object({
-      sender_id: z.number(),
+      SenderId: z.number(),
       message,
     }),
   },
   messages_get: {
     request: z.object({
-      user_id: z.number(),
+      UserId: z.number(),
       amount: z.number(),
       offset: z.number(),
     }),
@@ -158,35 +158,35 @@ export const mtp = {
     request: z.object({
       height: z.number(),
       content: z.base64(),
-      receiver_id: z.number(),
-      send_time: z.number(),
+      ReceiverId: z.number(),
+      SendTime: z.number(),
       files: z.array(fileFromMessage).optional(),
     }),
     response: z.object({}),
   },
   add_conversation: {
     request: z.object({
-      chat_partner_id: z.number().optional(),
-      chat_partner_name: z.string().min(1).max(15).optional(),
+      ChatPartnerId: z.number().optional(),
+      ChatPartnerName: z.string().min(1).max(15).optional(),
     }),
     response: z.object({}),
   },
   message_state: {
     request: z
       .object({
-        chat_partner_id: z.number(),
-        send_time: z.number(),
-        message_state: message.shape.message_state,
+        ChatPartnerId: z.number(),
+        SendTime: z.number(),
+        MessageState: message.shape.MessageState,
       })
       .or(
         z.object({
-          message_state: message.shape.message_state,
+          MessageState: message.shape.MessageState,
         }),
       ),
     response: z.object({
-      chat_partner_id: z.number(),
-      message_state: message.shape.message_state,
-      send_time: z.number(),
+      ChatPartnerId: z.number(),
+      MessageState: message.shape.MessageState,
+      SendTime: z.number(),
     }),
   },
 
@@ -200,7 +200,7 @@ export const mtp = {
   },
   authenticate_app: {
     request: z.object({
-      app_identifier: z.string(),
+      AppIdentifier: z.string(),
     }),
     response: z.object({
       challenge: z.base64(),
@@ -208,8 +208,8 @@ export const mtp = {
   },
   create_app: {
     request: z.object({
-      app_public_key: z.base64(),
-      app_identifier: z.string(),
+      AppPublicKey: z.base64(),
+      AppIdentifier: z.string(),
     }),
     response: z.object({}),
   },
@@ -217,30 +217,30 @@ export const mtp = {
   // Calls
   call_token: {
     request: z.object({
-      call_id: z.string(),
+      CallId: z.string(),
     }),
     response: z.object({
-      call_token: z.string(),
+      CallToken: z.string(),
     }),
   },
   call_data: {
     request: z.object({
-      call_id: z.string(),
+      CallId: z.string(),
     }),
     response: z.object({
-      user_ids: z.array(z.number()),
+      UserIds: z.array(z.number()),
     }),
   },
   call_invite: {
     request: z.object({
-      call_id: z.string(),
-      call_secret: z.base64(),
-      receiver_id: z.number(),
+      CallId: z.string(),
+      CallSecret: z.base64(),
+      ReceiverId: z.number(),
     }),
     response: z.object({
-      call_id: z.string().optional(),
-      call_secret: z.base64().optional(),
-      sender_id: z.number().optional(),
+      CallId: z.string().optional(),
+      CallSecret: z.base64().optional(),
+      SenderId: z.number().optional(),
     }),
   },
   error_no_iota: {
@@ -355,7 +355,7 @@ export const storageDefaults: Storage = {
 
 // User Status
 export function getStatusColor(
-  status: z.infer<typeof mtp.get_user_data.response.shape.online_status>,
+  status: z.infer<typeof mtp.get_user_data.response.shape.OnlineStatus>,
 ) {
   switch (status) {
     case "user_online":

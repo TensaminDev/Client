@@ -41,7 +41,7 @@ import { mtp } from "@tensamin/shared/data";
 import { useMTP } from "@tensamin/mtp";
 
 type OnlineStatus = z.infer<
-  typeof mtp.get_user_data.response.shape.online_status
+  typeof mtp.get_user_data.response.shape.OnlineStatus
 >;
 
 const onlineStatusLabels: Record<OnlineStatus, string> = {
@@ -89,7 +89,7 @@ function StatusDialog({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
           setDraftStatus(user.status ?? "");
-          setDraftOnlineStatus(user.online_status);
+          setDraftOnlineStatus(user.OnlineStatus);
           setErrorMessage("");
           setSaveSucceeded(false);
         }
@@ -144,7 +144,7 @@ function StatusDialog({
             onClick={async () => {
               const payload = {
                 ...(draftStatus && { status: draftStatus }),
-                online_status: draftOnlineStatus,
+                OnlineStatus: draftOnlineStatus,
               };
 
               const validation =
@@ -230,7 +230,7 @@ export default function Sidebar() {
                             <DropdownMenuItem
                               onClick={() => {
                                 setDraftStatus(user.status ?? "");
-                                setDraftOnlineStatus(user.online_status);
+                                setDraftOnlineStatus(user.OnlineStatus);
                                 setStatusErrorMessage("");
                                 setStatusSaveSucceeded(false);
                                 setDialogOpen(true);
@@ -249,7 +249,7 @@ export default function Sidebar() {
                     onOpenChange={(nextOpen) => {
                       if (!nextOpen) {
                         setDraftStatus(user.status ?? "");
-                        setDraftOnlineStatus(user.online_status);
+                        setDraftOnlineStatus(user.OnlineStatus);
                         setStatusErrorMessage("");
                         setStatusSaveSucceeded(false);
                       }

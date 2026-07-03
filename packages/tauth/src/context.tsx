@@ -62,7 +62,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
       // Get Shared Secret
       const sharedSecret = await getSharedSecret(
         await load("private_key"),
-        user.public_key,
+        user.PublicKey,
         appPublicKey,
       ).catch((err) => {
         log(1, "tauth", "red", "Failed to get shared secret", err, {
@@ -92,8 +92,8 @@ export default function Wrapper({ children }: { children: ReactNode }) {
 
       // Save Session
       await send("create_app", {
-        app_public_key: appPublicKey,
-        app_identifier: identifier,
+        AppPublicKey: appPublicKey,
+        AppIdentifier: identifier,
       });
 
       // Open Redirect URL

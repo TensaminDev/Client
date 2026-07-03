@@ -70,7 +70,7 @@ type GetSharedSecretFn = (
 type DecryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
 type EncryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
 type LoadFn = (key: string) => Promise<unknown>;
-type GetUserFn = (userId: number) => Promise<{ public_key: string }>;
+type GetUserFn = (userId: number) => Promise<{ PublicKey: string }>;
 type RemoteVideoTrackSelector = Track.Kind | Track.Source;
 
 type Runtime = {
@@ -605,15 +605,15 @@ export async function openCallPage(callId: string) {
 export async function getCallToken(callId: string): Promise<string> {
   const response = await requireRuntime(useCall.getState().runtime)
     .send("call_token", {
-      call_id: callId,
+      CallId: callId,
     })
     .catch((err) => {
       log(1, "call", "red", "Failed to get call secret", err);
       throw err;
     });
 
-  const data = response.data as { call_token: string };
-  return data.call_token;
+  const data = response.data as { CallToken: string };
+  return data.CallToken;
 }
 
 // Encrypt the active call secret for a recipient and send the call invite.
@@ -629,10 +629,10 @@ export async function sendCallInvite(userId: number) {
   const privateKey = await runtime.load("private_key");
   const ownPublicKey = await runtime
     .getUser(ownUserId)
-    .then((data) => data.public_key);
+    .then((data) => data.PublicKey);
   const remotePublicKey = await runtime
     .getUser(userId)
-    .then((data) => data.public_key);
+    .then((data) => data.PublicKey);
   const sharedSecret = await runtime.getSharedSecret(
     privateKey,
     ownPublicKey,
@@ -644,9 +644,9 @@ export async function sendCallInvite(userId: number) {
   );
 
   await runtime.send("call_invite", {
-    receiver_id: userId,
-    call_id: callId,
-    call_secret: encryptedCallSecret,
+    ReceiverId: userId,
+    CallId: callId,
+    CallSecret: encryptedCallSecret,
   });
 }
 
@@ -900,8 +900,8 @@ export async function joinCall(
         await runtime.load("private_key"),
         await runtime
           .getUser((await runtime.load("user_id")) as number)
-          .then((res) => res.public_key),
-        await runtime.getUser(userId).then((res) => res.public_key),
+          .then((res) => res.PublicKey),
+        await runtime.getUser(userId).then((res) => res.PublicKey),
       );
       const decryptedSecret = await runtime.decryptText(
         sharedSecret,
@@ -1150,9 +1150,9 @@ export function useInitializeCall() {
       }
 
       insertCall({
-        call_id: invite.callId,
-        call_secret: invite.callSecret,
-        call_members: [invite.senderId],
+        CallId: invite.callId,
+        CallSecret: invite.callSecret,
+        CallMembers: [invite.senderId],
       });
 
       if (accepted) {
@@ -1180,13 +1180,13 @@ export function useInitializeCall() {
     subscribePush(async (message) => {
       if (message.type !== "call_invite") return;
 
-      const { call_id, call_secret, sender_id } = message.data as {
-        call_id: string;
-        call_secret: string;
-        sender_id: number;
+      const { CallId, CallSecret, SenderId } = message.data as {
+        CallId: string;
+        CallSecret: string;
+        SenderId: number;
       };
 
-      showCallingScreen(call_id, call_secret, sender_id);
+      showCallingScreen(CallId, CallSecret, SenderId);
     });
   }, [subscribePush, showCallingScreen]);
 
@@ -1500,7 +1500,7 @@ export function useInitializeCall() {
       return;
     }
 
-    send("call_data", { call_id: callId })
+    send("call_data", { CallId: callId })
       .then((data) => {
         setCurrentCallData({
           ...(data.data as z.infer<typeof mtp.call_data.response>),
@@ -1513,7 +1513,7 @@ export function useInitializeCall() {
           error: err,
         });
         setCurrentCallData({
-          user_ids: [],
+          UserIds: [],
           exists: false,
         });
       });

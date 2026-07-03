@@ -36,8 +36,8 @@ export default function ContextMenu({
 
   return (
     <ContextMenuContent className="p-1">
-      {watchedStreamParticipantIds.includes(user.user_id) &&
-      user.user_id !== ownId ? (
+      {watchedStreamParticipantIds.includes(user.UserId) &&
+      user.UserId !== ownId ? (
         <ContextMenuItem variant="destructive">Stop Watching</ContextMenuItem>
       ) : null}
       <ContextMenuItem>Profile</ContextMenuItem>

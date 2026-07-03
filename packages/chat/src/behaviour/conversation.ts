@@ -6,19 +6,19 @@ import type { RawMessages } from "../values";
  * @param send Parameter send.
  * @param amount Parameter amount.
  * @param offset Parameter offset.
- * @param user_id Parameter user_id.
+ * @param UserId Parameter UserId.
  * @returns Promise<RawMessages>.
  */
 export async function getMessages(
   send: BoundSendFn,
   amount: number,
   offset: number,
-  user_id: number,
+  UserId: number,
 ): Promise<RawMessages> {
   const messages = await send("messages_get", {
     amount: amount,
     offset: offset,
-    user_id: user_id,
+    UserId,
   });
 
   if (messages.type.startsWith("error")) {

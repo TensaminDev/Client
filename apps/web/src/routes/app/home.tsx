@@ -59,7 +59,7 @@ function AddConversationButton() {
       username: result.data,
     })
       .then((data) => {
-        if (data.data.user_id === 0) {
+        if (data.data.UserId === 0) {
           throw new Error();
         }
 
@@ -72,7 +72,7 @@ function AddConversationButton() {
     if (!user) return;
 
     // alrady added check
-    if (contacts.some((contact) => contact.user_id === user.data.user_id)) {
+    if (contacts.some((contact) => contact.UserId === user.data.UserId)) {
       setError("Conversation already exists");
       return;
     }
@@ -81,10 +81,10 @@ function AddConversationButton() {
     const timeout = setTimeout(() => setLoading(true), 500);
 
     send("add_conversation", {
-      chat_partner_name: result.data,
+      ChatPartnerName: result.data,
     })
       .then(() => {
-        insertContact(user.data.user_id);
+        insertContact(user.data.UserId);
         setOpen(false);
       })
       .catch((error) => {

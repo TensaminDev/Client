@@ -73,11 +73,11 @@ export default function InputComponent({
 
     const reference = addLiveMessage({
       height: 0,
-      not_encrypted: true,
-      send_time: time,
+      NotEncrypted: true,
+      SendTime: time,
       content: currentValue,
-      sent_by_self: true,
-      message_state: "awaiting",
+      SentBySelf: true,
+      MessageState: "awaiting",
     });
 
     log(3, "chat", "purple", "Live message added, encrypting...");
@@ -97,14 +97,14 @@ export default function InputComponent({
     send("message_send", {
       height: 0,
       content: encryptedContext,
-      receiver_id: userId,
-      send_time: time,
+      ReceiverId: userId,
+      SendTime: time,
     }).catch((e) => {
       log(0, "Chat", "red", "Failed to send message", e, {
         content: currentValue,
         encryptedContext,
-        receiver_id: userId,
-        send_time: time,
+        ReceiverId: userId,
+        SendTime: time,
       });
       reference.setFailed(true);
       toast("error", "Failed to send message");

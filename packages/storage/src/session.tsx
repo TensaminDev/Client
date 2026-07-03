@@ -29,7 +29,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const calls = [
     ...freshCalls,
     ...localCalls.filter(
-      (call) => !freshCalls.some((fresh) => fresh.call_id === call.call_id),
+      (call) => !freshCalls.some((fresh) => fresh.CallId === call.CallId),
     ),
   ];
 
@@ -40,7 +40,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         ...freshContacts,
         ...cachedData.filter(
           (item) =>
-            !freshContacts.some((fresh) => fresh.user_id === item.user_id),
+            !freshContacts.some((fresh) => fresh.UserId === item.UserId),
         ),
       ]);
     });
@@ -69,7 +69,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const moveUserIdToTop = (userId: number) => {
     setContacts((prevContacts) => {
       const userIndex = prevContacts.findIndex(
-        (contact) => contact.user_id === userId,
+        (contact) => contact.UserId === userId,
       );
       if (userIndex === -1) return prevContacts;
       const [user] = prevContacts.splice(userIndex, 1);
@@ -79,13 +79,13 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
 
   const insertContact = (userId: number) => {
     setContacts((prevContacts) => {
-      if (prevContacts.some((contact) => contact.user_id === userId)) {
+      if (prevContacts.some((contact) => contact.UserId === userId)) {
         return prevContacts;
       }
 
       const newUser = {
-        user_id: userId,
-        last_message_at: new Date().getTime(),
+        UserId: userId,
+        LastMessageAt: new Date().getTime(),
         messages: [],
       } satisfies Contacts[0];
 
@@ -95,7 +95,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
 
   const insertCall = (call: Calls[number]) => {
     setLocalCalls((prevCalls) => {
-      if (prevCalls.some((prevCall) => prevCall.call_id === call.call_id)) {
+      if (prevCalls.some((prevCall) => prevCall.CallId === call.CallId)) {
         return prevCalls;
       }
 

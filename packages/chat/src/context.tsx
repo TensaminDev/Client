@@ -24,23 +24,23 @@ export const context = createContext<contextType | undefined>(undefined);
 const queryClient = new QueryClient();
 
 function updateMessageStateBySendTime<
-  T extends { send_time: number; message_state: RawMessage["message_state"] },
+  T extends { SendTime: number; MessageState: RawMessage["MessageState"] },
 >(
   messages: T[],
   sendTime: number,
-  messageState: RawMessage["message_state"],
+  messageState: RawMessage["MessageState"],
 ): { next: T[]; updated: boolean } {
   let updated = false;
 
   const next = messages.map((item) => {
-    if (item.send_time !== sendTime || item.message_state === messageState) {
+    if (item.SendTime !== sendTime || item.MessageState === messageState) {
       return item;
     }
 
     updated = true;
     return {
       ...item,
-      message_state: messageState,
+      MessageState: messageState,
     };
   });
 
@@ -105,8 +105,8 @@ export default function Provider(props: { children: ReactNode }) {
         const ownData = await get(ownId);
         const sharedSecret = await getSharedSecret(
           privateKey,
-          ownData.public_key,
-          recipientData.public_key,
+          ownData.PublicKey,
+          recipientData.PublicKey,
         );
 
         if (active) {
@@ -135,7 +135,7 @@ export default function Provider(props: { children: ReactNode }) {
       const messages = await send("messages_get", {
         amount,
         offset,
-        user_id: userIdValue,
+        UserId: userIdValue,
       });
 
       if (messages.type.startsWith("error")) {
@@ -143,14 +143,14 @@ export default function Provider(props: { children: ReactNode }) {
       }
 
       const rawMessages = messages.data.messages;
-      const sorted = [...rawMessages].sort((a, b) => a.send_time - b.send_time);
+      const sorted = [...rawMessages].sort((a, b) => a.SendTime - b.SendTime);
 
       if (sorted.length > 0) {
-        const fetchedSendTimes = new Set(sorted.map((item) => item.send_time));
+        const fetchedSendTimes = new Set(sorted.map((item) => item.SendTime));
 
         setLiveMessagesState((prev) => {
           const filtered = prev.filter(
-            (liveMessage) => !fetchedSendTimes.has(liveMessage.send_time),
+            (liveMessage) => !fetchedSendTimes.has(liveMessage.SendTime),
           );
 
           return filtered.length === prev.length ? prev : filtered;
@@ -179,7 +179,7 @@ export default function Provider(props: { children: ReactNode }) {
         globalThis.crypto?.randomUUID?.() ??
         `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      if (!message.sent_by_self) {
+      if (!message.SentBySelf) {
         moveUserIdToTop(userIdValue);
       }
 
@@ -219,20 +219,20 @@ export default function Provider(props: { children: ReactNode }) {
       }
 
       const rawData = message.data as {
-        chat_partner_id: unknown;
-        send_time: unknown;
-        message_state: RawMessage["message_state"];
+        ChatPartnerId: unknown;
+        SendTime: unknown;
+        MessageState: RawMessage["MessageState"];
       };
 
       const nextState = {
-        chat_partner_id: Number(rawData.chat_partner_id),
-        send_time: Number(rawData.send_time),
-        message_state: rawData.message_state,
+        ChatPartnerId: Number(rawData.ChatPartnerId),
+        SendTime: Number(rawData.SendTime),
+        MessageState: rawData.MessageState,
       };
 
       if (
-        !Number.isFinite(nextState.chat_partner_id) ||
-        !Number.isFinite(nextState.send_time)
+        !Number.isFinite(nextState.ChatPartnerId) ||
+        !Number.isFinite(nextState.SendTime)
       ) {
         log(
           3,
@@ -243,7 +243,7 @@ export default function Provider(props: { children: ReactNode }) {
         return;
       }
 
-      if (nextState.chat_partner_id !== userIdValue) {
+      if (nextState.ChatPartnerId !== userIdValue) {
         log(
           3,
           "chat",
@@ -251,7 +251,7 @@ export default function Provider(props: { children: ReactNode }) {
           "Cancel message state update due to user ID mismatch",
           {
             expected: userIdValue,
-            received: nextState.chat_partner_id,
+            received: nextState.ChatPartnerId,
           },
         );
         return;
@@ -260,8 +260,8 @@ export default function Provider(props: { children: ReactNode }) {
       setLiveMessagesState((prev) => {
         const { next, updated } = updateMessageStateBySendTime(
           prev,
-          nextState.send_time,
-          nextState.message_state,
+          nextState.SendTime,
+          nextState.MessageState,
         );
         return updated ? next : prev;
       });
@@ -283,8 +283,8 @@ export default function Provider(props: { children: ReactNode }) {
           const pages = current.pages.map((page) => {
             const nextPage = updateMessageStateBySendTime(
               page,
-              nextState.send_time,
-              nextState.message_state,
+              nextState.SendTime,
+              nextState.MessageState,
             );
 
             if (nextPage.updated) {

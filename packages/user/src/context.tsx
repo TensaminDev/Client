@@ -47,7 +47,7 @@ export default function UserProvider(props: { children: React.ReactNode }) {
       }
 
       const request = (async () => {
-        const userData = await send("get_user_data", { user_id: userId });
+        const userData = await send("get_user_data", { UserId: userId });
         const user = {
           ...userData.data,
           avatar: userData.data.avatar

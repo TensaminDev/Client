@@ -61,15 +61,15 @@ export default function InviteButton({
         >
           {contacts.map((contact) => (
             <Wrapper
-              key={contact.user_id}
-              userId={contact.user_id}
+              key={contact.UserId}
+              userId={contact.UserId}
               loading={<div>Loading...</div>}
               component={(user) => (
                 <Button
                   className="w-full justify-start"
                   variant="ghost"
                   onClick={() => {
-                    void sendCallInvite(contact.user_id).catch((err) => {
+                    void sendCallInvite(contact.UserId).catch((err) => {
                       toast(
                         "error",
                         "Failed to send call invite. Check console for details.",

@@ -34,8 +34,8 @@ export default function Profile({ user }: { user: User }) {
         const ownData = await get(ownId);
         const secret = await getSharedSecret(
           privateKey,
-          ownData.public_key,
-          user.public_key,
+          ownData.PublicKey,
+          user.PublicKey,
         );
 
         if (active) {
@@ -51,7 +51,7 @@ export default function Profile({ user }: { user: User }) {
     return () => {
       active = false;
     };
-  }, [get, getSharedSecret, load, user.public_key]);
+  }, [get, getSharedSecret, load, user.PublicKey]);
 
   const sharedSecretCode = sharedSecret
     ? toLossySixDigitCode(sharedSecret)
@@ -98,13 +98,13 @@ export default function Profile({ user }: { user: User }) {
             </Tooltip>
           </p>
           <p className="text-muted-foreground text-xs overflow-hidden text-ellipsis whitespace-nowrap">
-            Iota ID: <code>{user.iota_id}</code>
+            Iota ID: <code>{user.IotaId}</code>
           </p>
           <p className="text-muted-foreground text-xs overflow-hidden text-ellipsis whitespace-nowrap">
-            User ID: <code>{user.user_id}</code>
+            User ID: <code>{user.UserId}</code>
           </p>
           <p className="text-muted-foreground text-xs overflow-hidden text-ellipsis whitespace-nowrap">
-            Public Key: <code>{user.public_key}</code>
+            Public Key: <code>{user.PublicKey}</code>
           </p>
         </div>
       )}

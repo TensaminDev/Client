@@ -41,13 +41,13 @@ function MessageComponent({
   };
   user: User | null;
 }) {
-  const actuallyFailed = message.failed && message.message_state === "awaiting";
+  const actuallyFailed = message.failed && message.MessageState === "awaiting";
 
   // Fade-in
   const [hasFadedIn, setHasFadedIn] = useState(false);
   const opacityClass = !hasFadedIn
     ? "opacity-0"
-    : actuallyFailed || message.message_state === "awaiting"
+    : actuallyFailed || message.MessageState === "awaiting"
       ? "opacity-50"
       : "opacity-100";
   useEffect(() => {
@@ -80,21 +80,21 @@ function MessageComponent({
     const readConfirmations = await load("settings.read_confirmations");
 
     if (readConfirmations) {
-      if (!user?.user_id) return;
+      if (!user?.UserId) return;
 
       await send("message_state", {
-        chat_partner_id: user?.user_id,
-        send_time: message.send_time,
-        message_state: "read",
+        ChatPartnerId: user?.UserId,
+        SendTime: message.SendTime,
+        MessageState: "read",
       });
     } else {
       await send("message_state", {
-        chat_partner_id: user?.user_id,
-        send_time: message.send_time,
-        message_state: "received",
+        ChatPartnerId: user?.UserId,
+        SendTime: message.SendTime,
+        MessageState: "received",
       });
     }
-  }, [load, message.send_time, user?.user_id, send]);
+  }, [load, message.SendTime, user?.UserId, send]);
   useEffect(() => {
     let cancelled = false;
 
@@ -102,7 +102,7 @@ function MessageComponent({
       const receiveConfirmations = await load("settings.receive_confirmations");
       if (cancelled) return;
 
-      switch (message.message_state) {
+      switch (message.MessageState) {
         case "sent":
           if (receiveConfirmations) {
             messageStateReadUpdate();
@@ -123,7 +123,7 @@ function MessageComponent({
     return () => {
       cancelled = true;
     };
-  }, [message.message_state, load, messageStateReadUpdate]);
+  }, [message.MessageState, load, messageStateReadUpdate]);
 
   return (
     <div
@@ -132,7 +132,7 @@ function MessageComponent({
     >
       <MessageContextMenu
         content={message.content}
-        messageId={message.send_time}
+        messageId={message.SendTime}
       >
         <div
           className={cn(
@@ -147,7 +147,7 @@ function MessageComponent({
             <>
               {grouped ? (
                 <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
-                  {new Date(message.send_time).toLocaleString([], {
+                  {new Date(message.SendTime).toLocaleString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
@@ -160,7 +160,7 @@ function MessageComponent({
                   </AvatarFallback>
                 </Avatar>
               )}
-              {message.failed && message.message_state === "awaiting" && (
+              {message.failed && message.MessageState === "awaiting" && (
                 <Tooltip>
                   <TooltipContent>
                     <p>Failed to send message</p>
@@ -192,22 +192,22 @@ function MessageComponent({
                   <div className="flex items-center gap-1">
                     <p className="font-medium">{user.display}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(message.send_time).toLocaleString([], {
+                      {new Date(message.SendTime).toLocaleString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </p>
                     <div>
-                      {message.message_state === "read" ? (
+                      {message.MessageState === "read" ? (
                         <Check
                           size={12}
                           color="var(--primary-foreground-alt)"
                         />
-                      ) : message.message_state === "received" ? (
+                      ) : message.MessageState === "received" ? (
                         <Check size={12} color="var(--muted-foreground)" />
-                      ) : message.message_state === "sent" ? (
+                      ) : message.MessageState === "sent" ? (
                         <RefreshCw size={12} color="var(--muted-foreground)" />
-                      ) : message.message_state === "sending" ? (
+                      ) : message.MessageState === "sending" ? (
                         <Ellipse size={12} color="var(--muted-foreground)" />
                       ) : null}
                     </div>
@@ -231,11 +231,11 @@ function MessageComponent({
 
 export default React.memo(MessageComponent, (prev, next) => {
   return (
-    prev.message.send_time === next.message.send_time &&
+    prev.message.SendTime === next.message.SendTime &&
     prev.message.content === next.message.content &&
     prev.message.height === next.message.height &&
-    prev.message.sent_by_self === next.message.sent_by_self &&
-    prev.message.message_state === next.message.message_state &&
+    prev.message.SentBySelf === next.message.SentBySelf &&
+    prev.message.MessageState === next.message.MessageState &&
     prev.message.failed === next.message.failed &&
     prev.grouped === next.grouped &&
     prev.user === next.user

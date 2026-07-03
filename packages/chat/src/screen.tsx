@@ -48,7 +48,7 @@ function shouldFetchPreviousPage({
 }
 
 function getMessageRenderKey(message: RawMessage | LiveMessage) {
-  return "localId" in message ? message.localId : String(message.send_time);
+  return "localId" in message ? message.localId : String(message.SendTime);
 }
 
 function buildMessageChunks(
@@ -184,11 +184,11 @@ export default function Screen() {
     const dedupedMessages: RawMessage[] = [];
 
     for (const message of [...pages].reverse().flat()) {
-      if (seenSendTimes.has(message.send_time)) {
+      if (seenSendTimes.has(message.SendTime)) {
         continue;
       }
 
-      seenSendTimes.add(message.send_time);
+      seenSendTimes.add(message.SendTime);
       dedupedMessages.push(message);
     }
 
@@ -199,11 +199,11 @@ export default function Screen() {
 
   const liveWithoutDuplicates = React.useMemo(() => {
     const historicalSendTimes = new Set(
-      historicalMessages.map((message) => message.send_time),
+      historicalMessages.map((message) => message.SendTime),
     );
 
     return liveMessagesSnapshot.filter(
-      (message) => !historicalSendTimes.has(message.send_time),
+      (message) => !historicalSendTimes.has(message.SendTime),
     );
   }, [historicalMessages, liveMessagesSnapshot]);
 
@@ -559,9 +559,9 @@ export default function Screen() {
                     const lastMessage = messages[messageIndex - 1];
                     const isGrouped =
                       lastMessage &&
-                      lastMessage.sent_by_self === message.sent_by_self &&
-                      Math.round(lastMessage.send_time / 10000) ===
-                        Math.round(message.send_time / 10000);
+                      lastMessage.SentBySelf === message.SentBySelf &&
+                      Math.round(lastMessage.SendTime / 10000) ===
+                        Math.round(message.SendTime / 10000);
 
                     return (
                       <Message
@@ -569,7 +569,7 @@ export default function Screen() {
                         grouped={isGrouped}
                         message={message}
                         user={
-                          message.sent_by_self
+                          message.SentBySelf
                             ? (messageUsers.own ?? null)
                             : (messageUsers.peer ?? null)
                         }

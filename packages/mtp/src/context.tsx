@@ -116,47 +116,15 @@ function getProtocolErrorDetails(error: unknown) {
   };
 }
 
-function toPascalCase(value: string) {
-  return value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join("");
-}
-
-function toSnakeCase(value: string) {
-  return value
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
-    .toLowerCase();
-}
-
-function mapDataKeys(value: unknown, mapKey: (key: string) => string): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => mapDataKeys(item, mapKey));
-  }
-
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [
-      mapKey(key),
-      mapDataKeys(entry, mapKey),
-    ]),
-  );
-}
-
 // Zod schema validation
 function validateResponse<T extends keyof Schemas & string>(
   type: T,
   message: { id?: number; type: string; data: unknown },
 ): ProtocolMessage<T> {
   const appType = APP_TYPES[message.type] ?? message.type;
-  const data = mapDataKeys(message.data, toSnakeCase);
 
   if (appType.startsWith("error")) {
-    return { ...message, type: appType, data } as ProtocolMessage<T>;
+    return { ...message, type: appType } as ProtocolMessage<T>;
   }
 
   const schema = schemas[type]?.response;
@@ -164,7 +132,7 @@ function validateResponse<T extends keyof Schemas & string>(
     return message as ProtocolMessage<T>;
   }
 
-  const parsed = schema.safeParse(data);
+  const parsed = schema.safeParse(message.data);
   if (!parsed.success) {
     throw new Error(
       `Response validation failed for ${type}: ${parsed.error.message}`,
@@ -223,7 +191,7 @@ export function Provider(props: {
 
       const message = await client.request(
         WIRE_TYPES[type],
-        mapDataKeys(data ?? {}, toPascalCase) as Record<string, unknown>,
+        (data ?? {}) as Record<string, unknown>,
         options,
       );
       return validateResponse(type, message);
@@ -282,10 +250,10 @@ export function Provider(props: {
     const interval = setInterval(async () => {
       try {
         const originalNow = Date.now();
-        const data = await send("ping", { last_ping: originalNow });
+        const data = await send("ping", { LastPing: originalNow });
         setOwnPing(Date.now() - originalNow);
 
-        const remotePing = data.data.ping_iota;
+        const remotePing = data.data.PingIota;
         if (typeof remotePing === "number") {
           setIotaPing(remotePing);
         }

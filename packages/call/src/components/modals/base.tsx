@@ -115,7 +115,7 @@ function Overlay({
   user: User;
   participant: Participant;
 }) {
-  const isAdmin = getRoomMetadata()?.admins.includes(user.user_id) === true;
+  const isAdmin = getRoomMetadata()?.admins.includes(user.UserId) === true;
   const isDeafened = participant.attributes["deafened"] === "true";
 
   return (
@@ -171,7 +171,7 @@ export default function Base({
   const [avatarBackgroundColor, setAvatarBackgroundColor] = useState<
     string | undefined
   >(undefined);
-  const isSpeaking = useIsSpeaking(user?.user_id ?? -1);
+  const isSpeaking = useIsSpeaking(user?.UserId ?? -1);
   const screenSharePublication = getTrackPublicationBySource(
     participant,
     Track.Source.ScreenShare,
@@ -242,12 +242,12 @@ export default function Base({
 
   const onClick = () => {
     if (view === "grid") {
-      focusParticipant(user.user_id, type);
+      focusParticipant(user.UserId, type);
     } else {
-      if (user.user_id === focusedParticipantId) {
+      if (user.UserId === focusedParticipantId) {
         setCallView("grid");
       } else {
-        focusParticipant(user.user_id, type);
+        focusParticipant(user.UserId, type);
       }
     }
   };
@@ -256,7 +256,7 @@ export default function Base({
     screenSharePublication?.isSubscribed && screenSharePublication.track;
 
   const isFocusedInFocusedView =
-    view === "focused" && user.user_id === focusedParticipantId;
+    view === "focused" && user.UserId === focusedParticipantId;
 
   return (
     <UIContextMenu>
@@ -276,7 +276,7 @@ export default function Base({
                       variant="outline"
                       onClick={(event) => {
                         if (isFocusedInFocusedView) event.stopPropagation();
-                        startWatchingStream(user.user_id);
+                        startWatchingStream(user.UserId);
                       }}
                     >
                       Watch Stream
@@ -286,7 +286,7 @@ export default function Base({
                         variant="outline"
                         onClick={(event) => {
                           event.stopPropagation();
-                          startWatchingStream(user.user_id);
+                          startWatchingStream(user.UserId);
                         }}
                       >
                         <Plus className="w-8 h-8" />
@@ -295,8 +295,7 @@ export default function Base({
                   </div>
                 )}
                 {view === "grid" ||
-                (view === "focused" &&
-                  user.user_id !== focusedParticipantId) ? (
+                (view === "focused" && user.UserId !== focusedParticipantId) ? (
                   <Overlay type={type} user={user} participant={participant} />
                 ) : null}
               </>

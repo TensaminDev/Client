@@ -70,7 +70,7 @@ export default function TopBar() {
     <div className="w-full flex justify-between h-12">
       <div className="flex gap-1 m-3 ml-7">
         {users.map((user) => (
-          <div key={user.user_id} className="-ml-4">
+          <div key={user.UserId} className="-ml-4">
             <Tooltip>
               <TooltipTrigger
                 render={
