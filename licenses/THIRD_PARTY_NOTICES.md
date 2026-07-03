@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Generated from bun.lock and installed packages in workspace node_modules folders.
+Generated from pnpm-lock.yaml and installed packages in workspace node_modules folders.
 
 ## @babel/runtime@7.29.7
 
@@ -445,7 +445,7 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Homepage: https://github.com/tauri-apps/tauri#readme
 - Repository: git+https://github.com/tauri-apps/tauri.git
 - Description: Tauri API definitions
-- Included files: LICENSE_MIT, LICENSE_APACHE-2.0
+- Included files: LICENSE_APACHE-2.0, LICENSE_MIT
 - Folder: `licenses/@tauri-apps_api@2.11.1`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/api`
 
@@ -455,7 +455,7 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Homepage: https://github.com/tauri-apps/tauri#readme
 - Repository: git+https://github.com/tauri-apps/tauri.git
 - Description: Command line interface for building Tauri apps
-- Included files: LICENSE_MIT, LICENSE_APACHE-2.0
+- Included files: LICENSE_APACHE-2.0, LICENSE_MIT
 - Folder: `licenses/@tauri-apps_cli@2.11.4`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/cli`
 
@@ -1325,6 +1325,26 @@ Generated from bun.lock and installed packages in workspace node_modules folders
 - Included files: LICENSE.md
 - Folder: `licenses/vite@8.1.3`
 - Source package dir: `apps/web/node_modules/vite`
+
+## vitest@4.1.9
+
+- License: MIT
+- Homepage: https://vitest.dev
+- Repository: git+https://github.com/vitest-dev/vitest.git
+- Description: Next generation testing framework powered by Vite
+- Included files: LICENSE.md
+- Folder: `licenses/vitest@4.1.9`
+- Source package dir: `node_modules/vitest`
+
+## yaml@2.9.0
+
+- License: ISC
+- Homepage: https://eemeli.org/yaml/
+- Repository: github:eemeli/yaml
+- Description: JavaScript parser and stringifier for YAML
+- Included files: LICENSE
+- Folder: `licenses/yaml@2.9.0`
+- Source package dir: `node_modules/yaml`
 
 ## yargs@15.4.1
 

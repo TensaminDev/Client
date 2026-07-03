@@ -2,29 +2,30 @@
   "name": "tensamin",
   "version": "0.0.10",
   "private": true,
+  "packageManager": "pnpm@11.8.0",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "type": "module",
   "scripts": {
-    "format": "bunx prettier --write .",
-    "lint": "bun scripts/lint-packages.ts",
-    "check": "fallow && bun run lint",
-    "copy-licenses": "bun scripts/copy-licenses.ts",
-    "copy-releases": "bun scripts/copy-releases.ts",
-    "pre-build": "bun run lint && bun run build:packages",
-    "build:apps": "bun run copy-licenses && bun run pre-build && bun run build:mobile && bun run build:desktop && bun --bun run copy-releases",
-    "build:packages": "bun scripts/build-packages.ts",
-    "update:packages": "bun scripts/update-packages.ts",
-    "dev:web": "cd apps/web && bun dev",
-    "build:web": "cd apps/web && bun run build",
-    "preview:web": "cd apps/web && bun run preview",
-    "dev:mobile": "cd apps/tauri && bun dev:mobile",
-    "build:mobile": "cd apps/tauri && bun run build:mobile",
-    "start-adb:mobile": "cd apps/tauri && bun run start-adb:mobile",
-    "dev:desktop": "cd apps/electron && bun run dev",
-    "build:desktop": "cd apps/electron && bun run package",
+    "format": "pnpm exec prettier --write .",
+    "lint": "node scripts/lint-packages.ts",
+    "check": "fallow && pnpm run lint",
+    "copy-licenses": "node scripts/copy-licenses.ts",
+    "copy-releases": "node scripts/copy-releases.ts",
+    "pre-build": "pnpm run lint && pnpm run build:packages",
+    "build:apps": "pnpm run copy-licenses && pnpm run pre-build && pnpm run build:mobile && pnpm run build:desktop && pnpm run copy-releases",
+    "build:packages": "node scripts/build-packages.ts",
+    "update:packages": "node scripts/update-packages.ts",
+    "dev:web": "cd apps/web && pnpm dev",
+    "build:web": "cd apps/web && pnpm run build",
+    "preview:web": "cd apps/web && pnpm run preview",
+    "dev:mobile": "cd apps/tauri && pnpm dev:mobile",
+    "build:mobile": "cd apps/tauri && pnpm run build:mobile",
+    "start-adb:mobile": "cd apps/tauri && pnpm run start-adb:mobile",
+    "dev:desktop": "cd apps/electron && pnpm run dev",
+    "build:desktop": "cd apps/electron && pnpm run package",
     "delete:mobile": "cd apps/tauri && nix develop ../..#tauri --command adb uninstall net.tensamin.client"
   },
   "devDependencies": {
@@ -40,11 +41,13 @@
     "jsonc-parser": "^3.3.1",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.1"
+    "typescript-eslint": "^8.59.1",
+    "vitest": "^4.0.8",
+    "yaml": "^2.8.2"
   },
   "overrides": {
     "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz",
-    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-c3fbeb2/mtp-0.1.0.tgz"
+    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8dc8b54/mtp-0.1.0.tgz"
   },
   "dependencies": {
     "@tensamin/ui": "*",

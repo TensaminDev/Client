@@ -14,7 +14,7 @@
     "./features/conversation/schema": "./src/features/conversation/schema.ts"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
     "build": "tsc -p tsconfig.json --noEmit"
   },

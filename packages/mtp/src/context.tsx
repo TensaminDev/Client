@@ -331,9 +331,16 @@ export function Provider(props: {
         setIdentifying(false);
 
         await MTPClient.init();
-        const rawOmikronData = await fetch(mtpUrl ?? "").then((res) =>
-          codec.decode(res.arrayBuffer()),
+
+        log(2, "mtp", "purple", "Fetching Omikron data.");
+        const omikronData = await fetch(
+          `${mtpUrl}api/get/omikron/${await load("user_id")}`,
+        ).then(async (res) =>
+          codec.decode(new Uint8Array(await res.arrayBuffer())),
         );
+
+        console.log(omikronData);
+
         const client = await MTPClient.create({
           url: mtpUrl ?? "",
           descriptor: "client",
@@ -391,9 +398,7 @@ export function Provider(props: {
         await client.auth();
         const finalResponse = await authPayload;
 
-        if (disposed || clientRef.current !== client) {
-          return;
-        }
+        if (disposed || clientRef.current !== client) return;
 
         setFreshContacts(finalResponse.data.contacts);
         setFreshCommunities(finalResponse.data.communities ?? []);
@@ -456,7 +461,7 @@ export function Provider(props: {
       setIdentified(false);
       setIdentifying(false);
     };
-  }, [mtpUrl, props.blockConnection]);
+  }, [mtpUrl, props.blockConnection, load]);
 
   // Async queue
   const loadingDescription = useMemo(() => {

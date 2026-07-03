@@ -19,16 +19,16 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install dependencies
-        run: nix develop .#electron --command bun install --frozen-lockfile
+        run: nix develop .#electron --command pnpm install --frozen-lockfile
 
       - name: Copy licenses
-        run: nix develop .#electron --command bun --bun run copy-licenses
+        run: nix develop .#electron --command pnpm run copy-licenses
 
       - name: Build packages
-        run: nix develop .#electron --command bun --bun run build:packages
+        run: nix develop .#electron --command pnpm run build:packages
 
       - name: Build web
-        run: nix develop .#electron --command bun --bun run build:web
+        run: nix develop .#electron --command pnpm run build:web
 
       - name: Deploy
         run: nix develop .#electron --command rsync -a --delete apps/web/dist/ /var/lib/www/tensamin-web-dev/
@@ -43,13 +43,13 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install dependencies
-        run: nix develop .#tauri --command bun install --frozen-lockfile
+        run: nix develop .#tauri --command pnpm install --frozen-lockfile
 
       - name: Copy licenses
-        run: nix develop .#tauri --command bun --bun run copy-licenses
+        run: nix develop .#tauri --command pnpm run copy-licenses
 
       - name: Build packages
-        run: nix develop .#tauri --command bun --bun run build:packages
+        run: nix develop .#tauri --command pnpm run build:packages
 
       - name: Setup Android Keystore
         env:
@@ -108,7 +108,7 @@ jobs:
           fi
 
       - name: Build mobile
-        run: nix develop .#tauri --command bun --bun run build:mobile
+        run: nix develop .#tauri --command pnpm run build:mobile
 
       - name: Upload mobile artifact
         uses: https://data.forgejo.org/actions/upload-artifact@v3
@@ -129,13 +129,13 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
 
       - name: Install dependencies
-        run: nix develop .#electron --command bun install --frozen-lockfile
+        run: nix develop .#electron --command pnpm install --frozen-lockfile
 
       - name: Copy licenses
-        run: nix develop .#electron --command bun --bun run copy-licenses
+        run: nix develop .#electron --command pnpm run copy-licenses
 
       - name: Build packages
-        run: nix develop .#electron --command bun --bun run build:packages
+        run: nix develop .#electron --command pnpm run build:packages
 
       - name: Set Electron dev version
         run: |
@@ -155,7 +155,7 @@ jobs:
           EOF
 
       - name: Build Electron desktop
-        run: nix develop .#electron --command bun --bun run build:desktop
+        run: nix develop .#electron --command pnpm run build:desktop
 
       - name: Upload desktop artifacts
         uses: https://data.forgejo.org/actions/upload-artifact@v3
@@ -176,7 +176,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: nix develop .#electron --command bun install --frozen-lockfile
+        run: nix develop .#electron --command pnpm install --frozen-lockfile
 
       - name: Download mobile artifact
         uses: https://data.forgejo.org/actions/download-artifact@v3
@@ -212,7 +212,7 @@ jobs:
           set -euo pipefail
           ASSET_BASE_URL="${{ forgejo.api_url }}"
           ASSET_BASE_URL="${ASSET_BASE_URL%/api/v1}/${{ forgejo.repository }}/releases/download/${{ steps.version.outputs.tag }}"
-          FORGEJO_RELEASE_ASSET_BASE_URL="$ASSET_BASE_URL" bun --bun run copy-releases
+          FORGEJO_RELEASE_ASSET_BASE_URL="$ASSET_BASE_URL" pnpm run copy-releases
           EOF
 
       - name: Create pre-release and upload files

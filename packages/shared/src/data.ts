@@ -314,7 +314,7 @@ export const storageDefaults: Storage = {
   },
   cached_contacts: [],
   cached_communities: [],
-  mtp_url: "https://tensamin.net:959",
+  mtp_url: "https://omega.tensamin.net",
   call_mute_range_start: -55,
   call_mute_range_end: -45,
   theme_color: "",

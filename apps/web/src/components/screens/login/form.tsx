@@ -61,13 +61,8 @@ function parseTuFileContent(rawFileContent: string): {
     ? Number(userIdString.split("@")[0])
     : Number(userIdString);
 
-  const rawDomain = userIdString.includes("@")
+  const domain = userIdString.includes("@")
     ? userIdString.split("@")[1]
-    : null;
-  const domain = rawDomain
-    ? rawDomain.includes(":")
-      ? rawDomain
-      : rawDomain + ":1984"
     : null;
 
   if (!userId || !privateKey) {
@@ -76,7 +71,6 @@ function parseTuFileContent(rawFileContent: string): {
 
   console.log({
     domain,
-    rawDomain,
     userId,
   });
 
@@ -220,13 +214,8 @@ export default function Form() {
       const actualUsername = inputUsername.includes("@")
         ? inputUsername.split("@")[0]
         : inputUsername;
-      const rawDomain = inputUsername.includes("@")
+      const domain = inputUsername.includes("@")
         ? inputUsername.split("@")[1]
-        : null;
-      const domain = rawDomain
-        ? rawDomain.includes(":")
-          ? rawDomain
-          : rawDomain + ":1984"
         : null;
 
       try {

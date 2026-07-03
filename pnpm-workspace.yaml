@@ -1,0 +1,10 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+allowBuilds:
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+overrides:
+  "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz"
+  mtp: "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8dc8b54/mtp-0.1.0.tgz"

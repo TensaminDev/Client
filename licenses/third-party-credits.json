@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-02T17:59:19.431Z",
-  "packageCount": 141,
+  "generatedAt": "2026-07-03T19:50:00.637Z",
+  "packageCount": 143,
   "packages": [
     {
       "name": "@babel/runtime",
@@ -608,8 +608,8 @@
       "repository": "git+https://github.com/tauri-apps/tauri.git",
       "description": "Tauri API definitions",
       "files": [
-        "LICENSE_MIT",
-        "LICENSE_APACHE-2.0"
+        "LICENSE_APACHE-2.0",
+        "LICENSE_MIT"
       ],
       "licenseFolder": "licenses/@tauri-apps_api@2.11.1",
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/api"
@@ -622,8 +622,8 @@
       "repository": "git+https://github.com/tauri-apps/tauri.git",
       "description": "Command line interface for building Tauri apps",
       "files": [
-        "LICENSE_MIT",
-        "LICENSE_APACHE-2.0"
+        "LICENSE_APACHE-2.0",
+        "LICENSE_MIT"
       ],
       "licenseFolder": "licenses/@tauri-apps_cli@2.11.4",
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/cli"
@@ -1780,6 +1780,32 @@
       ],
       "licenseFolder": "licenses/vite@8.1.3",
       "sourcePackageDir": "apps/web/node_modules/vite"
+    },
+    {
+      "name": "vitest",
+      "version": "4.1.9",
+      "license": "MIT",
+      "homepage": "https://vitest.dev",
+      "repository": "git+https://github.com/vitest-dev/vitest.git",
+      "description": "Next generation testing framework powered by Vite",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/vitest@4.1.9",
+      "sourcePackageDir": "node_modules/vitest"
+    },
+    {
+      "name": "yaml",
+      "version": "2.9.0",
+      "license": "ISC",
+      "homepage": "https://eemeli.org/yaml/",
+      "repository": "github:eemeli/yaml",
+      "description": "JavaScript parser and stringifier for YAML",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/yaml@2.9.0",
+      "sourcePackageDir": "node_modules/yaml"
     },
     {
       "name": "yargs",

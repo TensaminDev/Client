@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
     "dev": "vite --port 3000 --host 0.0.0.0",
-    "test": "bun test --pass-with-no-tests",
-    "build": "bun run test && tsc -b && vite build",
+    "test": "vitest run --passWithNoTests",
+    "build": "pnpm run test && tsc -b && vite build",
     "preview": "cd dist && nix-shell -p python3 --run 'python3 -m http.server 3000' && cd .."
   },
   "dependencies": {

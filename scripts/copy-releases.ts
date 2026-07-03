@@ -2,6 +2,7 @@ import {
   copyFileSync,
   createReadStream,
   existsSync,
+  writeFileSync,
   mkdirSync,
   readdirSync,
   renameSync,
@@ -113,13 +114,15 @@ const artifacts = await Promise.all(
     }),
 );
 
-await Bun.write(
+writeFileSync(
   join(releasesDir, "electron-release-metadata.json"),
   `${JSON.stringify({ version: releaseVersion, tag: releaseTag, publishedAt: new Date().toISOString(), artifacts: artifacts.filter((artifact) => artifact.platform !== "android") }, null, 2)}\n`,
+  "utf8",
 );
-await Bun.write(
+writeFileSync(
   join(releasesDir, "SHA256SUMS"),
   `${artifacts.map((artifact) => `${artifact.sha256}  ${artifact.name}`).join("\n")}\n`,
+  "utf8",
 );
 
 console.log("Releases copied successfully.");

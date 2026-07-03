@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { x448 } from "@noble/curves/ed448.js";
 import {
   decrypt,

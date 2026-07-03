@@ -216,7 +216,7 @@
             nodejs_22
             corepack_22
             coreutils
-            bun
+            pnpm
             pkgs.electron
             pkg-config
             python3
@@ -244,11 +244,11 @@
           export npm_config_build_from_source=true
           export USE_SYSTEM_FPM=true
 
-          alias electron-install='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && bun install'
-          alias electron-build-web='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && bun run build:web'
-          alias electron-dev='bun run dev'
-          alias electron-package='bun run package:linux'
-          alias electron-validate='bun run validate'
+          alias electron-install='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm install'
+          alias electron-build-web='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm run build:web'
+          alias electron-dev='pnpm run dev'
+          alias electron-package='pnpm run package:linux'
+          alias electron-validate='pnpm run validate'
         '';
       };
 
@@ -257,8 +257,9 @@
           [
             jdk17
             gradle
-            bun
+            pnpm
             nodejs
+            corepack_22
             coreutils
             pkg-config
             git

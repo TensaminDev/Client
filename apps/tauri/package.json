@@ -21,11 +21,11 @@
     "dev:mobile:raw": "tauri android dev --host ${TAURI_DEV_HOST:-127.0.0.1}",
     "start-adb:mobile:raw": "adb devices",
     "build:mobile:raw": "tauri android build",
-    "dev:mobile": "if command -v nix >/dev/null 2>&1; then nix develop ../..#tauri --command bun dev:mobile:raw; else bun dev:mobile:raw; fi",
-    "start-adb:mobile": "if command -v nix >/dev/null 2>&1; then nix develop ../..#tauri --command bun start-adb:mobile:raw; else bun start-adb:mobile:raw; fi",
-    "build:mobile": "bun run render-version.ts && if command -v nix >/dev/null 2>&1; then nix develop ../..#tauri --command bun build:mobile:raw; else bun build:mobile:raw; fi && bun run render-version.ts --unrender",
-    "gen-icons": "tauri icon ./logo.json && bun scripts/sync-electron-icons.ts",
-    "format": "bunx prettier --write .",
+    "dev:mobile": "if command -v nix >/dev/null 2>&1; then nix develop ../..#tauri --command pnpm run dev:mobile:raw; else pnpm run dev:mobile:raw; fi",
+    "start-adb:mobile": "if command -v nix >/dev/null 2>&1; then nix develop ../..#tauri --command pnpm run start-adb:mobile:raw; else pnpm run start-adb:mobile:raw; fi",
+    "build:mobile": "node render-version.ts && if command -v nix >/dev/null 2>&1; then nix develop ../..#tauri --command pnpm run build:mobile:raw; else pnpm run build:mobile:raw; fi && node render-version.ts --unrender",
+    "gen-icons": "tauri icon ./logo.json && node scripts/sync-electron-icons.ts",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src"
   },
   "dependencies": {

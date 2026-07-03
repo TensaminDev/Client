@@ -8,10 +8,10 @@
     "./worker": "./src/worker.ts"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
-    "test": "bun test",
-    "build": "bun run test && tsc -p tsconfig.json --noEmit"
+    "test": "vitest run",
+    "build": "pnpm run test && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@noble/curves": "^2.0.1",

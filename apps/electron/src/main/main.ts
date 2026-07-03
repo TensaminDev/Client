@@ -15,6 +15,7 @@ import {
   type DesktopScreenShareAudioOutput,
   type DesktopScreenShareCapabilities,
 } from "../shared/ipc.js";
+import { initTray } from "./tray.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const verbose = process.argv.includes("--verbose");
@@ -310,6 +311,7 @@ async function start() {
   verboseLog("app ready");
   registerIpc();
   registerDisplayMediaHandler();
+  initTray();
   await createWindow();
 }
 
