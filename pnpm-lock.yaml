@@ -3747,7 +3747,7 @@ packages:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
   mtp@https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8dc8b54/mtp-0.1.0.tgz:
-    resolution: {tarball: https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8dc8b54/mtp-0.1.0.tgz}
+    resolution: {integrity: sha512-/MNGev6VRL60hg8I0+TYD0E9QqgbQPT5LCJOzEIuqKzdAMS76LbLpVzq4sA5KCrCkgHVWTUeroafXHVxFCEgUA==, tarball: https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8dc8b54/mtp-0.1.0.tgz}
     version: 0.1.0
 
   nanoid@3.3.15:
