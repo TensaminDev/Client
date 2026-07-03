@@ -10,8 +10,11 @@ import {
 } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { onResume } from "tauri-plugin-app-events-api";
-import { ConnectionState, MTPClient } from "mtp";
-import type { z } from "zod";
+import { ConnectionState, MTPClient, codec } from "mtp";
+import { type z } from "zod";
+import createAsyncQueue, {
+  createQueuedFunc,
+} from "@tensamin/shared/asyncQueue";
 
 import {
   type Calls,
@@ -20,9 +23,8 @@ import {
   mtp as schemas,
   type MTP as Schemas,
 } from "@tensamin/shared/data";
-import { log } from "@tensamin/shared/log";
+import { log, toast } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
-import { ErrorScreen, LoadingScreen as Loading } from "@tensamin/ui";
 
 import {
   PING_INTERVAL,
@@ -91,6 +93,8 @@ type ContextType = {
   freshContacts: Contacts;
   freshCommunities: Communities;
   freshCalls: Calls;
+  contextReady: boolean;
+  loadingDescription: string;
 };
 
 const MTPContext = createContext<ContextType | undefined>(undefined);
@@ -160,9 +164,6 @@ export function Provider(props: {
 
   const [ownPing, setOwnPing] = useState<number>(0);
   const [iotaPing, setIotaPing] = useState<number>(0);
-
-  const [error, setError] = useState("");
-  const [errorDescription, setErrorDescription] = useState("");
 
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
@@ -234,9 +235,10 @@ export function Provider(props: {
     return subscribe("error_no_iota", () => {
       setIdentified(false);
       setIdentifying(false);
-      setError("We couldn't reach your Iota");
-      setErrorDescription(
-        "You could try to restart your Iota, check for updates or check your network connection.",
+      toast(
+        "error",
+        "We couldn't reach your Iota",
+        "Check your network connection and try restarting your Iota",
       );
     });
   }, [connected, subscribe]);
@@ -303,9 +305,10 @@ export function Provider(props: {
       if (disposed || reconnectScheduled) return;
 
       if (attempts >= RECONNECT_TRIES) {
-        setError("Connection Failed");
-        setErrorDescription(
-          "Unable to connect to the server after multiple attempts. Please check your internet connection or try again later.",
+        toast(
+          "error",
+          "Connection Failed",
+          "Unable to connect to the Omikron after multiple attempts. Cehck your network connection.",
         );
         log(0, "mtp", "red", "Reconnection attempts exhausted", reason);
         return;
@@ -321,15 +324,16 @@ export function Provider(props: {
     };
 
     async function connect() {
-      if (disposed || props.blockConnection) {
-        return;
-      }
+      if (disposed || props.blockConnection) return;
 
       try {
         setIdentified(false);
         setIdentifying(false);
 
         await MTPClient.init();
+        const rawOmikronData = await fetch(mtpUrl ?? "").then((res) =>
+          codec.decode(res.arrayBuffer()),
+        );
         const client = await MTPClient.create({
           url: mtpUrl ?? "",
           descriptor: "client",
@@ -383,8 +387,6 @@ export function Provider(props: {
         scheduleReconnectReset();
         setReadyState(client.state);
         setIdentifying(true);
-        setError("");
-        setErrorDescription("");
 
         await client.auth();
         const finalResponse = await authPayload;
@@ -427,9 +429,6 @@ export function Provider(props: {
       clearReconnectResetTimer();
       attempts = 0;
       reconnectScheduled = false;
-      setError("");
-      setErrorDescription("");
-
       await connect();
     }
 
@@ -459,53 +458,39 @@ export function Provider(props: {
     };
   }, [mtpUrl, props.blockConnection]);
 
-  // Loading bar
-  const progress = useMemo(() => {
-    if (!mtpUrl) return 10;
-    if (readyState === ConnectionState.Connecting) return 30;
-    if (!connected) return 45;
-    if (identifying) return 75;
-    if (!identified) return 90;
-    return 100;
-  }, [connected, identified, identifying, readyState, mtpUrl]);
-
-  const loadingTitle = useMemo(() => {
-    if (!mtpUrl) return "Looking up configuration";
-    if (readyState === ConnectionState.Connecting || !connected)
-      return "Connecting to Tensamin";
-    if (identifying || !identified) return "Identifying secure session";
-    return "Loading";
-  }, [connected, identified, identifying, readyState, mtpUrl]);
-
+  // Async queue
   const loadingDescription = useMemo(() => {
     if (!mtpUrl) return "Loading connection details";
     if (readyState === ConnectionState.Connecting || !connected) {
       return "Establishing transport channel";
     }
     if (identifying || !identified) return "Waiting for authenticated session";
-    return undefined;
+    return "Loading...";
   }, [connected, identified, identifying, readyState, mtpUrl]);
-
-  // Return
-  if (error !== "" && errorDescription !== "") {
-    return <ErrorScreen error={error} description={errorDescription} />;
-  }
-
-  if (!connected || !identified || !mtpUrl) {
-    return (
-      <Loading
-        progress={progress}
-        title={loadingTitle}
-        description={loadingDescription}
-        fullscreen
-      />
-    );
-  }
+  const contextReady = connected && identified && mtpUrl !== null;
+  const mtpRef = useMemo(
+    () =>
+      createAsyncQueue<{
+        send: typeof send;
+        subscribe: typeof subscribe;
+        subscribePush: typeof subscribePush;
+      }>(),
+    [],
+  );
+  useEffect(() => {
+    if (connected && identified && mtpUrl) {
+      mtpRef.set({
+        send,
+        subscribe,
+        subscribePush,
+      });
+    }
+  }, [connected, identified, mtpUrl, send, subscribe, subscribePush, mtpRef]);
 
   return (
     <MTPContext.Provider
       value={{
-        send,
+        send: createQueuedFunc(() => (contextReady ? send : null)),
         subscribe,
         subscribePush,
         readyState,
@@ -515,6 +500,8 @@ export function Provider(props: {
         freshContacts,
         freshCommunities,
         freshCalls,
+        contextReady,
+        loadingDescription,
       }}
     >
       {props.children}

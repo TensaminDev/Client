@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
+    "./asyncQueue": "./src/asyncQueue.ts",
     "./code": "./src/code.ts",
     "./data": "./src/data.ts",
     "./desktopMedia": "./src/desktopMedia.tsx",

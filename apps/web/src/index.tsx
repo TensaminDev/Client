@@ -25,13 +25,13 @@ import CallPopout from "@tensamin/call/popout";
 import ChatContext from "@tensamin/chat/context";
 import { useInitializeCall } from "@tensamin/call/store";
 import { Provider as MTPProvider } from "@tensamin/mtp";
-import UserContext from "@tensamin/user/context";
+import UserProvider from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
-import { ThemeProvider, useTheme } from "@tensamin/ui";
+import { ErrorScreen, ThemeProvider, useTheme } from "@tensamin/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -256,7 +256,7 @@ function AppShell() {
   return (
     <MTPProvider>
       <Session>
-        <UserContext>
+        <UserProvider>
           <CallInit />
           <CallPopout />
           <TAuthWrapper>
@@ -268,7 +268,7 @@ function AppShell() {
               </ChatContext>
             </AppLayout>
           </TAuthWrapper>
-        </UserContext>
+        </UserProvider>
       </Session>
     </MTPProvider>
   );
@@ -281,6 +281,12 @@ function CallInit() {
 
 const rootRoute = createRootRoute({
   component: RootShell,
+  errorComponent: ({ error }: { error: Error }) => (
+    <ErrorScreen
+      description={error.message}
+      error={"Error in TanStack Router: " + error.name}
+    />
+  ),
 });
 
 const appRoute = createRoute({
