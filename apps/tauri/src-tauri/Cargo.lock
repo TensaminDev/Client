@@ -3739,7 +3739,7 @@ dependencies = [
  "serde_repr",
  "serialize-to-javascript",
  "swift-rs",
- "tauri-build 2.6.3 (git+https://github.com/tauri-apps/tauri?branch=feat%2Fcef)",
+ "tauri-build",
  "tauri-macros",
  "tauri-runtime",
  "tauri-runtime-wry",
@@ -3752,27 +3752,6 @@ dependencies = [
  "webview2-com",
  "window-vibrancy",
  "windows",
-]
-
-[[package]]
-name = "tauri-build"
-version = "2.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc9ce40b16101cb6ea63d3e221567affd1c3a9205f95d7bc574941a10636b632"
-dependencies = [
- "anyhow",
- "cargo_toml",
- "dirs",
- "glob",
- "heck 0.5.0",
- "json-patch",
- "schemars 0.8.22",
- "semver",
- "serde",
- "serde_json",
- "tauri-utils 2.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "tauri-winres",
- "walkdir",
 ]
 
 [[package]]
@@ -4041,7 +4020,6 @@ dependencies = [
  "url",
  "urlpattern",
  "uuid",
- "walkdir",
 ]
 
 [[package]]
@@ -4133,7 +4111,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tauri",
- "tauri-build 2.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tauri-build",
  "tauri-plugin-app-events",
  "tauri-plugin-barcode-scanner",
  "tauri-plugin-deep-link",
