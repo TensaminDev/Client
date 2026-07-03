@@ -2042,7 +2042,7 @@ packages:
     resolution: {integrity: sha512-Zw+ZH18RJb41G4NrfHgIuofJiymusqN+q8fGUIIV7vyCH+5sSn5coqRv/MWB9qETsUs97vmU045q7OyseCV3Qg==}
 
   '@tensamin/ui@https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz':
-    resolution: {tarball: https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz}
+    resolution: {integrity: sha512-tOvNNwGWnj/LJCXHIUtN+uZG2VoRUGZXuVAoHP18OypgsmlSbx2iQNhkLF1t1qnIboVf5V5mvraVGLXtz4csgQ==, tarball: https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz}
     version: 0.0.39
     peerDependencies:
       react: ^19.2.7
