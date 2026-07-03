@@ -9,7 +9,7 @@ import {
   statSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import packageJson from "../package.json" with { type: "json" };
 
 const { version } = packageJson;
@@ -57,6 +57,18 @@ if (existsSync(apkSrc)) {
 
 // Electron desktop artifacts
 const electronReleaseDir = "apps/electron/release";
+const electronArtifactPattern = /\.(AppImage|deb|rpm|exe|dmg|zip)$/i;
+
+function readFilesRecursive(dir: string): string[] {
+  return readdirSync(dir).flatMap((file) => {
+    const filePath = join(dir, file);
+    const stat = statSync(filePath);
+
+    if (stat.isDirectory()) return readFilesRecursive(filePath);
+    if (stat.isFile()) return [filePath];
+    return [];
+  });
+}
 
 const copyElectronArtifacts = () => {
   if (!existsSync(electronReleaseDir)) {
@@ -66,12 +78,9 @@ const copyElectronArtifacts = () => {
     return;
   }
 
-  for (const file of readdirSync(electronReleaseDir)) {
-    if (file.endsWith(".blockmap") || file.endsWith(".yml")) continue;
-    if (!file.includes(version) && !file.includes(releaseVersion)) continue;
-
-    const source = join(electronReleaseDir, file);
-    if (!statSync(source).isFile()) continue;
+  for (const source of readFilesRecursive(electronReleaseDir)) {
+    const file = basename(source);
+    if (!electronArtifactPattern.test(file)) continue;
 
     copyFileSync(source, join(releasesDir, file));
   }
