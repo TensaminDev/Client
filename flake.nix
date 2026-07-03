@@ -233,6 +233,7 @@
             fakeroot
             rsync
             xz
+            p7zip
           ]
           ++ electronRuntimeLibs ++ commonDeps;
 

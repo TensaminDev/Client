@@ -155,7 +155,15 @@ jobs:
           EOF
 
       - name: Build Electron desktop
-        run: nix develop .#electron --command pnpm run build:desktop
+        run: |
+          nix develop .#electron --command bash <<'EOF'
+          set -euo pipefail
+          SEVEN_ZIP_DIR="$(mktemp -d)"
+          mkdir -p "$SEVEN_ZIP_DIR/bin"
+          ln -s "$(command -v 7za)" "$SEVEN_ZIP_DIR/bin/7za"
+          cd apps/electron
+          pnpm run package:raw -- -c.toolsets.sevenZip.url="file://$SEVEN_ZIP_DIR"
+          EOF
 
       - name: Upload desktop artifacts
         uses: https://data.forgejo.org/actions/upload-artifact@v3
