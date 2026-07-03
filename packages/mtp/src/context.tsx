@@ -10,7 +10,7 @@ import {
 } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { onResume } from "tauri-plugin-app-events-api";
-import { MTPClient } from "mtp";
+import { ConnectionState, MTPClient } from "mtp";
 import type { z } from "zod";
 
 import {
@@ -30,12 +30,6 @@ import {
   RECONNECT_TRIES,
   RETRY_INTERVAL,
 } from "./values";
-
-const READY_STATE = {
-  CLOSED: 0,
-  CONNECTING: 1,
-  OPEN: 2,
-} as const;
 
 const PUSH_TYPES = [
   "message_live",
@@ -153,6 +147,7 @@ function mapDataKeys(value: unknown, mapKey: (key: string) => string): unknown {
   );
 }
 
+// Zod schema validation
 function validateResponse<T extends keyof Schemas & string>(
   type: T,
   message: { id?: number; type: string; data: unknown },
@@ -189,8 +184,9 @@ export function Provider(props: {
 }) {
   const { load } = useStorage();
 
-  const [readyState, setReadyState] = useState<number>(READY_STATE.CLOSED);
-  const [connected, setConnected] = useState<boolean>(false);
+  const [readyState, setReadyState] = useState<number>(
+    ConnectionState.Disconnected,
+  );
   const [identified, setIdentified] = useState<boolean>(false);
   const [identifying, setIdentifying] = useState<boolean>(false);
 
@@ -208,11 +204,15 @@ export function Provider(props: {
     null,
   );
 
+  const connected = readyState === ConnectionState.Connected;
+
+  // MTP url
   const [mtpUrl, setMtpUrl] = useState<string | null>(null);
   useEffect(() => {
     load("mtp_url").then(setMtpUrl);
   }, [load]);
 
+  // Validation override functions
   const send: BoundSendFn = useMemo(
     () => async (type, data, options) => {
       const client = clientRef.current;
@@ -259,6 +259,7 @@ export function Provider(props: {
     };
   }, []);
 
+  // No Iota check
   useEffect(() => {
     if (!connected) return;
 
@@ -272,6 +273,7 @@ export function Provider(props: {
     });
   }, [connected, subscribe]);
 
+  // Custom Pings
   useEffect(() => {
     if (!connected || !identified) {
       return;
@@ -297,11 +299,9 @@ export function Provider(props: {
     };
   }, [connected, identified, send]);
 
+  // Reconnect stuff
   useEffect(() => {
-    if (!mtpUrl) {
-      return;
-    }
-    const url = mtpUrl;
+    if (!mtpUrl) return;
 
     let attempts = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -358,17 +358,28 @@ export function Provider(props: {
       }
 
       try {
-        setReadyState(READY_STATE.CONNECTING);
-        setConnected(false);
         setIdentified(false);
         setIdentifying(false);
 
         await MTPClient.init();
         const client = await MTPClient.create({
-          url,
+          url: mtpUrl ?? "",
+          descriptor: "client",
           pings: true,
           logger: (event) => {
-            log(2, "mtp", event.type === "state" ? "cyan" : "blue", event.type === "state" ? event.data : event.type, event);
+            if (event.type === "state") {
+              setReadyState(
+                clientRef.current?.state ?? ConnectionState.Disconnected,
+              );
+            }
+
+            log(
+              2,
+              "mtp",
+              event.type === "state" ? "cyan" : "blue",
+              event.type === "state" ? event.data : event.type,
+              event,
+            );
           },
         });
 
@@ -378,6 +389,7 @@ export function Provider(props: {
         }
 
         clientRef.current = client;
+        setReadyState(client.state);
         await client.connect();
 
         if (disposed) {
@@ -401,8 +413,7 @@ export function Provider(props: {
 
         clearReconnectTimer();
         scheduleReconnectReset();
-        setReadyState(READY_STATE.OPEN);
-        setConnected(true);
+        setReadyState(client.state);
         setIdentifying(true);
         setError("");
         setErrorDescription("");
@@ -425,8 +436,7 @@ export function Provider(props: {
         clientRef.current?.disconnect();
         clientRef.current = null;
         clearReconnectResetTimer();
-        setReadyState(READY_STATE.CLOSED);
-        setConnected(false);
+        setReadyState(ConnectionState.Disconnected);
         setIdentified(false);
         setIdentifying(false);
         log(
@@ -475,16 +485,16 @@ export function Provider(props: {
 
       clientRef.current?.disconnect();
       clientRef.current = null;
-      setReadyState(READY_STATE.CLOSED);
-      setConnected(false);
+      setReadyState(ConnectionState.Disconnected);
       setIdentified(false);
       setIdentifying(false);
     };
   }, [mtpUrl, props.blockConnection]);
 
+  // Loading bar
   const progress = useMemo(() => {
     if (!mtpUrl) return 10;
-    if (readyState === READY_STATE.CONNECTING) return 30;
+    if (readyState === ConnectionState.Connecting) return 30;
     if (!connected) return 45;
     if (identifying) return 75;
     if (!identified) return 90;
@@ -493,7 +503,7 @@ export function Provider(props: {
 
   const loadingTitle = useMemo(() => {
     if (!mtpUrl) return "Looking up configuration";
-    if (readyState === READY_STATE.CONNECTING || !connected)
+    if (readyState === ConnectionState.Connecting || !connected)
       return "Connecting to Tensamin";
     if (identifying || !identified) return "Identifying secure session";
     return "Loading";
@@ -501,13 +511,14 @@ export function Provider(props: {
 
   const loadingDescription = useMemo(() => {
     if (!mtpUrl) return "Loading connection details";
-    if (readyState === READY_STATE.CONNECTING || !connected) {
+    if (readyState === ConnectionState.Connecting || !connected) {
       return "Establishing transport channel";
     }
     if (identifying || !identified) return "Waiting for authenticated session";
     return undefined;
   }, [connected, identified, identifying, readyState, mtpUrl]);
 
+  // Return
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;
   }

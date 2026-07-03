@@ -1,1 +1,2 @@
 - Move legal to extra onboarding package
+- Add a bunch of tests

@@ -206,7 +206,7 @@
         ];
       };
 
-      commonDeps = [pkgs.wasm-pack pkgs.lld];
+      commonDeps = [rustToolchain pkgs.wasm-pack pkgs.lld];
     in rec {
       default = electron;
 
@@ -256,7 +256,6 @@
         buildInputs = with pkgs;
           [
             jdk17
-            rustToolchain
             gradle
             bun
             nodejs

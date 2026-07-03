@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@tensamin/ui";
-import { useLocation } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
@@ -25,27 +25,39 @@ export default function Wrapper({ children }: { children: ReactNode }) {
   const { send } = useMTP();
   const { getSharedSecret } = useCrypto();
   const { searchStr } = useLocation();
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [identifier, setIdentifier] = useState<string | null>(null);
   const [redirect, setRedirect] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<string | null>(null);
+  const [appPublicKey, setAppPublicKey] = useState<string | null>(null);
   const [allowChildern, setAllowChildern] = useState(false);
 
   const { deeplinks } = useDeeplinks();
 
   const authorizeApp = async () => {
-    if (!identifier || !redirect || !challenge) return;
+    if (!identifier || !redirect || !challenge || !appPublicKey) return;
 
     try {
       // Get Data
       const user = await get(await load("user_id"));
       const {
-        data: { content: appPublicKey },
+        data: { content: appPublicKeyHash },
       } = await send("load_txt_record", {
         path: "tauth." + identifier,
       });
+
+      const verifiedAppPublicKeyHash = await sha256Hex(appPublicKey);
+      if (normalizeHash(appPublicKeyHash) !== verifiedAppPublicKeyHash) {
+        log(1, "tauth", "red", "App public key hash mismatch", undefined, {
+          appPublicKey,
+          appPublicKeyHash,
+          verifiedAppPublicKeyHash,
+        });
+        throw new Error("App public key hash mismatch");
+      }
 
       // Get Shared Secret
       const sharedSecret = await getSharedSecret(
@@ -75,7 +87,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
       finalUrl.searchParams.set("challenge", solvedChallenge);
       finalUrl.searchParams.set("originalChallenge", challenge);
 
-      const session = Date.now();
+      const session = new Date().getTime();
       finalUrl.searchParams.set("sessionId", String(session));
 
       // Save Session
@@ -92,11 +104,14 @@ export default function Wrapper({ children }: { children: ReactNode }) {
         setIdentifier(null);
         setRedirect(null);
         setChallenge(null);
+        setAppPublicKey(null);
 
         toast("success", "App authorized successfully");
         return;
       } else {
-        window.location.href = finalUrl.toString();
+        navigate({
+          to: finalUrl.toString(),
+        });
         return;
       }
     } catch (err) {
@@ -108,8 +123,26 @@ export default function Wrapper({ children }: { children: ReactNode }) {
       setIdentifier(null);
       setRedirect(null);
       setChallenge(null);
+      setAppPublicKey(null);
     }
   };
+
+  async function sha256Hex(value: string): Promise<string> {
+    const hash = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(value),
+    );
+    return [...new Uint8Array(hash)]
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  function normalizeHash(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/^sha256[:=]/, "");
+  }
 
   function hexToBase64(hex: string): string {
     const bytes = hex.match(/.{2}/g)?.map((byte) => parseInt(byte, 16)) ?? [];
@@ -122,6 +155,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
     const identifier = params.get("identifier");
     const redirect = params.get("redirect");
     const challenge = params.get("challenge");
+    const appPublicKey = params.get("public_key");
     if (!identifier || !redirect) {
       setAllowChildern(true);
       return;
@@ -135,10 +169,18 @@ export default function Wrapper({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (!appPublicKey) {
+        toast("error", "Missing app public key");
+        log(1, "tauth", "red", "Missing app public key");
+        setAllowChildern(true);
+        return;
+      }
+
       setAllowChildern(true);
       setIdentifier(identifier);
       setRedirect(redirect);
       setChallenge(hexToBase64(challenge || ""));
+      setAppPublicKey(appPublicKey);
       setDialogOpen(true);
     });
   }, [searchStr, load]);
@@ -149,11 +191,13 @@ export default function Wrapper({ children }: { children: ReactNode }) {
         const url = new URL(link);
         const identifier = url.searchParams.get("identifier");
         const redirect = url.searchParams.get("redirect");
+        const appPublicKey = url.searchParams.get("public_key");
 
-        if (identifier && redirect) {
+        if (identifier && redirect && appPublicKey) {
           setIdentifier(identifier);
           setRedirect(redirect);
           setChallenge(hexToBase64(url.searchParams.get("challenge") || ""));
+          setAppPublicKey(appPublicKey);
           setDialogOpen(true);
         }
       }
@@ -170,6 +214,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
             setIdentifier(null);
             setRedirect(null);
             setChallenge(null);
+            setAppPublicKey(null);
           }
         }}
       >
@@ -205,6 +250,7 @@ export default function Wrapper({ children }: { children: ReactNode }) {
                 setIdentifier(null);
                 setRedirect(null);
                 setChallenge(null);
+                setAppPublicKey(null);
               }}
             >
               Deny
