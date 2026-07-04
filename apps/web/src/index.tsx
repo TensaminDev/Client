@@ -284,7 +284,7 @@ const rootRoute = createRootRoute({
   errorComponent: ({ error }: { error: Error }) => (
     <ErrorScreen
       description={error.message}
-      error={"Error in TanStack Router: " + error.name}
+      error={"Unknown Error: " + error.name}
     />
   ),
 });

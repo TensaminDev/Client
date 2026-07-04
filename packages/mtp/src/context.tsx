@@ -10,11 +10,14 @@ import {
 } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { onResume } from "tauri-plugin-app-events-api";
-import { ConnectionState, MTPClient, codec } from "mtp";
+import { MTPClient } from "mtp";
 import { type z } from "zod";
+import { ConnectionState } from "./values";
 import createAsyncQueue, {
   createQueuedFunc,
 } from "@tensamin/shared/asyncQueue";
+import { toast as sonnerToast } from "@tensamin/ui";
+import { Loader2 } from "lucide-react";
 
 import {
   type Calls,
@@ -23,7 +26,7 @@ import {
   mtp as schemas,
   type MTP as Schemas,
 } from "@tensamin/shared/data";
-import { log, toast } from "@tensamin/shared/log";
+import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 
 import {
@@ -32,6 +35,17 @@ import {
   RECONNECT_TRIES,
   RETRY_INTERVAL,
 } from "./values";
+
+function base64ToUint8Array(b64: string) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+
+  for (let i = 0; i < bin.length; i++) {
+    out[i] = bin.charCodeAt(i);
+  }
+
+  return out;
+}
 
 const PUSH_TYPES = [
   "message_live",
@@ -235,11 +249,13 @@ export function Provider(props: {
     return subscribe("error_no_iota", () => {
       setIdentified(false);
       setIdentifying(false);
-      toast(
-        "error",
-        "We couldn't reach your Iota",
-        "Check your network connection and try restarting your Iota",
-      );
+      sonnerToast.error("We couldn't reach your Iota", {
+        description:
+          "Check your network connection and try restarting your Iota",
+        icon: null,
+        duration: Infinity,
+        closeButton: true,
+      });
     });
   }, [connected, subscribe]);
 
@@ -293,39 +309,37 @@ export function Provider(props: {
       reconnectResetTimer = null;
     };
 
-    const scheduleReconnectReset = () => {
-      clearReconnectResetTimer();
-      reconnectResetTimer = setTimeout(() => {
-        attempts = 0;
-        reconnectResetTimer = null;
-      }, RECONNECT_RESET * 1_000);
-    };
+    let resolveConnection: (() => void) | null = null;
 
-    const scheduleReconnect = (reason?: unknown) => {
-      if (disposed || reconnectScheduled) return;
-
-      if (attempts >= RECONNECT_TRIES) {
-        toast(
-          "error",
-          "Connection Failed",
-          "Unable to connect to the Omikron after multiple attempts. Cehck your network connection.",
-        );
-        log(0, "mtp", "red", "Reconnection attempts exhausted", reason);
-        return;
-      }
-
-      attempts += 1;
-      reconnectScheduled = true;
-      reconnectTimer = setTimeout(() => {
-        reconnectScheduled = false;
-        reconnectTimer = null;
-        void connect();
-      }, RETRY_INTERVAL);
-    };
+    if (!props.blockConnection) {
+      sonnerToast.promise(
+        new Promise<void>((resolve) => {
+          resolveConnection = resolve;
+        }),
+        {
+          id: "mtp-connection-toast",
+          loading: "Connecting to server...",
+          icon: (
+            <div className="animate-spin aspect-square m-0! flex justify-center items-center">
+              <Loader2 size={16} className="aspect-square m-0!" />
+            </div>
+          ),
+          duration: Infinity,
+        },
+      );
+    }
 
     async function connect() {
       if (disposed || props.blockConnection) return;
 
+      const cleanup = () => {
+        clientRef.current?.disconnect();
+        clientRef.current = null;
+        clearReconnectResetTimer();
+        setReadyState(ConnectionState.Disconnected);
+        setIdentified(false);
+        setIdentifying(false);
+      };
       try {
         setIdentified(false);
         setIdentifying(false);
@@ -333,16 +347,60 @@ export function Provider(props: {
         await MTPClient.init();
 
         log(2, "mtp", "purple", "Fetching Omikron data.");
-        const omikronData = await fetch(
+        const data = await fetch(
           `${mtpUrl}api/get/omikron/${await load("user_id")}`,
-        ).then(async (res) =>
-          codec.decode(new Uint8Array(await res.arrayBuffer())),
         );
 
-        console.log(omikronData);
+        if (data.status === 404) {
+          sonnerToast.error("We couldn't reach your Iota", {
+            description:
+              "Check your network connection and try restarting your Iota",
+            icon: null,
+            duration: Infinity,
+            closeButton: true,
+          });
+          resolveConnection?.();
+          cleanup();
+          return;
+        }
+
+        const omikronData = (await data.json()) as {
+          id: number;
+          ip_address: string;
+          port: number;
+          public_key: string;
+          status: string;
+        };
+        //codec.decode(new Uint8Array(await res.arrayBuffer())),
+
+        if (
+          !omikronData.ip_address ||
+          !omikronData.port ||
+          !omikronData.public_key
+        )
+          throw new Error("Invalid Omikron data");
+
+        const url = `https://${omikronData.ip_address}:${omikronData.port}`;
+
+        log(2, "mtp", "green", "Connecting to: " + url);
 
         const client = await MTPClient.create({
-          url: mtpUrl ?? "",
+          url,
+          storage: {
+            getItem: (key) => {
+              console.log(key);
+              return key;
+            },
+            removeItem: (key) => {
+              console.log(key);
+            },
+            setItem: console.log,
+          },
+          credentials: {
+            clientId: await load("user_id"),
+            keyring: base64ToUint8Array(await load("private_key")),
+          },
+          hostPublicKey: omikronData.public_key,
           descriptor: "client",
           pings: true,
           logger: (event) => {
@@ -352,13 +410,15 @@ export function Provider(props: {
               );
             }
 
-            log(
-              2,
-              "mtp",
-              event.type === "state" ? "cyan" : "blue",
-              event.type === "state" ? event.data : event.type,
-              event,
-            );
+            if (event.type !== "Pong") {
+              log(
+                2,
+                "mtp",
+                event.type === "state" ? "cyan" : "blue",
+                event.type === "state" ? event.data : event.type,
+                event,
+              );
+            }
           },
         });
 
@@ -391,7 +451,14 @@ export function Provider(props: {
         );
 
         clearReconnectTimer();
-        scheduleReconnectReset();
+
+        // Schedule reconnect reset
+        clearReconnectResetTimer();
+        reconnectResetTimer = setTimeout(() => {
+          attempts = 0;
+          reconnectResetTimer = null;
+        }, RECONNECT_RESET * 1_000);
+
         setReadyState(client.state);
         setIdentifying(true);
 
@@ -405,15 +472,10 @@ export function Provider(props: {
         setFreshCalls(finalResponse.data.calls);
         setIdentifying(false);
         setIdentified(true);
+        resolveConnection?.();
       } catch (connectError) {
         if (disposed) return;
-
-        clientRef.current?.disconnect();
-        clientRef.current = null;
-        clearReconnectResetTimer();
-        setReadyState(ConnectionState.Disconnected);
-        setIdentified(false);
-        setIdentifying(false);
+        cleanup();
         log(
           0,
           "mtp",
@@ -421,7 +483,39 @@ export function Provider(props: {
           "Connection/authentication attempt failed",
           getProtocolErrorDetails(connectError) ?? connectError,
         );
-        scheduleReconnect(connectError);
+
+        // Schedule reconnect
+        if (disposed || reconnectScheduled) return;
+        if (attempts >= RECONNECT_TRIES) {
+          log(0, "mtp", "red", "Reconnection attempts exhausted", connectError);
+          sonnerToast.error("Connection failed", {
+            id: "mtp-connection-toast",
+            description:
+              connectError instanceof Error
+                ? connectError.message
+                : String(connectError ?? "Unknown error"),
+            icon: null,
+            duration: Infinity,
+            closeButton: true,
+            promise: null,
+          } as unknown as Parameters<typeof sonnerToast.error>[1]);
+          return;
+        }
+
+        attempts += 1;
+
+        // Show loading toast
+        sonnerToast.loading(
+          `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
+          { id: "mtp-connection-toast" },
+        );
+
+        reconnectScheduled = true;
+        reconnectTimer = setTimeout(() => {
+          reconnectScheduled = false;
+          reconnectTimer = null;
+          void connect();
+        }, RETRY_INTERVAL);
       }
     }
 
@@ -460,6 +554,7 @@ export function Provider(props: {
       setReadyState(ConnectionState.Disconnected);
       setIdentified(false);
       setIdentifying(false);
+      sonnerToast.dismiss("mtp-connection-toast");
     };
   }, [mtpUrl, props.blockConnection, load]);
 

@@ -228,7 +228,6 @@
             dpkg
             rpm
             fpm
-            sudo
             curl
             fakeroot
             rsync

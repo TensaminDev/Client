@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^25.6.0",
+    "@types/node": "^26.1.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/parser": "^8.59.1",
@@ -44,10 +44,6 @@
     "typescript-eslint": "^8.59.1",
     "vitest": "^4.0.8",
     "yaml": "^2.8.2"
-  },
-  "overrides": {
-    "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/latest/tensamin-ui.tgz",
-    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-8dc8b54/mtp-0.1.0.tgz"
   },
   "dependencies": {
     "@tensamin/ui": "*",
