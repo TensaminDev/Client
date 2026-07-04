@@ -21,5 +21,5 @@ export function initTray() {
 
   tray.on("click", (event) => {
     console.log(event);
-  })
+  });
 }

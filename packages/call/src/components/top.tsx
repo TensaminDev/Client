@@ -75,9 +75,9 @@ export default function TopBar() {
               <TooltipTrigger
                 render={
                   <Avatar className="size-7">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={user.Avatar} />
                     <AvatarFallback className="text-xs">
-                      {user.display.slice(0, 2).toUpperCase()}
+                      {user.Display.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 }
@@ -86,7 +86,7 @@ export default function TopBar() {
                 side="bottom"
                 portalProps={{ container: portalContainer }}
               >
-                {user.display}
+                {user.Display}
               </TooltipContent>
             </Tooltip>
           </div>

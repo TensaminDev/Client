@@ -145,7 +145,7 @@ function Overlay({
         </TransparentButton>
       )}
       <TransparentButton>
-        <p className="text-sm">{user.display}</p>
+        <p className="text-sm">{user.Display}</p>
       </TransparentButton>
     </div>
   );
@@ -209,14 +209,14 @@ export default function Base({
   }, [participant, get]);
 
   useEffect(() => {
-    if (type !== "user" || !user?.avatar) {
+    if (type !== "user" || !user?.Avatar) {
       setAvatarBackgroundColor(undefined);
       return;
     }
 
     let active = true;
 
-    void getAverageImageColor(user.avatar).then((color) => {
+    void getAverageImageColor(user.Avatar).then((color) => {
       if (active) {
         setAvatarBackgroundColor(color);
       }
@@ -225,7 +225,7 @@ export default function Base({
     return () => {
       active = false;
     };
-  }, [type, user?.avatar]);
+  }, [type, user?.Avatar]);
 
   // Avatar calc
   const currentCard = useRef<HTMLDivElement>(null);
@@ -342,13 +342,13 @@ export default function Base({
                     height: "32cqh",
                   }}
                 >
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={user.Avatar} />
                   <AvatarFallback
                     style={{
                       fontSize: "11cqh",
                     }}
                   >
-                    {user.display.slice(0, 2).toUpperCase()}
+                    {user.Display.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               )}

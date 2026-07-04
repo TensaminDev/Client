@@ -19,13 +19,13 @@ export function Basic({
   extra?: React.ReactNode;
 }) {
   return (
-    <Card className="animate-in fade-in duration-300 rounded-xl py-0 m-px">
+    <Card className="animate-in fade-in duration-300 rounded-xl py-0 h-12.5!">
       <CardHeader className="flex flex-row gap-2.5 items-center justify-start p-2">
         <div className="relative shrink-0 overflow-visible">
           <Avatar>
-            <AvatarImage src={user.avatar} />
+            <AvatarImage src={user.Avatar} />
             <AvatarFallback>
-              {user.display.slice(0, 2).toUpperCase()}
+              {user.Display.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <Tooltip>
@@ -49,7 +49,7 @@ export function Basic({
           </Tooltip>
         </div>
         <div className="flex flex-col gap-1 w-full items-start justify-center text-[15px]">
-          <p>{user.display}</p>
+          <p>{user.Display}</p>
         </div>
         <div className="pr-1">{extra}</div>
       </CardHeader>
@@ -58,5 +58,5 @@ export function Basic({
 }
 
 export function Loading() {
-  return <Skeleton className="h-12.5 rounded-2xl" />;
+  return <Skeleton className="h-12.5! rounded-2xl" />;
 }

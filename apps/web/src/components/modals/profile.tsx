@@ -30,7 +30,7 @@ export default function Profile({ user }: { user: User }) {
     void (async () => {
       try {
         const ownId = await load("user_id");
-        const privateKey = await load("private_key");
+        const privateKey = await load("mtp_keyring");
         const ownData = await get(ownId);
         const secret = await getSharedSecret(
           privateKey,
@@ -61,17 +61,17 @@ export default function Profile({ user }: { user: User }) {
     <div className="flex flex-col gap-2">
       <div className="flex gap-2  items-center">
         <Avatar className="size-10">
-          <AvatarImage src={user.avatar} />
+          <AvatarImage src={user.Avatar} />
           <AvatarFallback className="text-lg">
-            {user.display.slice(0, 2).toUpperCase()}
+            {user.Display.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-col">
-          <p className="text-lg font-semibold">{user.display}</p>
-          <p className="text-muted-foreground">{user.username}</p>
+          <p className="text-lg font-semibold">{user.Display}</p>
+          <p className="text-muted-foreground">{user.Username}</p>
         </div>
       </div>
-      <Text value={user.about || ""} />
+      <Text value={user.About || ""} />
       <Button
         className="h-auto justify-start gap-1.5 px-0 py-1 text-base font-medium text-white no-underline hover:no-underline"
         variant="link"

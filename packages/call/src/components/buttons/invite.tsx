@@ -78,7 +78,7 @@ export default function InviteButton({
                     });
                   }}
                 >
-                  {user.display}
+                  {user.Display}
                 </Button>
               )}
             />

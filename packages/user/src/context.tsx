@@ -4,7 +4,7 @@ import { useMTP } from "@tensamin/mtp";
 import { mtp as schemas } from "@tensamin/shared/data";
 import type z from "zod";
 
-export type User = z.infer<typeof schemas.get_user_data.response>;
+export type User = z.infer<typeof schemas.GetUserData.response>;
 
 interface contextValue {
   get(userId: number): Promise<User>;
@@ -47,11 +47,11 @@ export default function UserProvider(props: { children: React.ReactNode }) {
       }
 
       const request = (async () => {
-        const userData = await send("get_user_data", { UserId: userId });
+        const userData = await send("GetUserData", { UserId: userId });
         const user = {
           ...userData.data,
-          avatar: userData.data.avatar
-            ? `data:image/webp;base64,${atob(userData.data.avatar)}`
+          avatar: userData.data.Avatar
+            ? `data:image/webp;base64,${atob(userData.data.Avatar)}`
             : undefined,
         };
 

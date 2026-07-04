@@ -50,17 +50,15 @@ function updateMessageStateBySendTime<
   };
 }
 
-/**
- * Executes Provider.
- * @param props Parameter props.
- * @returns unknown.
- */
-export default function Provider(props: { children: ReactNode }) {
+export default function Provider({ children }: { children: ReactNode }) {
   const { getSharedSecret, decryptText } = useCrypto();
   const { get } = useUser();
   const { load } = useStorage();
   const { send, subscribePush } = useMTP();
   const { moveUserIdToTop } = useSession();
+
+  const [error, setError] = useState("");
+  const [errorDescription, setErrorDescription] = useState("");
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
   const [currentSharedSecretState, setCurrentSharedSecretState] = useState<{
@@ -101,13 +99,23 @@ export default function Provider(props: { children: ReactNode }) {
       try {
         const recipientData = await get(userIdValue);
         const ownId = await load("user_id");
-        const privateKey = await load("private_key");
+        const privateKey = await load("mtp_keyring");
         const ownData = await get(ownId);
+
+        log(3, "chat", "purple", "Getting shared secret...", {
+          recipientData,
+          ownData,
+        });
+
         const sharedSecret = await getSharedSecret(
           privateKey,
           ownData.PublicKey,
           recipientData.PublicKey,
         );
+
+        log(2, "chat", "purple", "Got shared secret", {
+          sharedSecret,
+        });
 
         if (active) {
           setCurrentSharedSecretState({
@@ -115,7 +123,16 @@ export default function Provider(props: { children: ReactNode }) {
             value: sharedSecret,
           });
         }
-      } catch {
+      } catch (err) {
+        log(
+          1,
+          "chat",
+          "red",
+          "An unknown error occured while getting a shared secret",
+          err,
+        );
+        setError(err instanceof Error ? err.name : "Unknown Error");
+        setErrorDescription(err instanceof Error ? err.message : String(err));
         if (active) {
           setCurrentSharedSecretState({
             userId: userIdValue,
@@ -132,9 +149,9 @@ export default function Provider(props: { children: ReactNode }) {
 
   const getMessages = useCallback(
     async (amount: number, offset: number) => {
-      const messages = await send("messages_get", {
-        amount,
-        offset,
+      const messages = await send("MessagesGet", {
+        Amount: amount,
+        Offset: offset,
         UserId: userIdValue,
       });
 
@@ -142,7 +159,7 @@ export default function Provider(props: { children: ReactNode }) {
         throw new Error(messages.type);
       }
 
-      const rawMessages = messages.data.messages;
+      const rawMessages = messages.data.Messages;
       const sorted = [...rawMessages].sort((a, b) => a.SendTime - b.SendTime);
 
       if (sorted.length > 0) {
@@ -162,7 +179,7 @@ export default function Provider(props: { children: ReactNode }) {
           try {
             return {
               ...message,
-              content: await decryptText(currentSharedSecret, message.content),
+              content: await decryptText(currentSharedSecret, message.Content),
             };
           } catch {
             return message;
@@ -214,7 +231,7 @@ export default function Provider(props: { children: ReactNode }) {
   // Get live updates for message states
   useEffect(() => {
     return subscribePush((message) => {
-      if (message.type !== "message_state") {
+      if (message.type !== "MessageState") {
         return;
       }
 
@@ -318,9 +335,11 @@ export default function Provider(props: { children: ReactNode }) {
           sharedSecret: currentSharedSecret,
           userId: userIdValue,
           inputBoxRef,
+          error,
+          errorDescription,
         }}
       >
-        {props.children}
+        {children}
       </context.Provider>
     </QueryClientProvider>
   );
@@ -336,13 +355,10 @@ type contextType = {
   sharedSecret: string;
   userId: number;
   inputBoxRef: React.RefObject<HTMLDivElement | null>;
+  error: string;
+  errorDescription: string;
 };
 
-/**
- * Executes useChat.
- * @param none This function has no parameters.
- * @returns contextType.
- */
 export function useChat(): contextType {
   const ctx = useContext(context);
   if (!ctx) {

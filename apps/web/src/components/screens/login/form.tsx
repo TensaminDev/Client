@@ -24,7 +24,7 @@ const fetchedUser = z.object({
 
 const formSchema = z.object({
   username: z.string().min(1).max(255),
-  private_key: z.string().min(1).max(92),
+  mtp_keyring: z.string().min(1).max(92),
 });
 
 /**
@@ -61,9 +61,7 @@ function parseTuFileContent(rawFileContent: string): {
     ? Number(userIdString.split("@")[0])
     : Number(userIdString);
 
-  const domain = userIdString.includes("@")
-    ? userIdString.split("@")[1]
-    : null;
+  const domain = userIdString.includes("@") ? userIdString.split("@")[1] : null;
 
   if (!userId || !privateKey) {
     throw new Error("Invalid file");
@@ -97,9 +95,9 @@ export default function Form() {
 
         await save("session_id", Date.now());
         await save("user_id", parsed.userId);
-        await save("private_key", parsed.privateKey);
+        await save("mtp_keyring", parsed.privateKey);
         if (parsed.domain) {
-          await save("mtp_url", `https://${parsed.domain}/`);
+          await save("omega_url", `https://${parsed.domain}/`);
         }
 
         location.href = "/";
@@ -240,9 +238,9 @@ export default function Form() {
 
         await save("session_id", Date.now());
         await save("user_id", user.user_id);
-        await save("private_key", inputParse.data.private_key);
+        await save("mtp_keyring", inputParse.data.mtp_keyring);
         if (domain) {
-          await save("mtp_url", `https://${domain}/`);
+          await save("omega_url", `https://${domain}/`);
         }
 
         location.href = "/";
@@ -273,10 +271,10 @@ export default function Form() {
 
                 await save("session_id", Date.now());
                 await save("user_id", userId);
-                await save("private_key", privateKey);
+                await save("mtp_keyring", privateKey);
 
                 if (domain) {
-                  await save("mtp_url", `https://${domain}/`);
+                  await save("omega_url", `https://${domain}/`);
                 }
 
                 location.href = "/";
@@ -335,8 +333,8 @@ export default function Form() {
           <Input required type="text" id="username" name="username" />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="private_key">Private Key</Label>
-          <Input required type="password" id="private_key" name="private_key" />
+          <Label htmlFor="mtp_keyring">MTP Keyring</Label>
+          <Input required type="password" id="mtp_keyring" name="mtp_keyring" />
         </div>
         <Button className="mt-auto" type="submit">
           Login

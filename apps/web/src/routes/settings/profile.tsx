@@ -51,7 +51,7 @@ export default function Page() {
   const avatarUploadRef = useRef<HTMLInputElement>(null);
   const draftInitializedRef = useRef(false);
   const effectiveAvatar =
-    draftUser.avatar === "none" ? undefined : draftUser.avatar;
+    draftUser.Avatar === "none" ? undefined : draftUser.Avatar;
 
   const updateDraftUser = (
     updater: (previous: Partial<User>) => Partial<User>,
@@ -102,8 +102,8 @@ export default function Page() {
           <Avatar className="size-14">
             <AvatarImage src={effectiveAvatar} />
             <AvatarFallback className="text-2xl">
-              {draftUser.display?.slice(0, 2).toUpperCase() ||
-                currentUser.display.slice(0, 2).toUpperCase()}
+              {draftUser.Display?.slice(0, 2).toUpperCase() ||
+                currentUser.Display.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1">
@@ -140,7 +140,7 @@ export default function Page() {
             }))
           }
           placeholder="Display Name"
-          value={draftUser.display || ""}
+          value={draftUser.Display || ""}
         />
         <Input
           className="w-full"
@@ -151,7 +151,7 @@ export default function Page() {
             }))
           }
           placeholder="Username"
-          value={draftUser.username || ""}
+          value={draftUser.Username || ""}
         />
         <MDInput
           styled
@@ -162,23 +162,23 @@ export default function Page() {
           setValue={(value) =>
             updateDraftUser((prev) => ({ ...prev, about: value }))
           }
-          value={draftUser.about || ""}
+          value={draftUser.About || ""}
         />
         <Button
           onClick={async () => {
-            const { avatar, ...draftUsersWithoutAvatar } = draftUser;
+            const { Avatar, ...draftUsersWithoutAvatar } = draftUser;
             const payload = {
               ...draftUsersWithoutAvatar,
-              ...(typeof avatar === "string"
+              ...(typeof Avatar === "string"
                 ? {
-                    avatar: avatar.startsWith("data:")
-                      ? (avatar.split(",", 2)[1] ?? "")
-                      : avatar,
+                    avatar: Avatar.startsWith("data:")
+                      ? (Avatar.split(",", 2)[1] ?? "")
+                      : Avatar,
                   }
                 : {}),
             };
 
-            const validation = mtp.change_user_data.request.safeParse(payload);
+            const validation = mtp.ChangeUserData.request.safeParse(payload);
 
             if (!validation.success) {
               setSaveSucceeded(false);
@@ -189,7 +189,7 @@ export default function Page() {
             }
 
             try {
-              await send("change_user_data", validation.data);
+              await send("ChangeUserData", validation.data);
               setSaveSucceeded(true);
               setErrorMessage("");
             } catch (err) {

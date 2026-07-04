@@ -55,8 +55,8 @@ function AddConversationButton() {
     }
 
     // user existence check
-    const user = await send("get_user_data", {
-      username: result.data,
+    const user = await send("GetUserData", {
+      Username: result.data,
     })
       .then((data) => {
         if (data.data.UserId === 0) {
@@ -80,7 +80,7 @@ function AddConversationButton() {
     // add the conv
     const timeout = setTimeout(() => setLoading(true), 500);
 
-    send("add_conversation", {
+    send("AddConversation", {
       ChatPartnerName: result.data,
     })
       .then(() => {

@@ -40,9 +40,7 @@ import type z from "zod";
 import { mtp } from "@tensamin/shared/data";
 import { useMTP } from "@tensamin/mtp";
 
-type OnlineStatus = z.infer<
-  typeof mtp.get_user_data.response.shape.OnlineStatus
->;
+type OnlineStatus = z.infer<typeof mtp.GetUserData.response.shape.OnlineStatus>;
 
 const onlineStatusLabels: Record<OnlineStatus, string> = {
   user_online: "Online",
@@ -88,7 +86,7 @@ function StatusDialog({
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
-          setDraftStatus(user.status ?? "");
+          setDraftStatus(user.Status ?? "");
           setDraftOnlineStatus(user.OnlineStatus);
           setErrorMessage("");
           setSaveSucceeded(false);
@@ -147,8 +145,7 @@ function StatusDialog({
                 OnlineStatus: draftOnlineStatus,
               };
 
-              const validation =
-                mtp.change_user_data.request.safeParse(payload);
+              const validation = mtp.ChangeUserData.request.safeParse(payload);
 
               if (!validation.success) {
                 setSaveSucceeded(false);
@@ -159,7 +156,7 @@ function StatusDialog({
               }
 
               try {
-                await send("change_user_data", validation.data);
+                await send("ChangeUserData", validation.data);
                 setSaveSucceeded(true);
                 setErrorMessage("");
               } catch (err) {
@@ -229,7 +226,7 @@ export default function Sidebar() {
                           <DropdownMenuGroup>
                             <DropdownMenuItem
                               onClick={() => {
-                                setDraftStatus(user.status ?? "");
+                                setDraftStatus(user.Status ?? "");
                                 setDraftOnlineStatus(user.OnlineStatus);
                                 setStatusErrorMessage("");
                                 setStatusSaveSucceeded(false);
@@ -248,7 +245,7 @@ export default function Sidebar() {
                     open={dialogOpen}
                     onOpenChange={(nextOpen) => {
                       if (!nextOpen) {
-                        setDraftStatus(user.status ?? "");
+                        setDraftStatus(user.Status ?? "");
                         setDraftOnlineStatus(user.OnlineStatus);
                         setStatusErrorMessage("");
                         setStatusSaveSucceeded(false);

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { mtp } from "@tensamin/shared/data";
 
-export type RawMessages = z.infer<typeof mtp.messages_get.response>["messages"];
+export type RawMessages = z.infer<typeof mtp.MessagesGet.response>["Messages"];
 
 export type RawMessage = RawMessages[number];
 

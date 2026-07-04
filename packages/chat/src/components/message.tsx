@@ -64,14 +64,14 @@ function MessageComponent({
   const [isValidURL, setIsValidURL] = useState(false);
   useEffect(() => {
     try {
-      if (message.content.split(" ").length > 1) throw new Error();
+      if (message.Content.split(" ").length > 1) throw new Error();
 
-      new URL(message.content);
+      new URL(message.Content);
       setIsValidURL(true);
     } catch {
       setIsValidURL(false);
     }
-  }, [message.content]);
+  }, [message.Content]);
 
   // Message states
   const { load } = useStorage();
@@ -82,13 +82,13 @@ function MessageComponent({
     if (readConfirmations) {
       if (!user?.UserId) return;
 
-      await send("message_state", {
+      await send("MessageState", {
         ChatPartnerId: user?.UserId,
         SendTime: message.SendTime,
         MessageState: "read",
       });
     } else {
-      await send("message_state", {
+      await send("MessageState", {
         ChatPartnerId: user?.UserId,
         SendTime: message.SendTime,
         MessageState: "received",
@@ -131,7 +131,7 @@ function MessageComponent({
       className={`${grouped ? "" : "pt-3"} w-full flex justify-start transition-opacity duration-150 ${opacityClass}`}
     >
       <MessageContextMenu
-        content={message.content}
+        content={message.Content}
         messageId={message.SendTime}
       >
         <div
@@ -154,9 +154,9 @@ function MessageComponent({
                 </p>
               ) : (
                 <Avatar className="mr-1 mb-auto mt-1 w-10">
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={user.Avatar} />
                   <AvatarFallback>
-                    {user.display.slice(0, 2).toUpperCase()}
+                    {user.Display.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               )}
@@ -190,7 +190,7 @@ function MessageComponent({
                 </Card>
                 {!grouped && (
                   <div className="flex items-center gap-1">
-                    <p className="font-medium">{user.display}</p>
+                    <p className="font-medium">{user.Display}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(message.SendTime).toLocaleString([], {
                         hour: "2-digit",
@@ -214,9 +214,9 @@ function MessageComponent({
                   </div>
                 )}
                 {isValidURL ? (
-                  <Media link={message.content} />
+                  <Media link={message.Content} />
                 ) : (
-                  <Text value={message.content} />
+                  <Text value={message.Content} />
                 )}
               </div>
             </>
@@ -232,8 +232,7 @@ function MessageComponent({
 export default React.memo(MessageComponent, (prev, next) => {
   return (
     prev.message.SendTime === next.message.SendTime &&
-    prev.message.content === next.message.content &&
-    prev.message.height === next.message.height &&
+    prev.message.Content === next.message.Content &&
     prev.message.SentBySelf === next.message.SentBySelf &&
     prev.message.MessageState === next.message.MessageState &&
     prev.message.failed === next.message.failed &&

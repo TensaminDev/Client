@@ -52,7 +52,7 @@ type IncomingCallInvite = {
   senderId: number;
 };
 type CurrentCallData =
-  (z.infer<typeof mtp.call_data.response> & { exists: boolean }) | null;
+  (z.infer<typeof mtp.CallData.response> & { exists: boolean }) | null;
 
 type NavigateFn = (options: {
   to: string;
@@ -626,7 +626,7 @@ export async function sendCallInvite(userId: number) {
   }
 
   const ownUserId = (await runtime.load("user_id")) as number;
-  const privateKey = await runtime.load("private_key");
+  const privateKey = await runtime.load("mtp_keyring");
   const ownPublicKey = await runtime
     .getUser(ownUserId)
     .then((data) => data.PublicKey);
@@ -897,7 +897,7 @@ export async function joinCall(
   if (callSecret) {
     try {
       const sharedSecret = await runtime.getSharedSecret(
-        await runtime.load("private_key"),
+        await runtime.load("mtp_keyring"),
         await runtime
           .getUser((await runtime.load("user_id")) as number)
           .then((res) => res.PublicKey),
@@ -1178,7 +1178,7 @@ export function useInitializeCall() {
   // listen to call invites
   useEffect(() => {
     subscribePush(async (message) => {
-      if (message.type !== "call_invite") return;
+      if (message.type !== "CallInvite") return;
 
       const { CallId, CallSecret, SenderId } = message.data as {
         CallId: string;
@@ -1500,10 +1500,10 @@ export function useInitializeCall() {
       return;
     }
 
-    send("call_data", { CallId: callId })
+    send("CallData", { CallId: callId })
       .then((data) => {
         setCurrentCallData({
-          ...(data.data as z.infer<typeof mtp.call_data.response>),
+          ...(data.data as z.infer<typeof mtp.CallData.response>),
           exists: true,
         });
       })

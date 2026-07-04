@@ -6,7 +6,7 @@ import { useMTP } from "@tensamin/mtp";
 import { createContext, useEffect, useContext } from "react";
 import z from "zod";
 import { toast as sonnerToast } from "sonner";
-import { message as messageSchema } from "@tensamin/shared/data";
+import { Message as MessageSchema } from "@tensamin/shared/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@tensamin/ui";
 import { isTauri } from "@tauri-apps/api/core";
 import { useSession } from "@tensamin/storage/session";
@@ -34,9 +34,9 @@ export default function Provider(props: { children: React.ReactNode }) {
 
   useEffect(() => {
     return subscribePush(async (ttpMessage) => {
-      if (ttpMessage.type === "message_live") {
+      if (ttpMessage.type === "MessageLive") {
         const { message, SenderId } = ttpMessage.data as {
-          message: z.infer<typeof messageSchema>;
+          message: z.infer<typeof MessageSchema>;
           SenderId: number;
         };
 
@@ -44,18 +44,18 @@ export default function Provider(props: { children: React.ReactNode }) {
 
         const decryptedContent = await decryptText(
           await getSharedSecret(
-            await load("private_key"),
+            await load("mtp_keyring"),
             await get(await load("user_id")).then((data) => data.PublicKey),
             user.PublicKey,
           ),
-          message.content,
+          message.Content,
         );
 
         // Update message state
         if (userId === SenderId) {
           addLiveMessage({
             ...message,
-            content: decryptedContent,
+            Content: decryptedContent,
             SentBySelf: false,
           });
           return;
@@ -67,7 +67,7 @@ export default function Provider(props: { children: React.ReactNode }) {
 
         if (await load("settings.receive_confirmations")) {
           void send(
-            "message_state",
+            "MessageState",
             {
               MessageState: "received",
             },
@@ -83,10 +83,10 @@ export default function Provider(props: { children: React.ReactNode }) {
           const hasPermissions = await requestNotificationPermission();
 
           if (hasPermissions) {
-            const notification = new Notification(user.display, {
+            const notification = new Notification(user.Display, {
               body: decryptedContent,
-              icon: user.avatar || user.display.slice(0, 2).toUpperCase(),
-              badge: user.avatar || user.display.slice(0, 2).toUpperCase(),
+              icon: user.Avatar || user.Display.slice(0, 2).toUpperCase(),
+              badge: user.Avatar || user.Display.slice(0, 2).toUpperCase(),
               tag: `message-${user.UserId}`,
               silent: true,
             });
@@ -100,16 +100,16 @@ export default function Provider(props: { children: React.ReactNode }) {
               notification.close();
             };
           } else {
-            sonnerToast(user.display, {
+            sonnerToast(user.Display, {
               classNames: {
                 content: "pl-4",
               },
               description: decryptedContent,
               icon: (
                 <Avatar>
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={user.Avatar} />
                   <AvatarFallback>
-                    {user.display.slice(0, 2).toUpperCase()}
+                    {user.Display.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               ),

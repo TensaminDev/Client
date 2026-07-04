@@ -72,10 +72,9 @@ export default function InputComponent({
     log(3, "chat", "purple", "Message send init, adding live message ...");
 
     const reference = addLiveMessage({
-      height: 0,
       NotEncrypted: true,
       SendTime: time,
-      content: currentValue,
+      Content: currentValue,
       SentBySelf: true,
       MessageState: "awaiting",
     });
@@ -94,9 +93,8 @@ export default function InputComponent({
 
     log(3, "chat", "purple", "Content encrypted, sending message...");
 
-    send("message_send", {
-      height: 0,
-      content: encryptedContext,
+    send("MessageSend", {
+      Content: encryptedContext,
       ReceiverId: userId,
       SendTime: time,
     }).catch((e) => {

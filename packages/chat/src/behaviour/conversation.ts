@@ -11,13 +11,13 @@ import type { RawMessages } from "../values";
  */
 export async function getMessages(
   send: BoundSendFn,
-  amount: number,
-  offset: number,
+  Amount: number,
+  Offset: number,
   UserId: number,
 ): Promise<RawMessages> {
-  const messages = await send("messages_get", {
-    amount: amount,
-    offset: offset,
+  const messages = await send("MessagesGet", {
+    Amount,
+    Offset,
     UserId,
   });
 
@@ -25,5 +25,5 @@ export async function getMessages(
     throw new Error(messages.type);
   }
 
-  return messages.data.messages;
+  return messages.data.Messages;
 }

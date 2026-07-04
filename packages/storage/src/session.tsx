@@ -86,7 +86,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
       const newUser = {
         UserId: userId,
         LastMessageAt: new Date().getTime(),
-        messages: [],
+        Messages: [],
       } satisfies Contacts[0];
 
       return [newUser, ...prevContacts];

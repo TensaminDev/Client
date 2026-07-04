@@ -12,10 +12,8 @@ import { isTauri } from "@tauri-apps/api/core";
 import { onResume } from "tauri-plugin-app-events-api";
 import { MTPClient } from "mtp";
 import { type z } from "zod";
-import { ConnectionState } from "./values";
-import createAsyncQueue, {
-  createQueuedFunc,
-} from "@tensamin/shared/asyncQueue";
+import { ConnectionState } from "mtp";
+import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import { toast as sonnerToast } from "@tensamin/ui";
 import { Loader2 } from "lucide-react";
 
@@ -46,36 +44,6 @@ function base64ToUint8Array(b64: string) {
 
   return out;
 }
-
-const PUSH_TYPES = [
-  "message_live",
-  "message_state",
-  "call_invite",
-  "error_no_iota",
-] as const;
-
-const WIRE_TYPES = {
-  temp_cool_type: "TempCoolType",
-  get_user_data: "GetUserData",
-  change_user_data: "ChangeUserData",
-  ping: "AppPing",
-  message_live: "MessageLive",
-  messages_get: "MessagesGet",
-  message_send: "MessageSend",
-  add_conversation: "AddConversation",
-  message_state: "MessageState",
-  load_txt_record: "LoadTxtRecord",
-  authenticate_app: "AuthenticateApp",
-  create_app: "CreateApp",
-  call_token: "CallToken",
-  call_data: "CallData",
-  call_invite: "CallInvite",
-  error_no_iota: "ErrorNoIota",
-} as const satisfies Record<keyof Schemas & string, string>;
-
-const APP_TYPES = Object.fromEntries(
-  Object.entries(WIRE_TYPES).map(([appType, wireType]) => [wireType, appType]),
-) as Record<string, keyof Schemas & string>;
 
 export type ProtocolMessage<
   T extends keyof Schemas & string = keyof Schemas & string,
@@ -139,10 +107,8 @@ function validateResponse<T extends keyof Schemas & string>(
   type: T,
   message: { id?: number; type: string; data: unknown },
 ): ProtocolMessage<T> {
-  const appType = APP_TYPES[message.type] ?? message.type;
-
-  if (appType.startsWith("error")) {
-    return { ...message, type: appType } as ProtocolMessage<T>;
+  if (message.type.startsWith("Error")) {
+    return message as ProtocolMessage<T>;
   }
 
   const schema = schemas[type]?.response;
@@ -159,7 +125,7 @@ function validateResponse<T extends keyof Schemas & string>(
 
   return {
     id: message.id,
-    type: appType,
+    type: message.type,
     data: parsed.data,
   } as ProtocolMessage<T>;
 }
@@ -192,7 +158,7 @@ export function Provider(props: {
   // MTP url
   const [mtpUrl, setMtpUrl] = useState<string | null>(null);
   useEffect(() => {
-    load("mtp_url").then(setMtpUrl);
+    load("omega_url").then(setMtpUrl);
   }, [load]);
 
   // Validation override functions
@@ -205,7 +171,7 @@ export function Provider(props: {
       }
 
       const message = await client.request(
-        WIRE_TYPES[type],
+        type,
         (data ?? {}) as Record<string, unknown>,
         options,
       );
@@ -220,7 +186,7 @@ export function Provider(props: {
       return () => {};
     }
 
-    return client.subscribe(WIRE_TYPES[type], (message) => {
+    return client.subscribe(type, (message) => {
       handler(validateResponse(type, message));
     });
   }, []);
@@ -231,8 +197,13 @@ export function Provider(props: {
       return () => {};
     }
 
-    const unsubscribers = PUSH_TYPES.map((type) =>
-      client.subscribe(WIRE_TYPES[type], (message) => {
+    const unsubscribers = [
+      "MessageLive",
+      "MessageState",
+      "CallInvite",
+      "ErrorNoIota",
+    ].map((type) =>
+      client.subscribe(type, (message) => {
         handler(validateResponse(type as keyof Schemas & string, message));
       }),
     );
@@ -241,23 +212,6 @@ export function Provider(props: {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, []);
-
-  // No Iota check
-  useEffect(() => {
-    if (!connected) return;
-
-    return subscribe("error_no_iota", () => {
-      setIdentified(false);
-      setIdentifying(false);
-      sonnerToast.error("We couldn't reach your Iota", {
-        description:
-          "Check your network connection and try restarting your Iota",
-        icon: null,
-        duration: Infinity,
-        closeButton: true,
-      });
-    });
-  }, [connected, subscribe]);
 
   // Custom Pings
   useEffect(() => {
@@ -268,7 +222,7 @@ export function Provider(props: {
     const interval = setInterval(async () => {
       try {
         const originalNow = Date.now();
-        const data = await send("ping", { LastPing: originalNow });
+        const data = await send("Ping", { LastPing: originalNow });
         setOwnPing(Date.now() - originalNow);
 
         const remotePing = data.data.PingIota;
@@ -286,6 +240,7 @@ export function Provider(props: {
   }, [connected, identified, send]);
 
   // Reconnect stuff
+  const resolveConnectionRef = useRef(() => {});
   useEffect(() => {
     if (!mtpUrl) return;
 
@@ -309,12 +264,10 @@ export function Provider(props: {
       reconnectResetTimer = null;
     };
 
-    let resolveConnection: (() => void) | null = null;
-
     if (!props.blockConnection) {
       sonnerToast.promise(
         new Promise<void>((resolve) => {
-          resolveConnection = resolve;
+          resolveConnectionRef.current = resolve;
         }),
         {
           id: "mtp-connection-toast",
@@ -346,61 +299,64 @@ export function Provider(props: {
 
         await MTPClient.init();
 
-        log(2, "mtp", "purple", "Fetching Omikron data.");
-        const data = await fetch(
-          `${mtpUrl}api/get/omikron/${await load("user_id")}`,
-        );
+        const forcedOmikronUrl = await load("forced_omikron_url");
+        const forcedOmikronPublicKey = await load("forced_omikron_public_key");
 
-        if (data.status === 404) {
-          sonnerToast.error("We couldn't reach your Iota", {
-            description:
-              "Check your network connection and try restarting your Iota",
-            icon: null,
-            duration: Infinity,
-            closeButton: true,
-          });
-          resolveConnection?.();
-          cleanup();
-          return;
+        let url = null;
+        let omikronPublicKey = null;
+        if (forcedOmikronUrl && forcedOmikronPublicKey) {
+          url = forcedOmikronUrl;
+          omikronPublicKey = forcedOmikronPublicKey;
+        } else {
+          log(2, "mtp", "purple", "Fetching Omikron data.");
+          const data = await fetch(
+            `${mtpUrl}api/get/omikron/${await load("user_id")}`,
+          );
+
+          if (data.status === 404) {
+            sonnerToast.error("We couldn't reach your Iota", {
+              description:
+                "Check your network connection and try restarting your Iota",
+              icon: null,
+              duration: Infinity,
+              closeButton: true,
+            });
+            resolveConnectionRef.current?.();
+            cleanup();
+            return;
+          }
+          const omikronData = (await data.json()) as {
+            id: number;
+            ip_address: string;
+            port: number;
+            public_key: string;
+            status: string;
+          };
+
+          if (
+            !omikronData.ip_address ||
+            !omikronData.port ||
+            !omikronData.public_key
+          )
+            throw new Error("Invalid Omikron data");
+
+          url = `https://${omikronData.ip_address}:${omikronData.port}`;
+          omikronPublicKey = omikronData.public_key;
         }
-
-        const omikronData = (await data.json()) as {
-          id: number;
-          ip_address: string;
-          port: number;
-          public_key: string;
-          status: string;
-        };
         //codec.decode(new Uint8Array(await res.arrayBuffer())),
 
-        if (
-          !omikronData.ip_address ||
-          !omikronData.port ||
-          !omikronData.public_key
-        )
-          throw new Error("Invalid Omikron data");
-
-        const url = `https://${omikronData.ip_address}:${omikronData.port}`;
+        if (!url || !omikronPublicKey)
+          throw new Error("Missing Omikron URL or Public Key");
 
         log(2, "mtp", "green", "Connecting to: " + url);
 
         const client = await MTPClient.create({
           url,
-          storage: {
-            getItem: (key) => {
-              console.log(key);
-              return key;
-            },
-            removeItem: (key) => {
-              console.log(key);
-            },
-            setItem: console.log,
-          },
           credentials: {
             clientId: await load("user_id"),
-            keyring: base64ToUint8Array(await load("private_key")),
+            keyring: base64ToUint8Array(await load("mtp_keyring")),
           },
-          hostPublicKey: omikronData.public_key,
+          hostPublicKey: omikronPublicKey,
           descriptor: "client",
           pings: true,
           logger: (event) => {
@@ -410,12 +366,24 @@ export function Provider(props: {
               );
             }
 
-            if (event.type !== "Pong") {
+            if (event.type !== "Pong" && event.type !== "Ping") {
               log(
                 2,
                 "mtp",
-                event.type === "state" ? "cyan" : "blue",
-                event.type === "state" ? event.data : event.type,
+                event.type === "state"
+                  ? "purple"
+                  : event.direction === "recv"
+                    ? "cyan"
+                    : event.direction === "send"
+                      ? "gray"
+                      : "blue",
+                event.type === "state"
+                  ? event.data
+                  : event.direction === "recv"
+                    ? "< " + event.type
+                    : event.direction === "send"
+                      ? "> " + event.type
+                      : event.type,
                 event,
               );
             }
@@ -436,19 +404,22 @@ export function Provider(props: {
           return;
         }
 
-        const authPayload = new Promise<ProtocolMessage<"temp_cool_type">>(
-          (resolve, reject) => {
-            const unsubscribe = client.subscribe("TempCoolType", (message) => {
+        const authPayload = new Promise<
+          ProtocolMessage<"IdentificationResponse">
+        >((resolve, reject) => {
+          const unsubscribe = client.subscribe(
+            "IdentificationResponse",
+            (message) => {
               try {
                 unsubscribe();
-                resolve(validateResponse("temp_cool_type", message));
+                resolve(validateResponse("IdentificationResponse", message));
               } catch (authPayloadError) {
                 unsubscribe();
                 reject(authPayloadError);
               }
-            });
-          },
-        );
+            },
+          );
+        });
 
         clearReconnectTimer();
 
@@ -467,12 +438,12 @@ export function Provider(props: {
 
         if (disposed || clientRef.current !== client) return;
 
-        setFreshContacts(finalResponse.data.contacts);
-        setFreshCommunities(finalResponse.data.communities ?? []);
-        setFreshCalls(finalResponse.data.calls);
+        setFreshContacts(finalResponse.data.Contacts);
+        setFreshCommunities(finalResponse.data.Communities);
+        setFreshCalls(finalResponse.data.Calls);
         setIdentifying(false);
         setIdentified(true);
-        resolveConnection?.();
+        resolveConnectionRef.current?.();
       } catch (connectError) {
         if (disposed) return;
         cleanup();
@@ -492,7 +463,7 @@ export function Provider(props: {
             id: "mtp-connection-toast",
             description:
               connectError instanceof Error
-                ? connectError.message
+                ? connectError.message.split(":")[0]
                 : String(connectError ?? "Unknown error"),
             icon: null,
             duration: Infinity,
@@ -558,6 +529,24 @@ export function Provider(props: {
     };
   }, [mtpUrl, props.blockConnection, load]);
 
+  // No Iota check
+  useEffect(() => {
+    if (!connected) return;
+
+    return subscribe("ErrorNoIota", () => {
+      setIdentified(false);
+      setIdentifying(false);
+      sonnerToast.error("We couldn't reach your Iota", {
+        description:
+          "Check your network connection and try restarting your Iota",
+        icon: null,
+        duration: Infinity,
+        closeButton: true,
+      });
+      resolveConnectionRef.current?.();
+    });
+  }, [connected, subscribe]);
+
   // Async queue
   const loadingDescription = useMemo(() => {
     if (!mtpUrl) return "Loading connection details";
@@ -587,10 +576,18 @@ export function Provider(props: {
     }
   }, [connected, identified, mtpUrl, send, subscribe, subscribePush, mtpRef]);
 
+  const sendQueued: BoundSendFn = useMemo(
+    () => async (type, data, options) => {
+      const mtp = await mtpRef.get();
+      return mtp.send(type, data, options);
+    },
+    [mtpRef],
+  );
+
   return (
     <MTPContext.Provider
       value={{
-        send: createQueuedFunc(() => (contextReady ? send : null)),
+        send: sendQueued,
         subscribe,
         subscribePush,
         readyState,

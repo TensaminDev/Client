@@ -1,124 +1,83 @@
 import { useStorage } from "@tensamin/storage/context";
+import { Button, Input, Label } from "@tensamin/ui";
 import { useEffect, useState } from "react";
-import QRCode from "qrcode";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-  Button,
-} from "@tensamin/ui";
 
 export default function Page() {
-  return (
-    <div>
-      <QrCodeLogin />
-    </div>
-  );
-}
+  const { save, load } = useStorage();
+  const [draftMtpUrl, setDraftMtpUrl] = useState("");
+  const [currentMtpUrl, setCurrentMtpUrl] = useState("");
 
-// QR Code Login
-const generateQR = async (text: string): Promise<string> => {
-  try {
-    const url = await QRCode.toDataURL(text, {
-      errorCorrectionLevel: "H",
-      margin: 1,
-      color: {
-        dark: "#000000FF",
-        light: "#FFFFFFFF",
-      },
-    });
-    return url;
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
-};
-function QrCodeLogin() {
-  const { load } = useStorage();
-  const [userId, setUserId] = useState<number>(0);
-  const [privateKey, setPrivateKey] = useState<string>("");
-  const [qrCodeBase64, setQrCodeBase64] = useState<string | undefined>(
-    undefined,
-  );
-  const [connectionString, setConnectionString] = useState<string | null>(null);
+  const [draftForcedOmikronUrl, setDraftForcedOmikronUrl] = useState("");
+  const [currentForcedOmikronUrl, setForcedForcedOmikronUrl] = useState("");
+  const [draftForcedOmikronPublicKey, setDraftForcedOmikronPublicKey] =
+    useState("");
+  const [currentForcedOmikronPublicKey, setForcedForcedOmikronPublicKey] =
+    useState("");
 
   useEffect(() => {
-    load("private_key").then((value) => {
-      if (value) {
-        setPrivateKey(value);
-      }
+    load("omega_url").then((value) => {
+      setDraftMtpUrl(value);
+      setCurrentMtpUrl(value);
     });
-    load("user_id").then((value) => {
-      if (value) {
-        setUserId(value);
-      }
+    load("forced_omikron_url").then((value) => {
+      setDraftForcedOmikronUrl(value || "");
+      setForcedForcedOmikronUrl(value || "");
     });
-    load("mtp_url")
-      .then((value) => {
-        if (value) {
-          const url = new URL(value);
-          setConnectionString(`@${url.host}`);
-        } else {
-          setConnectionString("");
-        }
-      })
-      .catch(() => setConnectionString(""));
+    load("forced_omikron_public_key").then((value) => {
+      setDraftForcedOmikronPublicKey(value || "");
+      setForcedForcedOmikronPublicKey(value || "");
+    });
   }, [load]);
 
-  useEffect(() => {
-    if (userId && privateKey && connectionString !== null) {
-      generateQR(
-        `tensamin://tu::${userId}${connectionString}::${privateKey}`,
-      ).then(setQrCodeBase64);
-    }
-  }, [userId, privateKey, connectionString]);
-
-  const [qrCodeVisible, setQrCodeVisible] = useState(false);
-
   return (
-    <div className="flex flex-col gap-1 pl-2">
-      <p>Login QR Code</p>
-      <div className="relative rounded-lg w-50 border-3 aspect-square overflow-hidden">
-        {qrCodeBase64 && (
-          <img className="w-full h-full" src={qrCodeBase64} alt="QR Code" />
-        )}
-        {!qrCodeVisible && (
-          <>
-            <div className="absolute top-0 left-0 w-full h-full backdrop-blur-sm bg-background/50" />
-            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-              <AlertDialog>
-                <AlertDialogTrigger render={<Button>Show QR Code</Button>} />
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Exposing this QR code is the same as sharing your .tu
-                      file. Since changing your private key is quite tedious,
-                      only do this when you're confident the key won't be
-                      compromised.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      render={
-                        <Button onClick={() => setQrCodeVisible(true)}>
-                          Show QR Code
-                        </Button>
-                      }
-                    />
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </>
-        )}
+    <div className="flex flex-col gap-8">
+      <p className="text-destructive">
+        It's best not to touch these! They can be exploited to gain access to
+        your account!
+      </p>
+      <div className="flex flex-col gap-2">
+        <Label>Omega Url</Label>
+        <div className="flex gap-1">
+          <Input
+            value={draftMtpUrl}
+            onChange={(e) => setDraftMtpUrl(e.target.value)}
+          />
+          <Button
+            disabled={currentMtpUrl === draftMtpUrl}
+            onClick={() => {
+              save("omega_url", draftMtpUrl);
+            }}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label>Forced Omikron</Label>
+        <div className="flex gap-1">
+          <Input
+            placeholder="URL..."
+            value={draftForcedOmikronUrl || ""}
+            onChange={(e) => setDraftForcedOmikronUrl(e.target.value)}
+          />
+          <Input
+            placeholder="Public Key..."
+            value={draftForcedOmikronPublicKey || ""}
+            onChange={(e) => setDraftForcedOmikronPublicKey(e.target.value)}
+          />
+          <Button
+            disabled={
+              currentForcedOmikronUrl === draftForcedOmikronUrl &&
+              currentForcedOmikronPublicKey === draftForcedOmikronPublicKey
+            }
+            onClick={() => {
+              save("forced_omikron_url", draftForcedOmikronUrl);
+              save("forced_omikron_public_key", draftForcedOmikronPublicKey);
+            }}
+          >
+            Save
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -45,7 +45,7 @@ export default function Preview() {
           {data.map((user) => {
             return (
               <p key={user.UserId} className="text-2xl">
-                User: {user.display}
+                User: {user.Display}
               </p>
             );
           })}

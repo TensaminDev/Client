@@ -72,7 +72,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             userId={id}
             component={(user) =>
               isMobile ? (
-                <p className="font-medium text-[1.07rem]">{user?.display}</p>
+                <p className="font-medium text-[1.07rem]">{user?.Display}</p>
               ) : (
                 <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
                   <PopoverTrigger
@@ -85,7 +85,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                         }}
                       >
                         <p className="font-medium text-[1.07rem]">
-                          {user?.display}
+                          {user?.Display}
                         </p>
                       </Button>
                     }
