@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { crypto } from "mtp";
+import { base64ToBytes, bytesToBase64, crypto } from "mtp";
 
 type CryptoContextType = {
   decrypt: (
@@ -50,15 +50,64 @@ function ownedBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+function secretKeyFromString(secret: string): Uint8Array {
+  return crypto.deriveEncryptionKey(
+    base64ToBytes(secret),
+    new Uint8Array(0),
+    new TextEncoder().encode("tensamin:shared-secret-text"),
+  );
+}
+
+function compareBytes(a: Uint8Array, b: Uint8Array): number {
+  const len = Math.min(a.byteLength, b.byteLength);
+
+  for (let i = 0; i < len; i++) {
+    const diff = a[i] - b[i];
+    if (diff !== 0) return diff;
+  }
+
+  return a.byteLength - b.byteLength;
+}
+
+async function getSharedSecret(
+  ownPrivateKey: string,
+  ownPublicKey: string,
+  otherPublicKey: string,
+): Promise<string> {
+  crypto.keyringToKeys(ownPrivateKey);
+
+  const ownKeys = crypto.publicKeyBundleToKeys(ownPublicKey);
+  const otherKeys = crypto.publicKeyBundleToKeys(otherPublicKey);
+  const publicKeys = [ownKeys.kemPublicKey, otherKeys.kemPublicKey].sort(
+    compareBytes,
+  );
+  const input = new Uint8Array(
+    publicKeys[0].byteLength + publicKeys[1].byteLength,
+  );
+
+  input.set(publicKeys[0]);
+  input.set(publicKeys[1], publicKeys[0].byteLength);
+
+  return bytesToBase64(
+    crypto.deriveEncryptionKey(
+      input,
+      new Uint8Array(0),
+      new TextEncoder().encode("tensamin:legacy-shared-secret"),
+    ),
+  );
+}
+
 export default function Provider(props: { children: React.ReactNode }) {
   const actions = createCryptoActions(() => ({
     decrypt: async (secret, input) =>
-      ownedBytes(await crypto.decrypt(secret, input)),
-    decryptText: crypto.decryptText,
+      ownedBytes(await crypto.decrypt(secretKeyFromString(secret), input)),
+    decryptText: (secret, ciphertext) =>
+      crypto.decryptText(secretKeyFromString(secret), ciphertext),
     encrypt: async (secret, input) =>
-      ownedBytes(await crypto.encrypt(secret, input)),
-    encryptText: crypto.encryptText,
-    getSharedSecret: crypto.getSharedSecret,
+      ownedBytes(await crypto.encrypt(secretKeyFromString(secret), input)),
+    encryptText: (secret, plaintext) =>
+      crypto.encryptText(secretKeyFromString(secret), plaintext),
+    getSharedSecret,
   }));
 
   return <context.Provider value={actions}>{props.children}</context.Provider>;

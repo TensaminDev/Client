@@ -17,7 +17,6 @@ const bytesLike = z.union([
   z.array(z.number().int().min(0).max(255)),
   z.base64(),
 ]);
-const clientIdLike = z.union([z.bigint(), z.number(), z.string()]);
 
 export const Message = z.object({
   NotEncrypted: z.boolean().optional(),
@@ -252,94 +251,54 @@ export const mtp = {
       SenderId: z.number().optional(),
     }),
   },
-  SetEncryptedDeviceSecret: {
+  SetChatSecret: {
     request: z.object({
       UserId: z.string(),
-      DeviceId: z.string(),
+      ChatId: z.string(),
       SecretId: z.string(),
       VersionNumber: z.number(),
       EncryptedSecret: bytesLike,
-      WrappingPublicKeyId: z.string().optional(),
+      KemCiphertext: bytesLike,
       WrappingScheme: z.string(),
       CreatedAt: z.number(),
     }),
     response: z.object({}),
   },
-  GetEncryptedDeviceSecret: {
+  GetChatSecret: {
     request: z.object({
       UserId: z.string(),
-      DeviceId: z.string().optional(),
+      ChatId: z.string(),
       SecretId: z.string().optional(),
     }),
     response: z.object({}),
   },
-  EncryptedDeviceSecretResponse: {
+  ChatSecretResponse: {
     request: z.object({}).optional(),
     response: z.object({
       UserId: z.string(),
-      DeviceId: z.string(),
+      ChatId: z.string(),
       SecretId: z.string(),
       VersionNumber: z.number(),
       EncryptedSecret: bytesLike,
-      WrappingPublicKeyId: z.string().optional(),
+      KemCiphertext: bytesLike,
       WrappingScheme: z.string(),
       CreatedAt: z.number(),
       UpdatedAt: z.number(),
     }),
   },
-  EncryptedMessage: {
+  ChatSecretForward: {
     request: z.object({
-      MessageId: z.string(),
-      ConversationId: z.string(),
-      SenderClientId: clientIdLike,
-      RecipientClientId: clientIdLike,
-      SenderUserId: z.string().optional(),
-      RecipientUserId: z.string().optional(),
+      ChatId: z.string(),
+      SenderUserId: z.string(),
+      RecipientUserId: z.string(),
+      SecretId: z.string(),
+      VersionNumber: z.number(),
+      EncryptedSecret: bytesLike,
+      KemCiphertext: bytesLike,
+      WrappingScheme: z.string(),
       CreatedAt: z.number(),
-      EncryptionVersion: z.literal(1),
-      EncryptedPayload: bytesLike,
     }),
     response: z.object({}),
-  },
-  EncryptedMessageAck: {
-    request: z.object({
-      MessageId: z.string(),
-      ConversationId: z.string(),
-      RecipientClientId: clientIdLike,
-      SendTime: z.number().optional(),
-      GetTime: z.number().optional(),
-    }),
-    response: z.object({}),
-  },
-  EncryptedMessagesGet: {
-    request: z.object({
-      ConversationId: z.string().optional(),
-      PeerClientId: clientIdLike.optional(),
-      SenderUserId: z.string().optional(),
-      Since: z.number().optional(),
-      Limit: z.number().optional(),
-    }),
-    response: z.object({}),
-  },
-  EncryptedMessagesResponse: {
-    request: z.object({}).optional(),
-    response: z.object({
-      Messages: z.array(
-        z.object({
-          MessageId: z.string(),
-          ConversationId: z.string(),
-          SenderClientId: clientIdLike,
-          RecipientClientId: clientIdLike,
-          SenderUserId: z.string().optional(),
-          RecipientUserId: z.string().optional(),
-          CreatedAt: z.number(),
-          EncryptionVersion: z.literal(1),
-          EncryptedPayload: bytesLike,
-        }),
-      ),
-      HasMore: z.boolean().optional(),
-      NextCursor: z.string().optional(),
-    }),
   },
   ErrorNoIota: {
     request: z.object({}).optional(),
@@ -354,8 +313,6 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
-  e2ee_device_id: string;
-  e2ee_sessions: Record<string, unknown>;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -390,8 +347,6 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
-  e2ee_device_id: "",
-  e2ee_sessions: {},
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,

@@ -15,6 +15,7 @@ import { useChat } from "../context";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { cn, useIsMobile } from "@tensamin/ui";
+import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/storage/session";
 import GifPicker from "./gifPicker";
@@ -28,8 +29,8 @@ export default function InputComponent({
 }) {
   const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
 
-  const { sendEncrypted } = useMTP();
-  const { addLiveMessage, userId, inputBoxRef } = useChat();
+  const { send } = useMTP();
+  const { addLiveMessage, chatSecret, userId, inputBoxRef } = useChat();
   const { load, save } = useStorage();
   const { moveUserIdToTop } = useSession();
   const gifPopoverRef = React.useRef<HTMLDivElement>(null);
@@ -64,6 +65,11 @@ export default function InputComponent({
       return;
     }
 
+    if (!chatSecret) {
+      toast("error", "Still getting chat secret...");
+      return;
+    }
+
     log(3, "chat", "purple", "Message send init, adding live message ...");
 
     const reference = addLiveMessage({
@@ -74,38 +80,33 @@ export default function InputComponent({
       MessageState: "awaiting",
     });
 
-    log(3, "chat", "purple", "Live message added, sending encrypted frame...");
+    log(3, "chat", "purple", "Live message added, encrypting...");
 
-    void load("user_id")
-      .then((ownUserId) =>
-        sendEncrypted(
-          "MessageSend",
-          {
-            Content: currentValue,
-            ReceiverId: userId,
-            SendTime: time,
-          },
-          {
-            senderUserId: String(ownUserId),
-            recipientUserId: String(userId),
-          },
-        ),
-      )
-      .catch((e) => {
-        log(0, "Chat", "red", "Failed to send encrypted message", e, {
-          ReceiverId: userId,
-          SendTime: time,
-        });
+    const encryptedContent = await encryptChatText(chatSecret, currentValue).catch(
+      (err) => {
+        toast("error", "Failed to encrypt message", String(err));
         reference.setFailed(true);
-        toast(
-          "error",
-          e instanceof Error && e.message.includes("public key")
-            ? "Recipient has no encryption public key available"
-            : "Failed to send encrypted message",
-        );
-      });
+      },
+    );
 
-    log(3, "chat", "purple", "Encrypted message send queued");
+    if (!encryptedContent) return;
+
+    log(3, "chat", "purple", "Content encrypted, sending message...");
+
+    send("MessageSend", {
+      Content: encryptedContent,
+      ReceiverId: userId,
+      SendTime: time,
+    }).catch((e) => {
+      log(0, "Chat", "red", "Failed to send message", e, {
+        ReceiverId: userId,
+        SendTime: time,
+      });
+      reference.setFailed(true);
+      toast("error", "Failed to send message");
+    });
+
+    log(3, "chat", "purple", "Message sent");
 
     moveUserIdToTop(userId);
 
