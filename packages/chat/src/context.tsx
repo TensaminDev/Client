@@ -16,7 +16,6 @@ import {
   deriveChatId,
   deriveChatSecretId,
   decryptChatText,
-  encryptChatText,
   kemPublicKeyFromPublicKeyBundle,
   ownKemPublicKeyFromKeyring,
   randomChatSecret,

@@ -53,7 +53,7 @@ const authPayload = z.object({
         UserId: z.number(),
         LastMessage: z
           .object({
-            content: z.base64(),
+            Content: z.base64(),
             SenderId: z.number(),
           })
           .optional(),

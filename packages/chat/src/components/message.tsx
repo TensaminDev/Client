@@ -29,6 +29,9 @@ import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
+import { useChat } from "../context";
+import { decryptChatText } from "@tensamin/crypto/chatSecret";
+import { log, toast } from "@tensamin/shared/log";
 
 function MessageComponent({
   grouped,
@@ -125,25 +128,42 @@ function MessageComponent({
     };
   }, [message.MessageState, load, messageStateReadUpdate]);
 
+  // Message decryption
+  const { chatSecret } = useChat();
+  const [decryptedContent, setDecryptedContent] = useState<string | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    if (!chatSecret) return;
+
+    decryptChatText(chatSecret, message.Content).then(
+      setDecryptedContent,
+      (err) => {
+        toast("error", "Failed to decrypt message", String(err));
+        log(1, "chat", "red", err);
+      },
+    );
+  }, [chatSecret, message.Content]);
+
   return (
     <div
       // pt-3 is to get a gap between messages
       className={`${grouped ? "" : "pt-3"} w-full flex justify-start transition-opacity duration-150 ${opacityClass}`}
     >
-      <MessageContextMenu
-        content={message.Content}
-        messageId={message.SendTime}
-      >
-        <div
-          className={cn(
-            "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
-            {
-              "bg-(--destructive)/15 text-destructive-foreground":
-                actuallyFailed,
-            },
-          )}
+      {user && decryptedContent ? (
+        <MessageContextMenu
+          content={message.Content}
+          messageId={message.SendTime}
         >
-          {user ? (
+          <div
+            className={cn(
+              "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
+              {
+                "bg-(--destructive)/15 text-destructive-foreground":
+                  actuallyFailed,
+              },
+            )}
+          >
             <>
               {grouped ? (
                 <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
@@ -220,11 +240,11 @@ function MessageComponent({
                 )}
               </div>
             </>
-          ) : (
-            "Loading"
-          )}
-        </div>
-      </MessageContextMenu>
+          </div>
+        </MessageContextMenu>
+      ) : (
+        "Loading"
+      )}
     </div>
   );
 }
