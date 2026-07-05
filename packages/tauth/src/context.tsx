@@ -17,13 +17,12 @@ import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
-import { decryptText } from "@tensamin/crypto/worker";
 
 export default function Wrapper({ children }: { children: ReactNode }) {
   const { get } = useUser();
   const { load } = useStorage();
   const { send } = useMTP();
-  const { getSharedSecret } = useCrypto();
+  const { decryptText, getSharedSecret } = useCrypto();
   const { searchStr } = useLocation();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);

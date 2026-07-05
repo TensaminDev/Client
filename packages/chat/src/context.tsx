@@ -12,8 +12,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import type { InfiniteData } from "@tanstack/react-query";
 import type { LiveMessage, RawMessage, RawMessages } from "./values";
-import { useCrypto } from "@tensamin/crypto/context";
-import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
 import { log } from "@tensamin/shared/log";
@@ -51,23 +49,15 @@ function updateMessageStateBySendTime<
 }
 
 export default function Provider({ children }: { children: ReactNode }) {
-  const { getSharedSecret, decryptText } = useCrypto();
-  const { get } = useUser();
   const { load } = useStorage();
-  const { send, subscribePush } = useMTP();
+  const { send, subscribePush, subscribeEncrypted, decryptEncryptedRecord } =
+    useMTP();
   const { moveUserIdToTop } = useSession();
 
-  const [error, setError] = useState("");
-  const [errorDescription, setErrorDescription] = useState("");
+  const [error] = useState("");
+  const [errorDescription] = useState("");
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
-  const [currentSharedSecretState, setCurrentSharedSecretState] = useState<{
-    userId: number;
-    value: string;
-  }>({
-    userId: 0,
-    value: "",
-  });
 
   const inputBoxRef = useRef<HTMLDivElement>(null);
 
@@ -81,86 +71,40 @@ export default function Provider({ children }: { children: ReactNode }) {
     return Number(rawId ?? 0);
   }, [locationSearch]);
 
-  const currentSharedSecret = useMemo(() => {
-    if (currentSharedSecretState.userId !== userIdValue) {
-      return "";
-    }
-
-    return currentSharedSecretState.value;
-  }, [currentSharedSecretState, userIdValue]);
-
-  // Load shared secret
-  useEffect(() => {
-    if (!userIdValue) return;
-
-    let active = true;
-
-    void (async () => {
-      try {
-        const recipientData = await get(userIdValue);
-        const ownId = await load("user_id");
-        const privateKey = await load("mtp_keyring");
-        const ownData = await get(ownId);
-
-        log(3, "chat", "purple", "Getting shared secret...", {
-          recipientData,
-          ownData,
-        });
-
-        const sharedSecret = await getSharedSecret(
-          privateKey,
-          ownData.PublicKey,
-          recipientData.PublicKey,
-        );
-
-        log(2, "chat", "purple", "Got shared secret", {
-          sharedSecret,
-        });
-
-        if (active) {
-          setCurrentSharedSecretState({
-            userId: userIdValue,
-            value: sharedSecret,
-          });
-        }
-      } catch (err) {
-        log(
-          1,
-          "chat",
-          "red",
-          "An unknown error occured while getting a shared secret",
-          err,
-        );
-        setError(err instanceof Error ? err.name : "Unknown Error");
-        setErrorDescription(err instanceof Error ? err.message : String(err));
-        if (active) {
-          setCurrentSharedSecretState({
-            userId: userIdValue,
-            value: "",
-          });
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [get, getSharedSecret, load, userIdValue]);
-
   const getMessages = useCallback(
     async (amount: number, offset: number) => {
-      const messages = await send("MessagesGet", {
-        Amount: amount,
-        Offset: offset,
-        UserId: userIdValue,
+      const response = await send("EncryptedMessagesGet", {
+        Limit: amount,
+        SenderUserId: String(userIdValue),
       });
 
-      if (messages.type.startsWith("error")) {
-        throw new Error(messages.type);
+      if (response.type.startsWith("error")) {
+        throw new Error(response.type);
       }
 
-      const rawMessages = messages.data.Messages;
-      const sorted = [...rawMessages].sort((a, b) => a.SendTime - b.SendTime);
+      const encryptedMessages = (response.data.Messages ?? []) as Record<
+        string,
+        unknown
+      >[];
+      const decrypted = await Promise.all(
+        encryptedMessages.slice(offset, offset + amount).map(async (record) => {
+          const inner = await decryptEncryptedRecord(record);
+          const data = inner.data as Record<string, unknown>;
+          return {
+            NotEncrypted: false,
+            SendTime: Number(
+              data.SendTime ?? record.CreatedAt ?? record.createdAt,
+            ),
+            Content: String(data.Content ?? ""),
+            SentBySelf:
+              String(record.SenderUserId ?? record.senderUserId ?? "") ===
+              String(await load("user_id")),
+            MessageState: "received" as RawMessage["MessageState"],
+          };
+        }),
+      );
+
+      const sorted = [...decrypted].sort((a, b) => a.SendTime - b.SendTime);
 
       if (sorted.length > 0) {
         const fetchedSendTimes = new Set(sorted.map((item) => item.SendTime));
@@ -174,20 +118,9 @@ export default function Provider({ children }: { children: ReactNode }) {
         });
       }
 
-      return await Promise.all(
-        sorted.map(async (message) => {
-          try {
-            return {
-              ...message,
-              content: await decryptText(currentSharedSecret, message.Content),
-            };
-          } catch {
-            return message;
-          }
-        }),
-      );
+      return sorted;
     },
-    [send, userIdValue, currentSharedSecret, decryptText],
+    [send, userIdValue, decryptEncryptedRecord, load],
   );
 
   const addLiveMessage = useCallback(
@@ -227,6 +160,30 @@ export default function Provider({ children }: { children: ReactNode }) {
   const clearLiveMessages = useCallback(() => {
     setLiveMessagesState([]);
   }, []);
+
+  useEffect(() => {
+    return subscribeEncrypted("MessageSend", (data) => {
+      const rawData = data as unknown as {
+        Content?: unknown;
+        ReceiverId?: unknown;
+        SendTime?: unknown;
+      };
+      const sendTime = Number(rawData.SendTime);
+
+      if (!Number.isFinite(sendTime) || typeof rawData.Content !== "string") {
+        log(3, "chat", "yellow", "Ignoring invalid encrypted live message");
+        return;
+      }
+
+      addLiveMessage({
+        NotEncrypted: false,
+        SendTime: sendTime,
+        Content: rawData.Content,
+        SentBySelf: false,
+        MessageState: "received",
+      });
+    });
+  }, [addLiveMessage, subscribeEncrypted]);
 
   // Get live updates for message states
   useEffect(() => {
@@ -286,7 +243,6 @@ export default function Provider({ children }: { children: ReactNode }) {
       const queryKey = [
         "chat-messages",
         String(userIdValue),
-        currentSharedSecret.length > 0,
       ] as const;
       queryClient.setQueryData<InfiniteData<RawMessages>>(
         queryKey,
@@ -322,7 +278,7 @@ export default function Provider({ children }: { children: ReactNode }) {
         },
       );
     });
-  }, [currentSharedSecret, subscribePush, userIdValue]);
+  }, [subscribePush, userIdValue]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -332,7 +288,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           liveMessages: () => liveMessagesState,
           addLiveMessage,
           clearLiveMessages,
-          sharedSecret: currentSharedSecret,
+          sharedSecret: "",
           userId: userIdValue,
           inputBoxRef,
           error,

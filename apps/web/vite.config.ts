@@ -162,7 +162,6 @@ export default defineConfig({
       "@tensamin/chat",
       "@tensamin/crypto",
       "@tensamin/crypto/context",
-      "@tensamin/crypto/worker",
       "@tensamin/markdown",
       "@tensamin/mtp",
       "@tensamin/notifications",

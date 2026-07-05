@@ -12,6 +12,13 @@ const fileFromMessage = z.object({
   type: z.enum(["image", "image_top_right", "file"]),
 });
 
+const bytesLike = z.union([
+  z.instanceof(Uint8Array),
+  z.array(z.number().int().min(0).max(255)),
+  z.base64(),
+]);
+const clientIdLike = z.union([z.bigint(), z.number(), z.string()]);
+
 export const Message = z.object({
   NotEncrypted: z.boolean().optional(),
   SentBySelf: z.boolean().optional(),
@@ -40,26 +47,30 @@ export const failedUser = {
 
 const authPayload = z.object({
   Communities: z.array(z.object({})).default([]),
-  Contacts: z.array(
-    z.object({
-      LastMessageAt: z.number(),
-      UserId: z.number(),
-      LastMessage: z
-        .object({
-          content: z.base64(),
-          SenderId: z.number(),
-        })
-        .optional(),
-      Messages: z.array(Message),
-    }),
-  ).default([]),
-  Calls: z.array(
-    z.object({
-      CallId: z.string(),
-      CallSecret: z.base64().optional(),
-      CallMembers: z.array(z.number()),
-    }),
-  ).default([]),
+  Contacts: z
+    .array(
+      z.object({
+        LastMessageAt: z.number(),
+        UserId: z.number(),
+        LastMessage: z
+          .object({
+            content: z.base64(),
+            SenderId: z.number(),
+          })
+          .optional(),
+        Messages: z.array(Message),
+      }),
+    )
+    .default([]),
+  Calls: z
+    .array(
+      z.object({
+        CallId: z.string(),
+        CallSecret: z.base64().optional(),
+        CallMembers: z.array(z.number()),
+      }),
+    )
+    .default([]),
 });
 
 export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
@@ -241,6 +252,95 @@ export const mtp = {
       SenderId: z.number().optional(),
     }),
   },
+  SetEncryptedDeviceSecret: {
+    request: z.object({
+      UserId: z.string(),
+      DeviceId: z.string(),
+      SecretId: z.string(),
+      VersionNumber: z.number(),
+      EncryptedSecret: bytesLike,
+      WrappingPublicKeyId: z.string().optional(),
+      WrappingScheme: z.string(),
+      CreatedAt: z.number(),
+    }),
+    response: z.object({}),
+  },
+  GetEncryptedDeviceSecret: {
+    request: z.object({
+      UserId: z.string(),
+      DeviceId: z.string().optional(),
+      SecretId: z.string().optional(),
+    }),
+    response: z.object({}),
+  },
+  EncryptedDeviceSecretResponse: {
+    request: z.object({}).optional(),
+    response: z.object({
+      UserId: z.string(),
+      DeviceId: z.string(),
+      SecretId: z.string(),
+      VersionNumber: z.number(),
+      EncryptedSecret: bytesLike,
+      WrappingPublicKeyId: z.string().optional(),
+      WrappingScheme: z.string(),
+      CreatedAt: z.number(),
+      UpdatedAt: z.number(),
+    }),
+  },
+  EncryptedMessage: {
+    request: z.object({
+      MessageId: z.string(),
+      ConversationId: z.string(),
+      SenderClientId: clientIdLike,
+      RecipientClientId: clientIdLike,
+      SenderUserId: z.string().optional(),
+      RecipientUserId: z.string().optional(),
+      CreatedAt: z.number(),
+      EncryptionVersion: z.literal(1),
+      EncryptedPayload: bytesLike,
+    }),
+    response: z.object({}),
+  },
+  EncryptedMessageAck: {
+    request: z.object({
+      MessageId: z.string(),
+      ConversationId: z.string(),
+      RecipientClientId: clientIdLike,
+      SendTime: z.number().optional(),
+      GetTime: z.number().optional(),
+    }),
+    response: z.object({}),
+  },
+  EncryptedMessagesGet: {
+    request: z.object({
+      ConversationId: z.string().optional(),
+      PeerClientId: clientIdLike.optional(),
+      SenderUserId: z.string().optional(),
+      Since: z.number().optional(),
+      Limit: z.number().optional(),
+    }),
+    response: z.object({}),
+  },
+  EncryptedMessagesResponse: {
+    request: z.object({}).optional(),
+    response: z.object({
+      Messages: z.array(
+        z.object({
+          MessageId: z.string(),
+          ConversationId: z.string(),
+          SenderClientId: clientIdLike,
+          RecipientClientId: clientIdLike,
+          SenderUserId: z.string().optional(),
+          RecipientUserId: z.string().optional(),
+          CreatedAt: z.number(),
+          EncryptionVersion: z.literal(1),
+          EncryptedPayload: bytesLike,
+        }),
+      ),
+      HasMore: z.boolean().optional(),
+      NextCursor: z.string().optional(),
+    }),
+  },
   ErrorNoIota: {
     request: z.object({}).optional(),
     response: z.object({}),
@@ -254,6 +354,8 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
+  e2ee_device_id: string;
+  e2ee_sessions: Record<string, unknown>;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -288,6 +390,8 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
+  e2ee_device_id: "",
+  e2ee_sessions: {},
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,

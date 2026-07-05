@@ -79,7 +79,6 @@ export default function Screen() {
     liveMessages,
     clearLiveMessages,
     userId,
-    sharedSecret,
     error,
     errorDescription,
   } = useChat();
@@ -106,13 +105,12 @@ export default function Screen() {
   const [value, setValue] = React.useState("");
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
-  const hasSharedSecret = sharedSecret.length > 0;
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: ["chat-messages", String(userId), hasSharedSecret],
+    queryKey: ["chat-messages", String(userId)],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
-    enabled: hasValidChatUser && hasSharedSecret,
+    enabled: hasValidChatUser,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_SIZE) {
         return undefined;

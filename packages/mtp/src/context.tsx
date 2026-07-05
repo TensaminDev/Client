@@ -45,6 +45,237 @@ function base64ToUint8Array(b64: string) {
   return out;
 }
 
+function bytesFromProtocol(value: unknown): Uint8Array {
+  if (value instanceof Uint8Array) return value;
+  if (Array.isArray(value)) return new Uint8Array(value);
+  if (typeof value === "string") return base64ToUint8Array(value);
+  throw new Error("expected protocol bytes");
+}
+
+type ParsedFrameLike = {
+  id?: number;
+  type: string;
+  data: unknown;
+};
+
+interface MTPSessionState {
+  version: 1;
+  conversationId: string;
+  ownClientId: bigint;
+  peerClientId: bigint;
+  peerPublicKey: Uint8Array;
+  sendChainKey: Uint8Array;
+  recvChainKey: Uint8Array;
+  sendCount: number;
+  recvCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface MTPSessionStorage {
+  getSession(conversationId: string): Promise<MTPSessionState | null>;
+  setSession(state: MTPSessionState): Promise<void>;
+  deleteSession(conversationId: string): Promise<void>;
+}
+
+interface EncryptedDeviceSecretRecord {
+  userId: string;
+  deviceId: string;
+  secretId: string;
+  version: number;
+  encryptedSecret: Uint8Array;
+  wrappingPublicKeyId?: string;
+  wrappingScheme: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface MTPEncryptedDeviceSecretProvider {
+  setEncryptedDeviceSecret(record: EncryptedDeviceSecretRecord): Promise<void>;
+  getEncryptedDeviceSecret(query: {
+    userId: string;
+    deviceId?: string;
+    secretId?: string;
+  }): Promise<EncryptedDeviceSecretRecord | null>;
+}
+
+function serializeSessionState(
+  state: MTPSessionState,
+): Record<string, unknown> {
+  return {
+    ...state,
+    ownClientId: state.ownClientId.toString(),
+    peerClientId: state.peerClientId.toString(),
+    peerPublicKey: Array.from(state.peerPublicKey),
+    sendChainKey: Array.from(state.sendChainKey),
+    recvChainKey: Array.from(state.recvChainKey),
+  };
+}
+
+function deserializeSessionState(value: unknown): MTPSessionState | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.conversationId !== "string") return null;
+  return {
+    version: 1,
+    conversationId: raw.conversationId,
+    ownClientId: BigInt(String(raw.ownClientId)),
+    peerClientId: BigInt(String(raw.peerClientId)),
+    peerPublicKey: new Uint8Array(raw.peerPublicKey as number[]),
+    sendChainKey: new Uint8Array(raw.sendChainKey as number[]),
+    recvChainKey: new Uint8Array(raw.recvChainKey as number[]),
+    sendCount: Number(raw.sendCount),
+    recvCount: Number(raw.recvCount),
+    createdAt: Number(raw.createdAt),
+    updatedAt: Number(raw.updatedAt),
+  };
+}
+
+class LocalMTPSessionStorage implements MTPSessionStorage {
+  constructor(
+    private readonly load: <K extends "e2ee_sessions">(
+      key: K,
+    ) => Promise<Record<string, unknown> | undefined>,
+    private readonly save: <K extends "e2ee_sessions">(
+      key: K,
+      value: Record<string, unknown>,
+    ) => Promise<void>,
+  ) {}
+
+  async getSession(conversationId: string): Promise<MTPSessionState | null> {
+    const sessions = (await this.load("e2ee_sessions")) ?? {};
+    return deserializeSessionState(sessions[conversationId]);
+  }
+
+  async setSession(state: MTPSessionState): Promise<void> {
+    const sessions = { ...((await this.load("e2ee_sessions")) ?? {}) };
+    sessions[state.conversationId] = serializeSessionState(state);
+    await this.save("e2ee_sessions", sessions);
+  }
+
+  async deleteSession(conversationId: string): Promise<void> {
+    const sessions = { ...((await this.load("e2ee_sessions")) ?? {}) };
+    delete sessions[conversationId];
+    await this.save("e2ee_sessions", sessions);
+  }
+}
+
+function frameField<T>(
+  frame: ParsedFrameLike,
+  pascal: string,
+  camel: string,
+): T {
+  const data = frame.data as Record<string, unknown>;
+  return (data[pascal] ?? data[camel]) as T;
+}
+
+type ConnectedMTPClient = Awaited<ReturnType<typeof MTPClient.create>> & {
+  request(
+    type: string,
+    data: Record<string, unknown>,
+    options?: { responseType?: string },
+  ): Promise<ParsedFrameLike>;
+  sendEncrypted(
+    type: string,
+    data: Record<string, unknown>,
+    options: {
+      recipientClientId?: bigint | number | string;
+      recipientPublicKey?: string | Uint8Array | number[];
+      senderUserId?: string;
+      recipientUserId?: string;
+      recipientDeviceId?: string;
+    },
+  ): Promise<void>;
+  subscribeEncrypted(
+    type: string,
+    handler: (data: unknown, meta: ParsedFrameLike) => void,
+  ): () => void;
+  decryptEncryptedRecord(
+    frameData: Record<string, unknown>,
+  ): Promise<ParsedFrameLike>;
+};
+
+class NetworkEncryptedDeviceSecretProvider implements MTPEncryptedDeviceSecretProvider {
+  #client: ConnectedMTPClient | null = null;
+
+  attach(client: ConnectedMTPClient): void {
+    this.#client = client;
+  }
+
+  async setEncryptedDeviceSecret(
+    record: EncryptedDeviceSecretRecord,
+  ): Promise<void> {
+    if (!this.#client) {
+      throw new Error("encrypted device secret provider is not attached");
+    }
+    if (!record.encryptedSecret?.length || !record.wrappingScheme) {
+      throw new Error(
+        "encrypted device secret record is missing ciphertext metadata",
+      );
+    }
+
+    await this.#client.request("SetEncryptedDeviceSecret", {
+      UserId: record.userId,
+      DeviceId: record.deviceId,
+      SecretId: record.secretId,
+      VersionNumber: record.version,
+      EncryptedSecret: record.encryptedSecret,
+      WrappingPublicKeyId: record.wrappingPublicKeyId,
+      WrappingScheme: record.wrappingScheme,
+      CreatedAt: record.createdAt,
+    });
+  }
+
+  async getEncryptedDeviceSecret(query: {
+    userId: string;
+    deviceId?: string;
+    secretId?: string;
+  }): Promise<EncryptedDeviceSecretRecord | null> {
+    if (!this.#client) {
+      throw new Error("encrypted device secret provider is not attached");
+    }
+
+    try {
+      const response = await this.#client.request(
+        "GetEncryptedDeviceSecret",
+        {
+          UserId: query.userId,
+          DeviceId: query.deviceId,
+          SecretId: query.secretId,
+        },
+        { responseType: "EncryptedDeviceSecretResponse" },
+      );
+
+      if (response.type === "ErrorNotFound") return null;
+
+      return {
+        userId: frameField(response, "UserId", "userId"),
+        deviceId: frameField(response, "DeviceId", "deviceId"),
+        secretId: frameField(response, "SecretId", "secretId"),
+        version: Number(frameField(response, "VersionNumber", "versionNumber")),
+        encryptedSecret: bytesFromProtocol(
+          frameField(response, "EncryptedSecret", "encryptedSecret"),
+        ),
+        wrappingPublicKeyId: frameField(
+          response,
+          "WrappingPublicKeyId",
+          "wrappingPublicKeyId",
+        ),
+        wrappingScheme: frameField(
+          response,
+          "WrappingScheme",
+          "wrappingScheme",
+        ),
+        createdAt: Number(frameField(response, "CreatedAt", "createdAt")),
+        updatedAt: Number(frameField(response, "UpdatedAt", "updatedAt")),
+      };
+    } catch (error) {
+      if (String(error).includes("ErrorNotFound")) return null;
+      throw error;
+    }
+  }
+}
+
 export type ProtocolMessage<
   T extends keyof Schemas & string = keyof Schemas & string,
 > = {
@@ -59,15 +290,38 @@ export type BoundSendFn = <T extends keyof Schemas & string>(
   options?: { id?: number },
 ) => Promise<ProtocolMessage<T>>;
 
+export type BoundSendEncryptedFn = <T extends keyof Schemas & string>(
+  type: T,
+  data: z.infer<Schemas[T]["request"]>,
+  options: {
+    recipientClientId?: bigint | number | string;
+    recipientPublicKey?: string | Uint8Array | number[];
+    senderUserId?: string;
+    recipientUserId?: string;
+    recipientDeviceId?: string;
+  },
+) => Promise<void>;
+
 export type PushHandler = (message: ProtocolMessage) => void;
 
 type ContextType = {
   send: BoundSendFn;
+  sendEncrypted: BoundSendEncryptedFn;
   subscribe: <T extends keyof Schemas & string>(
     type: T,
     handler: (message: ProtocolMessage<T>) => void,
   ) => () => void;
   subscribePush: (handler: PushHandler) => () => void;
+  subscribeEncrypted: <T extends keyof Schemas & string>(
+    type: T,
+    handler: (
+      data: z.infer<Schemas[T]["response"]>,
+      meta: ProtocolMessage<T>,
+    ) => void,
+  ) => () => void;
+  decryptEncryptedRecord: (
+    frameData: Record<string, unknown>,
+  ) => Promise<ParsedFrameLike>;
   readyState: number;
   ownPing: number;
   iotaPing: number;
@@ -134,7 +388,7 @@ export function Provider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
-  const { load } = useStorage();
+  const { load, save } = useStorage();
 
   const [readyState, setReadyState] = useState<number>(
     ConnectionState.Disconnected,
@@ -149,9 +403,7 @@ export function Provider(props: {
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
 
-  const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
-    null,
-  );
+  const clientRef = useRef<ConnectedMTPClient | null>(null);
 
   const connected = readyState === ConnectionState.Connected;
 
@@ -180,6 +432,57 @@ export function Provider(props: {
     [],
   );
 
+  const sendEncrypted: BoundSendEncryptedFn = useMemo(
+    () => async (type, data, options) => {
+      const client = clientRef.current;
+
+      if (!client) {
+        throw new Error("mtp is not connected");
+      }
+
+      let recipientClientId = options.recipientClientId;
+      let recipientPublicKey = options.recipientPublicKey;
+      if (recipientClientId == null) {
+        if (!options.recipientUserId) {
+          throw new Error("recipientClientId or recipientUserId is required");
+        }
+
+        const recipientUserId = Number(options.recipientUserId);
+        if (!Number.isSafeInteger(recipientUserId) || recipientUserId <= 0) {
+          throw new Error("recipientUserId must be a valid user id");
+        }
+
+        const response = await client.request(
+          "GetUserData",
+          { UserId: recipientUserId },
+          { responseType: "GetUserData" },
+        );
+        if (response.type === "ErrorNotFound") {
+          throw new Error("Recipient user data not found");
+        }
+
+        recipientPublicKey = frameField<string>(
+          response,
+          "PublicKey",
+          "publicKey",
+        );
+        if (!recipientPublicKey) {
+          throw new Error("Recipient has no encryption public key available");
+        }
+        recipientClientId = BigInt(recipientUserId);
+      }
+
+      await client.sendEncrypted(type, data as Record<string, unknown>, {
+        recipientClientId,
+        recipientPublicKey,
+        senderUserId: options.senderUserId,
+        recipientUserId: options.recipientUserId,
+        recipientDeviceId: options.recipientDeviceId,
+      });
+    },
+    [],
+  );
+
   const subscribe = useCallback<ContextType["subscribe"]>((type, handler) => {
     const client = clientRef.current;
     if (!client) {
@@ -190,6 +493,34 @@ export function Provider(props: {
       handler(validateResponse(type, message));
     });
   }, []);
+
+  const subscribeEncrypted = useCallback<ContextType["subscribeEncrypted"]>(
+    (type, handler) => {
+      const client = clientRef.current;
+      if (!client) {
+        return () => {};
+      }
+
+      return client.subscribeEncrypted(type, (data, meta) => {
+        handler(data as z.infer<Schemas[typeof type]["response"]>, {
+          id: meta.id,
+          type: meta.type,
+          data: data as z.infer<Schemas[typeof type]["response"]>,
+        });
+      });
+    },
+    [],
+  );
+
+  const decryptEncryptedRecord = useCallback<
+    ContextType["decryptEncryptedRecord"]
+  >(async (frameData) => {
+    const client = clientRef.current;
+    if (!client) throw new Error("mtp is not connected");
+    return client.decryptEncryptedRecord(frameData);
+  }, []);
+
+  const decryptEncryptedRecordForQueue = decryptEncryptedRecord;
 
   const subscribePush = useCallback((handler: PushHandler) => {
     const client = clientRef.current;
@@ -299,6 +630,7 @@ export function Provider(props: {
 
         await MTPClient.init();
 
+        const userId = await load("user_id");
         const forcedOmikronUrl = await load("forced_omikron_url");
         const forcedOmikronPublicKey = await load("forced_omikron_public_key");
 
@@ -309,9 +641,7 @@ export function Provider(props: {
           omikronPublicKey = forcedOmikronPublicKey;
         } else {
           log(2, "mtp", "purple", "Fetching Omikron data.");
-          const data = await fetch(
-            `${mtpUrl}api/get/omikron/${await load("user_id")}`,
-          );
+          const data = await fetch(`${mtpUrl}api/get/omikron/${userId}`);
 
           if (data.status === 404) {
             sonnerToast.error("We couldn't reach your Iota", {
@@ -350,16 +680,31 @@ export function Provider(props: {
 
         log(2, "mtp", "green", "Connecting to: " + url);
 
-        const client = await MTPClient.create({
+        const encryptedDeviceSecretProvider =
+          new NetworkEncryptedDeviceSecretProvider();
+
+        const createMTPClient = MTPClient.create as unknown as (
+          options: Record<string, unknown>,
+        ) => Promise<ConnectedMTPClient>;
+        const client = await createMTPClient({
           url,
           credentials: {
-            clientId: await load("user_id"),
+            clientId: BigInt(userId),
             keyring: base64ToUint8Array(await load("mtp_keyring")),
           },
           hostPublicKey: omikronPublicKey,
           descriptor: "client",
           pings: true,
-          logger: (event) => {
+          encryptedDeviceSecretProvider,
+          sessionStorage: new LocalMTPSessionStorage(
+            load as never,
+            save as never,
+          ),
+          logger: (event: {
+            type: string;
+            data?: unknown;
+            direction?: "send" | "recv";
+          }) => {
             if (event.type === "state") {
               setReadyState(
                 clientRef.current?.state ?? ConnectionState.Disconnected,
@@ -394,6 +739,8 @@ export function Provider(props: {
           client.disconnect();
           return;
         }
+
+        encryptedDeviceSecretProvider.attach(client);
 
         clientRef.current = client;
         setReadyState(client.state);
@@ -527,7 +874,7 @@ export function Provider(props: {
       setIdentifying(false);
       sonnerToast.dismiss("mtp-connection-toast");
     };
-  }, [mtpUrl, props.blockConnection, load]);
+  }, [mtpUrl, props.blockConnection, load, save]);
 
   // No Iota check
   useEffect(() => {
@@ -561,8 +908,11 @@ export function Provider(props: {
     () =>
       createAsyncQueue<{
         send: typeof send;
+        sendEncrypted: typeof sendEncrypted;
         subscribe: typeof subscribe;
         subscribePush: typeof subscribePush;
+        subscribeEncrypted: typeof subscribeEncrypted;
+        decryptEncryptedRecord: typeof decryptEncryptedRecordForQueue;
       }>(),
     [],
   );
@@ -570,11 +920,25 @@ export function Provider(props: {
     if (connected && identified && mtpUrl) {
       mtpRef.set({
         send,
+        sendEncrypted,
         subscribe,
         subscribePush,
+        subscribeEncrypted,
+        decryptEncryptedRecord: decryptEncryptedRecordForQueue,
       });
     }
-  }, [connected, identified, mtpUrl, send, subscribe, subscribePush, mtpRef]);
+  }, [
+    connected,
+    identified,
+    mtpUrl,
+    send,
+    sendEncrypted,
+    subscribe,
+    subscribePush,
+    subscribeEncrypted,
+    decryptEncryptedRecordForQueue,
+    mtpRef,
+  ]);
 
   const sendQueued: BoundSendFn = useMemo(
     () => async (type, data, options) => {
@@ -584,12 +948,32 @@ export function Provider(props: {
     [mtpRef],
   );
 
+  const sendEncryptedQueued: BoundSendEncryptedFn = useMemo(
+    () => async (type, data, options) => {
+      const mtp = await mtpRef.get();
+      return mtp.sendEncrypted(type, data, options);
+    },
+    [mtpRef],
+  );
+
+  const decryptEncryptedRecordQueued: ContextType["decryptEncryptedRecord"] =
+    useMemo(
+      () => async (frameData) => {
+        const mtp = await mtpRef.get();
+        return mtp.decryptEncryptedRecord(frameData);
+      },
+      [mtpRef],
+    );
+
   return (
     <MTPContext.Provider
       value={{
         send: sendQueued,
+        sendEncrypted: sendEncryptedQueued,
         subscribe,
         subscribePush,
+        subscribeEncrypted,
+        decryptEncryptedRecord: decryptEncryptedRecordQueued,
         readyState,
         ownPing,
         iotaPing,
