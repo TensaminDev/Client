@@ -157,11 +157,8 @@ jobs:
         run: |
           nix develop .#electron --command bash <<'EOF'
           set -euo pipefail
-          SEVEN_ZIP_DIR="$(mktemp -d)"
-          mkdir -p "$SEVEN_ZIP_DIR/bin"
-          ln -s "$(command -v 7za)" "$SEVEN_ZIP_DIR/bin/7za"
           cd apps/electron
-          pnpm run package:raw -- -c.toolsets.sevenZip.url="file://$SEVEN_ZIP_DIR"
+          pnpm run package:raw
           EOF
 
       - name: Upload desktop artifacts

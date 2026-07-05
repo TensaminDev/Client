@@ -7,4 +7,4 @@ allowBuilds:
   esbuild: true
 overrides:
   "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz"
-  mtp: "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-fdc694b/mtp-0.1.0.tgz"
+  mtp: "https://git.methanium.net/methanium/mtp/releases/download/0.1.0-dev-515244c/mtp-0.1.0.tgz"

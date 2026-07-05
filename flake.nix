@@ -243,6 +243,7 @@
           export NPM_CONFIG_TARGET_ARCH="''${NPM_CONFIG_TARGET_ARCH:-x64}"
           export npm_config_build_from_source=true
           export USE_SYSTEM_FPM=true
+          export ELECTRON_BUILDER_7ZIP_PATH="${pkgs.p7zip}/bin/7za"
 
           alias electron-install='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm install'
           alias electron-build-web='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm run build:web'
@@ -258,6 +259,7 @@
             jdk17
             gradle
             pnpm
+            bun
             nodejs
             corepack_22
             coreutils
