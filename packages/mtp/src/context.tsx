@@ -132,15 +132,27 @@ function deserializeSessionState(value: unknown): MTPSessionState | null {
 }
 
 class LocalMTPSessionStorage implements MTPSessionStorage {
+  private readonly load: <K extends "e2ee_sessions">(
+    key: K,
+  ) => Promise<Record<string, unknown> | undefined>;
+
+  private readonly save: <K extends "e2ee_sessions">(
+    key: K,
+    value: Record<string, unknown>,
+  ) => Promise<void>;
+
   constructor(
-    private readonly load: <K extends "e2ee_sessions">(
+    load: <K extends "e2ee_sessions">(
       key: K,
     ) => Promise<Record<string, unknown> | undefined>,
-    private readonly save: <K extends "e2ee_sessions">(
+    save: <K extends "e2ee_sessions">(
       key: K,
       value: Record<string, unknown>,
     ) => Promise<void>,
-  ) {}
+  ) {
+    this.load = load;
+    this.save = save;
+  }
 
   async getSession(conversationId: string): Promise<MTPSessionState | null> {
     const sessions = (await this.load("e2ee_sessions")) ?? {};
