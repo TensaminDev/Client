@@ -246,10 +246,20 @@ export default function Provider({ children }: { children: ReactNode }) {
           try {
             return {
               ...message,
-              Content: await decryptChatText(currentChatSecret, message.Content),
+              Content: await decryptChatText(
+                currentChatSecret,
+                message.Content,
+              ),
             };
-          } catch {
-            return message;
+          } catch (err) {
+            log(1, "chat", "red", "Failed to decrypt historical message", err, {
+              SendTime: message.SendTime,
+            });
+            return {
+              ...message,
+              Content: "Failed to decrypt message",
+              decryptionFailed: true,
+            };
           }
         }),
       );
@@ -352,12 +362,18 @@ export default function Provider({ children }: { children: ReactNode }) {
         if (!data.Message || !currentChatSecret) return;
 
         void decryptChatText(currentChatSecret, data.Message.Content)
-          .catch(() => data.Message?.Content ?? "")
+          .catch((err) => {
+            log(1, "chat", "red", "Failed to decrypt live message", err, {
+              SendTime: data.Message?.SendTime,
+            });
+            return null;
+          })
           .then((content) => {
             if (!data.Message) return;
             addLiveMessage({
               ...data.Message,
-              Content: content,
+              Content: content ?? "Failed to decrypt message",
+              decryptionFailed: content === null,
               SentBySelf: false,
             });
           });
@@ -455,7 +471,14 @@ export default function Provider({ children }: { children: ReactNode }) {
         },
       );
     });
-  }, [addLiveMessage, currentChatSecret, load, send, subscribePush, userIdValue]);
+  }, [
+    addLiveMessage,
+    currentChatSecret,
+    load,
+    send,
+    subscribePush,
+    userIdValue,
+  ]);
 
   return (
     <QueryClientProvider client={queryClient}>

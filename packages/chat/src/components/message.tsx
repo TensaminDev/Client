@@ -27,9 +27,6 @@ import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
-import { useChat } from "../context";
-import { decryptChatText } from "@tensamin/crypto/chatSecret";
-import { log, toast } from "@tensamin/shared/log";
 
 function MessageComponent({
   grouped,
@@ -39,12 +36,13 @@ function MessageComponent({
   grouped: boolean;
   message: RawMessage & {
     failed?: boolean;
+    decryptionFailed?: boolean;
   };
   user: User | null;
 }) {
-  const [decryptionFailed, setDecryptionFailed] = useState(false);
   const actuallyFailed =
-    (message.failed && message.MessageState === "awaiting") || decryptionFailed;
+    (message.failed && message.MessageState === "awaiting") ||
+    message.decryptionFailed;
 
   // Fade-in
   const [hasFadedIn, setHasFadedIn] = useState(false);
@@ -115,38 +113,18 @@ function MessageComponent({
     };
   }, [message.MessageState, load, messageStateReadUpdate]);
 
-  // Message decryption
-  const { chatSecret } = useChat();
-  const [decryptedContent, setDecryptedContent] = useState<string | undefined>(
-    undefined,
-  );
-  useEffect(() => {
-    if (!chatSecret) return;
-
-    decryptChatText(chatSecret, message.Content).then(
-      setDecryptedContent,
-      (err) => {
-        toast("error", "Failed to decrypt message", String(err));
-        log(1, "chat", "red", err);
-        setDecryptionFailed(true);
-      },
-    );
-  }, [chatSecret, message.Content]);
-
   // Check if message is a url
   const [isValidURL, setIsValidURL] = useState(false);
   useEffect(() => {
-    if (!decryptedContent) return;
-
     try {
-      if (decryptedContent.split(" ").length > 1) throw new Error();
+      if (message.Content.split(" ").length > 1) throw new Error();
 
-      new URL(decryptedContent);
+      new URL(message.Content);
       setIsValidURL(true);
     } catch {
       setIsValidURL(false);
     }
-  }, [decryptedContent]);
+  }, [message.Content]);
 
   return (
     <div
@@ -158,7 +136,7 @@ function MessageComponent({
           className={cn(
             "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
             {
-              "bg-(--destructive)/15 text-destructive-foreground":
+              "bg-(--destructive)/15 text-destructive-foreground hover:bg-(--destructive)/20":
                 actuallyFailed,
             },
           )}
@@ -225,19 +203,17 @@ function MessageComponent({
                 </div>
               )}
 
-              {decryptedContent ? (
+              {message.Content ? (
                 <MessageContextMenu
-                  content={decryptedContent}
+                  content={message.Content}
                   messageId={message.SendTime}
                 >
                   {isValidURL ? (
-                    <Media link={decryptedContent} />
+                    <Media link={message.Content} />
                   ) : (
-                    <Text value={decryptedContent} />
+                    <Text value={message.Content} />
                   )}
                 </MessageContextMenu>
-              ) : decryptionFailed ? (
-                <Text value="Failed to decrypt message" />
               ) : (
                 <Skeleton
                   className={`w-25 h-5 ${grouped ? "my-1" : "mb-1"} rounded-sm!`}
@@ -260,6 +236,7 @@ export default React.memo(MessageComponent, (prev, next) => {
     prev.message.SentBySelf === next.message.SentBySelf &&
     prev.message.MessageState === next.message.MessageState &&
     prev.message.failed === next.message.failed &&
+    prev.message.decryptionFailed === next.message.decryptionFailed &&
     prev.grouped === next.grouped &&
     prev.user === next.user
   );
