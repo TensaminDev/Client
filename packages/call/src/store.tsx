@@ -1231,15 +1231,7 @@ export function useInitializeCall() {
         SenderId: number;
       };
 
-      if (SenderId === Number(await load("user_id"))) {
-        return;
-      }
-
-      showCallingScreen(
-        CallId,
-        normalizeWrappedCallSecret(CallSecret),
-        SenderId,
-      );
+      showCallingScreen(CallId, CallSecret, SenderId);
     });
   }, [load, subscribePush, showCallingScreen]);
 
