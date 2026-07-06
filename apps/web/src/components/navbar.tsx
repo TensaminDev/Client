@@ -96,7 +96,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 </Popover>
               )
             }
-            loading={<Skeleton className="ml-3 w-40 h-5" />}
+            loading={<Skeleton className="w-30 h-5" />}
           />
         )}
       </div>
