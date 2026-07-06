@@ -5,6 +5,7 @@
   "description": "Tensamin desktop client",
   "author": "methanium",
   "homepage": "https://git.methanium.net/tensamin/client",
+  "desktopName": "Tensamin",
   "type": "module",
   "main": "dist/main/main.js",
   "scripts": {
@@ -71,6 +72,7 @@
       "executableName": "tensamin",
       "category": "Network",
       "maintainer": "Methanium",
+      "syncDesktopName": true,
       "desktop": {
         "entry": {
           "Name": "Tensamin",

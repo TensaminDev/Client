@@ -207,6 +207,17 @@
       };
 
       commonDeps = [rustToolchain pkgs.wasm-pack pkgs.lld];
+      appImageToolsArchive = pkgs.fetchurl {
+        url = "https://github.com/electron-userland/electron-builder-binaries/releases/download/appimage@1.0.3/appimage-tools-runtime-20251108.tar.gz";
+        hash = "sha256-hAIaeO4hSub9M6LWKpK6JVQt0QvIa/EXqbLQu6ROdmU=";
+      };
+      appImageTools = pkgs.runCommand "electron-builder-appimage-tools-nix" {nativeBuildInputs = [pkgs.gnutar pkgs.gzip];} ''
+        mkdir -p "$out"
+        tar -xzf ${appImageToolsArchive} --strip-components=1 -C "$out"
+        rm -f "$out/mksquashfs" "$out/desktop-file-validate"
+        ln -s ${pkgs.squashfsTools}/bin/mksquashfs "$out/mksquashfs"
+        ln -s ${pkgs.desktop-file-utils}/bin/desktop-file-validate "$out/desktop-file-validate"
+      '';
     in rec {
       default = electron;
 
@@ -244,6 +255,7 @@
           export npm_config_build_from_source=true
           export USE_SYSTEM_FPM=true
           export ELECTRON_BUILDER_7ZIP_PATH="${pkgs.p7zip}/bin/7za"
+          export APPIMAGE_TOOLS_PATH="${appImageTools}"
 
           alias electron-install='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm install'
           alias electron-build-web='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm run build:web'
