@@ -1,61 +1,11 @@
 import type { User } from "@tensamin/user/context";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@tensamin/ui";
-import { toLossySixDigitCode } from "@tensamin/shared/code";
+import { Avatar, AvatarFallback, AvatarImage, Button } from "@tensamin/ui";
 import Text from "@tensamin/markdown/text";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useCrypto } from "@tensamin/crypto/context";
-import { useStorage } from "@tensamin/storage/context";
-import { useUser } from "@tensamin/user/context";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 
 export default function Profile({ user }: { user: User }) {
   const [showAdvancedInformation, setShowAdvancedInformation] = useState(false);
-  const [sharedSecret, setSharedSecret] = useState("");
-
-  const { getSharedSecret } = useCrypto();
-  const { load } = useStorage();
-  const { get } = useUser();
-
-  useEffect(() => {
-    let active = true;
-
-    void (async () => {
-      try {
-        const ownId = await load("user_id");
-        const privateKey = await load("mtp_keyring");
-        const ownData = await get(ownId);
-        const secret = await getSharedSecret(
-          privateKey,
-          ownData.PublicKey,
-          user.PublicKey,
-        );
-
-        if (active) {
-          setSharedSecret(secret);
-        }
-      } catch {
-        if (active) {
-          setSharedSecret("");
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [get, getSharedSecret, load, user.PublicKey]);
-
-  const sharedSecretCode = sharedSecret
-    ? toLossySixDigitCode(sharedSecret)
-    : "------";
 
   return (
     <div className="flex flex-col gap-2">
@@ -87,16 +37,6 @@ export default function Profile({ user }: { user: User }) {
       </Button>
       {showAdvancedInformation && (
         <div className="flex flex-col">
-          <p className="text-white flex gap-1 overflow-hidden text-ellipsis whitespace-nowrap">
-            Shared Code: <code>{sharedSecretCode}</code>{" "}
-            <Tooltip>
-              <TooltipTrigger render={<Info className="size-3.5" />} />
-              <TooltipContent>
-                You can compare this code with the conversation partner to
-                validate that this chat is E2EE
-              </TooltipContent>
-            </Tooltip>
-          </p>
           <p className="text-muted-foreground text-xs overflow-hidden text-ellipsis whitespace-nowrap">
             Iota ID: <code>{user.IotaId}</code>
           </p>

@@ -1,5 +1,6 @@
+import { type ReactNode } from "react";
+/**
 import { useEffect, useState, type ReactNode } from "react";
-import { useCrypto } from "@tensamin/crypto/context";
 import { useUser } from "@tensamin/user/context";
 import { useStorage } from "@tensamin/storage/context";
 import {
@@ -17,12 +18,13 @@ import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
+*/
 
 export default function Wrapper({ children }: { children: ReactNode }) {
+  /**
   const { get } = useUser();
   const { load } = useStorage();
   const { send } = useMTP();
-  const { decryptText, getSharedSecret } = useCrypto();
   const { searchStr } = useLocation();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -274,4 +276,6 @@ export default function Wrapper({ children }: { children: ReactNode }) {
       {allowChildern && children}
     </>
   );
+   */
+  return children;
 }
