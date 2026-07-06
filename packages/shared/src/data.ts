@@ -32,6 +32,12 @@ const chatSecretResponse = z.object({
   UpdatedAt: z.number(),
 });
 
+const chatSecretRecipient = z.object({
+  UserId: z.string(),
+  EncryptedSecret: protocolBytes,
+  KemCiphertext: protocolBytes,
+});
+
 export const Message = z.object({
   NotEncrypted: z.boolean().optional(),
   SentBySelf: z.boolean().optional(),
@@ -267,14 +273,12 @@ export const mtp = {
   },
   SetChatSecret: {
     request: z.object({
-      UserId: z.string(),
       ChatId: z.string(),
       SecretId: z.string(),
       VersionNumber: z.number(),
-      EncryptedSecret: protocolBytes,
-      KemCiphertext: protocolBytes,
       WrappingScheme: z.string(),
       CreatedAt: z.number(),
+      Recipients: z.array(chatSecretRecipient).min(1),
     }),
     response: z.object({}),
   },
@@ -305,6 +309,10 @@ export const mtp = {
     response: z.object({}),
   },
   ErrorNoIota: {
+    request: z.object({}).optional(),
+    response: z.object({}),
+  },
+  ErrorNotSet: {
     request: z.object({}).optional(),
     response: z.object({}),
   },

@@ -201,7 +201,6 @@ export function Provider(props: {
     const unsubscribers = [
       "MessageLive",
       "MessageState",
-      "ChatSecretForward",
       "CallInvite",
       "ErrorNoIota",
     ].map((type) =>

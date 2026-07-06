@@ -2,3 +2,4 @@
 - Add default-emoji-hotkey
 - Placeholder image if media fails to load
 - Signature verifications via ed25519 key
+- Confirmation when exiting with text in the input box.

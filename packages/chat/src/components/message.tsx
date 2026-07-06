@@ -84,6 +84,8 @@ function MessageComponent({
     }
   }, [load, message.SendTime, user?.UserId, send]);
   useEffect(() => {
+    if (message.SentBySelf) return;
+
     let cancelled = false;
 
     async function run() {
@@ -111,7 +113,7 @@ function MessageComponent({
     return () => {
       cancelled = true;
     };
-  }, [message.MessageState, load, messageStateReadUpdate]);
+  }, [message.MessageState, load, messageStateReadUpdate, message.SentBySelf]);
 
   // Check if message is a url
   const [isValidURL, setIsValidURL] = useState(false);
