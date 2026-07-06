@@ -2651,10 +2651,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/deepfilternet3-noise-filter@1.3.0",
+      "bomRef": "pkg:npm/deepfilternet3-noise-filter@1.2.1",
       "name": "deepfilternet3-noise-filter",
-      "version": "1.3.0",
-      "purl": "pkg:npm/deepfilternet3-noise-filter@1.3.0",
+      "version": "1.2.1",
+      "purl": "pkg:npm/deepfilternet3-noise-filter@1.2.1",
       "description": "Custom audio processor with DeepFilterNet3 noise filtering integrated with LiveKit client",
       "licenses": [
         {
@@ -2676,7 +2676,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/deepfilternet3-noise-filter@1.3.0"
+          "value": "licenses/deepfilternet3-noise-filter@1.2.1"
         },
         {
           "name": "local:sourcePackageDir",

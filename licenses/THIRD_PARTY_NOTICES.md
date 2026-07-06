@@ -744,14 +744,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/decimal.js-light@2.5.1`
 - Source package dir: `apps/web/node_modules/decimal.js-light`
 
-## deepfilternet3-noise-filter@1.3.0
+## deepfilternet3-noise-filter@1.2.1
 
 - License: (Apache-2.0 OR MIT)
 - Homepage: https://github.com/mezonai/mezon-noise-suppression#readme
 - Repository: git+https://github.com/mezonai/mezon-noise-suppression.git
 - Description: Custom audio processor with DeepFilterNet3 noise filtering integrated with LiveKit client
 - Included files: LICENSE-APACHE, LICENSE-MIT
-- Folder: `licenses/deepfilternet3-noise-filter@1.3.0`
+- Folder: `licenses/deepfilternet3-noise-filter@1.2.1`
 - Source package dir: `packages/call/node_modules/deepfilternet3-noise-filter`
 
 ## detect-node-es@1.1.0

@@ -646,7 +646,7 @@ export async function openCallPage(callId: string) {
 // Request the LiveKit token that authorizes this client to join a call.
 export async function getCallToken(callId: string): Promise<string> {
   const response = await requireRuntime(useCall.getState().runtime)
-    .send("call_token", {
+    .send("CallToken", {
       CallId: callId,
     })
     .catch((err) => {
@@ -679,7 +679,7 @@ export async function sendCallInvite(userId: number) {
     version: CALL_SECRET_VERSION,
   });
 
-  await runtime.send("call_invite", {
+  await runtime.send("CallInvite", {
     ReceiverId: userId,
     CallId: callId,
     CallSecret: {
@@ -1222,7 +1222,7 @@ export function useInitializeCall() {
 
   // listen to call invites
   useEffect(() => {
-    subscribePush(async (message) => {
+    return subscribePush(async (message) => {
       if (message.type !== "CallInvite") return;
 
       const { CallId, CallSecret, SenderId } = message.data as {
@@ -1231,7 +1231,15 @@ export function useInitializeCall() {
         SenderId: number;
       };
 
-      showCallingScreen(CallId, CallSecret, SenderId);
+      if (SenderId === Number(await load("user_id"))) {
+        return;
+      }
+
+      showCallingScreen(
+        CallId,
+        normalizeWrappedCallSecret(CallSecret),
+        SenderId,
+      );
     });
   }, [load, subscribePush, showCallingScreen]);
 
@@ -1564,6 +1572,18 @@ export function useInitializeCall() {
 
     send("CallData", { CallId: callId })
       .then((data) => {
+        if (data.type === "ErrorNotFound") {
+          setCurrentCallData({
+            UserIds: [],
+            exists: false,
+          });
+          return;
+        }
+
+        if (data.type.startsWith("Error")) {
+          throw new Error(`CallData failed: ${data.type}`);
+        }
+
         setCurrentCallData({
           ...(data.data as z.infer<typeof mtp.CallData.response>),
           exists: true,
