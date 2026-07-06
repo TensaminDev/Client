@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { defineConfig, normalizePath, type Plugin } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { mtp } from "mtp/vite";
@@ -47,38 +47,6 @@ function deepFilterAssetHeaders(rootDir: string): Plugin {
     },
     configurePreviewServer(server) {
       server.middlewares.use(serveModel);
-    },
-  };
-}
-
-function restartOnMtpSourceChange(srcDir: string): Plugin {
-  const watchedDir = normalizePath(realpathSync(srcDir));
-
-  return {
-    name: "restart-on-mtp-source-change",
-    apply: "serve",
-    configureServer(server) {
-      server.watcher.add(watchedDir);
-      let restartTimer: ReturnType<typeof setTimeout> | null = null;
-
-      const restart = (file: string) => {
-        if (!normalizePath(file).startsWith(`${watchedDir}/`)) {
-          return;
-        }
-
-        if (restartTimer) {
-          clearTimeout(restartTimer);
-        }
-
-        restartTimer = setTimeout(() => {
-          restartTimer = null;
-          void server.restart();
-        }, 50);
-      };
-
-      server.watcher.on("add", restart);
-      server.watcher.on("change", restart);
-      server.watcher.on("unlink", restart);
     },
   };
 }
@@ -141,6 +109,8 @@ export default defineConfig({
       : undefined,
     watch: {
       ignored: ["**/src-tauri/**"],
+      usePolling: true,
+      interval: 100,
     },
   },
   envPrefix: ["VITE_", "TAURI_ENV_*"],
@@ -181,8 +151,18 @@ export default defineConfig({
   },
   plugins: [
     deepFilterAssetHeaders(resolve(appDir, "public")),
-    restartOnMtpSourceChange(resolve(appDir, "../../packages/mtp/src")),
     mtp({ typeMaps: resolve(appDir, "../../type-maps.yaml") }),
+    {
+      name: "workspace-realpath-resolution",
+      enforce: "post",
+      config() {
+        return {
+          resolve: {
+            preserveSymlinks: false,
+          },
+        };
+      },
+    },
     react(),
     tailwindcss(),
   ],

@@ -523,11 +523,11 @@ export default function Screen() {
 
                         return (
                           <Wrapper
+                            key={getMessageRenderKey(message)}
                             userId={message.SenderId}
                             loading={<Skeleton className="w-30 h-5" />}
                             component={(user) => (
                               <Message
-                                key={getMessageRenderKey(message)}
                                 grouped={isGrouped}
                                 message={message}
                                 user={user}

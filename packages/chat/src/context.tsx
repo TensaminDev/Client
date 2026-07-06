@@ -172,16 +172,6 @@ export default function Provider({ children }: { children: ReactNode }) {
     return currentChatSecretState.value;
   }, [currentChatSecretState, userIdValue]);
 
-  // Chat secret debugging
-  useEffect(() => {
-    if (!currentChatSecret) return;
-
-    const hex = Array.from(currentChatSecret, (b) =>
-      b.toString(16).padStart(2, "0"),
-    ).join("");
-    log(3, "chat", "yellow", "Chat secret (sensitive)", hex);
-  }, [currentChatSecret]);
-
   useEffect(() => {
     if (!userIdValue) return;
 
