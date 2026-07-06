@@ -19,6 +19,7 @@ import {
 import { Pin, Clipboard, Pen, Reply, Forward, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
+import { useChat } from "../context";
 
 async function copyText(text: string) {
   await navigator.clipboard.writeText(text);
@@ -146,6 +147,8 @@ function MessageMenuContent({
   const { Content, Group, Item, Separator, Sub, SubContent, SubTrigger } =
     components;
 
+  const { setReplyTo } = useChat();
+
   return (
     <Content>
       <Group>
@@ -172,7 +175,12 @@ function MessageMenuContent({
         <Item disabled className="flex justify-between">
           <p>Edit Message</p> <Pen />
         </Item>
-        <Item disabled className="flex justify-between">
+        <Item
+          className="flex justify-between"
+          onClick={() => {
+            setReplyTo(messageId);
+          }}
+        >
           <p>Reply</p> <Reply />
         </Item>
         <Item disabled className="flex justify-between">

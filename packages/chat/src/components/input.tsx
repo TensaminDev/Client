@@ -1,17 +1,21 @@
 import Input from "@tensamin/markdown/input";
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Card,
   CardHeader,
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Skeleton,
 } from "@tensamin/ui";
 import { useStorage } from "@tensamin/storage/context";
-import * as React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@tensamin/ui";
 
-import { Plus, Laugh, FileVideo } from "lucide-react";
-import { useChat } from "../context";
+import { Plus, Laugh, FileVideo, Forward, X } from "lucide-react";
+import { useChat, useReplyMessage } from "../context";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { cn, useIsMobile } from "@tensamin/ui";
@@ -19,6 +23,8 @@ import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/storage/session";
 import GifPicker from "./gifPicker";
+import Wrapper from "@tensamin/user/wrapper";
+import Text from "@tensamin/markdown/text";
 
 export default function InputComponent({
   value,
@@ -27,26 +33,33 @@ export default function InputComponent({
   value: string;
   setValue: (value: string) => void;
 }) {
-  const [invertEnterBehavior, setInvertEnterBehavior] = React.useState(false);
+  const [invertEnterBehavior, setInvertEnterBehavior] = useState(false);
 
   const { send } = useMTP();
-  const { addLiveMessage, chatSecret, userId, inputBoxRef } = useChat();
+  const {
+    addLiveMessage,
+    chatSecret,
+    userId,
+    inputBoxRef,
+    replyTo,
+    setReplyTo,
+  } = useChat();
   const { load, save } = useStorage();
   const { moveUserIdToTop } = useSession();
-  const gifPopoverRef = React.useRef<HTMLDivElement>(null);
-  const [gifPopoverOpen, setGifPopoverOpen] = React.useState(false);
-  const [gifPopoverSize, setGifPopoverSize] = React.useState<{
+  const gifPopoverRef = useRef<HTMLDivElement>(null);
+  const [gifPopoverOpen, setGifPopoverOpen] = useState(false);
+  const [gifPopoverSize, setGifPopoverSize] = useState<{
     width: number;
     height: number;
   }>();
 
-  React.useEffect(() => {
+  useEffect(() => {
     void load("settings.reverse_enter_behavior").then((shouldInvert) => {
       setInvertEnterBehavior(shouldInvert);
     });
   }, [load]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     void load("chat_picker_size").then((size) => {
       if (size) {
         setGifPopoverSize(size);
@@ -57,7 +70,7 @@ export default function InputComponent({
   async function handleSubmit(content = value, preserveContent = false) {
     if (content.trim() === "") return;
 
-    const time = Date.now();
+    const time = new Date().getTime();
     const currentValue = content;
 
     if (!Number.isSafeInteger(userId) || userId <= 0) {
@@ -76,18 +89,20 @@ export default function InputComponent({
       NotEncrypted: true,
       SendTime: time,
       Content: currentValue,
-      SentBySelf: true,
+      SenderId: ownId,
       MessageState: "awaiting",
+      ...(replyTo && { ReplyId: replyTo }),
     });
 
     log(3, "chat", "purple", "Live message added, encrypting...");
 
-    const encryptedContent = await encryptChatText(chatSecret, currentValue).catch(
-      (err) => {
-        toast("error", "Failed to encrypt message", String(err));
-        reference.setFailed(true);
-      },
-    );
+    const encryptedContent = await encryptChatText(
+      chatSecret,
+      currentValue,
+    ).catch((err) => {
+      toast("error", "Failed to encrypt message", String(err));
+      reference.setFailed(true);
+    });
 
     if (!encryptedContent) return;
 
@@ -105,6 +120,10 @@ export default function InputComponent({
       reference.setFailed(true);
       toast("error", "Failed to send message");
     });
+
+    if (replyTo) {
+      setReplyTo(undefined);
+    }
 
     log(3, "chat", "purple", "Message sent");
 
@@ -168,73 +187,126 @@ export default function InputComponent({
     window.addEventListener("pointerup", handlePointerUp);
   }
 
+  const { ownId, replyMessage, replyUserId } = useReplyMessage();
+
   return (
-    <Card
-      ref={inputBoxRef}
-      className={cn(
-        "ring-0! rounded-none border-b-0 border-t border-x border-input/70 pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
-        isMobile ? "border-0 border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
-      )}
-    >
-      <CardHeader className="relative p-0 flex flex-col">
-        <Input
-          className="w-full"
-          paddingY="13px"
-          paddingX="13px"
-          placeholder="Send a message..."
-          value={value}
-          setValue={setValue}
-          onSubmit={handleSubmit}
-          invertEnterBehavior={invertEnterBehavior}
-        />
-        <div className="w-full flex justify-between gap-1 p-1 pt-0">
-          <div className="flex gap-1">
-            <Button className="w-9 h-9 p-0" variant="ghost">
-              <Plus size={20} />
-            </Button>
-            <div className="w-auto flex text-red-500">
-              <p>Files list</p>
-            </div>
-          </div>
-          <div className="flex gap-1">
-            <Button className="w-9 h-9 p-0" variant="ghost">
-              <Laugh size={20} />
-            </Button>
-            <Popover open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
-              <PopoverTrigger
-                render={
-                  <Button className="w-9 h-9 p-0" variant="ghost">
-                    <FileVideo size={20} />
-                  </Button>
-                }
+    <div className="flex flex-col">
+      {replyTo !== undefined && (
+        <div className="self-center rounded-t-lg bg-background border-t border-x flex items-center justify-start w-[90%] p-1">
+          <div className="flex gap-1 w-full items-center">
+            <Forward
+              color="var(--muted-foreground)"
+              className="opacity-60"
+              size={18}
+            />
+            {replyMessage ? (
+              <>
+                <Wrapper
+                  userId={replyUserId ?? ownId}
+                  loading={<Skeleton className="rounded-full" />}
+                  component={(user) => (
+                    <Avatar>
+                      <AvatarImage src={user.Avatar} />
+                      <AvatarFallback>
+                        {user.Display.slice(2, 0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                />
+                <div className="max-w-full max-h-5 h-5 text-xs truncate">
+                  <Text value={replyMessage.Content} />
+                </div>
+              </>
+            ) : (
+              <>
+                <Skeleton className="w-5 h-5 aspect-square rounded-full" />
+                <Skeleton className="w-full h-5" />
+              </>
+            )}
+            <Button
+              onClick={() => {
+                setReplyTo(undefined);
+              }}
+              className="w-5 h-5 rounded-md! p-0!"
+              size="xs"
+              variant="ghost"
+            >
+              <X
+                color="var(--muted-foreground)"
+                className="opacity-60"
+                size={18}
               />
-              <PopoverContent
-                ref={gifPopoverRef}
-                className="relative min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
-                onTouchMoveCapture={(event) => event.stopPropagation()}
-                onWheelCapture={(event) => event.stopPropagation()}
-                style={{
-                  ...gifPopoverSize,
-                  maxHeight: gifPopoverSize?.height,
-                }}
-              >
-                <div
-                  className="absolute left-0 top-0 z-10 h-4 w-4 cursor-nwse-resize"
-                  onPointerDown={handleGifPopoverResizeStart}
-                />
-                <GifPicker
-                  resizeHeight={gifPopoverSize?.height}
-                  resizeWidth={gifPopoverSize?.width}
-                  onSelect={(url) => {
-                    void handleSubmit(url, true);
-                    setGifPopoverOpen(false);
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
+            </Button>
           </div>
         </div>
-      </CardHeader>
-    </Card>
+      )}
+      <Card
+        ref={inputBoxRef}
+        className={cn(
+          "ring-0! rounded-none border-b-0 border-t border-x border-input/70 pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
+          isMobile ? "border-0 border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
+        )}
+      >
+        <CardHeader className="relative p-0 flex flex-col">
+          <Input
+            className="w-full"
+            paddingY="13px"
+            paddingX="13px"
+            placeholder="Send a message..."
+            value={value}
+            setValue={setValue}
+            onSubmit={handleSubmit}
+            invertEnterBehavior={invertEnterBehavior}
+          />
+          <div className="w-full flex justify-between gap-1 p-1 pt-0">
+            <div className="flex gap-1">
+              <Button className="w-9 h-9 p-0" variant="ghost">
+                <Plus size={20} />
+              </Button>
+              <div className="w-auto flex text-red-500">
+                <p>Files list</p>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              <Button className="w-9 h-9 p-0" variant="ghost">
+                <Laugh size={20} />
+              </Button>
+              <Popover open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button className="w-9 h-9 p-0" variant="ghost">
+                      <FileVideo size={20} />
+                    </Button>
+                  }
+                />
+                <PopoverContent
+                  ref={gifPopoverRef}
+                  className="relative min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
+                  onTouchMoveCapture={(event) => event.stopPropagation()}
+                  onWheelCapture={(event) => event.stopPropagation()}
+                  style={{
+                    ...gifPopoverSize,
+                    maxHeight: gifPopoverSize?.height,
+                  }}
+                >
+                  <div
+                    className="absolute left-0 top-0 z-10 h-4 w-4 cursor-nwse-resize"
+                    onPointerDown={handleGifPopoverResizeStart}
+                  />
+                  <GifPicker
+                    resizeHeight={gifPopoverSize?.height}
+                    resizeWidth={gifPopoverSize?.width}
+                    onSelect={(url) => {
+                      void handleSubmit(url, true);
+                      setGifPopoverOpen(false);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    </div>
   );
 }

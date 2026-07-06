@@ -68,13 +68,14 @@ const callSecretEnvelopeRequest = z.object({
 
 export const Message = z.object({
   NotEncrypted: z.boolean().optional(),
-  SentBySelf: z.boolean().optional(),
+  SenderId: z.number(),
   SendTime: z.number(),
   Content: z.base64(),
   Files: z.array(fileFromMessage).optional(),
   Tint: z.string().length(7).startsWith("#").optional(),
   Avatar: z.boolean().optional(),
   Display: z.boolean().optional(),
+  ReplyId: z.number().optional(),
   MessageState: z
     .enum(["read", "received", "sent", "sending", "awaiting"]) // awaiting for 'internal' use
     .default("received"),
@@ -200,6 +201,12 @@ export const mtp = {
       SenderId: z.number(),
       Message,
     }),
+  },
+  MessageGet: {
+    request: z.object({
+      SendTime: z.number(),
+    }),
+    response: Message,
   },
   MessagesGet: {
     request: z.object({

@@ -71,6 +71,7 @@ type_maps:
       MessageLive: 59
       MessageOtherIota: 60
       MessageChunk: 61
+      MessageGet: 143
       MessagesGet: 62
       PushNotification: 63
       ReadNotification: 64

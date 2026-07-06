@@ -61,7 +61,6 @@ export default function Provider(props: { children: React.ReactNode }) {
                 ...data.Message,
                 Content: content ?? "Failed to decrypt message",
                 decryptionFailed: content === null,
-                SentBySelf: false,
               });
               return;
             }

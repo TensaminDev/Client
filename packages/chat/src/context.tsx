@@ -24,7 +24,7 @@ import {
 } from "@tensamin/crypto/chatSecret";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
-import { log } from "@tensamin/shared/log";
+import { log, toast } from "@tensamin/shared/log";
 import { useSession } from "@tensamin/storage/session";
 import { useUser } from "@tensamin/user/context";
 
@@ -94,6 +94,44 @@ function assertProtocolSuccess(type: string, response: { type: string }) {
 
 function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return new Uint8Array(bytes);
+}
+
+type SendMessageGet = (
+  type: "MessageGet",
+  data: { SendTime: number },
+) => Promise<{ data: RawMessage }>;
+
+type GetChatSecret = (userId: number) => Promise<Uint8Array | null>;
+
+export async function fetchReplyMessage({
+  replyTo,
+  send,
+  getChatSecret,
+}: {
+  replyTo: number;
+  ownId: number;
+  chatUserId: number;
+  send: SendMessageGet;
+  getChatSecret: GetChatSecret;
+}) {
+  const value = await send("MessageGet", {
+    SendTime: replyTo,
+  });
+  const chatSecret = await getChatSecret(value.data.SenderId);
+
+  if (!chatSecret) {
+    throw new Error("Missing chat secret");
+  }
+
+  const decryptedContent = await decryptChatText(
+    chatSecret,
+    value.data.Content,
+  );
+
+  return {
+    ...value.data,
+    Content: decryptedContent,
+  };
 }
 
 export default function Provider({ children }: { children: ReactNode }) {
@@ -343,13 +381,17 @@ export default function Provider({ children }: { children: ReactNode }) {
     [currentChatSecret, send, userIdValue],
   );
 
+  const [ownId, setOwnId] = useState(0);
+  useEffect(() => {
+    load("user_id").then(setOwnId);
+  }, [load]);
   const addLiveMessage = useCallback(
     (message: RawMessage) => {
       const localId =
         globalThis.crypto?.randomUUID?.() ??
         `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      if (!message.SentBySelf) {
+      if (message.SenderId !== ownId) {
         moveUserIdToTop(userIdValue);
       }
 
@@ -374,7 +416,7 @@ export default function Provider({ children }: { children: ReactNode }) {
         },
       };
     },
-    [userIdValue, moveUserIdToTop],
+    [userIdValue, moveUserIdToTop, ownId],
   );
 
   const clearLiveMessages = useCallback(() => {
@@ -475,6 +517,9 @@ export default function Provider({ children }: { children: ReactNode }) {
     });
   }, [addLiveMessage, currentChatSecret, send, subscribePush, userIdValue]);
 
+  // Replys
+  const [replyTo, setReplyTo] = useState<number | undefined>(undefined);
+
   return (
     <QueryClientProvider client={queryClient}>
       <context.Provider
@@ -489,6 +534,8 @@ export default function Provider({ children }: { children: ReactNode }) {
           inputBoxRef,
           error,
           errorDescription,
+          replyTo,
+          setReplyTo,
         }}
       >
         {children}
@@ -510,6 +557,8 @@ type contextType = {
   inputBoxRef: React.RefObject<HTMLDivElement | null>;
   error: string;
   errorDescription: string;
+  replyTo: number | undefined;
+  setReplyTo: (value: number | undefined) => void;
 };
 
 export function useChat(): contextType {
@@ -518,4 +567,67 @@ export function useChat(): contextType {
     throw new Error("useChat must be used within a ChatProvider");
   }
   return ctx;
+}
+
+export function useReplyMessage() {
+  const { send } = useMTP();
+  const { load } = useStorage();
+  const { replyTo, setReplyTo, getChatSecret, userId } = useChat();
+  const [ownId, setOwnId] = useState(0);
+  const [replyMessage, setReplyMessage] = useState<RawMessage | undefined>();
+
+  const handleReplyError = useCallback(
+    (err: unknown) => {
+      log(1, "chat", "red", "Failed to get reply message", err);
+      toast("error", "Failed to get reply message", String(err));
+      setReplyTo(undefined);
+      setReplyMessage(undefined);
+    },
+    [setReplyTo],
+  );
+
+  useEffect(() => {
+    void load("user_id").then((value) => {
+      setOwnId(Number(value));
+    });
+  }, [load]);
+
+  useEffect(() => {
+    if (!replyTo || !ownId) {
+      setReplyMessage(undefined);
+      return;
+    }
+
+    let active = true;
+    setReplyMessage(undefined);
+
+    void fetchReplyMessage({
+      replyTo,
+      ownId,
+      chatUserId: userId,
+      send,
+      getChatSecret,
+    })
+      .then((message) => {
+        if (active) {
+          setReplyMessage(message);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          handleReplyError(err);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [replyTo, ownId, userId, send, getChatSecret, handleReplyError]);
+
+  return {
+    ownId,
+    replyTo,
+    replyMessage,
+    replyUserId: replyMessage?.SenderId,
+  };
 }

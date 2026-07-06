@@ -1,9 +1,6 @@
 import * as React from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { failedUser } from "@tensamin/shared/data";
-import { useStorage } from "@tensamin/storage/context";
-import { useUser, type User } from "@tensamin/user/context";
 
 import InputComponent from "./components/input";
 import Message from "./components/message";
@@ -15,6 +12,8 @@ import {
   type LiveMessage,
   type RawMessage,
 } from "./values";
+import Wrapper from "@tensamin/user/wrapper";
+import { Skeleton } from "@tensamin/ui";
 
 type MessageChunk = {
   key: string;
@@ -83,9 +82,6 @@ export default function Screen() {
     error,
     errorDescription,
   } = useChat();
-  const { get: getUser } = useUser();
-  const { load } = useStorage();
-
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const topSentinelRef = React.useRef<HTMLDivElement | null>(null);
   const didInitialScrollRef = React.useRef(false);
@@ -97,9 +93,6 @@ export default function Screen() {
   const isFetchingNextPageRef = React.useRef(false);
   const fetchNextPageRef = React.useRef<(() => void) | null>(null);
 
-  const [messageUsers, setMessageUsers] = React.useState<
-    Record<string, User | undefined>
-  >({});
   const [lastLiveMessageCount, setLastLiveMessageCount] = React.useState(0);
   const [didInitialScroll, setDidInitialScroll] = React.useState(false);
   const [viewportHeight, setViewportHeight] = React.useState(0);
@@ -143,41 +136,6 @@ export default function Screen() {
     setDidInitialScroll(false);
     setLastLiveMessageCount(0);
   }, [clearLiveMessages, userId]);
-
-  React.useEffect(() => {
-    if (!hasValidChatUser) {
-      setMessageUsers({});
-      return;
-    }
-
-    let active = true;
-
-    const loadMessageUser = async (
-      key: string,
-      resolveUserId: () => Promise<number>,
-    ) => {
-      try {
-        const resolvedUserId = await resolveUserId();
-        const value = await getUser(resolvedUserId);
-
-        if (active) {
-          setMessageUsers((prev) => ({ ...prev, [key]: value }));
-        }
-      } catch {
-        if (active) {
-          setMessageUsers((prev) => ({ ...prev, [key]: failedUser }));
-        }
-      }
-    };
-
-    setMessageUsers({});
-    void loadMessageUser("peer", async () => userId);
-    void loadMessageUser("own", async () => Number(await load("user_id")));
-
-    return () => {
-      active = false;
-    };
-  }, [getUser, hasValidChatUser, load, userId]);
 
   const historicalMessages = React.useMemo(() => {
     const pages = messagesQuery.data?.pages ?? [];
@@ -559,20 +517,22 @@ export default function Screen() {
                         const lastMessage = messages[messageIndex - 1];
                         const isGrouped =
                           lastMessage &&
-                          lastMessage.SentBySelf === message.SentBySelf &&
+                          lastMessage.SenderId === message.SenderId &&
                           Math.round(lastMessage.SendTime / 10000) ===
                             Math.round(message.SendTime / 10000);
 
                         return (
-                          <Message
-                            key={getMessageRenderKey(message)}
-                            grouped={isGrouped}
-                            message={message}
-                            user={
-                              message.SentBySelf
-                                ? (messageUsers.own ?? null)
-                                : (messageUsers.peer ?? null)
-                            }
+                          <Wrapper
+                            userId={message.SenderId}
+                            loading={<Skeleton className="w-30 h-5" />}
+                            component={(user) => (
+                              <Message
+                                key={getMessageRenderKey(message)}
+                                grouped={isGrouped}
+                                message={message}
+                                user={user}
+                              />
+                            )}
                           />
                         );
                       })}
