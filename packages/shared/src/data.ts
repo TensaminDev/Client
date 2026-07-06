@@ -20,6 +20,18 @@ const bytesLike = z.union([
 
 const protocolBytes = z.instanceof(Uint8Array);
 
+function bytesFromProtocol(value: z.infer<typeof bytesLike>): Uint8Array {
+  if (value instanceof Uint8Array) return value;
+  if (Array.isArray(value)) return new Uint8Array(value);
+
+  const bin = atob(value);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+const protocolBytesResponse = bytesLike.transform(bytesFromProtocol);
+
 const chatSecretResponse = z.object({
   UserId: z.string(),
   ChatId: z.string(),
@@ -36,6 +48,22 @@ const chatSecretRecipient = z.object({
   UserId: z.string(),
   EncryptedSecret: protocolBytes,
   KemCiphertext: protocolBytes,
+});
+
+const callSecretEnvelopeResponse = z.object({
+  SecretId: z.string(),
+  VersionNumber: z.number(),
+  EncryptedSecret: protocolBytesResponse,
+  KemCiphertext: protocolBytesResponse,
+  WrappingScheme: z.string(),
+});
+
+const callSecretEnvelopeRequest = z.object({
+  SecretId: z.string(),
+  VersionNumber: z.number(),
+  EncryptedSecret: protocolBytes,
+  KemCiphertext: protocolBytes,
+  WrappingScheme: z.string(),
 });
 
 export const Message = z.object({
@@ -85,7 +113,7 @@ const authPayload = z.object({
     .array(
       z.object({
         CallId: z.string(),
-        CallSecret: z.base64().optional(),
+        CallSecret: callSecretEnvelopeResponse.optional(),
         CallMembers: z.array(z.number()),
       }),
     )
@@ -262,12 +290,12 @@ export const mtp = {
   CallInvite: {
     request: z.object({
       CallId: z.string(),
-      CallSecret: z.base64(),
+      CallSecret: callSecretEnvelopeRequest,
       ReceiverId: z.number(),
     }),
     response: z.object({
       CallId: z.string().optional(),
-      CallSecret: z.base64().optional(),
+      CallSecret: callSecretEnvelopeResponse.optional(),
       SenderId: z.number().optional(),
     }),
   },

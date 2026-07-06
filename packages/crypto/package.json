@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./context": "./src/context.tsx",
-    "./chatSecret": "./src/chatSecret.ts"
+    "./chatSecret": "./src/chatSecret.ts",
+    "./callSecret": "./src/callSecret.ts"
   },
   "scripts": {
     "format": "pnpm exec prettier --write .",
