@@ -1,3 +1,4 @@
 - Implement context menu features
 - Add default-emoji-hotkey
 - Placeholder image if media fails to load
+- Signature verifications via ed25519 key

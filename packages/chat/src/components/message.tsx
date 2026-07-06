@@ -136,7 +136,7 @@ function MessageComponent({
           className={cn(
             "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
             {
-              "bg-(--destructive)/15 text-destructive-foreground hover:bg-(--destructive)/20":
+              "bg-(--destructive)/10 text-destructive-foreground hover:bg-(--destructive)/15":
                 actuallyFailed,
             },
           )}

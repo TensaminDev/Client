@@ -15,7 +15,6 @@ import { type z } from "zod";
 import { ConnectionState } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import { toast as sonnerToast } from "@tensamin/ui";
-import { Loader2 } from "lucide-react";
 
 import {
   type Calls,
@@ -266,24 +265,6 @@ export function Provider(props: {
       clearTimeout(reconnectResetTimer);
       reconnectResetTimer = null;
     };
-
-    if (!props.blockConnection) {
-      sonnerToast.promise(
-        new Promise<void>((resolve) => {
-          resolveConnectionRef.current = resolve;
-        }),
-        {
-          id: "mtp-connection-toast",
-          loading: "Connecting to server...",
-          icon: (
-            <div className="animate-spin aspect-square m-0! flex justify-center items-center">
-              <Loader2 size={16} className="aspect-square m-0!" />
-            </div>
-          ),
-          duration: Infinity,
-        },
-      );
-    }
 
     async function connect() {
       if (disposed || props.blockConnection) return;
