@@ -18,6 +18,20 @@ const bytesLike = z.union([
   z.base64(),
 ]);
 
+const protocolBytes = z.instanceof(Uint8Array);
+
+const chatSecretResponse = z.object({
+  UserId: z.string(),
+  ChatId: z.string(),
+  SecretId: z.string(),
+  VersionNumber: z.number(),
+  EncryptedSecret: bytesLike,
+  KemCiphertext: bytesLike,
+  WrappingScheme: z.string(),
+  CreatedAt: z.number(),
+  UpdatedAt: z.number(),
+});
+
 export const Message = z.object({
   NotEncrypted: z.boolean().optional(),
   SentBySelf: z.boolean().optional(),
@@ -257,8 +271,8 @@ export const mtp = {
       ChatId: z.string(),
       SecretId: z.string(),
       VersionNumber: z.number(),
-      EncryptedSecret: bytesLike,
-      KemCiphertext: bytesLike,
+      EncryptedSecret: protocolBytes,
+      KemCiphertext: protocolBytes,
       WrappingScheme: z.string(),
       CreatedAt: z.number(),
     }),
@@ -270,21 +284,11 @@ export const mtp = {
       ChatId: z.string(),
       SecretId: z.string().optional(),
     }),
-    response: z.object({}),
+    response: chatSecretResponse,
   },
   ChatSecretResponse: {
     request: z.object({}).optional(),
-    response: z.object({
-      UserId: z.string(),
-      ChatId: z.string(),
-      SecretId: z.string(),
-      VersionNumber: z.number(),
-      EncryptedSecret: bytesLike,
-      KemCiphertext: bytesLike,
-      WrappingScheme: z.string(),
-      CreatedAt: z.number(),
-      UpdatedAt: z.number(),
-    }),
+    response: chatSecretResponse,
   },
   ChatSecretForward: {
     request: z.object({
@@ -293,8 +297,8 @@ export const mtp = {
       RecipientUserId: z.string(),
       SecretId: z.string(),
       VersionNumber: z.number(),
-      EncryptedSecret: bytesLike,
-      KemCiphertext: bytesLike,
+      EncryptedSecret: protocolBytes,
+      KemCiphertext: protocolBytes,
       WrappingScheme: z.string(),
       CreatedAt: z.number(),
     }),

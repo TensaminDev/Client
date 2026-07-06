@@ -35,12 +35,26 @@ const CHAT_SECRET_VERSION = 1;
 
 function bytesFromProtocol(value: unknown): Uint8Array {
   if (value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return new Uint8Array(value);
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  }
   if (Array.isArray(value)) return new Uint8Array(value);
   if (typeof value === "string") {
     const bin = atob(value);
     const out = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
     return out;
+  }
+  if (typeof value === "object" && value !== null) {
+    const entries = Object.entries(value);
+    if (
+      entries.every(
+        ([key, item]) => /^\d+$/.test(key) && typeof item === "number",
+      )
+    ) {
+      return new Uint8Array(entries.map(([, item]) => item as number));
+    }
   }
   throw new Error("expected protocol bytes");
 }
@@ -70,6 +84,16 @@ function updateMessageStateBySendTime<
     next,
     updated,
   };
+}
+
+function assertProtocolSuccess(type: string, response: { type: string }) {
+  if (response.type.startsWith("Error")) {
+    throw new Error(`${type} failed: ${response.type}`);
+  }
+}
+
+function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  return new Uint8Array(bytes);
 }
 
 export default function Provider({ children }: { children: ReactNode }) {
@@ -125,6 +149,34 @@ export default function Provider({ children }: { children: ReactNode }) {
         const chatId = deriveChatId(ownUserId, userIdValue);
         const secretId = deriveChatSecretId(chatId);
 
+        async function forwardChatSecret(chatSecret: Uint8Array) {
+          const peerUser = await getUser(userIdValue);
+          const peerWrapped = await wrapChatSecret({
+            chatSecret,
+            recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(
+              peerUser.PublicKey,
+            ),
+            chatId,
+            secretId,
+            version: CHAT_SECRET_VERSION,
+          });
+
+          assertProtocolSuccess(
+            "ChatSecretForward",
+            await send("ChatSecretForward", {
+              ChatId: chatId,
+              SenderUserId: String(ownUserId),
+              RecipientUserId: String(userIdValue),
+              SecretId: secretId,
+              VersionNumber: CHAT_SECRET_VERSION,
+              EncryptedSecret: protocolBytes(peerWrapped.encryptedSecret),
+              KemCiphertext: protocolBytes(peerWrapped.kemCiphertext),
+              WrappingScheme: peerWrapped.wrappingScheme,
+              CreatedAt: Date.now(),
+            }),
+          );
+        }
+
         const existing = await send("GetChatSecret", {
           UserId: String(ownUserId),
           ChatId: chatId,
@@ -146,6 +198,8 @@ export default function Provider({ children }: { children: ReactNode }) {
           if (active) {
             setCurrentChatSecretState({ userId: userIdValue, value: secret });
           }
+
+          await forwardChatSecret(secret);
           return;
         }
 
@@ -158,39 +212,21 @@ export default function Provider({ children }: { children: ReactNode }) {
           version: CHAT_SECRET_VERSION,
         });
 
-        await send("SetChatSecret", {
-          UserId: String(ownUserId),
-          ChatId: chatId,
-          SecretId: secretId,
-          VersionNumber: CHAT_SECRET_VERSION,
-          EncryptedSecret: Array.from(ownWrapped.encryptedSecret),
-          KemCiphertext: Array.from(ownWrapped.kemCiphertext),
-          WrappingScheme: ownWrapped.wrappingScheme,
-          CreatedAt: Date.now(),
-        });
+        assertProtocolSuccess(
+          "SetChatSecret",
+          await send("SetChatSecret", {
+            UserId: String(ownUserId),
+            ChatId: chatId,
+            SecretId: secretId,
+            VersionNumber: CHAT_SECRET_VERSION,
+            EncryptedSecret: protocolBytes(ownWrapped.encryptedSecret),
+            KemCiphertext: protocolBytes(ownWrapped.kemCiphertext),
+            WrappingScheme: ownWrapped.wrappingScheme,
+            CreatedAt: Date.now(),
+          }),
+        );
 
-        const peerUser = await getUser(userIdValue);
-        const peerWrapped = await wrapChatSecret({
-          chatSecret: rawSecret,
-          recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(
-            peerUser.PublicKey,
-          ),
-          chatId,
-          secretId,
-          version: CHAT_SECRET_VERSION,
-        });
-
-        await send("ChatSecretForward", {
-          ChatId: chatId,
-          SenderUserId: String(ownUserId),
-          RecipientUserId: String(userIdValue),
-          SecretId: secretId,
-          VersionNumber: CHAT_SECRET_VERSION,
-          EncryptedSecret: Array.from(peerWrapped.encryptedSecret),
-          KemCiphertext: Array.from(peerWrapped.kemCiphertext),
-          WrappingScheme: peerWrapped.wrappingScheme,
-          CreatedAt: Date.now(),
-        });
+        await forwardChatSecret(rawSecret);
 
         if (active) {
           setCurrentChatSecretState({ userId: userIdValue, value: rawSecret });
@@ -317,6 +353,68 @@ export default function Provider({ children }: { children: ReactNode }) {
           const keyring = await load("mtp_keyring");
           const chatId = String(data.ChatId);
           const secretId = String(data.SecretId);
+          const senderUserId = Number(data.SenderUserId);
+          if (!Number.isSafeInteger(senderUserId) || senderUserId <= 0) {
+            throw new Error("Invalid chat secret sender id");
+          }
+
+          const existing = await send("GetChatSecret", {
+            UserId: String(ownUserId),
+            ChatId: chatId,
+            SecretId: secretId,
+          });
+
+          if (!existing.type.startsWith("Error") && senderUserId > ownUserId) {
+            const existingData = existing.data as Record<string, unknown>;
+            const existingSecret = await unwrapChatSecret({
+              encryptedSecret: bytesFromProtocol(existingData.EncryptedSecret),
+              kemCiphertext: bytesFromProtocol(existingData.KemCiphertext),
+              keyring,
+              chatId: String(existingData.ChatId),
+              secretId: String(existingData.SecretId),
+              version: Number(existingData.VersionNumber),
+              wrappingScheme: String(existingData.WrappingScheme),
+            });
+            const senderUser = await getUser(senderUserId);
+            const senderWrapped = await wrapChatSecret({
+              chatSecret: existingSecret,
+              recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(
+                senderUser.PublicKey,
+              ),
+              chatId,
+              secretId,
+              version: Number(existingData.VersionNumber),
+            });
+
+            assertProtocolSuccess(
+              "ChatSecretForward",
+              await send("ChatSecretForward", {
+                ChatId: chatId,
+                SenderUserId: String(ownUserId),
+                RecipientUserId: String(senderUserId),
+                SecretId: String(existingData.SecretId),
+                VersionNumber: Number(existingData.VersionNumber),
+                EncryptedSecret: protocolBytes(senderWrapped.encryptedSecret),
+                KemCiphertext: protocolBytes(senderWrapped.kemCiphertext),
+                WrappingScheme: senderWrapped.wrappingScheme,
+                CreatedAt: Date.now(),
+              }),
+            );
+
+            log(
+              2,
+              "chat",
+              "purple",
+              "Ignoring forwarded chat secret because local user owns the deterministic secret",
+              {
+                chatId,
+                ownUserId,
+                senderUserId,
+              },
+            );
+            return;
+          }
+
           const secret = await unwrapChatSecret({
             encryptedSecret: bytesFromProtocol(data.EncryptedSecret),
             kemCiphertext: bytesFromProtocol(data.KemCiphertext),
@@ -334,19 +432,25 @@ export default function Provider({ children }: { children: ReactNode }) {
             version: Number(data.VersionNumber),
           });
 
-          await send("SetChatSecret", {
-            UserId: String(ownUserId),
-            ChatId: chatId,
-            SecretId: secretId,
-            VersionNumber: Number(data.VersionNumber),
-            EncryptedSecret: Array.from(ownWrapped.encryptedSecret),
-            KemCiphertext: Array.from(ownWrapped.kemCiphertext),
-            WrappingScheme: ownWrapped.wrappingScheme,
-            CreatedAt: Date.now(),
-          });
+          assertProtocolSuccess(
+            "SetChatSecret",
+            await send("SetChatSecret", {
+              UserId: String(ownUserId),
+              ChatId: chatId,
+              SecretId: secretId,
+              VersionNumber: Number(data.VersionNumber),
+              EncryptedSecret: protocolBytes(ownWrapped.encryptedSecret),
+              KemCiphertext: protocolBytes(ownWrapped.kemCiphertext),
+              WrappingScheme: ownWrapped.wrappingScheme,
+              CreatedAt: Date.now(),
+            }),
+          );
 
           if (deriveChatId(ownUserId, userIdValue) === chatId) {
             setCurrentChatSecretState({ userId: userIdValue, value: secret });
+            void queryClient.invalidateQueries({
+              queryKey: ["chat-messages", String(userIdValue)],
+            });
           }
         })().catch((err) => {
           log(1, "chat", "red", "Failed to accept chat secret", err);
@@ -474,6 +578,7 @@ export default function Provider({ children }: { children: ReactNode }) {
   }, [
     addLiveMessage,
     currentChatSecret,
+    getUser,
     load,
     send,
     subscribePush,

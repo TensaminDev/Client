@@ -111,7 +111,9 @@ function validateResponse<T extends keyof Schemas & string>(
     return message as ProtocolMessage<T>;
   }
 
-  const schema = schemas[type]?.response;
+  const schema =
+    schemas[message.type as keyof Schemas & string]?.response ??
+    schemas[type]?.response;
   if (!schema) {
     return message as ProtocolMessage<T>;
   }
@@ -574,15 +576,7 @@ export function Provider(props: {
         subscribePush,
       });
     }
-  }, [
-    connected,
-    identified,
-    mtpUrl,
-    send,
-    subscribe,
-    subscribePush,
-    mtpRef,
-  ]);
+  }, [connected, identified, mtpUrl, send, subscribe, subscribePush, mtpRef]);
 
   const sendQueued: BoundSendFn = useMemo(
     () => async (type, data, options) => {

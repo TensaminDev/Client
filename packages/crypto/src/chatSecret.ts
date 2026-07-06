@@ -1,6 +1,7 @@
-import { crypto } from "mtp";
+import { base64ToBytes, bytesToBase64, crypto } from "mtp";
 
 const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 
 export const CHAT_SECRET_WRAPPING_SCHEME =
   "mtp-chat-secret-kem-chacha20poly1305-hkdf-sha256-v1";
@@ -73,11 +74,16 @@ export async function unwrapChatSecret(args: {
   wrappingScheme: string;
 }): Promise<Uint8Array> {
   if (args.wrappingScheme !== CHAT_SECRET_WRAPPING_SCHEME) {
-    throw new Error(`Unsupported chat secret wrapping scheme: ${args.wrappingScheme}`);
+    throw new Error(
+      `Unsupported chat secret wrapping scheme: ${args.wrappingScheme}`,
+    );
   }
 
   const ownKeys = crypto.keyringToKeys(args.keyring);
-  const sharedSecret = crypto.decapsulate(ownKeys.kemSecretKey, args.kemCiphertext);
+  const sharedSecret = crypto.decapsulate(
+    ownKeys.kemSecretKey,
+    args.kemCiphertext,
+  );
 
   try {
     const wrappingKey = deriveWrappingKey({
@@ -103,7 +109,9 @@ export async function encryptChatText(
 ): Promise<string> {
   const key = deriveMessageKey(chatSecret);
   try {
-    return await crypto.encryptText(key, plaintext);
+    return bytesToBase64(
+      await crypto.encrypt(key, textEncoder.encode(plaintext)),
+    );
   } finally {
     key.fill(0);
   }
@@ -115,7 +123,9 @@ export async function decryptChatText(
 ): Promise<string> {
   const key = deriveMessageKey(chatSecret);
   try {
-    return await crypto.decryptText(key, ciphertext);
+    return textDecoder.decode(
+      await crypto.decrypt(key, base64ToBytes(ciphertext)),
+    );
   } finally {
     key.fill(0);
   }
