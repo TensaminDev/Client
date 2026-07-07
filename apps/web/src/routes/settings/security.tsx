@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 
 export default function Page() {
   const { save, load } = useStorage();
-  const [draftMtpUrl, setDraftMtpUrl] = useState("");
-  const [currentMtpUrl, setCurrentMtpUrl] = useState("");
+  const [draftOmegaUrl, setDraftOmegaUrl] = useState("");
+  const [currentOmegaUrl, setCurrentOmegaUrl] = useState("");
 
   const [draftForcedOmikronUrl, setDraftForcedOmikronUrl] = useState("");
   const [currentForcedOmikronUrl, setForcedForcedOmikronUrl] = useState("");
@@ -16,8 +16,8 @@ export default function Page() {
 
   useEffect(() => {
     load("omega_url").then((value) => {
-      setDraftMtpUrl(value);
-      setCurrentMtpUrl(value);
+      setDraftOmegaUrl(value);
+      setCurrentOmegaUrl(value);
     });
     load("forced_omikron_url").then((value) => {
       setDraftForcedOmikronUrl(value || "");
@@ -39,13 +39,15 @@ export default function Page() {
         <Label>Omega Url</Label>
         <div className="flex gap-1">
           <Input
-            value={draftMtpUrl}
-            onChange={(e) => setDraftMtpUrl(e.target.value)}
+            value={draftOmegaUrl}
+            onChange={(e) => setDraftOmegaUrl(e.target.value)}
           />
           <Button
-            disabled={currentMtpUrl === draftMtpUrl}
+            disabled={currentOmegaUrl === draftOmegaUrl}
             onClick={() => {
-              save("omega_url", draftMtpUrl);
+              save("omega_url", draftOmegaUrl).then(() =>
+                setCurrentOmegaUrl(draftOmegaUrl),
+              );
             }}
           >
             Save
@@ -71,8 +73,15 @@ export default function Page() {
               currentForcedOmikronPublicKey === draftForcedOmikronPublicKey
             }
             onClick={() => {
-              save("forced_omikron_url", draftForcedOmikronUrl);
-              save("forced_omikron_public_key", draftForcedOmikronPublicKey);
+              save("forced_omikron_url", draftForcedOmikronUrl).then(() =>
+                setForcedForcedOmikronUrl(draftForcedOmikronUrl),
+              );
+              save(
+                "forced_omikron_public_key",
+                draftForcedOmikronPublicKey,
+              ).then(() =>
+                setForcedForcedOmikronPublicKey(draftForcedOmikronPublicKey),
+              );
             }}
           >
             Save
