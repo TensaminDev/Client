@@ -200,6 +200,7 @@ export function Provider(props: {
 
     const unsubscribers = [
       "MessageLive",
+      "MessageEditLive",
       "MessageState",
       "CallInvite",
       "ErrorNoIota",

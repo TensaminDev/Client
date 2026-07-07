@@ -86,6 +86,39 @@ function updateMessageStateBySendTime<
   };
 }
 
+function updateMessageContentBySendTime<
+  T extends { SendTime: number; Content: string; Edited?: boolean },
+>(
+  messages: T[],
+  sendTime: number,
+  content: string,
+  edited = true,
+): { next: T[]; updated: boolean } {
+  let updated = false;
+
+  const next = messages.map((item) => {
+    if (item.SendTime !== sendTime) {
+      return item;
+    }
+
+    if (item.Content === content && item.Edited === edited) {
+      return item;
+    }
+
+    updated = true;
+    return {
+      ...item,
+      Content: content,
+      Edited: edited,
+    };
+  });
+
+  return {
+    next,
+    updated,
+  };
+}
+
 function assertProtocolSuccess(type: string, response: { type: string }) {
   if (response.type.startsWith("Error")) {
     throw new Error(`${type} failed: ${response.type}`);
@@ -413,9 +446,112 @@ export default function Provider({ children }: { children: ReactNode }) {
     setLiveMessagesState([]);
   }, []);
 
+  const editMessageContent = useCallback(
+    (sendTime: number, content: string, edited = true) => {
+      setLiveMessagesState((prev) => {
+        const { next, updated } = updateMessageContentBySendTime(
+          prev,
+          sendTime,
+          content,
+          edited,
+        );
+        return updated ? next : prev;
+      });
+
+      const queryKey = [
+        "chat-messages",
+        String(userIdValue),
+        currentChatSecret !== null,
+      ] as const;
+      queryClient.setQueryData<InfiniteData<RawMessages>>(
+        queryKey,
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          let updated = false;
+
+          const pages = current.pages.map((page) => {
+            const nextPage = updateMessageContentBySendTime(
+              page,
+              sendTime,
+              content,
+              edited,
+            );
+
+            if (nextPage.updated) {
+              updated = true;
+            }
+
+            return nextPage.next;
+          });
+
+          if (!updated) {
+            return current;
+          }
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    },
+    [currentChatSecret, userIdValue],
+  );
+
   // Get live updates for message states
   useEffect(() => {
     return subscribePush((message) => {
+      if (message.type === "MessageEditLive") {
+        if (!currentChatSecret) return;
+
+        const rawData = message.data as {
+          ChatPartnerId: unknown;
+          SendTime: unknown;
+          Content: string;
+        };
+
+        const chatPartnerId = Number(rawData.ChatPartnerId);
+        const sendTime = Number(rawData.SendTime);
+
+        if (!Number.isFinite(chatPartnerId) || !Number.isFinite(sendTime)) {
+          log(
+            3,
+            "chat",
+            "yellow",
+            "Cancel message edit update due to invalid data",
+          );
+          return;
+        }
+
+        if (chatPartnerId !== userIdValue) {
+          log(
+            3,
+            "chat",
+            "yellow",
+            "Cancel message edit update due to user ID mismatch",
+            {
+              expected: userIdValue,
+              received: chatPartnerId,
+            },
+          );
+          return;
+        }
+
+        void decryptChatText(currentChatSecret, rawData.Content)
+          .then((content) => {
+            editMessageContent(sendTime, content);
+          })
+          .catch((err) => {
+            log(1, "chat", "red", "Failed to decrypt message edit", err, {
+              SendTime: sendTime,
+            });
+          });
+        return;
+      }
+
       if (message.type !== "MessageState") return;
 
       const rawData = message.data as {
@@ -505,7 +641,14 @@ export default function Provider({ children }: { children: ReactNode }) {
         },
       );
     });
-  }, [addLiveMessage, currentChatSecret, send, subscribePush, userIdValue]);
+  }, [
+    addLiveMessage,
+    currentChatSecret,
+    editMessageContent,
+    send,
+    subscribePush,
+    userIdValue,
+  ]);
 
   // Replys
   const [replyTo, setReplyTo] = useState<number | undefined>(undefined);
@@ -518,6 +661,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           getChatSecret,
           liveMessages: () => liveMessagesState,
           addLiveMessage,
+          editMessageContent,
           clearLiveMessages,
           chatSecret: currentChatSecret,
           userId: userIdValue,
@@ -541,6 +685,11 @@ type contextType = {
   addLiveMessage: (message: RawMessage) => {
     setFailed: (failed: boolean) => void;
   };
+  editMessageContent: (
+    sendTime: number,
+    content: string,
+    edited?: boolean,
+  ) => void;
   clearLiveMessages: () => void;
   chatSecret: Uint8Array | null;
   userId: number;

@@ -143,6 +143,11 @@ type_maps:
       GetChatSecret: 140
       ChatSecretResponse: 141
       ChatSecretForward: 142
+      MessageEditLive: 144
+      MessageEdit: 145
+      MessageReactionAdd: 146
+      MessageReactionRemove: 147
+      MessageReactionLive: 148
     DataTypes:
       ErrorType: 32
       ErrorProtocol: 33
@@ -257,3 +262,6 @@ type_maps:
       SenderUserId: 152
       RecipientUserId: 153
       Recipients: 154
+      Edited: 155
+      Reactions: 156
+      Reaction: 157

@@ -66,6 +66,11 @@ const callSecretEnvelopeRequest = z.object({
   WrappingScheme: z.string(),
 });
 
+export const Reaction = z.object({
+  Reaction: z.string(),
+  SenderId: z.number(),
+});
+
 export const Message = z.object({
   NotEncrypted: z.boolean().optional(),
   SenderId: z.number(),
@@ -79,6 +84,8 @@ export const Message = z.object({
   MessageState: z
     .enum(["read", "received", "sent", "sending", "awaiting"]) // awaiting for 'internal' use
     .default("received"),
+  Edited: z.boolean().optional(),
+  Reactions: z.array(Reaction).optional(),
 });
 
 export const failedUser = {
@@ -193,6 +200,46 @@ export const mtp = {
     }),
     response: z.object({
       PingIota: z.number(),
+    }),
+  },
+  MessageEditLive: {
+    request: z.object({}),
+    response: z.object({
+      Content: z.base64(),
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+  },
+  MessageEdit: {
+    request: z.object({
+      Content: z.base64(),
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+    response: z.object({}),
+  },
+  MessageReactionAdd: {
+    request: z.object({
+      Reaction: z.string(),
+      SendTime: z.number(),
+      ChatPartnerId: z.number(),
+    }),
+    response: z.object(),
+  },
+  MessageReactionRemove: {
+    request: z.object({
+      Reaction: z.string(),
+      SendTime: z.number(),
+      ChatPartnerId: z.number(),
+    }),
+    response: z.object(),
+  },
+  MessageReactionLive: {
+    request: z.object(),
+    response: z.object({
+      Reaction: z.string(),
+      SendTime: z.number(),
+      ChatPartnerId: z.number(),
     }),
   },
   MessageLive: {

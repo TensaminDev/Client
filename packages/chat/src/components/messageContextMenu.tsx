@@ -17,9 +17,10 @@ import {
   useIsMobile,
 } from "@tensamin/ui";
 import { Pin, Clipboard, Pen, Reply, Forward, Trash } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { useChat } from "../context";
+import { useStorage } from "@tensamin/storage/context";
 
 async function copyText(text: string) {
   await navigator.clipboard.writeText(text);
@@ -136,6 +137,8 @@ function MessageMenuContent({
   messageId,
   onAddReaction,
   showReactionItems = true,
+  onSetEditing,
+  senderId,
 }: {
   components: MenuComponents;
   content: string;
@@ -143,11 +146,19 @@ function MessageMenuContent({
   messageId: number;
   onAddReaction?: () => void | Promise<void>;
   showReactionItems?: boolean;
+  onSetEditing: (value: boolean) => void;
+  senderId: number;
 }) {
   const { Content, Group, Item, Separator, Sub, SubContent, SubTrigger } =
     components;
 
+  const { load } = useStorage();
   const { setReplyTo } = useChat();
+
+  const [ownId, setOwnId] = useState(0);
+  useEffect(() => {
+    load("user_id").then(setOwnId);
+  }, [load]);
 
   return (
     <Content>
@@ -172,9 +183,16 @@ function MessageMenuContent({
       </Group>
       <Separator />
       <Group>
-        <Item disabled className="flex justify-between">
-          <p>Edit Message</p> <Pen />
-        </Item>
+        {senderId === ownId && (
+          <Item
+            className="flex justify-between"
+            onClick={() => {
+              onSetEditing(true);
+            }}
+          >
+            <p>Edit Message</p> <Pen />
+          </Item>
+        )}
         <Item
           className="flex justify-between"
           onClick={() => {
@@ -214,10 +232,14 @@ export default function MessageContextMenu({
   children,
   content,
   messageId,
+  onSetEditing,
+  senderId,
 }: {
   children: ReactElement;
   content: string;
   messageId: number;
+  onSetEditing: (value: boolean) => void;
+  senderId: number;
 }) {
   const isMobile = useIsMobile();
   const devEnabled = useMemo(
@@ -257,6 +279,8 @@ export default function MessageContextMenu({
             messageId={messageId}
             onAddReaction={() => setReactionDrawerOpen(true)}
             showReactionItems={false}
+            onSetEditing={onSetEditing}
+            senderId={senderId}
           />
         </Drawer>
         <Drawer open={reactionDrawerOpen} onOpenChange={setReactionDrawerOpen}>
@@ -282,6 +306,8 @@ export default function MessageContextMenu({
         content={content}
         devEnabled={devEnabled}
         messageId={messageId}
+        onSetEditing={onSetEditing}
+        senderId={senderId}
       />
     </ContextMenu>
   );

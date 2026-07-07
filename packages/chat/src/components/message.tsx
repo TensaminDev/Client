@@ -27,6 +27,10 @@ import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
+import Input from "@tensamin/markdown/input";
+import { useChat } from "../context";
+import { encryptChatText } from "@tensamin/crypto/chatSecret";
+import { log, toast } from "@tensamin/shared/log";
 
 function MessageComponent({
   grouped,
@@ -138,6 +142,62 @@ function MessageComponent({
     }
   }, [message.Content]);
 
+  // Message editing
+  const { chatSecret, editMessageContent, userId } = useChat();
+  const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState(message.Content);
+  useEffect(() => {
+    if (!editing) {
+      setEditDraft(message.Content);
+    }
+  }, [editing, message.Content]);
+  const editMessage = useCallback(
+    async (newContent: string) => {
+      if (!chatSecret) return;
+
+      const encryptedContent = await encryptChatText(
+        chatSecret,
+        newContent,
+      ).catch((err) => {
+        toast("error", "Failed to encrypt edit", String(err));
+      });
+
+      if (!encryptedContent) return;
+
+      const previousContent = message.Content;
+      editMessageContent(message.SendTime, newContent);
+
+      try {
+        const response = await send("MessageEdit", {
+          ChatPartnerId: userId,
+          Content: encryptedContent,
+          SendTime: message.SendTime,
+        });
+
+        if (response.type.startsWith("Error")) {
+          throw new Error(response.type);
+        }
+      } catch (err) {
+        editMessageContent(
+          message.SendTime,
+          previousContent,
+          message.Edited ?? false,
+        );
+        log(1, "chat", "red", "Failed to edit message", err);
+        toast("error", "Failed to edit message", String(err));
+      }
+    },
+    [
+      chatSecret,
+      editMessageContent,
+      userId,
+      message.Content,
+      message.Edited,
+      message.SendTime,
+      send,
+    ],
+  );
+
   return (
     <div
       // pt-3 is to get a gap between messages
@@ -147,6 +207,8 @@ function MessageComponent({
         <MessageContextMenu
           content={message.Content}
           messageId={message.SendTime}
+          onSetEditing={setEditing}
+          senderId={message.SenderId}
         >
           <div
             className={cn(
@@ -221,7 +283,16 @@ function MessageComponent({
                     </div>
                   </div>
                 )}
-                {isValidURL ? (
+                {editing ? (
+                  <Input
+                    setValue={setEditDraft}
+                    value={editDraft}
+                    onSubmit={() => {
+                      editMessage(editDraft);
+                      setEditing(false);
+                    }}
+                  />
+                ) : isValidURL ? (
                   <Media link={message.Content} />
                 ) : (
                   <Text value={message.Content} />
