@@ -143,7 +143,7 @@ function MessageComponent({
   }, [message.Content]);
 
   // Message editing
-  const { chatSecret, editMessageContent, userId } = useChat();
+  const { chatSecret, editMessage, userId } = useChat();
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.Content);
   useEffect(() => {
@@ -151,7 +151,7 @@ function MessageComponent({
       setEditDraft(message.Content);
     }
   }, [editing, message.Content]);
-  const editMessage = useCallback(
+  const submitEditMessage = useCallback(
     async (newContent: string) => {
       if (!chatSecret) return;
 
@@ -165,7 +165,7 @@ function MessageComponent({
       if (!encryptedContent) return;
 
       const previousContent = message.Content;
-      editMessageContent(message.SendTime, newContent);
+      editMessage(message.SendTime, { Content: newContent, Edited: true });
 
       try {
         const response = await send("MessageEdit", {
@@ -178,18 +178,17 @@ function MessageComponent({
           throw new Error(response.type);
         }
       } catch (err) {
-        editMessageContent(
-          message.SendTime,
-          previousContent,
-          message.Edited ?? false,
-        );
+        editMessage(message.SendTime, {
+          Content: previousContent,
+          Edited: message.Edited ?? false,
+        });
         log(1, "chat", "red", "Failed to edit message", err);
         toast("error", "Failed to edit message", String(err));
       }
     },
     [
       chatSecret,
-      editMessageContent,
+      editMessage,
       userId,
       message.Content,
       message.Edited,
@@ -288,7 +287,7 @@ function MessageComponent({
                     setValue={setEditDraft}
                     value={editDraft}
                     onSubmit={() => {
-                      editMessage(editDraft);
+                      submitEditMessage(editDraft);
                       setEditing(false);
                     }}
                   />
