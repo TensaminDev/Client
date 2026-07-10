@@ -1,4 +1,5 @@
 - Move legal to extra onboarding package
 - Add a bunch of tests
 - Add packages/cache/ to handle caching
+- Add packages/hotkeys/
 - Full accessability

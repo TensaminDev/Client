@@ -12,10 +12,11 @@ import {
 import { checkForUpdates } from "./updates.js";
 import {
   ipcChannels,
+  type DesktopCallStatus,
   type DesktopScreenShareAudioOutput,
   type DesktopScreenShareCapabilities,
 } from "../shared/ipc.js";
-import { initTray } from "./tray.js";
+import { initTray, setTrayCallStatus } from "./tray.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const verbose = process.argv.includes("--verbose");
@@ -189,6 +190,25 @@ function registerIpc() {
   );
   ipcMain.handle(ipcChannels.getVersion, () => app.getVersion());
   ipcMain.handle(ipcChannels.checkForUpdates, checkForUpdates);
+  ipcMain.handle(ipcChannels.setCallStatus, (_event, status: unknown) => {
+    if (
+      typeof status !== "object" ||
+      status === null ||
+      typeof (status as DesktopCallStatus).inCall !== "boolean" ||
+      typeof (status as DesktopCallStatus).speaking !== "boolean" ||
+      ((status as DesktopCallStatus).iconDataUrl !== undefined &&
+        (typeof (status as DesktopCallStatus).iconDataUrl !== "string" ||
+          !(status as DesktopCallStatus).iconDataUrl?.startsWith(
+            "data:image/png;base64,",
+          ) ||
+          (status as DesktopCallStatus).iconDataUrl!.length > 16_384))
+    ) {
+      throw new Error("Invalid call status.");
+    }
+
+    const { inCall, iconDataUrl } = status as DesktopCallStatus;
+    setTrayCallStatus(inCall, iconDataUrl);
+  });
   ipcMain.handle(ipcChannels.minimizeWindow, () => {
     verboseLog("window:minimize");
     mainWindow?.minimize();
@@ -311,7 +331,7 @@ async function start() {
   verboseLog("app ready");
   registerIpc();
   registerDisplayMediaHandler();
-  initTray();
+  initTray(() => mainWindow);
   await createWindow();
 }
 

@@ -50,6 +50,13 @@ declare global {
         >;
         selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
       };
+      call?: {
+        setStatus?: (status: {
+          inCall: boolean;
+          speaking: boolean;
+          iconDataUrl?: string;
+        }) => Promise<void>;
+      };
     };
   }
 }

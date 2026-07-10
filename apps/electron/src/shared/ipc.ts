@@ -20,6 +20,12 @@ export type DesktopScreenShareCapabilities = {
   hasReliableSystemAudio: boolean;
 };
 
+export type DesktopCallStatus = {
+  inCall: boolean;
+  speaking: boolean;
+  iconDataUrl?: string;
+};
+
 export type ReleaseArtifact = {
   name: string;
   platform: string;
@@ -55,4 +61,5 @@ export const ipcChannels = {
   closeWindow: "window:close",
   getVersion: "app:getVersion",
   checkForUpdates: "updates:checkForUpdates",
+  setCallStatus: "call:setStatus",
 } as const;

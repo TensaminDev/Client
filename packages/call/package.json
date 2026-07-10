@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./store": "./src/store.tsx",
+    "./speakingState": "./src/speakingState.ts",
     "./screen": "./src/screen.tsx",
     "./utils": "./src/utils.ts",
     "./sidebarBox": "./src/components/sidebarBox.tsx",
