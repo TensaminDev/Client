@@ -578,7 +578,7 @@ export default function MessageContextMenu({
         onPointerLeave={scheduleMiniMenuClose}
       >
         {children}
-        {!hideMiniMenu && activeMenuId === messageId && (
+        {!isMobile && !hideMiniMenu && activeMenuId === messageId && (
           <MiniMessageMenu
             isOwnMessage={isOwnMessage}
             onDelete={() => deleteMessage(messageId)}
