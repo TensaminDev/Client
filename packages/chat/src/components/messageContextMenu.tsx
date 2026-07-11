@@ -36,7 +36,6 @@ import {
   Trash,
 } from "lucide-react";
 import { cloneElement, useMemo, useState, useSyncExternalStore } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import type {
   MouseEvent as ReactMouseEvent,
   ReactElement,
@@ -296,27 +295,7 @@ function MiniMessageMenu({
   shiftIsPressed: boolean;
 }) {
   return (
-    <motion.div
-      layoutId="chat-mini-message-menu"
-      className="absolute right-4 -top-3 z-10"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{
-        opacity: 0,
-        transition: {
-          opacity: { duration: 0.12, delay: 0.08 },
-        },
-      }}
-      transition={{
-        layout: {
-          type: "spring",
-          stiffness: 650,
-          damping: 34,
-          mass: 0.65,
-        },
-        opacity: { duration: 0.12 },
-      }}
-    >
+    <div className="absolute right-4 -top-3 z-10">
       <Card className="flex flex-row justify-end gap-0! rounded-lg! p-0! shadow-lg">
         {quickReactions.map((emoji) => (
           <MiniMenuTooltip
@@ -418,7 +397,7 @@ function MiniMessageMenu({
           />
         )}
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -599,22 +578,20 @@ export default function MessageContextMenu({
         onPointerLeave={scheduleMiniMenuClose}
       >
         {children}
-        <AnimatePresence>
-          {!hideMiniMenu && activeMenuId === messageId && (
-            <MiniMessageMenu
-              isOwnMessage={isOwnMessage}
-              onDelete={() => deleteMessage(messageId)}
-              onEdit={() => onSetEditing(true)}
-              onOpenMenu={openMenu}
-              onOpenPicker={() => setPickerOpen(true)}
-              usePickerTrigger={!isMobile}
-              onReact={selectReaction}
-              quickReactions={quickReactions}
-              onReply={() => setReplyTo(messageId)}
-              shiftIsPressed={shiftIsPressed}
-            />
-          )}
-        </AnimatePresence>
+        {!hideMiniMenu && activeMenuId === messageId && (
+          <MiniMessageMenu
+            isOwnMessage={isOwnMessage}
+            onDelete={() => deleteMessage(messageId)}
+            onEdit={() => onSetEditing(true)}
+            onOpenMenu={openMenu}
+            onOpenPicker={() => setPickerOpen(true)}
+            usePickerTrigger={!isMobile}
+            onReact={selectReaction}
+            quickReactions={quickReactions}
+            onReply={() => setReplyTo(messageId)}
+            shiftIsPressed={shiftIsPressed}
+          />
+        )}
       </div>
     );
   }
