@@ -27,6 +27,8 @@ import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { useSession } from "@tensamin/storage/session";
 import { useUser } from "@tensamin/user/context";
+import { createCache } from "@tensamin/cache";
+import { secureValueCodec } from "@tensamin/storage/secure";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -158,6 +160,7 @@ export default function Provider({ children }: { children: ReactNode }) {
   const [errorDescription, setErrorDescription] = useState("");
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
+  const [ownId, setOwnId] = useState(0);
   const [currentChatSecretState, setCurrentChatSecretState] = useState<{
     userId: number;
     value: Uint8Array | null;
@@ -185,6 +188,10 @@ export default function Provider({ children }: { children: ReactNode }) {
 
     return currentChatSecretState.value;
   }, [currentChatSecretState, userIdValue]);
+
+  useEffect(() => {
+    load("user_id").then(setOwnId);
+  }, [load]);
 
   useEffect(() => {
     if (!userIdValue) return;
@@ -328,6 +335,44 @@ export default function Provider({ children }: { children: ReactNode }) {
     [load, send],
   );
 
+  const decryptMessages = useCallback(
+    async (messages: RawMessages) => {
+      if (!currentChatSecret) return [];
+      return Promise.all(
+        messages.map(async (message) => {
+          try {
+            return {
+              ...message,
+              Content: await decryptChatText(
+                currentChatSecret,
+                message.Content,
+              ),
+            };
+          } catch (err) {
+            log(1, "chat", "red", "Failed to decrypt historical message", err, {
+              SendTime: message.SendTime,
+            });
+            return {
+              ...message,
+              Content: "Failed to decrypt message",
+              decryptionFailed: true,
+            };
+          }
+        }),
+      );
+    },
+    [currentChatSecret],
+  );
+
+  const getCachedMessages = useCallback(async () => {
+    if (!ownId || !userIdValue || !currentChatSecret) return [];
+    const cache = createCache(String(ownId), {
+      codec: secureValueCodec,
+    });
+    const window = await cache.conversations.get(userIdValue);
+    return decryptMessages(window?.Messages ?? []);
+  }, [currentChatSecret, decryptMessages, ownId, userIdValue]);
+
   const getMessages = useCallback(
     async (amount: number, offset: number) => {
       if (!currentChatSecret) {
@@ -359,36 +404,22 @@ export default function Provider({ children }: { children: ReactNode }) {
         });
       }
 
-      return await Promise.all(
-        sorted.map(async (message) => {
-          try {
-            return {
-              ...message,
-              Content: await decryptChatText(
-                currentChatSecret,
-                message.Content,
-              ),
-            };
-          } catch (err) {
-            log(1, "chat", "red", "Failed to decrypt historical message", err, {
-              SendTime: message.SendTime,
-            });
-            return {
-              ...message,
-              Content: "Failed to decrypt message",
-              decryptionFailed: true,
-            };
-          }
-        }),
-      );
+      return decryptMessages(sorted);
     },
-    [currentChatSecret, send, userIdValue],
+    [currentChatSecret, decryptMessages, send, userIdValue],
   );
 
-  const [ownId, setOwnId] = useState(0);
   useEffect(() => {
-    load("user_id").then(setOwnId);
-  }, [load]);
+    if (!currentChatSecret || !ownId || !userIdValue) return;
+    const queryKey = ["chat-messages", String(userIdValue), true] as const;
+    void getCachedMessages().then((messages) => {
+      if (messages.length === 0 || queryClient.getQueryData(queryKey)) return;
+      queryClient.setQueryData<InfiniteData<RawMessages>>(queryKey, {
+        pages: [messages],
+        pageParams: [0],
+      });
+    });
+  }, [currentChatSecret, getCachedMessages, ownId, userIdValue]);
 
   const editMessage = useCallback(
     (sendTime: number, edit: MessageEdit) => {
@@ -452,7 +483,6 @@ export default function Provider({ children }: { children: ReactNode }) {
         setLiveMessagesState((prev) =>
           prev.filter((message) => message.SendTime !== sendTime),
         );
-
         const queryKey = [
           "chat-messages",
           String(userIdValue),

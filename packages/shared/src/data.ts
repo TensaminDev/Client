@@ -423,6 +423,8 @@ export interface Storage extends SettingsStorageDefaults {
   legal_docs: z.infer<typeof legalDocsSchema>;
   cached_contacts: Contacts;
   cached_communities: Communities;
+  cache_contacts: number;
+  cache_messages_per_chat: number;
   omega_url: string;
   forced_omikron_url: string | undefined;
   forced_omikron_public_key: string | undefined;
@@ -475,6 +477,8 @@ export const storageDefaults: Storage = {
   },
   cached_contacts: [],
   cached_communities: [],
+  cache_contacts: 5,
+  cache_messages_per_chat: 20,
   omega_url: "https://omega.tensamin.net",
   forced_omikron_url: undefined,
   forced_omikron_public_key: undefined,

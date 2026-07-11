@@ -17,6 +17,13 @@ import {
   type DesktopScreenShareCapabilities,
 } from "../shared/ipc.js";
 import { initTray, setTrayCallStatus } from "./tray.js";
+import {
+  clearSecureStorage,
+  deleteSecureStorage,
+  getSecureStorageStatus,
+  loadSecureStorage,
+  saveSecureStorage,
+} from "./secureStorage.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const verbose = process.argv.includes("--verbose");
@@ -190,6 +197,18 @@ function registerIpc() {
   );
   ipcMain.handle(ipcChannels.getVersion, () => app.getVersion());
   ipcMain.handle(ipcChannels.checkForUpdates, checkForUpdates);
+  ipcMain.handle(ipcChannels.getSecureStorageStatus, getSecureStorageStatus);
+  ipcMain.handle(ipcChannels.loadSecureStorage, (_event, key: unknown) =>
+    loadSecureStorage(key),
+  );
+  ipcMain.handle(
+    ipcChannels.saveSecureStorage,
+    (_event, key: unknown, value: unknown) => saveSecureStorage(key, value),
+  );
+  ipcMain.handle(ipcChannels.deleteSecureStorage, (_event, key: unknown) =>
+    deleteSecureStorage(key),
+  );
+  ipcMain.handle(ipcChannels.clearSecureStorage, clearSecureStorage);
   ipcMain.handle(ipcChannels.setCallStatus, (_event, status: unknown) => {
     if (
       typeof status !== "object" ||

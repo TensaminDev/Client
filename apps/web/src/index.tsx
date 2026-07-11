@@ -14,7 +14,7 @@ import "@tensamin/ui/index.css";
 import NotFound from "@/routes/404";
 
 import AppLayout from "@/routes/app/layout";
-import SettingsLayout from "@/features/settings/layout";
+import { createSettingsRoute } from "@tensamin/settings";
 
 import Home from "@/routes/app/home";
 import ChatScreen from "@tensamin/chat/screen";
@@ -41,8 +41,10 @@ import Storage from "@tensamin/storage/context";
 import Session from "@tensamin/storage/session";
 import Crypto from "@tensamin/crypto/context";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
+import { log } from "@tensamin/shared/log";
 
 import LegalWrapper from "@/features/legal/screen";
+import CacheSync from "@tensamin/cache/sync";
 
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
@@ -71,34 +73,39 @@ window.setLogLevelToMax = () => {
 function LoginWrapper({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
 
-  const { load } = useStorage();
+  const { load, secureStorage } = useStorage();
 
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    if (secureStorage === null) return;
     let active = true;
 
-    load("user_id").then((userId) => {
-      if (!active) {
-        return;
-      }
-
-      if (userId !== 0) {
-        setLoggedIn(true);
-        return;
-      }
-
-      setLoggedIn(false);
-      navigate({
-        to: "/login",
+    Promise.all([load("user_id"), load("mtp_keyring")])
+      .then(([userId, keyring]) => {
+        if (!active) return;
+        if (userId !== 0 && keyring !== "") {
+          setLoggedIn(true);
+          if (location.pathname === "/login") {
+            void navigate({ to: "/", replace: true });
+          }
+          return;
+        }
+        setLoggedIn(false);
+        void navigate({
+          to: "/login",
+          replace: true,
+        });
+      })
+      .catch((error) => {
+        log(0, "login", "red", "Failed to load login state", error);
       });
-    });
 
     return () => {
       active = false;
     };
-  }, [load, navigate]);
+  }, [load, location.pathname, navigate, secureStorage]);
 
   if (loggedIn !== true && location.pathname !== "/login") {
     return null;
@@ -256,6 +263,7 @@ function RootShell() {
 function AppShell() {
   return (
     <MTPProvider>
+      <CacheSync />
       <Session>
         <UserProvider>
           <CallInit />
@@ -382,47 +390,7 @@ const appRoute = createRoute({
   notFoundComponent: NotFound,
 });
 
-const settingsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "settings",
-  component: SettingsLayout,
-  staticData: {
-    showMobileNavbar: true,
-  },
-});
-
-type SettingsRouteModule = {
-  default?: () => React.JSX.Element;
-  component?: () => React.JSX.Element;
-};
-
-const settingsRouteModules = import.meta.glob<SettingsRouteModule>(
-  "./routes/settings/*.tsx",
-  { eager: true },
-);
-
-const settingsChildren = Object.entries(settingsRouteModules).map(
-  ([filePath, module]) => {
-    const fileName = filePath.split("/").pop()?.replace(".tsx", "") ?? "";
-    const path = fileName === "index" ? "/" : fileName;
-    const component = module.component ?? module.default;
-
-    if (!component) {
-      throw new Error(
-        `Settings route module "${filePath}" must export a default component`,
-      );
-    }
-
-    return createRoute({
-      getParentRoute: () => settingsRoute,
-      path,
-      component,
-      staticData: {
-        showMobileNavbar: true,
-      },
-    });
-  },
-);
+const settingsRoute = createSettingsRoute(appRoute);
 
 const homeRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -464,12 +432,7 @@ const loginRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([
-    homeRoute,
-    chatRoute,
-    callRoute,
-    settingsRoute.addChildren(settingsChildren),
-  ]),
+  appRoute.addChildren([homeRoute, chatRoute, callRoute, settingsRoute]),
   loginRoute,
 ]);
 

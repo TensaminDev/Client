@@ -3,10 +3,19 @@ import {
   ipcChannels,
   type DesktopCallStatus,
   type DesktopScreenShareSource,
+  secureStorageLimits,
 } from "../shared/ipc.js";
 
 function windowAction(channel: string) {
   return () => ipcRenderer.invoke(channel);
+}
+
+function validKey(key: string) {
+  return (
+    typeof key === "string" &&
+    key.length > 0 &&
+    Buffer.byteLength(key, "utf8") <= secureStorageLimits.maxKeyBytes
+  );
 }
 
 const desktopApi = {
@@ -45,6 +54,24 @@ const desktopApi = {
 
       return ipcRenderer.invoke(ipcChannels.setCallStatus, status);
     },
+  },
+  secureStorage: {
+    getStatus: () => ipcRenderer.invoke(ipcChannels.getSecureStorageStatus),
+    load: (key: string) =>
+      validKey(key)
+        ? ipcRenderer.invoke(ipcChannels.loadSecureStorage, key)
+        : Promise.reject(new Error("Invalid secure storage key.")),
+    save: (key: string, value: string) =>
+      validKey(key) &&
+      typeof value === "string" &&
+      Buffer.byteLength(value, "utf8") <= secureStorageLimits.maxValueBytes
+        ? ipcRenderer.invoke(ipcChannels.saveSecureStorage, key, value)
+        : Promise.reject(new Error("Invalid secure storage key or value.")),
+    delete: (key: string) =>
+      validKey(key)
+        ? ipcRenderer.invoke(ipcChannels.deleteSecureStorage, key)
+        : Promise.reject(new Error("Invalid secure storage key.")),
+    clear: () => ipcRenderer.invoke(ipcChannels.clearSecureStorage),
   },
   window: {
     minimize: () => windowAction(ipcChannels.minimizeWindow),

@@ -236,6 +236,9 @@ importers:
       '@tauri-apps/api':
         specifier: ^2
         version: 2.11.1
+      '@tensamin/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
       '@tensamin/call':
         specifier: workspace:*
         version: link:../../packages/call
@@ -254,6 +257,9 @@ importers:
       '@tensamin/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
+      '@tensamin/settings':
+        specifier: workspace:*
+        version: link:../../packages/settings
       '@tensamin/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -499,6 +505,24 @@ importers:
         specifier: ^8.0.10
         version: 8.1.3(@types/node@26.1.0)(esbuild@0.25.12)(jiti@2.7.0)(yaml@2.9.0)
 
+  packages/cache:
+    dependencies:
+      '@tensamin/mtp':
+        specifier: workspace:*
+        version: link:../mtp
+      '@tensamin/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tensamin/storage':
+        specifier: workspace:*
+        version: link:../storage
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      zod:
+        specifier: ^4.3.6
+        version: 4.4.3
+
   packages/call:
     dependencies:
       '@livekit/components-react':
@@ -567,6 +591,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.0.0
         version: 3.14.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@tensamin/cache':
+        specifier: workspace:*
+        version: link:../cache
       '@tensamin/crypto':
         specifier: workspace:*
         version: link:../crypto
@@ -731,6 +758,46 @@ importers:
         specifier: ^4.3.6
         version: 4.4.3
 
+  packages/settings:
+    dependencies:
+      '@tanstack/react-router':
+        specifier: ^1.169.1
+        version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@tensamin/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@tensamin/markdown':
+        specifier: workspace:*
+        version: link:../markdown
+      '@tensamin/mtp':
+        specifier: workspace:*
+        version: link:../mtp
+      '@tensamin/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tensamin/storage':
+        specifier: workspace:*
+        version: link:../storage
+      '@tensamin/ui':
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+      '@tensamin/user':
+        specifier: workspace:*
+        version: link:../user
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.23.0(react@19.2.7)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      vite:
+        specifier: ^8.0.10
+        version: 8.1.3(@types/node@26.1.0)(esbuild@0.25.12)(jiti@2.7.0)(yaml@2.9.0)
+
   packages/shared:
     dependencies:
       '@tensamin/ui':
@@ -751,6 +818,9 @@ importers:
 
   packages/storage:
     dependencies:
+      '@tensamin/cache':
+        specifier: workspace:*
+        version: link:../cache
       '@tensamin/mtp':
         specifier: workspace:*
         version: link:../mtp
@@ -808,6 +878,9 @@ importers:
 
   packages/user:
     dependencies:
+      '@tensamin/cache':
+        specifier: workspace:*
+        version: link:../cache
       '@tensamin/mtp':
         specifier: workspace:*
         version: link:../mtp

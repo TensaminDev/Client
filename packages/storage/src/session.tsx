@@ -8,6 +8,8 @@ import {
 } from "react";
 import { useStorage } from "./context";
 import type { Contacts, Communities, Calls } from "@tensamin/shared/data";
+import { createCache } from "@tensamin/cache";
+import { secureValueCodec } from "./secure";
 
 interface SessionContextType {
   contacts: Contacts;
@@ -21,11 +23,13 @@ interface SessionContextType {
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export default function SessionProvider({ children }: { children: ReactNode }) {
-  const { freshContacts, freshCommunities, freshCalls } = useMTP();
+  const { freshContacts, freshCommunities, freshCalls, contextReady } =
+    useMTP();
   const { load, save } = useStorage();
   const [contacts, setContacts] = useState<Contacts>([]);
   const [communities, setCommunities] = useState<Communities>([]);
   const [localCalls, setLocalCalls] = useState<Calls>([]);
+  const [accountId, setAccountId] = useState<number | null>(null);
   const calls = [
     ...freshCalls,
     ...localCalls.filter(
@@ -33,17 +37,27 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     ),
   ];
 
-  // Cached session data fills in items the server did not return freshly.
   useEffect(() => {
-    load("cached_contacts").then((cachedData) => {
-      setContacts([
-        ...freshContacts,
-        ...cachedData.filter(
-          (item) =>
-            !freshContacts.some((fresh) => fresh.UserId === item.UserId),
-        ),
-      ]);
+    void load("user_id").then(setAccountId);
+  }, [load]);
+
+  // Cached contacts seed the session, then authenticated server data replaces them.
+  useEffect(() => {
+    if (!accountId) return;
+    const cache = createCache(String(accountId), {
+      codec: secureValueCodec,
     });
+    void cache.contacts.get().then((cached) => {
+      if (cached) setContacts(cached);
+    });
+  }, [accountId]);
+
+  useEffect(() => {
+    if (!accountId || !contextReady) return;
+    setContacts(freshContacts);
+  }, [accountId, contextReady, freshContacts]);
+
+  useEffect(() => {
     load("cached_communities").then((cachedData) => {
       if (cachedData && freshCommunities) {
         setCommunities([
@@ -57,11 +71,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         ]);
       }
     });
-  }, [load, freshContacts, freshCommunities]);
-
-  useEffect(() => {
-    save("cached_contacts", contacts);
-  }, [contacts, save]);
+  }, [load, freshCommunities]);
   useEffect(() => {
     save("cached_communities", communities);
   }, [communities, save]);
@@ -72,8 +82,12 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         (contact) => contact.UserId === userId,
       );
       if (userIndex === -1) return prevContacts;
-      const [user] = prevContacts.splice(userIndex, 1);
-      return [user, ...prevContacts];
+      const user = prevContacts[userIndex];
+      return [
+        user,
+        ...prevContacts.slice(0, userIndex),
+        ...prevContacts.slice(userIndex + 1),
+      ];
     });
   };
 

@@ -60,6 +60,14 @@ export type BoundSendFn = <T extends keyof Schemas & string>(
 
 export type PushHandler = (message: ProtocolMessage) => void;
 
+export type MTPExchange = {
+  type: keyof Schemas & string;
+  data: unknown;
+  response: ProtocolMessage;
+};
+
+export type MTPInterceptor = (exchange: MTPExchange) => void | Promise<void>;
+
 type ContextType = {
   send: BoundSendFn;
   subscribe: <T extends keyof Schemas & string>(
@@ -67,6 +75,7 @@ type ContextType = {
     handler: (message: ProtocolMessage<T>) => void,
   ) => () => void;
   subscribePush: (handler: PushHandler) => () => void;
+  addInterceptor: (interceptor: MTPInterceptor) => () => void;
   readyState: number;
   ownPing: number;
   iotaPing: number;
@@ -153,6 +162,7 @@ export function Provider(props: {
   const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
     null,
   );
+  const interceptorsRef = useRef(new Set<MTPInterceptor>());
 
   const connected = readyState === ConnectionState.Connected;
 
@@ -214,6 +224,11 @@ export function Provider(props: {
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
+  }, []);
+
+  const addInterceptor = useCallback((interceptor: MTPInterceptor) => {
+    interceptorsRef.current.add(interceptor);
+    return () => interceptorsRef.current.delete(interceptor);
   }, []);
 
   // Custom Pings
@@ -284,7 +299,13 @@ export function Provider(props: {
 
         await MTPClient.init();
 
-        const userId = await load("user_id");
+        const [userId, keyring] = await Promise.all([
+          load("user_id"),
+          load("mtp_keyring"),
+        ]);
+        if (!userId || !keyring) {
+          throw new Error("Missing login credentials");
+        }
         const forcedOmikronUrl = await load("forced_omikron_url");
         const forcedOmikronPublicKey = await load("forced_omikron_public_key");
 
@@ -338,7 +359,7 @@ export function Provider(props: {
           url,
           credentials: {
             clientId: userId,
-            keyring: base64ToUint8Array(await load("mtp_keyring")),
+            keyring: base64ToUint8Array(keyring),
           },
           hostPublicKey: omikronPublicKey,
           descriptor: "client",
@@ -396,6 +417,10 @@ export function Provider(props: {
             (message) => {
               try {
                 unsubscribe();
+                if (message.type.startsWith("Error")) {
+                  reject(new Error(`Authentication failed: ${message.type}`));
+                  return;
+                }
                 resolve(validateResponse("IdentificationResponse", message));
               } catch (authPayloadError) {
                 unsubscribe();
@@ -563,7 +588,15 @@ export function Provider(props: {
   const sendQueued: BoundSendFn = useMemo(
     () => async (type, data, options) => {
       const mtp = await mtpRef.get();
-      return mtp.send(type, data, options);
+      const response = await mtp.send(type, data, options);
+      for (const interceptor of interceptorsRef.current) {
+        void Promise.resolve(
+          interceptor({ type, data, response: response as ProtocolMessage }),
+        ).catch((error) => {
+          log(1, "mtp", "yellow", "MTP interceptor failed", error, { type });
+        });
+      }
+      return response;
     },
     [mtpRef],
   );
@@ -574,6 +607,7 @@ export function Provider(props: {
         send: sendQueued,
         subscribe,
         subscribePush,
+        addInterceptor,
         readyState,
         ownPing,
         iotaPing,

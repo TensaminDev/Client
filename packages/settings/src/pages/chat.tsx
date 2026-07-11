@@ -1,11 +1,10 @@
-import { List, Switch } from "@/features/settings/components";
-import { Button, Kbd } from "@tensamin/ui";
-import { useStorage } from "@tensamin/storage/context";
 import { storageDefaults } from "@tensamin/shared/data";
+import { useStorage } from "@tensamin/storage/context";
+import { Button, Kbd } from "@tensamin/ui";
+import { List, Switch } from "../components";
 
 export default function Page() {
   const { save } = useStorage();
-
   return (
     <div className="flex flex-col gap-2">
       <Switch
@@ -33,12 +32,14 @@ export default function Page() {
         Trusted embed domains can get your IP-Address! Only add domains if you
         really trust them!
       </p>
-      <Button
-        variant="outline"
-        onClick={() => void save("reactions", storageDefaults.reactions)}
-      >
-        Reset Emoji Ranks
-      </Button>
+      <div>
+        <Button
+          variant="outline"
+          onClick={() => void save("reactions", storageDefaults.reactions)}
+        >
+          Reset Emoji Ranks
+        </Button>
+      </div>
       <List label="Trusted embed domains" id="chat_trusted_domains" />
     </div>
   );
