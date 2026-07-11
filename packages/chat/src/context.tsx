@@ -436,6 +436,65 @@ export default function Provider({ children }: { children: ReactNode }) {
     [currentChatSecret, userIdValue],
   );
 
+  const deleteMessage = useCallback(
+    async (sendTime: number) => {
+      try {
+        const response = await send("MessageDelete", {
+          ChatPartnerId: userIdValue,
+          SendTime: sendTime,
+        });
+
+        assertProtocolSuccess("MessageDelete", response);
+
+        setLiveMessagesState((prev) =>
+          prev.filter((message) => message.SendTime !== sendTime),
+        );
+
+        const queryKey = [
+          "chat-messages",
+          String(userIdValue),
+          currentChatSecret !== null,
+        ] as const;
+
+        queryClient.setQueryData<InfiniteData<RawMessages>>(
+          queryKey,
+          (current) => {
+            if (!current) {
+              return current;
+            }
+
+            let updated = false;
+
+            const pages = current.pages.map((page) => {
+              const nextPage = page.filter((message) => {
+                const keep = message.SendTime !== sendTime;
+                if (!keep) {
+                  updated = true;
+                }
+                return keep;
+              });
+
+              return nextPage;
+            });
+
+            if (!updated) {
+              return current;
+            }
+
+            return {
+              ...current,
+              pages,
+            };
+          },
+        );
+      } catch (err) {
+        log(1, "chat", "red", "Failed to delete message", err);
+        toast("error", "Failed to delete message", String(err));
+      }
+    },
+    [currentChatSecret, send, userIdValue],
+  );
+
   const addLiveMessage = useCallback(
     (message: RawMessage) => {
       const localId =
@@ -578,6 +637,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           liveMessages: () => liveMessagesState,
           addLiveMessage,
           editMessage,
+          deleteMessage,
           clearLiveMessages,
           chatSecret: currentChatSecret,
           userId: userIdValue,
@@ -602,6 +662,7 @@ type contextType = {
     setFailed: (failed: boolean) => void;
   };
   editMessage: (sendTime: number, edit: MessageEdit) => void;
+  deleteMessage: (sendTime: number) => void;
   clearLiveMessages: () => void;
   chatSecret: Uint8Array | null;
   userId: number;

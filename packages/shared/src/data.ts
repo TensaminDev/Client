@@ -202,6 +202,13 @@ export const mtp = {
       PingIota: z.number(),
     }),
   },
+  MessageDelete: {
+    request: z.object({
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+    response: z.object({}),
+  },
   MessageEditLive: {
     request: z.object({}),
     response: z.object({

@@ -143,7 +143,7 @@ function MessageComponent({
   }, [message.Content]);
 
   // Message editing
-  const { chatSecret, editMessage, userId } = useChat();
+  const { chatSecret, editMessage, userId, deleteMessage } = useChat();
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.Content);
   useEffect(() => {
@@ -283,14 +283,46 @@ function MessageComponent({
                   </div>
                 )}
                 {editing ? (
-                  <Input
-                    setValue={setEditDraft}
-                    value={editDraft}
-                    onSubmit={() => {
-                      submitEditMessage(editDraft);
-                      setEditing(false);
-                    }}
-                  />
+                  <div className="flex flex-col">
+                    <Input
+                      styled
+                      setValue={setEditDraft}
+                      value={editDraft}
+                      onSubmit={() => {
+                        submitEditMessage(editDraft);
+                        setEditing(false);
+                      }}
+                    />
+                    <div className="flex">
+                      <Button
+                        size="xs"
+                        variant="link"
+                        className="text-primary-foreground-alt"
+                        onClick={() => {
+                          if (editDraft === message.Content) {
+                            deleteMessage(message.SendTime);
+                          } else {
+                            submitEditMessage(editDraft);
+                          }
+                          setEditDraft(message.Content);
+                          setEditing(false);
+                        }}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="link"
+                        className="text-muted-foreground"
+                        onClick={() => {
+                          setEditDraft(message.Content);
+                          setEditing(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
                 ) : isValidURL ? (
                   <Media link={message.Content} />
                 ) : (
