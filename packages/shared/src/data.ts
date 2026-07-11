@@ -442,6 +442,7 @@ export interface Storage extends SettingsStorageDefaults {
     width: number;
     height: number;
   } | null;
+  reactions: Record<string, number>;
 }
 
 export const storageDefaults: Storage = {
@@ -513,6 +514,11 @@ export const storageDefaults: Storage = {
   chat_picker_saved_media: [],
   chat_picker_last_tab: "gif",
   chat_picker_size: null,
+  reactions: {
+    ":thumbsup:": 3,
+    ":fire:": 2,
+    ":white_check_mark:": 1,
+  },
 };
 
 // User Status

@@ -21,6 +21,8 @@ import Input from "@tensamin/markdown/input";
 import { useChat } from "../context";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
+import Emoji, { normalizeShortcode } from "@tensamin/markdown/emoji";
+import { useRecordEmojiUse } from "./emojiRanks";
 
 function MessageComponent({
   grouped,
@@ -133,7 +135,15 @@ function MessageComponent({
   }, [message.Content]);
 
   // Message editing
-  const { chatSecret, editMessage, userId, deleteMessage } = useChat();
+  const {
+    addReaction,
+    chatSecret,
+    editMessage,
+    userId,
+    deleteMessage,
+    removeReaction,
+  } = useChat();
+  const recordUse = useRecordEmojiUse();
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.Content);
   useEffect(() => {
@@ -187,6 +197,39 @@ function MessageComponent({
     ],
   );
 
+  const groupedReactions = Object.entries(
+    (message.Reactions ?? []).reduce<
+      Record<string, { count: number; reactedByMe: boolean }>
+    >((groups, item) => {
+      const reaction = normalizeShortcode(item.Reaction);
+      if (!reaction) return groups;
+
+      const group = groups[reaction] ?? {
+        count: 0,
+        reactedByMe: false,
+      };
+      group.count += 1;
+      group.reactedByMe ||= item.SenderId === ownId;
+      groups[reaction] = group;
+      return groups;
+    }, {}),
+  );
+
+  function toggleReaction(reaction: string) {
+    const reactedByMe = message.Reactions?.some(
+      (item) =>
+        normalizeShortcode(item.Reaction) === reaction &&
+        item.SenderId === ownId,
+    );
+
+    if (reactedByMe) {
+      return removeReaction(message.SendTime, reaction);
+    }
+
+    recordUse(reaction);
+    return addReaction(message.SendTime, reaction);
+  }
+
   return (
     <div
       // pt-3 is to get a gap between messages
@@ -198,6 +241,7 @@ function MessageComponent({
           hideMiniMenu={editing}
           isOwnMessage={message.SenderId === ownId}
           messageId={message.SendTime}
+          onReact={toggleReaction}
           onSetEditing={setEditing}
         >
           <div
@@ -305,6 +349,30 @@ function MessageComponent({
                 ) : (
                   <Text value={message.Content} />
                 )}
+                {groupedReactions.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1 pb-1">
+                    {groupedReactions.map(
+                      ([reaction, { count, reactedByMe }]) => (
+                        <Button
+                          key={reaction}
+                          aria-label={`${reactedByMe ? "Remove" : "Add"} ${reaction} reaction`}
+                          className={cn(
+                            "h-7 gap-2 rounded-lg py-3.5 px-1.5! border",
+                            reactedByMe
+                              ? "border-(--primary-foreground-alt)/40!"
+                              : "",
+                          )}
+                          onClick={() => void toggleReaction(reaction)}
+                          size="xs"
+                          variant={reactedByMe ? "subtleDefault" : "outline"}
+                        >
+                          <Emoji className="h-5 w-5" shortcode={reaction} />
+                          <span className="text-sm">{count}</span>
+                        </Button>
+                      ),
+                    )}
+                  </div>
+                )}
               </div>
             </>
           </div>
@@ -324,6 +392,8 @@ export default React.memo(MessageComponent, (prev, next) => {
     prev.message.MessageState === next.message.MessageState &&
     prev.message.failed === next.message.failed &&
     prev.message.decryptionFailed === next.message.decryptionFailed &&
+    JSON.stringify(prev.message.Reactions) ===
+      JSON.stringify(next.message.Reactions) &&
     prev.grouped === next.grouped &&
     prev.user === next.user
   );

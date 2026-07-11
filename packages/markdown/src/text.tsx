@@ -22,6 +22,7 @@ export default function Text(props: TextProps) {
     () => parseMarkdownBlocks(props.value),
     [props.value],
   );
+  const renderedBlocks = React.useMemo(() => renderBlocks(blocks), [blocks]);
 
-  return <div className="tm-md-root">{renderBlocks(blocks)}</div>;
+  return <div className="tm-md-root">{renderedBlocks}</div>;
 }

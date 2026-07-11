@@ -61,7 +61,10 @@ function bytesFromProtocol(value: unknown): Uint8Array {
 
 type EditableMessage = RawMessage & { failed?: boolean };
 type MessageEdit = Partial<
-  Pick<EditableMessage, "Content" | "Edited" | "MessageState" | "failed">
+  Pick<
+    EditableMessage,
+    "Content" | "Edited" | "MessageState" | "Reactions" | "failed"
+  >
 >;
 
 function updateMessagesBySendTime<T extends EditableMessage>(
@@ -495,6 +498,91 @@ export default function Provider({ children }: { children: ReactNode }) {
     [currentChatSecret, send, userIdValue],
   );
 
+  const setReaction = useCallback(
+    async (sendTime: number, reaction: string, add: boolean) => {
+      let previousReactions: RawMessage["Reactions"];
+      let foundMessage = false;
+
+      const applyOptimisticUpdate = (message: EditableMessage) => {
+        const current = message.Reactions ?? [];
+        previousReactions = current;
+        foundMessage = true;
+
+        return add
+          ? [...current, { Reaction: reaction, SenderId: ownId }]
+          : current.filter(
+              (item) => item.Reaction !== reaction || item.SenderId !== ownId,
+            );
+      };
+
+      setLiveMessagesState((current) =>
+        current.map((message) =>
+          message.SendTime === sendTime
+            ? { ...message, Reactions: applyOptimisticUpdate(message) }
+            : message,
+        ),
+      );
+
+      const queryKey = [
+        "chat-messages",
+        String(userIdValue),
+        currentChatSecret !== null,
+      ] as const;
+      queryClient.setQueryData<InfiniteData<RawMessages>>(
+        queryKey,
+        (current) =>
+          current
+            ? {
+                ...current,
+                pages: current.pages.map((page) =>
+                  page.map((message) =>
+                    message.SendTime === sendTime
+                      ? {
+                          ...message,
+                          Reactions: applyOptimisticUpdate(message),
+                        }
+                      : message,
+                  ),
+                ),
+              }
+            : current,
+      );
+
+      try {
+        const response = await send(
+          add ? "MessageReactionAdd" : "MessageReactionRemove",
+          {
+            ChatPartnerId: userIdValue,
+            Reaction: reaction,
+            SendTime: sendTime,
+          },
+        );
+        assertProtocolSuccess(
+          add ? "MessageReactionAdd" : "MessageReactionRemove",
+          response,
+        );
+      } catch (err) {
+        if (foundMessage) {
+          editMessage(sendTime, { Reactions: previousReactions });
+        }
+        log(1, "chat", "red", "Failed to update reaction", err);
+        toast("error", "Failed to update reaction", String(err));
+      }
+    },
+    [currentChatSecret, editMessage, ownId, send, userIdValue],
+  );
+
+  const addReaction = useCallback(
+    (sendTime: number, reaction: string) =>
+      setReaction(sendTime, reaction, true),
+    [setReaction],
+  );
+  const removeReaction = useCallback(
+    (sendTime: number, reaction: string) =>
+      setReaction(sendTime, reaction, false),
+    [setReaction],
+  );
+
   const addLiveMessage = useCallback(
     (message: RawMessage) => {
       const localId =
@@ -578,6 +666,27 @@ export default function Provider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (message.type === "MessageReactionLive") {
+        const rawData = message.data as {
+          ChatPartnerId: unknown;
+          SendTime: unknown;
+        };
+        const chatPartnerId = Number(rawData.ChatPartnerId);
+        const sendTime = Number(rawData.SendTime);
+
+        if (chatPartnerId !== userIdValue || !Number.isFinite(sendTime)) return;
+
+        void send("MessageGet", { SendTime: sendTime })
+          .then((response) => {
+            assertProtocolSuccess("MessageGet", response);
+            editMessage(sendTime, { Reactions: response.data.Reactions ?? [] });
+          })
+          .catch((err) => {
+            log(1, "chat", "red", "Failed to refresh message reactions", err);
+          });
+        return;
+      }
+
       if (message.type !== "MessageState") return;
 
       const rawData = message.data as {
@@ -623,7 +732,7 @@ export default function Provider({ children }: { children: ReactNode }) {
         MessageState: nextState.MessageState,
       });
     });
-  }, [currentChatSecret, editMessage, subscribePush, userIdValue]);
+  }, [currentChatSecret, editMessage, send, subscribePush, userIdValue]);
 
   // Replys
   const [replyTo, setReplyTo] = useState<number | undefined>(undefined);
@@ -638,6 +747,8 @@ export default function Provider({ children }: { children: ReactNode }) {
           addLiveMessage,
           editMessage,
           deleteMessage,
+          addReaction,
+          removeReaction,
           clearLiveMessages,
           chatSecret: currentChatSecret,
           userId: userIdValue,
@@ -663,6 +774,8 @@ type contextType = {
   };
   editMessage: (sendTime: number, edit: MessageEdit) => void;
   deleteMessage: (sendTime: number) => void;
+  addReaction: (sendTime: number, reaction: string) => Promise<void>;
+  removeReaction: (sendTime: number, reaction: string) => Promise<void>;
   clearLiveMessages: () => void;
   chatSecret: Uint8Array | null;
   userId: number;

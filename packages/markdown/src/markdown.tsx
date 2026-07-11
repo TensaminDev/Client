@@ -1,7 +1,10 @@
 import * as React from "react";
+import Emoji from "./emoji";
+import { findEmojiShortcodes } from "./emojiData";
 
 type InlineNode =
   | { type: "text"; value: string }
+  | { type: "emoji"; shortcode: string }
   | { type: "strong"; value: string }
   | { type: "em"; value: string }
   | { type: "del"; value: string }
@@ -73,14 +76,14 @@ type MarkdownBlock =
   | TableBlock;
 
 const INLINE_TOKEN_REGEX =
-  /!\[([^\]]*)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|\[([^\]]+)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|`([^`\n]+)`|~~([^~\n]+)~~|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\*([^*\n]+)\*|_([^_\n]+)_/g;
+  /!\[([^\]]*)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|\[([^\]]+)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|`([^`\n]+)`|~~([^~\n]+)~~|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\*([^*\n]+)\*|(?<![a-zA-Z0-9:])_([^_\n]+)_(?![a-zA-Z0-9:])/g;
 
 /**
  * Executes parseInlineNodes.
  * @param input Parameter input.
  * @returns InlineNode[].
  */
-function parseInlineNodes(input: string): InlineNode[] {
+export function parseInlineNodes(input: string): InlineNode[] {
   const nodes: InlineNode[] = [];
 
   let cursor = 0;
@@ -91,7 +94,7 @@ function parseInlineNodes(input: string): InlineNode[] {
     const raw = match[0];
 
     if (index > cursor) {
-      nodes.push({ type: "text", value: input.slice(cursor, index) });
+      nodes.push(...parseEmojiText(input.slice(cursor, index)));
     }
 
     if (match[1] !== undefined && match[2] !== undefined) {
@@ -111,7 +114,7 @@ function parseInlineNodes(input: string): InlineNode[] {
     } else if (match[9] !== undefined || match[10] !== undefined) {
       nodes.push({ type: "em", value: match[9] ?? match[10] ?? "" });
     } else {
-      nodes.push({ type: "text", value: raw });
+      nodes.push(...parseEmojiText(raw));
     }
 
     cursor = index + raw.length;
@@ -119,10 +122,30 @@ function parseInlineNodes(input: string): InlineNode[] {
   }
 
   if (cursor < input.length) {
-    nodes.push({ type: "text", value: input.slice(cursor) });
+    nodes.push(...parseEmojiText(input.slice(cursor)));
   }
 
   INLINE_TOKEN_REGEX.lastIndex = 0;
+  return nodes;
+}
+
+export function parseEmojiText(input: string): InlineNode[] {
+  const nodes: InlineNode[] = [];
+  let cursor = 0;
+
+  for (const match of findEmojiShortcodes(input)) {
+    if (match.from > cursor) {
+      nodes.push({ type: "text", value: input.slice(cursor, match.from) });
+    }
+
+    nodes.push({ type: "emoji", shortcode: match.emoji.shortcode });
+    cursor = match.to;
+  }
+
+  if (cursor < input.length) {
+    nodes.push({ type: "text", value: input.slice(cursor) });
+  }
+
   return nodes;
 }
 
@@ -375,10 +398,16 @@ function renderInline(nodes: InlineNode[]): React.ReactNode[] {
       return node.value;
     }
 
+    if (node.type === "emoji") {
+      return (
+        <Emoji key={index} className="tm-md-emoji" shortcode={node.shortcode} />
+      );
+    }
+
     if (node.type === "strong") {
       return (
         <strong key={index} className="tm-md-strong">
-          {node.value}
+          {renderInline(parseEmojiText(node.value))}
         </strong>
       );
     }
@@ -386,7 +415,7 @@ function renderInline(nodes: InlineNode[]): React.ReactNode[] {
     if (node.type === "em") {
       return (
         <em key={index} className="tm-md-em">
-          {node.value}
+          {renderInline(parseEmojiText(node.value))}
         </em>
       );
     }
@@ -394,7 +423,7 @@ function renderInline(nodes: InlineNode[]): React.ReactNode[] {
     if (node.type === "del") {
       return (
         <del key={index} className="tm-md-del">
-          {node.value}
+          {renderInline(parseEmojiText(node.value))}
         </del>
       );
     }
@@ -416,7 +445,7 @@ function renderInline(nodes: InlineNode[]): React.ReactNode[] {
           target="_blank"
           rel="noreferrer"
         >
-          {node.label}
+          {renderInline(parseEmojiText(node.label))}
         </a>
       );
     }
@@ -637,7 +666,7 @@ function readTable(
 }
 
 const markdownStyles = `
-.tm-md-root { color: hsl(var(--foreground)); line-height: 1.55; font-size: 0.95rem; }
+.tm-md-root { color: hsl(var(--foreground)); line-height: 1.65; font-size: 1rem; }
 .tm-md-heading { margin: 0.2rem 0 0.35rem; font-weight: 700; line-height: 1.25; }
 .tm-md-h1 { font-size: 1.65rem; }
 .tm-md-h2 { font-size: 1.45rem; }
@@ -655,6 +684,7 @@ const markdownStyles = `
 .tm-md-del { text-decoration: line-through; }
 .tm-md-link { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 0.14rem; }
 .tm-md-image { display: block; max-width: 100%; border-radius: 0.4rem; margin: 0.5rem 0; }
+.tm-md-emoji { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.18em; }
 .tm-md-ul, .tm-md-ol { margin: 0.3rem 0 0.35rem 1.2rem; padding: 0; }
 .tm-md-li { margin: 0.2rem 0; }
 .tm-md-checkbox { margin-right: 0.5rem; vertical-align: middle; }
@@ -670,8 +700,21 @@ const markdownStyles = `
 .cm-editor.tm-md-editor .cm-content { caret-color: var(--foreground); }
 .cm-editor.tm-md-editor .cm-content { padding: var(--tm-md-content-padding, 0.25rem 0.625rem); min-height: 2rem; }
 .cm-editor.tm-md-editor .cm-line { padding: 0; color: hsl(var(--foreground)); }
+.cm-editor.tm-md-editor .tm-md-editor-emoji { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.18em; object-fit: contain; pointer-events: none; }
 .cm-editor.tm-md-editor .tm-md-hidden-token { color: transparent; opacity: 0; font-size: inherit; }
 .cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: hsl(var(--muted)); border-radius: 0.3rem; }
+.cm-tooltip.cm-tooltip-autocomplete { min-width: 18rem; max-width: min(26rem, calc(100vw - 1rem)); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--popover); color: var(--popover-foreground); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); font-family: "Public Sans Variable", sans-serif; font-size: 0.875rem; }
+.cm-editor.tm-md-editor .cm-tooltip.cm-tooltip-autocomplete > ul { max-height: min(20rem, 45vh); padding: 0.25rem; font-family: "Public Sans Variable", sans-serif; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar { width: 6px; height: 6px; }
+.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-track { background: transparent; }
+.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb { border-radius: 9999px; background: var(--border); }
+.cm-tooltip.cm-tooltip-autocomplete > ul > li { display: flex; min-height: 2.25rem; align-items: center; border-radius: calc(var(--radius) * 0.8); padding: 0.3rem 0.5rem; color: var(--popover-foreground); }
+.cm-tooltip.cm-tooltip-autocomplete > ul > li:hover,
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] { background: var(--accent); color: var(--accent-foreground); }
+.cm-tooltip.cm-tooltip-autocomplete .cm-completionIcon { display: none; }
+.cm-tooltip.cm-tooltip-autocomplete .cm-completionLabel { overflow: hidden; text-overflow: ellipsis; }
+.cm-tooltip.cm-tooltip-autocomplete .cm-completionMatchedText { color: inherit; text-decoration: none; font-weight: 600; }
+.cm-tooltip-autocomplete .tm-md-completion-emoji { display: inline-block; width: 1.35rem; height: 1.35rem; flex: 0 0 auto; margin-right: 0.5rem; vertical-align: middle; }
 `;
 
 /**
