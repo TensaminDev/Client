@@ -8,3 +8,4 @@
 - Confirmation when exiting with text in the input box.
 - Add arrow up hotkey to edit last message
 - Drop any unique reactions above 10
+- Make the emoji picker not get moved with the mini context menu
