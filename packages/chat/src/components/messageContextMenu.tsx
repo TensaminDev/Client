@@ -1,4 +1,6 @@
 import {
+  Button,
+  Card,
   cn,
   ContextMenu,
   ContextMenuContent,
@@ -13,14 +15,26 @@ import {
   DrawerContent,
   DrawerDescription,
   DrawerTitle,
-  DrawerTrigger,
+  Separator,
   useIsMobile,
 } from "@tensamin/ui";
-import { Pin, Clipboard, Pen, Reply, Forward, Trash } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { ReactElement, ReactNode } from "react";
+import {
+  Clipboard,
+  Ellipsis,
+  Forward,
+  Laugh,
+  Pen,
+  Pin,
+  Reply,
+  Trash,
+} from "lucide-react";
+import { cloneElement, useMemo, useState, useSyncExternalStore } from "react";
+import type {
+  MouseEvent as ReactMouseEvent,
+  ReactElement,
+  ReactNode,
+} from "react";
 import { useChat } from "../context";
-import { useStorage } from "@tensamin/storage/context";
 
 async function copyText(text: string) {
   await navigator.clipboard.writeText(text);
@@ -130,35 +144,138 @@ function ReactionItems({ Item }: { Item: MenuComponents["Item"] }) {
   return <Item>Cool item</Item>;
 }
 
+let shiftPressed = false;
+const shiftListeners = new Set<() => void>();
+
+function setShiftPressed(value: boolean) {
+  if (shiftPressed === value) return;
+
+  shiftPressed = value;
+  shiftListeners.forEach((listener) => listener());
+}
+
+function subscribeToShift(listener: () => void) {
+  shiftListeners.add(listener);
+
+  if (shiftListeners.size === 1) {
+    window.addEventListener("keydown", handleShiftKey);
+    window.addEventListener("keyup", handleShiftKey);
+    window.addEventListener("blur", handleWindowBlur);
+  }
+
+  return () => {
+    shiftListeners.delete(listener);
+    if (shiftListeners.size === 0) {
+      window.removeEventListener("keydown", handleShiftKey);
+      window.removeEventListener("keyup", handleShiftKey);
+      window.removeEventListener("blur", handleWindowBlur);
+      shiftPressed = false;
+    }
+  };
+}
+
+function handleShiftKey(event: KeyboardEvent) {
+  setShiftPressed(event.shiftKey);
+}
+
+function handleWindowBlur() {
+  setShiftPressed(false);
+}
+
+function useShiftPressed() {
+  return useSyncExternalStore(
+    subscribeToShift,
+    () => shiftPressed,
+    () => false,
+  );
+}
+
+function MiniMessageMenu({
+  isOwnMessage,
+  onDelete,
+  onEdit,
+  onOpenMenu,
+  onReply,
+  shiftIsPressed,
+}: {
+  isOwnMessage: boolean;
+  onDelete: () => void;
+  onEdit: () => void;
+  onOpenMenu: (event: ReactMouseEvent<HTMLElement>) => void;
+  onReply: () => void;
+  shiftIsPressed: boolean;
+}) {
+  return (
+    <Card className="absolute right-4 -top-3 opacity-0 group-hover/message-menu:opacity-100 flex flex-row justify-end gap-0! z-10 p-0! shadow-lg rounded-lg!">
+      {[0, 1, 2].map((item) => (
+        <Button key={item} variant="ghost" className="h-8 w-8">
+          {item === 0 && "👍"}
+          {item === 1 && "🔥"}
+          {item === 2 && "✅"}
+        </Button>
+      ))}
+      <Separator orientation="vertical" className="my-1" />
+      <Button variant="ghost" className="h-8 w-8">
+        <Laugh />
+      </Button>
+      <Button
+        variant="ghost"
+        className="h-8 w-8"
+        aria-label={isOwnMessage ? "Edit message" : "Reply to message"}
+        onClick={isOwnMessage ? onEdit : onReply}
+      >
+        {isOwnMessage ? <Pen /> : <Reply />}
+      </Button>
+      <Button variant="ghost" className="h-8 w-8">
+        <Forward />
+      </Button>
+      <Separator orientation="vertical" className="my-1" />
+      {isOwnMessage && shiftIsPressed ? (
+        <Button
+          variant="ghost"
+          className="h-8 w-8 text-destructive"
+          aria-label="Delete message"
+          onClick={onDelete}
+        >
+          <Trash />
+        </Button>
+      ) : (
+        <Button
+          variant="ghost"
+          className="h-8 w-8"
+          aria-label="Open message menu"
+          onClick={onOpenMenu}
+        >
+          <Ellipsis />
+        </Button>
+      )}
+    </Card>
+  );
+}
+
 function MessageMenuContent({
   components,
   content,
   devEnabled,
+  isOwnMessage,
   messageId,
   onAddReaction,
   showReactionItems = true,
   onSetEditing,
-  senderId,
 }: {
   components: MenuComponents;
   content: string;
   devEnabled: boolean;
+  isOwnMessage: boolean;
   messageId: number;
   onAddReaction?: () => void | Promise<void>;
   showReactionItems?: boolean;
   onSetEditing: (value: boolean) => void;
-  senderId: number;
 }) {
   const { Content, Group, Item, Separator, Sub, SubContent, SubTrigger } =
     components;
 
-  const { load } = useStorage();
-  const { setReplyTo } = useChat();
-
-  const [ownId, setOwnId] = useState(0);
-  useEffect(() => {
-    load("user_id").then(setOwnId);
-  }, [load]);
+  const { deleteMessage, setReplyTo } = useChat();
 
   return (
     <Content>
@@ -183,7 +300,7 @@ function MessageMenuContent({
       </Group>
       <Separator />
       <Group>
-        {senderId === ownId && (
+        {isOwnMessage && (
           <Item
             className="flex justify-between"
             onClick={() => {
@@ -205,12 +322,20 @@ function MessageMenuContent({
           <p>Forward</p> <Forward />
         </Item>
       </Group>
-      <Separator />
-      <Group>
-        <Item disabled variant="destructive" className="flex justify-between">
-          <p>Delete Message</p> <Trash />
-        </Item>
-      </Group>
+      {isOwnMessage && (
+        <>
+          <Separator />
+          <Group>
+            <Item
+              variant="destructive"
+              className="flex justify-between"
+              onClick={() => deleteMessage(messageId)}
+            >
+              <p>Delete Message</p> <Trash />
+            </Item>
+          </Group>
+        </>
+      )}
       {devEnabled && (
         <>
           <Separator />
@@ -231,17 +356,21 @@ function MessageMenuContent({
 export default function MessageContextMenu({
   children,
   content,
+  hideMiniMenu = false,
+  isOwnMessage,
   messageId,
   onSetEditing,
-  senderId,
 }: {
   children: ReactElement;
   content: string;
+  hideMiniMenu?: boolean;
+  isOwnMessage: boolean;
   messageId: number;
   onSetEditing: (value: boolean) => void;
-  senderId: number;
 }) {
   const isMobile = useIsMobile();
+  const shiftIsPressed = useShiftPressed();
+  const { deleteMessage, setReplyTo } = useChat();
   const devEnabled = useMemo(
     () => Number(localStorage.getItem("log_level")) >= 3,
     [],
@@ -267,20 +396,50 @@ export default function MessageContextMenu({
     [],
   );
 
+  function renderMessage(
+    openMenu: (event: ReactMouseEvent<HTMLElement>) => void,
+  ) {
+    return (
+      <div className="group/message-menu relative w-full">
+        {children}
+        {!hideMiniMenu && (
+          <MiniMessageMenu
+            isOwnMessage={isOwnMessage}
+            onDelete={() => deleteMessage(messageId)}
+            onEdit={() => onSetEditing(true)}
+            onOpenMenu={openMenu}
+            onReply={() => setReplyTo(messageId)}
+            shiftIsPressed={shiftIsPressed}
+          />
+        )}
+      </div>
+    );
+  }
+
   if (isMobile) {
+    const child = renderMessage(() => setMainDrawerOpen(true));
+
     return (
       <>
         <Drawer open={mainDrawerOpen} onOpenChange={setMainDrawerOpen}>
-          <DrawerTrigger asChild>{children}</DrawerTrigger>
+          {cloneElement(child, {
+            onContextMenu: (event: ReactMouseEvent) => {
+              child.props.onContextMenu?.(event);
+              if (event.defaultPrevented) return;
+
+              event.preventDefault();
+              setMainDrawerOpen(true);
+            },
+          })}
           <MessageMenuContent
             components={mainDrawerComponents}
             content={content}
             devEnabled={devEnabled}
+            isOwnMessage={isOwnMessage}
             messageId={messageId}
             onAddReaction={() => setReactionDrawerOpen(true)}
             showReactionItems={false}
             onSetEditing={onSetEditing}
-            senderId={senderId}
           />
         </Drawer>
         <Drawer open={reactionDrawerOpen} onOpenChange={setReactionDrawerOpen}>
@@ -298,16 +457,29 @@ export default function MessageContextMenu({
     );
   }
 
+  const child = renderMessage((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        bubbles: true,
+        button: 2,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      }),
+    );
+  });
+
   return (
     <ContextMenu>
-      <ContextMenuTrigger render={children} />
+      <ContextMenuTrigger render={child} />
       <MessageMenuContent
         components={desktopMenuComponents}
         content={content}
         devEnabled={devEnabled}
+        isOwnMessage={isOwnMessage}
         messageId={messageId}
         onSetEditing={onSetEditing}
-        senderId={senderId}
       />
     </ContextMenu>
   );

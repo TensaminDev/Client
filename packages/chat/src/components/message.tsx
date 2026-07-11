@@ -1,15 +1,7 @@
 import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import {
-  AlertTriangle,
-  Check,
-  Ellipse,
-  Forward,
-  Laugh,
-  RefreshCw,
-  Reply,
-} from "lucide-react";
+import { AlertTriangle, Check, Ellipse, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
@@ -18,9 +10,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
-  Card,
   cn,
-  Separator,
   Skeleton,
 } from "@tensamin/ui";
 import MessageContextMenu from "./messageContextMenu";
@@ -205,9 +195,10 @@ function MessageComponent({
       {user && message.Content ? (
         <MessageContextMenu
           content={message.Content}
+          hideMiniMenu={editing}
+          isOwnMessage={message.SenderId === ownId}
           messageId={message.SendTime}
           onSetEditing={setEditing}
-          senderId={message.SenderId}
         >
           <div
             className={cn(
@@ -234,26 +225,11 @@ function MessageComponent({
                   </AvatarFallback>
                 </Avatar>
               )}
-              <div className="flex flex-col group">
-                <Card className="absolute right-4 -top-3 opacity-0 group-hover:opacity-100 flex flex-row justify-end gap-0! z-10 p-0! shadow-lg rounded-lg!">
-                  {[0, 1, 2].map((item) => (
-                    <Button key={item} variant="ghost" className="h-8 w-8">
-                      {item === 0 && "👍"}
-                      {item === 1 && "🔥"}
-                      {item === 2 && "✅"}
-                    </Button>
-                  ))}
-                  <Separator orientation="vertical" className="my-1" />
-                  <Button variant="ghost" className="h-8 w-8">
-                    <Laugh />
-                  </Button>
-                  <Button variant="ghost" className="h-8 w-8">
-                    <Reply />
-                  </Button>
-                  <Button variant="ghost" className="h-8 w-8">
-                    <Forward />
-                  </Button>
-                </Card>
+              <div
+                className={cn("flex flex-col group", {
+                  "min-w-0 flex-1": editing,
+                })}
+              >
                 {!grouped && (
                   <div className="flex items-center gap-1">
                     <p className="font-medium">{user.Display}</p>
@@ -283,8 +259,9 @@ function MessageComponent({
                   </div>
                 )}
                 {editing ? (
-                  <div className="flex flex-col">
+                  <div className="flex w-full flex-col">
                     <Input
+                      className="w-full"
                       styled
                       setValue={setEditDraft}
                       value={editDraft}

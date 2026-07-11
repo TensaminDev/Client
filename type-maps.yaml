@@ -73,6 +73,7 @@ type_maps:
       MessageChunk: 61
       MessageGet: 143
       MessagesGet: 62
+      MessageDelete: 149
       PushNotification: 63
       ReadNotification: 64
       GetNotifications: 65
