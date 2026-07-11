@@ -1,1 +1,0 @@
-- Get omikron url & public key from omega

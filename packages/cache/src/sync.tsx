@@ -242,6 +242,14 @@ export default function CacheSync() {
         );
         return;
       }
+      if (message.type === "MessageDeleteLive") {
+        const deleteData = message.data as {
+          ChatPartnerId: number;
+          SendTime: number;
+        };
+        await removeMessage(deleteData.ChatPartnerId, deleteData.SendTime);
+        return;
+      }
       if (message.type === "MessageState") {
         await replaceMessage(
           Number(data.ChatPartnerId),
@@ -257,7 +265,7 @@ export default function CacheSync() {
         );
       }
     },
-    [accountId, insertMessage, replaceMessage],
+    [accountId, insertMessage, removeMessage, replaceMessage],
   );
 
   useEffect(() => {

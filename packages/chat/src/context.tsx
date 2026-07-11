@@ -470,6 +470,52 @@ export default function Provider({ children }: { children: ReactNode }) {
     [currentChatSecret, userIdValue],
   );
 
+  const removeMessage = useCallback(
+    (sendTime: number) => {
+      setLiveMessagesState((prev) =>
+        prev.filter((message) => message.SendTime !== sendTime),
+      );
+      const queryKey = [
+        "chat-messages",
+        String(userIdValue),
+        currentChatSecret !== null,
+      ] as const;
+
+      queryClient.setQueryData<InfiniteData<RawMessages>>(
+        queryKey,
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          let updated = false;
+
+          const pages = current.pages.map((page) => {
+            const nextPage = page.filter((message) => {
+              const keep = message.SendTime !== sendTime;
+              if (!keep) {
+                updated = true;
+              }
+              return keep;
+            });
+
+            return nextPage;
+          });
+
+          if (!updated) {
+            return current;
+          }
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    },
+    [currentChatSecret, userIdValue],
+  );
+
   const deleteMessage = useCallback(
     async (sendTime: number) => {
       try {
@@ -479,53 +525,13 @@ export default function Provider({ children }: { children: ReactNode }) {
         });
 
         assertProtocolSuccess("MessageDelete", response);
-
-        setLiveMessagesState((prev) =>
-          prev.filter((message) => message.SendTime !== sendTime),
-        );
-        const queryKey = [
-          "chat-messages",
-          String(userIdValue),
-          currentChatSecret !== null,
-        ] as const;
-
-        queryClient.setQueryData<InfiniteData<RawMessages>>(
-          queryKey,
-          (current) => {
-            if (!current) {
-              return current;
-            }
-
-            let updated = false;
-
-            const pages = current.pages.map((page) => {
-              const nextPage = page.filter((message) => {
-                const keep = message.SendTime !== sendTime;
-                if (!keep) {
-                  updated = true;
-                }
-                return keep;
-              });
-
-              return nextPage;
-            });
-
-            if (!updated) {
-              return current;
-            }
-
-            return {
-              ...current,
-              pages,
-            };
-          },
-        );
+        removeMessage(sendTime);
       } catch (err) {
         log(1, "chat", "red", "Failed to delete message", err);
         toast("error", "Failed to delete message", String(err));
       }
     },
-    [currentChatSecret, send, userIdValue],
+    [removeMessage, send, userIdValue],
   );
 
   const setReaction = useCallback(
@@ -717,6 +723,18 @@ export default function Provider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (message.type === "MessageDeleteLive") {
+        const data = message.data as {
+          ChatPartnerId: number;
+          SendTime: number;
+        };
+
+        if (data.ChatPartnerId !== userIdValue) return;
+
+        removeMessage(data.SendTime);
+        return;
+      }
+
       if (message.type !== "MessageState") return;
 
       const rawData = message.data as {
@@ -762,7 +780,14 @@ export default function Provider({ children }: { children: ReactNode }) {
         MessageState: nextState.MessageState,
       });
     });
-  }, [currentChatSecret, editMessage, send, subscribePush, userIdValue]);
+  }, [
+    currentChatSecret,
+    editMessage,
+    removeMessage,
+    send,
+    subscribePush,
+    userIdValue,
+  ]);
 
   // Replys
   const [replyTo, setReplyTo] = useState<number | undefined>(undefined);

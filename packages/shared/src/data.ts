@@ -209,6 +209,13 @@ export const mtp = {
     }),
     response: z.object({}),
   },
+  MessageDeleteLive: {
+    request: z.object({}),
+    response: z.object({
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+  },
   MessageEditLive: {
     request: z.object({}),
     response: z.object({

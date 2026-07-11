@@ -212,6 +212,7 @@ export function Provider(props: {
       "MessageLive",
       "MessageEditLive",
       "MessageReactionLive",
+      "MessageDeleteLive",
       "MessageState",
       "CallInvite",
       "ErrorNoIota",
