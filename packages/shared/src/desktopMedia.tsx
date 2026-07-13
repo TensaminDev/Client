@@ -31,6 +31,20 @@ type ElectronDesktopApi = {
     >;
     selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
   };
+  call?: {
+    setStatus?: (status: {
+      inCall: boolean;
+      speaking: boolean;
+      iconDataUrl?: string;
+    }) => Promise<void>;
+  };
+  secureStorage?: {
+    getStatus?: () => Promise<{ available: boolean; backend: string | null }>;
+    load?: (key: string) => Promise<string | null>;
+    save?: (key: string, value: string) => Promise<void>;
+    delete?: (key: string) => Promise<void>;
+    clear?: () => Promise<void>;
+  };
 };
 
 declare global {

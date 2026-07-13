@@ -186,34 +186,14 @@ export default function Screen() {
     return [...liveMessageChunks, ...historicalMessageChunks];
   }, [historicalMessageChunks, liveMessageChunks]);
 
-  const shouldShowConversationStart =
-    !!messagesQuery.data && !messagesQuery.hasNextPage;
-  const virtualRowCount =
-    messageChunks.length + (shouldShowConversationStart ? 1 : 0);
+  const virtualRowCount = messageChunks.length;
 
   const getItemKey = React.useCallback(
-    (index: number) => {
-      if (shouldShowConversationStart && index === messageChunks.length) {
-        return "conversation-start";
-      }
-
-      return messageChunks[index]?.key ?? index;
-    },
-    [messageChunks, shouldShowConversationStart],
+    (index: number) => messageChunks[index]?.key ?? index,
+    [messageChunks],
   );
 
-  const estimateSize = React.useCallback(
-    (index: number) => {
-      const isConversationStart =
-        shouldShowConversationStart && index === messageChunks.length;
-      if (isConversationStart) {
-        return FALLBACK_MESSAGE_HEIGHT;
-      }
-
-      return FALLBACK_MESSAGE_HEIGHT;
-    },
-    [messageChunks, shouldShowConversationStart],
-  );
+  const estimateSize = React.useCallback(() => FALLBACK_MESSAGE_HEIGHT, []);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
@@ -464,32 +444,6 @@ export default function Screen() {
                 className="absolute bottom-0 left-0 h-px w-full"
               />
               {virtualizer.getVirtualItems().map((virtualRow) => {
-                if (
-                  shouldShowConversationStart &&
-                  virtualRow.index === messageChunks.length
-                ) {
-                  return (
-                    <div
-                      key="conversation-start"
-                      data-index={virtualRow.index}
-                      ref={virtualizer.measureElement}
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        transform: `translateY(${verticalOffset + virtualRow.start}px)`,
-                      }}
-                    >
-                      <div className="w-full flex justify-start scale-y-[-1]">
-                        <div className="text-sm text-foreground/55 px-2.5">
-                          Conversation start
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
                 const chunkIndex = virtualRow.index;
                 const chunk = messageChunks[chunkIndex];
                 if (!chunk) {

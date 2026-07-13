@@ -58,8 +58,12 @@
         "to": "web"
       },
       {
-        "from": "build/icons/icon.png",
-        "to": "icons/icon.png"
+        "from": "build/icons",
+        "to": "icons",
+        "filter": [
+          "32x32.png",
+          "icon.png"
+        ]
       }
     ],
     "linux": {

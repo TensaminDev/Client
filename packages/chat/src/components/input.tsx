@@ -23,6 +23,8 @@ import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/storage/session";
 import GifPicker from "./gifPicker";
+import EmojiPicker from "./emojiPicker";
+import { useEmojiRanks, useRecordEmojiUse } from "./emojiRanks";
 import Wrapper from "@tensamin/user/wrapper";
 import Text from "@tensamin/markdown/text";
 
@@ -48,6 +50,9 @@ export default function InputComponent({
   const { moveUserIdToTop } = useSession();
   const gifPopoverRef = useRef<HTMLDivElement>(null);
   const [gifPopoverOpen, setGifPopoverOpen] = useState(false);
+  const [emojiPopoverOpen, setEmojiPopoverOpen] = useState(false);
+  const recordUse = useRecordEmojiUse();
+  const { ranks: emojiFrequencies } = useEmojiRanks();
   const [gifPopoverSize, setGifPopoverSize] = useState<{
     width: number;
     height: number;
@@ -257,6 +262,8 @@ export default function InputComponent({
             setValue={setValue}
             onSubmit={handleSubmit}
             invertEnterBehavior={invertEnterBehavior}
+            emojiFrequencies={emojiFrequencies}
+            onEmojiSelect={recordUse}
           />
           <div className="w-full flex justify-between gap-1 p-1 pt-0">
             <div className="flex gap-1">
@@ -268,9 +275,31 @@ export default function InputComponent({
               </div>
             </div>
             <div className="flex gap-1">
-              <Button className="w-9 h-9 p-0" variant="ghost">
-                <Laugh size={20} />
-              </Button>
+              <Popover
+                open={emojiPopoverOpen}
+                onOpenChange={setEmojiPopoverOpen}
+              >
+                <PopoverTrigger
+                  render={
+                    <Button
+                      aria-label="Open emoji picker"
+                      className="w-9 h-9 p-0"
+                      variant="ghost"
+                    >
+                      <Laugh size={20} />
+                    </Button>
+                  }
+                />
+                <PopoverContent className="w-auto p-0">
+                  <EmojiPicker
+                    onSelect={(shortcode) => {
+                      setValue(`${value}${shortcode} `);
+                      recordUse(shortcode);
+                      setEmojiPopoverOpen(false);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
               <Popover open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
                 <PopoverTrigger
                   render={

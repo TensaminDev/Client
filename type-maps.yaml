@@ -73,6 +73,7 @@ type_maps:
       MessageChunk: 61
       MessageGet: 143
       MessagesGet: 62
+      MessageDelete: 149
       PushNotification: 63
       ReadNotification: 64
       GetNotifications: 65
@@ -148,6 +149,7 @@ type_maps:
       MessageReactionAdd: 146
       MessageReactionRemove: 147
       MessageReactionLive: 148
+      MessageDeleteLive: 150
     DataTypes:
       ErrorType: 32
       ErrorProtocol: 33
@@ -265,3 +267,4 @@ type_maps:
       Edited: 155
       Reactions: 156
       Reaction: 157
+      ReplyId: 158

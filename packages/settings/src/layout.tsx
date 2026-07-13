@@ -1,25 +1,22 @@
-import { Button, ClearStorageButton } from "@tensamin/ui";
-
-import options from "@tensamin/shared/settings";
-import { cn, useIsMobile } from "@tensamin/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { Button, ClearStorageButton, cn, useIsMobile } from "@tensamin/ui";
 
-export default function Screen() {
+import { settingsNavigation } from "./manifest";
+
+export default function SettingsLayout() {
   const isMobile = useIsMobile();
   const location = useLocation();
 
   return (
     <div className="flex h-full w-full">
       {!isMobile && <SettingsSidebar />}
-
-      {/* Page */}
       <div className="bg-background w-full h-full p-3 flex flex-col gap-3">
         <h1 className="text-xl font-semibold">
           {location.pathname
             .split("/")
             .pop()
             ?.replace(/-/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase())}
+            .replace(/\b\w/g, (letter) => letter.toUpperCase())}
         </h1>
         <Outlet />
       </div>
@@ -28,45 +25,32 @@ export default function Screen() {
 }
 
 export function SettingsSidebar() {
-  const settingsOptions = options as Record<
-    string,
-    Record<string, Record<string, unknown>>
-  >;
-
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const categories = [...new Set(settingsNavigation.map((page) => page.category))];
 
   return (
     <div
       className={cn(
-        isMobile
-          ? "w-full p-1"
-          : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
+        isMobile ? "w-full p-1" : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
         "flex flex-col gap-6",
       )}
     >
-      {/* Settings */}
-      {Object.keys(settingsOptions).map((category) => (
-        // Category
+      {categories.map((category) => (
         <div key={category} className="flex flex-col gap-2">
           <h2 className="font-bold text-xs uppercase">{category}</h2>
-          {Object.keys(settingsOptions[category]).map((page) => (
-            // Page
-            <div key={page}>
+          {settingsNavigation
+            .filter((page) => page.category === category)
+            .map((page) => (
               <Button
+                key={page.path}
                 className="w-full"
                 variant="outline"
-                onClick={() =>
-                  navigate({
-                    to: "/settings/" + page.toLowerCase(),
-                  })
-                }
+                onClick={() => navigate({ to: `/settings/${page.path}` })}
               >
-                {(page as string).charAt(0).toUpperCase() +
-                  (page as string).slice(1)}
+                {page.label}
               </Button>
-            </div>
-          ))}
+            ))}
         </div>
       ))}
       <div className="mt-auto">

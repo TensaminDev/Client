@@ -80,6 +80,30 @@ export default function Form() {
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const { save } = useStorage();
+  const loginPendingRef = React.useRef(false);
+
+  const persistLogin = React.useCallback(
+    async (userId: number, privateKey: string, domain?: string | null) => {
+      if (loginPendingRef.current) return false;
+      loginPendingRef.current = true;
+      try {
+        if (domain) await save("omega_url", `https://${domain}/`);
+        await save("mtp_keyring", privateKey, { secure: true });
+        await save("session_id", Date.now());
+        await save("user_id", userId);
+        window.history.replaceState(
+          null,
+          "",
+          window.location.protocol === "file:" ? "#/" : "/",
+        );
+        window.location.reload();
+        return true;
+      } finally {
+        loginPendingRef.current = false;
+      }
+    },
+    [save],
+  );
 
   // Process dropped files
   const processDroppedFile = React.useCallback(
@@ -93,20 +117,13 @@ export default function Form() {
         const raw = await file.text();
         const parsed = parseTuFileContent(raw);
 
-        await save("session_id", Date.now());
-        await save("user_id", parsed.userId);
-        await save("mtp_keyring", parsed.privateKey);
-        if (parsed.domain) {
-          await save("omega_url", `https://${parsed.domain}/`);
-        }
-
-        location.href = "/";
+        await persistLogin(parsed.userId, parsed.privateKey, parsed.domain);
       } catch (error) {
         log(0, "login", "red", error);
         toast("error", "Failed to load file");
       }
     },
-    [save],
+    [persistLogin],
   );
 
   // Handle .tu files
@@ -236,20 +253,13 @@ export default function Form() {
 
         const user = parse.data;
 
-        await save("session_id", Date.now());
-        await save("user_id", user.user_id);
-        await save("mtp_keyring", inputParse.data.mtp_keyring);
-        if (domain) {
-          await save("omega_url", `https://${domain}/`);
-        }
-
-        location.href = "/";
+        await persistLogin(user.user_id, inputParse.data.mtp_keyring, domain);
       } catch (error) {
         log(0, "login", "red", error);
         toast("error", "Failed to fetch user data");
       }
     },
-    [save],
+    [persistLogin],
   );
 
   return (
@@ -269,15 +279,7 @@ export default function Form() {
                 const { userId, privateKey, domain } =
                   parseTuFileContent(decoded);
 
-                await save("session_id", Date.now());
-                await save("user_id", userId);
-                await save("mtp_keyring", privateKey);
-
-                if (domain) {
-                  await save("omega_url", `https://${domain}/`);
-                }
-
-                location.href = "/";
+                await persistLogin(userId, privateKey, domain);
               } catch (error) {
                 log(0, "login", "red", error);
                 toast("error", "Failed to parse QR code data");

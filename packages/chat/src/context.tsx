@@ -27,6 +27,8 @@ import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { useSession } from "@tensamin/storage/session";
 import { useUser } from "@tensamin/user/context";
+import { createCache } from "@tensamin/cache";
+import { secureValueCodec } from "@tensamin/storage/secure";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -61,7 +63,10 @@ function bytesFromProtocol(value: unknown): Uint8Array {
 
 type EditableMessage = RawMessage & { failed?: boolean };
 type MessageEdit = Partial<
-  Pick<EditableMessage, "Content" | "Edited" | "MessageState" | "failed">
+  Pick<
+    EditableMessage,
+    "Content" | "Edited" | "MessageState" | "Reactions" | "failed"
+  >
 >;
 
 function updateMessagesBySendTime<T extends EditableMessage>(
@@ -155,6 +160,7 @@ export default function Provider({ children }: { children: ReactNode }) {
   const [errorDescription, setErrorDescription] = useState("");
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
+  const [ownId, setOwnId] = useState(0);
   const [currentChatSecretState, setCurrentChatSecretState] = useState<{
     userId: number;
     value: Uint8Array | null;
@@ -182,6 +188,10 @@ export default function Provider({ children }: { children: ReactNode }) {
 
     return currentChatSecretState.value;
   }, [currentChatSecretState, userIdValue]);
+
+  useEffect(() => {
+    load("user_id").then(setOwnId);
+  }, [load]);
 
   useEffect(() => {
     if (!userIdValue) return;
@@ -325,6 +335,44 @@ export default function Provider({ children }: { children: ReactNode }) {
     [load, send],
   );
 
+  const decryptMessages = useCallback(
+    async (messages: RawMessages) => {
+      if (!currentChatSecret) return [];
+      return Promise.all(
+        messages.map(async (message) => {
+          try {
+            return {
+              ...message,
+              Content: await decryptChatText(
+                currentChatSecret,
+                message.Content,
+              ),
+            };
+          } catch (err) {
+            log(1, "chat", "red", "Failed to decrypt historical message", err, {
+              SendTime: message.SendTime,
+            });
+            return {
+              ...message,
+              Content: "Failed to decrypt message",
+              decryptionFailed: true,
+            };
+          }
+        }),
+      );
+    },
+    [currentChatSecret],
+  );
+
+  const getCachedMessages = useCallback(async () => {
+    if (!ownId || !userIdValue || !currentChatSecret) return [];
+    const cache = createCache(String(ownId), {
+      codec: secureValueCodec,
+    });
+    const window = await cache.conversations.get(userIdValue);
+    return decryptMessages(window?.Messages ?? []);
+  }, [currentChatSecret, decryptMessages, ownId, userIdValue]);
+
   const getMessages = useCallback(
     async (amount: number, offset: number) => {
       if (!currentChatSecret) {
@@ -356,36 +404,22 @@ export default function Provider({ children }: { children: ReactNode }) {
         });
       }
 
-      return await Promise.all(
-        sorted.map(async (message) => {
-          try {
-            return {
-              ...message,
-              Content: await decryptChatText(
-                currentChatSecret,
-                message.Content,
-              ),
-            };
-          } catch (err) {
-            log(1, "chat", "red", "Failed to decrypt historical message", err, {
-              SendTime: message.SendTime,
-            });
-            return {
-              ...message,
-              Content: "Failed to decrypt message",
-              decryptionFailed: true,
-            };
-          }
-        }),
-      );
+      return decryptMessages(sorted);
     },
-    [currentChatSecret, send, userIdValue],
+    [currentChatSecret, decryptMessages, send, userIdValue],
   );
 
-  const [ownId, setOwnId] = useState(0);
   useEffect(() => {
-    load("user_id").then(setOwnId);
-  }, [load]);
+    if (!currentChatSecret || !ownId || !userIdValue) return;
+    const queryKey = ["chat-messages", String(userIdValue), true] as const;
+    void getCachedMessages().then((messages) => {
+      if (messages.length === 0 || queryClient.getQueryData(queryKey)) return;
+      queryClient.setQueryData<InfiniteData<RawMessages>>(queryKey, {
+        pages: [messages],
+        pageParams: [0],
+      });
+    });
+  }, [currentChatSecret, getCachedMessages, ownId, userIdValue]);
 
   const editMessage = useCallback(
     (sendTime: number, edit: MessageEdit) => {
@@ -434,6 +468,155 @@ export default function Provider({ children }: { children: ReactNode }) {
       );
     },
     [currentChatSecret, userIdValue],
+  );
+
+  const removeMessage = useCallback(
+    (sendTime: number) => {
+      setLiveMessagesState((prev) =>
+        prev.filter((message) => message.SendTime !== sendTime),
+      );
+      const queryKey = [
+        "chat-messages",
+        String(userIdValue),
+        currentChatSecret !== null,
+      ] as const;
+
+      queryClient.setQueryData<InfiniteData<RawMessages>>(
+        queryKey,
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          let updated = false;
+
+          const pages = current.pages.map((page) => {
+            const nextPage = page.filter((message) => {
+              const keep = message.SendTime !== sendTime;
+              if (!keep) {
+                updated = true;
+              }
+              return keep;
+            });
+
+            return nextPage;
+          });
+
+          if (!updated) {
+            return current;
+          }
+
+          return {
+            ...current,
+            pages,
+          };
+        },
+      );
+    },
+    [currentChatSecret, userIdValue],
+  );
+
+  const deleteMessage = useCallback(
+    async (sendTime: number) => {
+      try {
+        const response = await send("MessageDelete", {
+          ChatPartnerId: userIdValue,
+          SendTime: sendTime,
+        });
+
+        assertProtocolSuccess("MessageDelete", response);
+        removeMessage(sendTime);
+      } catch (err) {
+        log(1, "chat", "red", "Failed to delete message", err);
+        toast("error", "Failed to delete message", String(err));
+      }
+    },
+    [removeMessage, send, userIdValue],
+  );
+
+  const setReaction = useCallback(
+    async (sendTime: number, reaction: string, add: boolean) => {
+      let previousReactions: RawMessage["Reactions"];
+      let foundMessage = false;
+
+      const applyOptimisticUpdate = (message: EditableMessage) => {
+        const current = message.Reactions ?? [];
+        previousReactions = current;
+        foundMessage = true;
+
+        return add
+          ? [...current, { Reaction: reaction, SenderId: ownId }]
+          : current.filter(
+              (item) => item.Reaction !== reaction || item.SenderId !== ownId,
+            );
+      };
+
+      setLiveMessagesState((current) =>
+        current.map((message) =>
+          message.SendTime === sendTime
+            ? { ...message, Reactions: applyOptimisticUpdate(message) }
+            : message,
+        ),
+      );
+
+      const queryKey = [
+        "chat-messages",
+        String(userIdValue),
+        currentChatSecret !== null,
+      ] as const;
+      queryClient.setQueryData<InfiniteData<RawMessages>>(
+        queryKey,
+        (current) =>
+          current
+            ? {
+                ...current,
+                pages: current.pages.map((page) =>
+                  page.map((message) =>
+                    message.SendTime === sendTime
+                      ? {
+                          ...message,
+                          Reactions: applyOptimisticUpdate(message),
+                        }
+                      : message,
+                  ),
+                ),
+              }
+            : current,
+      );
+
+      try {
+        const response = await send(
+          add ? "MessageReactionAdd" : "MessageReactionRemove",
+          {
+            ChatPartnerId: userIdValue,
+            Reaction: reaction,
+            SendTime: sendTime,
+          },
+        );
+        assertProtocolSuccess(
+          add ? "MessageReactionAdd" : "MessageReactionRemove",
+          response,
+        );
+      } catch (err) {
+        if (foundMessage) {
+          editMessage(sendTime, { Reactions: previousReactions });
+        }
+        log(1, "chat", "red", "Failed to update reaction", err);
+        toast("error", "Failed to update reaction", String(err));
+      }
+    },
+    [currentChatSecret, editMessage, ownId, send, userIdValue],
+  );
+
+  const addReaction = useCallback(
+    (sendTime: number, reaction: string) =>
+      setReaction(sendTime, reaction, true),
+    [setReaction],
+  );
+  const removeReaction = useCallback(
+    (sendTime: number, reaction: string) =>
+      setReaction(sendTime, reaction, false),
+    [setReaction],
   );
 
   const addLiveMessage = useCallback(
@@ -519,6 +702,39 @@ export default function Provider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (message.type === "MessageReactionLive") {
+        const rawData = message.data as {
+          ChatPartnerId: unknown;
+          SendTime: unknown;
+        };
+        const chatPartnerId = Number(rawData.ChatPartnerId);
+        const sendTime = Number(rawData.SendTime);
+
+        if (chatPartnerId !== userIdValue || !Number.isFinite(sendTime)) return;
+
+        void send("MessageGet", { SendTime: sendTime })
+          .then((response) => {
+            assertProtocolSuccess("MessageGet", response);
+            editMessage(sendTime, { Reactions: response.data.Reactions ?? [] });
+          })
+          .catch((err) => {
+            log(1, "chat", "red", "Failed to refresh message reactions", err);
+          });
+        return;
+      }
+
+      if (message.type === "MessageDeleteLive") {
+        const data = message.data as {
+          ChatPartnerId: number;
+          SendTime: number;
+        };
+
+        if (data.ChatPartnerId !== userIdValue) return;
+
+        removeMessage(data.SendTime);
+        return;
+      }
+
       if (message.type !== "MessageState") return;
 
       const rawData = message.data as {
@@ -564,7 +780,14 @@ export default function Provider({ children }: { children: ReactNode }) {
         MessageState: nextState.MessageState,
       });
     });
-  }, [currentChatSecret, editMessage, subscribePush, userIdValue]);
+  }, [
+    currentChatSecret,
+    editMessage,
+    removeMessage,
+    send,
+    subscribePush,
+    userIdValue,
+  ]);
 
   // Replys
   const [replyTo, setReplyTo] = useState<number | undefined>(undefined);
@@ -578,6 +801,9 @@ export default function Provider({ children }: { children: ReactNode }) {
           liveMessages: () => liveMessagesState,
           addLiveMessage,
           editMessage,
+          deleteMessage,
+          addReaction,
+          removeReaction,
           clearLiveMessages,
           chatSecret: currentChatSecret,
           userId: userIdValue,
@@ -602,6 +828,9 @@ type contextType = {
     setFailed: (failed: boolean) => void;
   };
   editMessage: (sendTime: number, edit: MessageEdit) => void;
+  deleteMessage: (sendTime: number) => void;
+  addReaction: (sendTime: number, reaction: string) => Promise<void>;
+  removeReaction: (sendTime: number, reaction: string) => Promise<void>;
   clearLiveMessages: () => void;
   chatSecret: Uint8Array | null;
   userId: number;

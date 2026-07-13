@@ -58,7 +58,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <House className="size-4.5" />
             </Button>
             <Button
-              // @ts-expect-error TanStack router doesn't properly detect the settings route
               onClick={() => navigate({ to: "/settings" })}
               className="w-9 h-9 aspect-square rounded-lg"
               variant="outline"
@@ -195,7 +194,6 @@ export function MobileNavbar() {
         </Button>
         <Button
           onClick={() => {
-            // @ts-expect-error TanStack router doesn't properly detect the settings route
             navigate({ to: "/settings" });
             setOpenMobile(false);
           }}

@@ -3,17 +3,32 @@ import {
   type Storage as StorageSchema,
   storageDefaults as defaults,
 } from "@tensamin/shared/data";
-import { getEntry, setEntry, deleteEntry } from "./indexed-db";
+import {
+  deleteDatabaseEntry,
+  getDatabaseEntry,
+  setDatabaseEntry,
+} from "@tensamin/shared/indexedDb";
 import { ErrorScreen } from "@tensamin/ui";
 import { log } from "@tensamin/shared/log";
+import {
+  decodeSecureValue,
+  encodeSecureValue,
+  getSecureStorageStatus,
+  isSecureEnvelope,
+  type SecureStorageStatus,
+} from "./secure";
+
+export type SaveOptions = { secure?: boolean };
 
 interface StorageContextValue {
   load<K extends keyof StorageSchema>(key: K): Promise<StorageSchema[K]>;
   save<K extends keyof StorageSchema>(
     key: K,
     value: StorageSchema[K],
+    options?: SaveOptions,
   ): Promise<void>;
   clear: () => Promise<void>;
+  secureStorage: SecureStorageStatus | null;
 }
 
 const StorageContext = React.createContext<StorageContextValue | undefined>(
@@ -30,95 +45,150 @@ const isIndexedDBSupported = typeof indexedDB !== "undefined";
 export default function StorageProvider(props: { children: React.ReactNode }) {
   const [storage, setStorage] = React.useState<StorageSchema>(defaults);
   const storageRef = React.useRef(storage);
+  const loadedKeys = React.useRef(new Set<keyof StorageSchema>());
+  const loadPromises = React.useRef(
+    new Map<keyof StorageSchema, Promise<StorageSchema[keyof StorageSchema]>>(),
+  );
+  const generations = React.useRef(new Map<keyof StorageSchema, number>());
+  const [secureStorage, setSecureStorage] =
+    React.useState<SecureStorageStatus | null>(null);
+  const secureStorageRef = React.useRef<SecureStorageStatus | null>(null);
 
   const [error, setError] = React.useState("");
   const [errorDescription, setErrorDescription] = React.useState("");
 
   React.useEffect(() => {
-    storageRef.current = storage;
-  }, [storage]);
+    void getSecureStorageStatus().then((status) => {
+      secureStorageRef.current = status;
+      setSecureStorage(status);
+    });
+  }, []);
 
-  const loadIO = React.useCallback(
+  const commit = React.useCallback(
+    <K extends keyof StorageSchema>(key: K, nextValue: StorageSchema[K]) => {
+      const next = { ...storageRef.current, [key]: nextValue };
+      storageRef.current = next;
+      loadedKeys.current.add(key);
+      setStorage(next);
+    },
+    [],
+  );
+
+  const load = React.useCallback(
     async <K extends keyof StorageSchema>(
       key: K,
     ): Promise<StorageSchema[K]> => {
-      let stored: StorageSchema[K] | undefined;
+      if (loadedKeys.current.has(key)) return storageRef.current[key];
+      const pending = loadPromises.current.get(key);
+      if (pending) return pending as Promise<StorageSchema[K]>;
 
-      try {
-        stored = await getEntry(key);
-      } catch (err) {
-        setError("Failed to load data");
-        setErrorDescription(
-          "An error occurred while loading data from IndexedDB. Please try again.",
-        );
-        log(0, "Storage", "red", err);
-      }
-
-      if (stored !== undefined) {
-        setStorage((prev) => ({ ...prev, [key]: stored }));
-        return stored;
-      }
-
-      return defaults[key];
+      const generation = generations.current.get(key) ?? 0;
+      const request = (async () => {
+        try {
+          const desktopStorage = window.tensaminDesktop?.secureStorage;
+          const desktopStatus = desktopStorage?.getStatus
+            ? await desktopStorage.getStatus()
+            : null;
+          const desktopValue =
+            desktopStatus?.available && desktopStorage?.load
+              ? await desktopStorage.load(String(key))
+              : null;
+          let stored =
+            desktopValue === null
+              ? await getDatabaseEntry<StorageSchema[K]>("storage", key)
+              : (JSON.parse(desktopValue) as StorageSchema[K]);
+          if (isSecureEnvelope(stored)) {
+            stored = (await decodeSecureValue(stored)) as StorageSchema[K];
+          }
+          const value = stored ?? defaults[key];
+          if ((generations.current.get(key) ?? 0) === generation) {
+            commit(key, value);
+          }
+          return (generations.current.get(key) ?? 0) === generation
+            ? value
+            : storageRef.current[key];
+        } catch (err) {
+          setError("Failed to load data");
+          setErrorDescription(
+            "An error occurred while loading local data. Please reload and try again.",
+          );
+          log(0, "Storage", "red", err);
+          throw err;
+        } finally {
+          loadPromises.current.delete(key);
+        }
+      })();
+      loadPromises.current.set(
+        key,
+        request as Promise<StorageSchema[keyof StorageSchema]>,
+      );
+      return request;
     },
-    [],
+    [commit],
   );
 
-  const saveIO = React.useCallback(
+  const save = React.useCallback(
     async <K extends keyof StorageSchema>(
       key: K,
       value: StorageSchema[K],
+      options: SaveOptions = {},
     ): Promise<void> => {
+      generations.current.set(key, (generations.current.get(key) ?? 0) + 1);
+      const desktopStorage = window.tensaminDesktop?.secureStorage;
       if (JSON.stringify(value) === JSON.stringify(defaults[key])) {
-        await deleteEntry(key);
-        setStorage((prev) => ({ ...prev, [key]: defaults[key] }));
+        if (desktopStorage?.delete)
+          await desktopStorage.delete(String(key)).catch(() => undefined);
+        await deleteDatabaseEntry("storage", key);
+        commit(key, defaults[key]);
       } else {
-        await setEntry(key, value);
-        setStorage((prev) => ({ ...prev, [key]: value }));
+        const status = options.secure
+          ? (secureStorageRef.current ?? (await getSecureStorageStatus()))
+          : secureStorageRef.current;
+        if (
+          options.secure &&
+          status?.backend === "electron-keyring" &&
+          desktopStorage?.save
+        ) {
+          await desktopStorage.save(String(key), JSON.stringify(value));
+          await deleteDatabaseEntry("storage", key);
+        } else {
+          const persisted = options.secure
+            ? await encodeSecureValue(value)
+            : value;
+          await setDatabaseEntry("storage", key, persisted as StorageSchema[K]);
+        }
+        commit(key, value);
       }
     },
-    [],
+    [commit],
   );
+
+  const clear = React.useCallback(async () => {
+    const keys = Object.keys(defaults) as (keyof StorageSchema)[];
+    for (const key of keys) {
+      generations.current.set(key, (generations.current.get(key) ?? 0) + 1);
+    }
+    await Promise.all(
+      keys.map((key) => deleteDatabaseEntry("storage", key)),
+    );
+    await window.tensaminDesktop?.secureStorage
+      ?.clear?.()
+      .catch(() => undefined);
+    loadedKeys.current.clear();
+    loadPromises.current.clear();
+    storageRef.current = defaults;
+    setStorage(defaults);
+  }, []);
 
   const value = React.useMemo<StorageContextValue>(
     () => ({
-      async load<K extends keyof StorageSchema>(
-        key: K,
-      ): Promise<StorageSchema[K]> {
-        const current = storageRef.current[key];
-
-        if (
-          current === undefined ||
-          JSON.stringify(current) === JSON.stringify(defaults[key])
-        ) {
-          const loadedValue = await loadIO(key);
-          setStorage((prev) => ({ ...prev, [key]: loadedValue }));
-          return loadedValue;
-        }
-
-        return current;
-      },
-
-      async save<K extends keyof StorageSchema>(
-        key: K,
-        nextValue: StorageSchema[K],
-      ): Promise<void> {
-        await saveIO(key, nextValue);
-      },
-
-      async clear() {
-        const keys = Object.keys(defaults) as (keyof StorageSchema)[];
-        await Promise.all(keys.map((key) => deleteEntry(key)));
-        setStorage(defaults);
-      },
+      load,
+      save,
+      clear,
+      secureStorage,
     }),
-    [loadIO, saveIO],
+    [clear, load, save, secureStorage],
   );
-
-  React.useEffect(() => {
-    // @ts-expect-error development utility
-    window.save = value.save;
-  }, [value]);
 
   if (error !== "" && errorDescription !== "") {
     return <ErrorScreen error={error} description={errorDescription} />;

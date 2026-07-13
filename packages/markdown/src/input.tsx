@@ -1,7 +1,22 @@
 import { markdown } from "@codemirror/lang-markdown";
+import { syntaxTree } from "@codemirror/language";
+import {
+  acceptCompletion,
+  autocompletion,
+  completionStatus,
+  pickedCompletion,
+  startCompletion,
+  type Completion,
+  type CompletionContext,
+  type CompletionResult,
+} from "@codemirror/autocomplete";
 import {
   EditorState,
+  EditorSelection,
+  Annotation,
+  Compartment,
   Prec,
+  Transaction,
   type Extension,
   type Range,
   type SelectionRange,
@@ -12,6 +27,7 @@ import {
   keymap,
   placeholder,
   ViewPlugin,
+  WidgetType,
   type DecorationSet,
   type KeyBinding,
   type ViewUpdate,
@@ -24,8 +40,17 @@ import {
 } from "@codemirror/commands";
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
+import { createRoot, type Root } from "react-dom/client";
 
 import { collectInlineRanges, ensureMarkdownStyles } from "./markdown";
+import Emoji, {
+  findEmojiShortcodes,
+  getEmojiUrl,
+  resolveEmoji,
+  searchEmojis,
+} from "./emoji";
+
+export const MAX_RENDERED_EMOJI_OPTIONS = 100;
 
 export type InputProps = {
   ref?: HTMLDivElement;
@@ -39,6 +64,8 @@ export type InputProps = {
   paddingX?: CSSProperties["padding"];
   paddingY?: CSSProperties["padding"];
   className?: string;
+  emojiFrequencies?: Readonly<Record<string, number>>;
+  onEmojiSelect?: (shortcode: string) => void;
 };
 
 type InputStyle = CSSProperties & {
@@ -76,6 +103,180 @@ const delDecoration = Decoration.mark({ class: "tm-md-del" });
 const codeDecoration = Decoration.mark({ class: "tm-md-code" });
 const linkDecoration = Decoration.mark({ class: "tm-md-link" });
 const codeLineDecoration = Decoration.line({ class: "tm-md-code-line" });
+const externalValueSync = Annotation.define<boolean>();
+const widgetRoots = new WeakMap<HTMLElement, Root>();
+
+type EmojiRange = {
+  from: number;
+  shortcode: string;
+  to: number;
+  url: string;
+};
+
+class EmojiWidget extends WidgetType {
+  readonly shortcode: string;
+  readonly url: string;
+
+  constructor(shortcode: string, url: string) {
+    super();
+    this.shortcode = shortcode;
+    this.url = url;
+  }
+
+  eq(other: EmojiWidget) {
+    return other.shortcode === this.shortcode && other.url === this.url;
+  }
+
+  toDOM() {
+    const container = document.createElement("span");
+    const root = createRoot(container);
+    root.render(
+      <Emoji className="tm-md-editor-emoji" shortcode={this.shortcode} />,
+    );
+    widgetRoots.set(container, root);
+    return container;
+  }
+
+  destroy(dom: HTMLElement) {
+    widgetRoots.get(dom)?.unmount();
+    widgetRoots.delete(dom);
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+function codeRanges(state: EditorState) {
+  const ranges: Array<{ from: number; to: number }> = [];
+
+  syntaxTree(state).iterate({
+    enter(node) {
+      if (
+        node.name === "InlineCode" ||
+        node.name === "FencedCode" ||
+        node.name === "CodeBlock"
+      ) {
+        ranges.push({ from: node.from, to: node.to });
+        return false;
+      }
+    },
+  });
+
+  return ranges;
+}
+
+export function findEmojiRanges(state: EditorState): EmojiRange[] {
+  const document = state.doc.toString();
+  const excluded = codeRanges(state);
+  const ranges: EmojiRange[] = [];
+
+  for (const match of findEmojiShortcodes(document)) {
+    const { from, to } = match;
+    const inCode = excluded.some((range) => from < range.to && to > range.from);
+    const emoji = inCode ? undefined : match.emoji;
+    const url = emoji ? getEmojiUrl(emoji.shortcode) : undefined;
+
+    if (emoji && url) {
+      ranges.push({ from, shortcode: emoji.shortcode, to, url });
+    }
+  }
+
+  return ranges;
+}
+
+class EmojiPluginValue {
+  decorations: DecorationSet;
+  ranges: EmojiRange[];
+
+  constructor(view: EditorView) {
+    this.ranges = findEmojiRanges(view.state);
+    this.decorations = this.buildDecorations();
+  }
+
+  update(update: ViewUpdate) {
+    if (
+      update.docChanged ||
+      syntaxTree(update.startState) !== syntaxTree(update.state)
+    ) {
+      this.ranges = findEmojiRanges(update.state);
+      this.decorations = this.buildDecorations();
+    }
+  }
+
+  private buildDecorations() {
+    return Decoration.set(
+      this.ranges.map((range) =>
+        Decoration.replace({
+          inclusive: false,
+          widget: new EmojiWidget(range.shortcode, range.url),
+        }).range(range.from, range.to),
+      ),
+      true,
+    );
+  }
+}
+
+const emojiDecorations = ViewPlugin.fromClass(EmojiPluginValue, {
+  decorations: (instance) => instance.decorations,
+  provide: (plugin) =>
+    EditorView.atomicRanges.of(
+      (view) => view.plugin(plugin)?.decorations ?? Decoration.none,
+    ),
+});
+
+function deleteEmoji(view: EditorView, direction: "backward" | "forward") {
+  const ranges = view.plugin(emojiDecorations)?.ranges ?? [];
+  const deletions: Array<{ from: number; to: number }> = [];
+
+  for (const selection of view.state.selection.ranges) {
+    if (selection.empty) {
+      const emoji = ranges.find((range) =>
+        direction === "backward"
+          ? selection.from > range.from && selection.from <= range.to
+          : selection.from >= range.from && selection.from < range.to,
+      );
+      if (emoji) deletions.push({ from: emoji.from, to: emoji.to });
+      continue;
+    }
+
+    let from = selection.from;
+    let to = selection.to;
+    let changed = false;
+
+    for (const emoji of ranges) {
+      if (from < emoji.to && to > emoji.from) {
+        from = Math.min(from, emoji.from);
+        to = Math.max(to, emoji.to);
+        changed = true;
+      }
+    }
+
+    if (changed) deletions.push({ from, to });
+  }
+
+  if (deletions.length === 0) return false;
+
+  const merged = deletions
+    .sort((a, b) => a.from - b.from)
+    .reduce<Array<{ from: number; to: number }>>((result, deletion) => {
+      const previous = result.at(-1);
+      if (previous && deletion.from <= previous.to) {
+        previous.to = Math.max(previous.to, deletion.to);
+      } else {
+        result.push({ ...deletion });
+      }
+      return result;
+    }, []);
+
+  view.dispatch({
+    changes: merged.map((range) => ({ from: range.from, to: range.to })),
+    selection: EditorSelection.cursor(merged[0].from),
+    scrollIntoView: true,
+    userEvent: direction === "backward" ? "delete.backward" : "delete.forward",
+  });
+  return true;
+}
 
 /**
  * Builds markdown styling decorations every time the document or cursor selection changes.
@@ -115,14 +316,20 @@ export default function Input(props: InputProps) {
 
   const elementRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | undefined>(undefined);
-  const ignoreSyncRef = useRef(false);
   const onSubmitRef = useRef<InputProps["onSubmit"]>(props.onSubmit);
+  const onEmojiSelectRef = useRef<InputProps["onEmojiSelect"]>(
+    props.onEmojiSelect,
+  );
   const invertEnterBehaviorRef = useRef(Boolean(props.invertEnterBehavior));
+  const completionCompartmentRef = useRef<Compartment | null>(null);
+  completionCompartmentRef.current ??= new Compartment();
+  const completionCompartment = completionCompartmentRef.current;
 
   useEffect(() => {
     onSubmitRef.current = props.onSubmit;
+    onEmojiSelectRef.current = props.onEmojiSelect;
     invertEnterBehaviorRef.current = Boolean(props.invertEnterBehavior);
-  }, [props.onSubmit, props.invertEnterBehavior]);
+  }, [props.onEmojiSelect, props.onSubmit, props.invertEnterBehavior]);
 
   useEffect(() => {
     if (!elementRef.current) return;
@@ -131,12 +338,14 @@ export default function Input(props: InputProps) {
       doc: props.value,
       extensions: createEditorExtensions(
         (value) => {
-          ignoreSyncRef.current = true;
           props.setValue(value);
         },
         () => props.placeholder,
         () => invertEnterBehaviorRef.current,
         () => onSubmitRef.current?.(),
+        completionCompartment,
+        props.emojiFrequencies,
+        (shortcode) => onEmojiSelectRef.current?.(shortcode),
       ),
     });
 
@@ -160,11 +369,6 @@ export default function Input(props: InputProps) {
     const next = props.value;
     const current = editor.state.doc.toString();
 
-    if (ignoreSyncRef.current) {
-      ignoreSyncRef.current = false;
-      return;
-    }
-
     if (next === current) return;
 
     editor.dispatch({
@@ -173,8 +377,29 @@ export default function Input(props: InputProps) {
         to: current.length,
         insert: next,
       },
+      annotations: [
+        externalValueSync.of(true),
+        Transaction.addToHistory.of(false),
+      ],
+      filter: false,
     });
   }, [props.value]);
+
+  useEffect(() => {
+    const editor = viewRef.current;
+    const compartment = completionCompartmentRef.current;
+    if (!editor || !compartment) return;
+
+    const wasActive = completionStatus(editor.state) === "active";
+    editor.dispatch({
+      effects: compartment.reconfigure(
+        createEmojiAutocomplete(props.emojiFrequencies, (shortcode) =>
+          onEmojiSelectRef.current?.(shortcode),
+        ),
+      ),
+    });
+    if (wasActive) startCompletion(editor);
+  }, [props.emojiFrequencies]);
 
   return (
     <div
@@ -207,6 +432,9 @@ function createEditorExtensions(
   getPlaceholder: () => string | undefined,
   getInvertEnterBehavior: () => boolean,
   onSubmit: () => void,
+  completionCompartment: Compartment,
+  emojiFrequencies: Readonly<Record<string, number>> | undefined,
+  onEmojiSelect: (shortcode: string) => void,
 ): Extension[] {
   const editorKeymap = [
     ...defaultKeymap,
@@ -217,7 +445,10 @@ function createEditorExtensions(
   const customEnterKeymap = keymap.of([
     {
       key: "Shift-Enter",
-      run: () => {
+      run: (view) => {
+        if (completionStatus(view.state) === "active") {
+          return acceptCompletion(view);
+        }
         if (!getInvertEnterBehavior()) {
           return false;
         }
@@ -228,7 +459,10 @@ function createEditorExtensions(
     },
     {
       key: "Enter",
-      run: () => {
+      run: (view) => {
+        if (completionStatus(view.state) === "active") {
+          return acceptCompletion(view);
+        }
         if (getInvertEnterBehavior()) {
           return false;
         }
@@ -238,16 +472,48 @@ function createEditorExtensions(
       },
     },
   ]);
+  const completionTabKeymap = keymap.of([
+    {
+      key: "Tab",
+      run: (view) =>
+        completionStatus(view.state) === "active"
+          ? acceptCompletion(view)
+          : false,
+    },
+  ]);
+  const emojiDeletionKeymap = keymap.of([
+    {
+      key: "Backspace",
+      run: (view) => deleteEmoji(view, "backward"),
+    },
+    {
+      key: "Delete",
+      run: (view) => deleteEmoji(view, "forward"),
+    },
+  ]);
 
   return [
     history(),
     markdown(),
+    completionCompartment.of(
+      createEmojiAutocomplete(emojiFrequencies, onEmojiSelect),
+    ),
+    emojiDecorations,
     keymap.of(editorKeymap),
+    Prec.highest(completionTabKeymap),
+    Prec.highest(emojiDeletionKeymap),
     Prec.highest(customEnterKeymap),
     EditorView.lineWrapping,
     placeholder(getPlaceholder() ?? ""),
     EditorView.updateListener.of((update: ViewUpdate) => {
       if (!update.docChanged) return;
+      if (
+        update.transactions.some(
+          (transaction) => transaction.annotation(externalValueSync) === true,
+        )
+      ) {
+        return;
+      }
       onChange(update.state.doc.toString());
     }),
     EditorView.theme({
@@ -266,6 +532,126 @@ function createEditorExtensions(
     markdownDecorations,
   ];
 }
+
+function createEmojiAutocomplete(
+  frequencies: Readonly<Record<string, number>> | undefined,
+  onEmojiSelect: (shortcode: string) => void,
+) {
+  return autocompletion({
+    activateOnTyping: true,
+    addToOptions: [
+      {
+        position: 20,
+        render(completion) {
+          const container = document.createElement("span");
+          createRoot(container).render(
+            <Emoji
+              className="tm-md-completion-emoji"
+              shortcode={completion.label}
+            />,
+          );
+          return container;
+        },
+      },
+    ],
+    maxRenderedOptions: MAX_RENDERED_EMOJI_OPTIONS,
+    override: [createEmojiCompletionSource(frequencies, onEmojiSelect)],
+  });
+}
+
+function normalizedFrequencies(
+  frequencies: Readonly<Record<string, number>> | undefined,
+) {
+  const normalized = new Map<string, number>();
+  for (const [value, frequency] of Object.entries(frequencies ?? {})) {
+    const shortcode = resolveEmoji(value)?.shortcode;
+    if (!shortcode || !Number.isFinite(frequency) || frequency <= 0) continue;
+    normalized.set(shortcode, (normalized.get(shortcode) ?? 0) + frequency);
+  }
+  return normalized;
+}
+
+export function createEmojiCompletionSource(
+  frequencies?: Readonly<Record<string, number>>,
+  onEmojiSelect: (shortcode: string) => void = () => undefined,
+) {
+  const normalized = normalizedFrequencies(frequencies);
+  const maxFrequency = Math.max(0, ...normalized.values());
+
+  return (context: CompletionContext): CompletionResult | null => {
+    const token = context.matchBefore(/:[a-z0-9_+-]*$/i);
+    if (!token) return null;
+    if (
+      codeRanges(context.state).some(
+        (range) => token.from < range.to && token.to > range.from,
+      )
+    ) {
+      return null;
+    }
+
+    const characterBefore = context.state.sliceDoc(
+      Math.max(0, token.from - 1),
+      token.from,
+    );
+    if (characterBefore && /[a-z0-9_]/i.test(characterBefore)) return null;
+
+    const query = token.text.slice(1).toLowerCase();
+    const options: Completion[] = searchEmojis(query)
+      .map((emoji) => {
+        const aliases = emoji.aliases.map((alias) => alias.toLowerCase());
+        const matchedAlias =
+          aliases.find((alias) => alias === query) ??
+          aliases.find((alias) => alias.startsWith(query)) ??
+          aliases.find((alias) => alias.includes(query)) ??
+          emoji.name;
+        const relevance = !query
+          ? 0
+          : matchedAlias === query
+            ? 80
+            : matchedAlias.startsWith(query)
+              ? 40
+              : 0;
+        const frequency = normalized.get(emoji.shortcode) ?? 0;
+        const usage =
+          maxFrequency > 0
+            ? (15 * Math.log1p(frequency)) / Math.log1p(maxFrequency)
+            : 0;
+
+        return {
+          apply(view, completion, from, to) {
+            view.dispatch({
+              annotations: pickedCompletion.of(completion),
+              changes: { from, insert: `${emoji.shortcode} `, to },
+              selection: EditorSelection.cursor(
+                from + emoji.shortcode.length + 1,
+              ),
+            });
+            onEmojiSelect(emoji.shortcode);
+          },
+          boost: relevance + usage,
+          displayLabel: emoji.shortcode,
+          label: `:${matchedAlias}:`,
+          type: "text",
+          frequency,
+          relevance,
+        } satisfies Completion & { frequency: number; relevance: number };
+      })
+      .sort(
+        (a, b) =>
+          b.relevance - a.relevance ||
+          b.frequency - a.frequency ||
+          (a.displayLabel ?? a.label).localeCompare(b.displayLabel ?? b.label),
+      );
+
+    return {
+      from: token.from,
+      options,
+      validFor: /^:[a-z0-9_+-]*$/i,
+    };
+  };
+}
+
+export const emojiCompletionSource = createEmojiCompletionSource();
 
 /**
  * Executes buildDecorations.

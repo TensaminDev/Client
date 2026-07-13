@@ -16,15 +16,35 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
 import { useSession } from "@tensamin/storage/session";
+import { useStorage } from "@tensamin/storage/context";
+import { ShieldAlert } from "lucide-react";
 
 // The page
 export default function Page() {
   const isMobile = useIsMobile();
+  const { secureStorage } = useStorage();
 
   return (
-    <div className={`px-3 flex gap-2 ${!(isTauri() && isMobile) && "pt-3"}`}>
-      <AddConversationButton />
-      <Button disabled>Add Community</Button>
+    <div
+      className={`px-3 flex flex-col gap-3 ${!(isTauri() && isMobile) && "pt-3"}`}
+    >
+      <div className="flex gap-2">
+        <AddConversationButton />
+        <Button disabled>Add Community</Button>
+      </div>
+      {secureStorage && !secureStorage.secure && (
+        <div className="flex max-w-2xl gap-3 rounded-lg border border-(--destructive)/60 bg-(--destructive)/10 p-3 text-sm">
+          <ShieldAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-medium">Secure storage is unavailable</p>
+            <p>{secureStorage.reason}</p>
+            <p className="text-muted-foreground">
+              Your keyring and cached messages will get saved in regular
+              storage.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,9 @@ import { useMTP } from "@tensamin/mtp";
 
 import { mtp as schemas } from "@tensamin/shared/data";
 import type z from "zod";
+import { createCache } from "@tensamin/cache";
+import { useStorage } from "@tensamin/storage/context";
+import { useSession } from "@tensamin/storage/session";
 
 export type User = z.infer<typeof schemas.GetUserData.response>;
 
@@ -24,6 +27,15 @@ export default function UserProvider(props: { children: React.ReactNode }) {
   );
 
   const { send } = useMTP();
+  const { load } = useStorage();
+  const { contacts } = useSession();
+  const [accountId, setAccountId] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    void load("user_id").then((accountId) => {
+      setAccountId(accountId);
+    });
+  }, [load]);
 
   /**
    * Executes get.
@@ -36,27 +48,30 @@ export default function UserProvider(props: { children: React.ReactNode }) {
         throw new Error("userId is required");
       }
 
-      const cachedUser = storageRef.current[userId];
-      if (cachedUser !== undefined) {
-        return cachedUser;
-      }
-
       const pendingUser = pendingRef.current[userId];
       if (pendingUser !== undefined) {
         return pendingUser;
       }
 
       const request = (async () => {
-        const userData = await send("GetUserData", { UserId: userId });
-        const user = {
-          ...userData.data,
-          avatar: userData.data.Avatar
-            ? `data:image/webp;base64,${atob(userData.data.Avatar)}`
-            : undefined,
-        };
-
-        storageRef.current[userId] = user;
-        return user;
+        const cache = accountId ? createCache(String(accountId)) : null;
+        const cached =
+          storageRef.current[userId] ?? (await cache?.profiles.get(userId));
+        if (cached) storageRef.current[userId] = cached;
+        try {
+          const userData = await send("GetUserData", { UserId: userId });
+          const user = {
+            ...userData.data,
+            avatar: userData.data.Avatar
+              ? `data:image/webp;base64,${atob(userData.data.Avatar)}`
+              : undefined,
+          };
+          storageRef.current[userId] = user;
+          return user;
+        } catch (error) {
+          if (cached) return cached;
+          throw error;
+        }
       })();
 
       pendingRef.current[userId] = request;
@@ -67,8 +82,13 @@ export default function UserProvider(props: { children: React.ReactNode }) {
         delete pendingRef.current[userId];
       }
     },
-    [send],
+    [accountId, send],
   );
+
+  React.useEffect(() => {
+    if (!accountId) return;
+    for (const contact of contacts) void get(contact.UserId);
+  }, [accountId, contacts, get]);
 
   return (
     <UserContext.Provider value={{ get }}>

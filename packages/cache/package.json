@@ -1,0 +1,25 @@
+{
+  "name": "@tensamin/cache",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./helpers": "./src/helpers.ts",
+    "./schemas": "./src/schemas.ts",
+    "./sync": "./src/sync.tsx"
+  },
+  "scripts": {
+    "format": "pnpm exec prettier --write .",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "build": "pnpm run test && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tensamin/mtp": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "react": "^19.2.0",
+    "zod": "^4.3.6"
+  }
+}

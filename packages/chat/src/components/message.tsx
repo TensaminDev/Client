@@ -1,15 +1,7 @@
 import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import {
-  AlertTriangle,
-  Check,
-  Ellipse,
-  Forward,
-  Laugh,
-  RefreshCw,
-  Reply,
-} from "lucide-react";
+import { AlertTriangle, Check, Ellipse, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
@@ -18,9 +10,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
-  Card,
   cn,
-  Separator,
   Skeleton,
 } from "@tensamin/ui";
 import MessageContextMenu from "./messageContextMenu";
@@ -31,6 +21,8 @@ import Input from "@tensamin/markdown/input";
 import { useChat } from "../context";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
+import Emoji, { normalizeShortcode } from "@tensamin/markdown/emoji";
+import { useRecordEmojiUse } from "./emojiRanks";
 
 function MessageComponent({
   grouped,
@@ -143,7 +135,15 @@ function MessageComponent({
   }, [message.Content]);
 
   // Message editing
-  const { chatSecret, editMessage, userId } = useChat();
+  const {
+    addReaction,
+    chatSecret,
+    editMessage,
+    userId,
+    deleteMessage,
+    removeReaction,
+  } = useChat();
+  const recordUse = useRecordEmojiUse();
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.Content);
   useEffect(() => {
@@ -197,6 +197,39 @@ function MessageComponent({
     ],
   );
 
+  const groupedReactions = Object.entries(
+    (message.Reactions ?? []).reduce<
+      Record<string, { count: number; reactedByMe: boolean }>
+    >((groups, item) => {
+      const reaction = normalizeShortcode(item.Reaction);
+      if (!reaction) return groups;
+
+      const group = groups[reaction] ?? {
+        count: 0,
+        reactedByMe: false,
+      };
+      group.count += 1;
+      group.reactedByMe ||= item.SenderId === ownId;
+      groups[reaction] = group;
+      return groups;
+    }, {}),
+  );
+
+  function toggleReaction(reaction: string) {
+    const reactedByMe = message.Reactions?.some(
+      (item) =>
+        normalizeShortcode(item.Reaction) === reaction &&
+        item.SenderId === ownId,
+    );
+
+    if (reactedByMe) {
+      return removeReaction(message.SendTime, reaction);
+    }
+
+    recordUse(reaction);
+    return addReaction(message.SendTime, reaction);
+  }
+
   return (
     <div
       // pt-3 is to get a gap between messages
@@ -205,9 +238,11 @@ function MessageComponent({
       {user && message.Content ? (
         <MessageContextMenu
           content={message.Content}
+          hideMiniMenu={editing}
+          isOwnMessage={message.SenderId === ownId}
           messageId={message.SendTime}
+          onReact={toggleReaction}
           onSetEditing={setEditing}
-          senderId={message.SenderId}
         >
           <div
             className={cn(
@@ -234,26 +269,11 @@ function MessageComponent({
                   </AvatarFallback>
                 </Avatar>
               )}
-              <div className="flex flex-col group">
-                <Card className="absolute right-4 -top-3 opacity-0 group-hover:opacity-100 flex flex-row justify-end gap-0! z-10 p-0! shadow-lg rounded-lg!">
-                  {[0, 1, 2].map((item) => (
-                    <Button key={item} variant="ghost" className="h-8 w-8">
-                      {item === 0 && "👍"}
-                      {item === 1 && "🔥"}
-                      {item === 2 && "✅"}
-                    </Button>
-                  ))}
-                  <Separator orientation="vertical" className="my-1" />
-                  <Button variant="ghost" className="h-8 w-8">
-                    <Laugh />
-                  </Button>
-                  <Button variant="ghost" className="h-8 w-8">
-                    <Reply />
-                  </Button>
-                  <Button variant="ghost" className="h-8 w-8">
-                    <Forward />
-                  </Button>
-                </Card>
+              <div
+                className={cn("flex flex-col group", {
+                  "min-w-0 flex-1": editing,
+                })}
+              >
                 {!grouped && (
                   <div className="flex items-center gap-1">
                     <p className="font-medium">{user.Display}</p>
@@ -283,18 +303,75 @@ function MessageComponent({
                   </div>
                 )}
                 {editing ? (
-                  <Input
-                    setValue={setEditDraft}
-                    value={editDraft}
-                    onSubmit={() => {
-                      submitEditMessage(editDraft);
-                      setEditing(false);
-                    }}
-                  />
+                  <div className="flex w-full flex-col">
+                    <Input
+                      className="w-full"
+                      styled
+                      setValue={setEditDraft}
+                      value={editDraft}
+                      onSubmit={() => {
+                        submitEditMessage(editDraft);
+                        setEditing(false);
+                      }}
+                    />
+                    <div className="flex">
+                      <Button
+                        size="xs"
+                        variant="link"
+                        className="text-primary-foreground-alt"
+                        onClick={() => {
+                          if (editDraft === message.Content) {
+                            deleteMessage(message.SendTime);
+                          } else {
+                            submitEditMessage(editDraft);
+                          }
+                          setEditDraft(message.Content);
+                          setEditing(false);
+                        }}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="link"
+                        className="text-muted-foreground"
+                        onClick={() => {
+                          setEditDraft(message.Content);
+                          setEditing(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
                 ) : isValidURL ? (
                   <Media link={message.Content} />
                 ) : (
                   <Text value={message.Content} />
+                )}
+                {groupedReactions.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1 pb-1">
+                    {groupedReactions.map(
+                      ([reaction, { count, reactedByMe }]) => (
+                        <Button
+                          key={reaction}
+                          aria-label={`${reactedByMe ? "Remove" : "Add"} ${reaction} reaction`}
+                          className={cn(
+                            "h-7 gap-2 rounded-lg py-3.5 px-1.5! border",
+                            reactedByMe
+                              ? "border-(--primary-foreground-alt)/40!"
+                              : "",
+                          )}
+                          onClick={() => void toggleReaction(reaction)}
+                          size="xs"
+                          variant={reactedByMe ? "subtleDefault" : "outline"}
+                        >
+                          <Emoji className="h-5 w-5" shortcode={reaction} />
+                          <span className="text-sm">{count}</span>
+                        </Button>
+                      ),
+                    )}
+                  </div>
                 )}
               </div>
             </>
@@ -315,6 +392,8 @@ export default React.memo(MessageComponent, (prev, next) => {
     prev.message.MessageState === next.message.MessageState &&
     prev.message.failed === next.message.failed &&
     prev.message.decryptionFailed === next.message.decryptionFailed &&
+    JSON.stringify(prev.message.Reactions) ===
+      JSON.stringify(next.message.Reactions) &&
     prev.grouped === next.grouped &&
     prev.user === next.user
   );

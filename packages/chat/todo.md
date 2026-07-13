@@ -1,6 +1,12 @@
 - Implement context menu features
+  - Forward
+  - Pin Message
+  - Reply
 - Add default-emoji-hotkey
 - Placeholder image if media fails to load
 - Signature verifications via ed25519 key
 - Confirmation when exiting with text in the input box.
-- Add arrow up hotkey to edit last message
+- Add arrow up hotkey to edit last message (req: packages/hotkeys)
+- Drop any unique reactions above 10
+- Make the emoji picker not get moved with the mini context menu
+- Add proper loading skeleton

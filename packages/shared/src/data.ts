@@ -202,6 +202,20 @@ export const mtp = {
       PingIota: z.number(),
     }),
   },
+  MessageDelete: {
+    request: z.object({
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+    response: z.object({}),
+  },
+  MessageDeleteLive: {
+    request: z.object({}),
+    response: z.object({
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+  },
   MessageEditLive: {
     request: z.object({}),
     response: z.object({
@@ -416,6 +430,8 @@ export interface Storage extends SettingsStorageDefaults {
   legal_docs: z.infer<typeof legalDocsSchema>;
   cached_contacts: Contacts;
   cached_communities: Communities;
+  cache_contacts: number;
+  cache_messages_per_chat: number;
   omega_url: string;
   forced_omikron_url: string | undefined;
   forced_omikron_public_key: string | undefined;
@@ -435,6 +451,7 @@ export interface Storage extends SettingsStorageDefaults {
     width: number;
     height: number;
   } | null;
+  reactions: Record<string, number>;
 }
 
 export const storageDefaults: Storage = {
@@ -467,6 +484,8 @@ export const storageDefaults: Storage = {
   },
   cached_contacts: [],
   cached_communities: [],
+  cache_contacts: 5,
+  cache_messages_per_chat: 20,
   omega_url: "https://omega.tensamin.net",
   forced_omikron_url: undefined,
   forced_omikron_public_key: undefined,
@@ -506,6 +525,11 @@ export const storageDefaults: Storage = {
   chat_picker_saved_media: [],
   chat_picker_last_tab: "gif",
   chat_picker_size: null,
+  reactions: {
+    ":thumbsup:": 3,
+    ":fire:": 2,
+    ":white_check_mark:": 1,
+  },
 };
 
 // User Status

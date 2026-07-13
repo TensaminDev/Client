@@ -6,7 +6,7 @@
   "exports": {
     "./session": "./src/session.tsx",
     "./context": "./src/context.tsx",
-    "./indexed-db": "./src/indexed-db.ts"
+    "./secure": "./src/secure.ts"
   },
   "scripts": {
     "format": "pnpm exec prettier --write .",
@@ -14,6 +14,7 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@tensamin/cache": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/mtp": "workspace:*",
     "@tensamin/ui": "*",
