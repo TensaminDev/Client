@@ -171,7 +171,7 @@ type_maps:
       CallState: 49
       ScreenShare: 50
       PrivateKeyHash: 51
-      Accepted: 52
+      #Accepted: 52
       AcceptedProfiles: 53
       DeniedProfiles: 54
       Content: 55
