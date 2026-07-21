@@ -38,6 +38,13 @@ if (verbose) {
 
 if (
   process.platform === "linux" &&
+  !app.commandLine.hasSwitch("password-store")
+) {
+  app.commandLine.appendSwitch("password-store", "gnome-libsecret");
+}
+
+if (
+  process.platform === "linux" &&
   process.env.XDG_SESSION_TYPE === "wayland" &&
   !process.env.TENSAMIN_ENABLE_VULKAN
 ) {

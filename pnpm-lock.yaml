@@ -818,6 +818,9 @@ importers:
 
   packages/storage:
     dependencies:
+      '@tauri-apps/api':
+        specifier: ^2
+        version: 2.11.1
       '@tensamin/cache':
         specifier: workspace:*
         version: link:../cache

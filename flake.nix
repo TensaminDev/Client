@@ -53,6 +53,7 @@
             libglvnd
             libnotify
             libpulseaudio
+            libsecret
             libuuid
             libxkbcommon
             mesa
@@ -104,7 +105,8 @@
                 cp -r usr/* "$out/"
 
                 mkdir -p "$out/bin"
-                makeWrapper "$out/opt/Tensamin/tensamin" "$out/bin/tensamin"
+                makeWrapper "$out/opt/Tensamin/tensamin" "$out/bin/tensamin" \
+                  --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath electronRuntimeLibs}"
 
                 substituteInPlace "$out/share/applications/Tensamin.desktop" \
                   --replace-fail "Exec=/opt/Tensamin/tensamin" "Exec=tensamin"
@@ -172,6 +174,7 @@
             libglvnd
             libnotify
             libpulseaudio
+            libsecret
             libuuid
             libxkbcommon
             mesa

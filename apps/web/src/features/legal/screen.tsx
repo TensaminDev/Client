@@ -1,16 +1,18 @@
 import { useState, useCallback, useEffect } from "react";
 import { useStorage } from "@tensamin/storage/context";
-import { Button } from "@tensamin/ui";
-import { Checkbox } from "@tensamin/ui";
+import {
+  Button,
+  Checkbox,
+  CreateScreen,
+  ErrorScreen,
+  Label,
+  Link,
+  Spinner,
+} from "@tensamin/ui";
 import { z } from "zod";
-
-import { ErrorScreen } from "@tensamin/ui";
 
 import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import { log } from "@tensamin/shared/log";
-import { Link } from "@tensamin/ui";
-import { Label } from "@tensamin/ui";
-import { CreateScreen } from "@tensamin/ui";
 
 // Prevents the user from using Tensamin without accepting the privacy policy and terms of service.
 export default function Screen(props: { children: React.ReactNode }) {
@@ -27,6 +29,7 @@ export default function Screen(props: { children: React.ReactNode }) {
   >(undefined);
 
   const [loading, setLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
 
   const [acceptedPP, acceptPP] = useState(false);
   const [acceptedTOS, acceptTOS] = useState(false);
@@ -49,6 +52,7 @@ export default function Screen(props: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let loadingTimer: ReturnType<typeof setTimeout> | undefined;
 
     void (async () => {
       try {
@@ -63,22 +67,17 @@ export default function Screen(props: { children: React.ReactNode }) {
           return;
         }
 
-        const current = await fetch("https://legal.tensamin.net/api/current")
-          .then((res) => res.json())
-          .catch((err) => {
-            if (!active) {
-              return undefined;
-            }
+        loadingTimer = setTimeout(() => {
+          if (active) setShowLoading(true);
+        }, 200);
 
-            setError("Failed to load legal documents");
-            setErrorDescription(
-              "An error occurred while fetching the legal documents from the server. Please try again later.",
-            );
-            log(0, "Legal", "red", "Failed to fetch legal documents", err);
-            return undefined;
-          });
+        const response = await fetch("https://legal.tensamin.net/api/current");
+        if (!response.ok) {
+          throw new Error(`Legal documents request failed: ${response.status}`);
+        }
+        const current: unknown = await response.json();
 
-        if (!active || current === undefined) {
+        if (!active) {
           return;
         }
 
@@ -122,7 +121,16 @@ export default function Screen(props: { children: React.ReactNode }) {
             !!currentLocalDocs &&
             currentLocalDocs.tos.hash === safeCurrent.data.tos.hash,
         );
+      } catch (err) {
+        if (!active) return;
+
+        setError("Failed to load legal documents");
+        setErrorDescription(
+          "An error occurred while fetching the legal documents from the server. Please try again later.",
+        );
+        log(0, "Legal", "red", "Failed to fetch legal documents", err);
       } finally {
+        clearTimeout(loadingTimer);
         if (active) {
           setLoading(false);
         }
@@ -131,6 +139,7 @@ export default function Screen(props: { children: React.ReactNode }) {
 
     return () => {
       active = false;
+      clearTimeout(loadingTimer);
     };
   }, [load]);
 
@@ -139,7 +148,22 @@ export default function Screen(props: { children: React.ReactNode }) {
   }
 
   if (loading || userId === undefined) {
-    return null;
+    if (!showLoading) return null;
+
+    return (
+      <CreateScreen>
+        <div className="flex flex-col items-center gap-3">
+          <Spinner className="size-8" />
+          <p className="text-sm text-muted-foreground">
+            Fetching legal documents...
+          </p>
+          <Link
+            label="status.methanium.net"
+            link="https://status.methanium.net"
+          />
+        </div>
+      </CreateScreen>
+    );
   }
 
   const docsMatch =

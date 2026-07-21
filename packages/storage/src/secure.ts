@@ -1,8 +1,10 @@
 import type {} from "@tensamin/shared/desktopMedia";
+import { isTauri } from "@tauri-apps/api/core";
 import { getDatabaseEntry, setDatabaseEntry } from "@tensamin/shared/indexedDb";
 
 export type SecureStorageStatus = {
-  backend: "electron-keyring" | "webcrypto" | "indexeddb";
+  backend:
+    "electron-keyring" | "application-storage" | "webcrypto" | "indexeddb";
   secure: boolean;
   reason?: string;
 };
@@ -84,6 +86,7 @@ export function isSecureEnvelope(value: unknown): value is SecureEnvelope {
 }
 
 export async function encodeSecureValue(value: unknown): Promise<unknown> {
+  if (isTauri()) return value;
   const key = await getKey();
   if (!key) return value;
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -127,6 +130,7 @@ export async function getSecureStorageStatus(): Promise<SecureStorageStatus> {
           : "Electron secure storage is unavailable.",
     };
   }
+  if (isTauri()) return { backend: "application-storage", secure: true };
   return (await getKey())
     ? { backend: "webcrypto", secure: true }
     : {
