@@ -70,14 +70,14 @@ export default function TopBar() {
     <div className="w-full flex justify-between h-12">
       <div className="flex gap-1 m-3 ml-7">
         {users.map((user) => (
-          <div key={user.user_id} className="-ml-4">
+          <div key={user.UserId} className="-ml-4">
             <Tooltip>
               <TooltipTrigger
                 render={
                   <Avatar className="size-7">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={user.Avatar} />
                     <AvatarFallback className="text-xs">
-                      {user.display.slice(0, 2).toUpperCase()}
+                      {user.Display.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 }
@@ -86,7 +86,7 @@ export default function TopBar() {
                 side="bottom"
                 portalProps={{ container: portalContainer }}
               >
-                {user.display}
+                {user.Display}
               </TooltipContent>
             </Tooltip>
           </div>

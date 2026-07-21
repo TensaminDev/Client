@@ -17,7 +17,7 @@ export default function Preview() {
       };
     }
 
-    void Promise.all(currentCallData.user_ids.map((id) => get(id)))
+    void Promise.all(currentCallData.UserIds.map((id) => get(id)))
       .then((users) => {
         if (!active) {
           return;
@@ -44,8 +44,8 @@ export default function Preview() {
         <div className="flex flex-col gap-2">
           {data.map((user) => {
             return (
-              <p key={user.user_id} className="text-2xl">
-                User: {user.display}
+              <p key={user.UserId} className="text-2xl">
+                User: {user.Display}
               </p>
             );
           })}

@@ -24,7 +24,7 @@ const fetchedUser = z.object({
 
 const formSchema = z.object({
   username: z.string().min(1).max(255),
-  private_key: z.string().min(1).max(92),
+  mtp_keyring: z.string().min(1).max(92),
 });
 
 /**
@@ -61,14 +61,7 @@ function parseTuFileContent(rawFileContent: string): {
     ? Number(userIdString.split("@")[0])
     : Number(userIdString);
 
-  const rawDomain = userIdString.includes("@")
-    ? userIdString.split("@")[1]
-    : null;
-  const domain = rawDomain
-    ? rawDomain.includes(":")
-      ? rawDomain
-      : rawDomain + ":1984"
-    : null;
+  const domain = userIdString.includes("@") ? userIdString.split("@")[1] : null;
 
   if (!userId || !privateKey) {
     throw new Error("Invalid file");
@@ -76,7 +69,6 @@ function parseTuFileContent(rawFileContent: string): {
 
   console.log({
     domain,
-    rawDomain,
     userId,
   });
 
@@ -88,6 +80,30 @@ export default function Form() {
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const { save } = useStorage();
+  const loginPendingRef = React.useRef(false);
+
+  const persistLogin = React.useCallback(
+    async (userId: number, privateKey: string, domain?: string | null) => {
+      if (loginPendingRef.current) return false;
+      loginPendingRef.current = true;
+      try {
+        if (domain) await save("omega_url", `https://${domain}/`);
+        await save("mtp_keyring", privateKey, { secure: true });
+        await save("session_id", Date.now());
+        await save("user_id", userId);
+        window.history.replaceState(
+          null,
+          "",
+          window.location.protocol === "file:" ? "#/" : "/",
+        );
+        window.location.reload();
+        return true;
+      } finally {
+        loginPendingRef.current = false;
+      }
+    },
+    [save],
+  );
 
   // Process dropped files
   const processDroppedFile = React.useCallback(
@@ -101,20 +117,13 @@ export default function Form() {
         const raw = await file.text();
         const parsed = parseTuFileContent(raw);
 
-        await save("session_id", Date.now());
-        await save("user_id", parsed.userId);
-        await save("private_key", parsed.privateKey);
-        if (parsed.domain) {
-          await save("ttp_url", `https://${parsed.domain}/`);
-        }
-
-        location.href = "/";
+        await persistLogin(parsed.userId, parsed.privateKey, parsed.domain);
       } catch (error) {
         log(0, "login", "red", error);
         toast("error", "Failed to load file");
       }
     },
-    [save],
+    [persistLogin],
   );
 
   // Handle .tu files
@@ -220,13 +229,8 @@ export default function Form() {
       const actualUsername = inputUsername.includes("@")
         ? inputUsername.split("@")[0]
         : inputUsername;
-      const rawDomain = inputUsername.includes("@")
+      const domain = inputUsername.includes("@")
         ? inputUsername.split("@")[1]
-        : null;
-      const domain = rawDomain
-        ? rawDomain.includes(":")
-          ? rawDomain
-          : rawDomain + ":1984"
         : null;
 
       try {
@@ -249,20 +253,13 @@ export default function Form() {
 
         const user = parse.data;
 
-        await save("session_id", Date.now());
-        await save("user_id", user.user_id);
-        await save("private_key", inputParse.data.private_key);
-        if (domain) {
-          await save("ttp_url", `https://${domain}/`);
-        }
-
-        location.href = "/";
+        await persistLogin(user.user_id, inputParse.data.mtp_keyring, domain);
       } catch (error) {
         log(0, "login", "red", error);
         toast("error", "Failed to fetch user data");
       }
     },
-    [save],
+    [persistLogin],
   );
 
   return (
@@ -282,15 +279,7 @@ export default function Form() {
                 const { userId, privateKey, domain } =
                   parseTuFileContent(decoded);
 
-                await save("session_id", Date.now());
-                await save("user_id", userId);
-                await save("private_key", privateKey);
-
-                if (domain) {
-                  await save("ttp_url", `https://${domain}/`);
-                }
-
-                location.href = "/";
+                await persistLogin(userId, privateKey, domain);
               } catch (error) {
                 log(0, "login", "red", error);
                 toast("error", "Failed to parse QR code data");
@@ -346,8 +335,8 @@ export default function Form() {
           <Input required type="text" id="username" name="username" />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="private_key">Private Key</Label>
-          <Input required type="password" id="private_key" name="private_key" />
+          <Label htmlFor="mtp_keyring">MTP Keyring</Label>
+          <Input required type="password" id="mtp_keyring" name="mtp_keyring" />
         </div>
         <Button className="mt-auto" type="submit">
           Login

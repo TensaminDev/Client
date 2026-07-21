@@ -1,18 +1,57 @@
 {
-  "generatedAt": "2026-05-21T10:15:15.540Z",
-  "packageCount": 54,
+  "generatedAt": "2026-07-03T19:50:00.637Z",
+  "packageCount": 143,
   "packages": [
     {
-      "name": "@codemirror/commands",
-      "version": "6.10.3",
+      "name": "@babel/runtime",
+      "version": "7.29.7",
+      "license": "MIT",
+      "homepage": "https://babel.dev/docs/en/next/babel-runtime",
+      "repository": "https://github.com/babel/babel.git",
+      "description": "babel's modular runtime helpers",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@babel_runtime@7.29.7",
+      "sourcePackageDir": "apps/web/node_modules/@babel/runtime"
+    },
+    {
+      "name": "@base-ui/react",
+      "version": "1.6.0",
+      "license": "MIT",
+      "homepage": "https://base-ui.com",
+      "repository": "git+https://github.com/mui/base-ui.git",
+      "description": "Base UI is a library of headless ('unstyled') React components and low-level hooks. You gain complete control over your app's CSS and accessibility features.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@base-ui_react@1.6.0",
+      "sourcePackageDir": "apps/web/node_modules/@base-ui/react"
+    },
+    {
+      "name": "@base-ui/utils",
+      "version": "0.3.1",
       "license": "MIT",
       "homepage": null,
-      "repository": "git+https://github.com/codemirror/commands.git",
+      "repository": "git+https://github.com/mui/base-ui.git",
+      "description": "A collection of React utility functions for Base UI.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@base-ui_utils@0.3.1",
+      "sourcePackageDir": "apps/web/node_modules/@base-ui/utils"
+    },
+    {
+      "name": "@codemirror/commands",
+      "version": "6.10.4",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "git+https://code.haverbeke.berlin/codemirror/commands.git",
       "description": "Collection of editing commands for the CodeMirror code editor",
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@codemirror_commands@6.10.3",
+      "licenseFolder": "licenses/@codemirror_commands@6.10.4",
       "sourcePackageDir": "packages/markdown/node_modules/@codemirror/commands"
     },
     {
@@ -30,20 +69,20 @@
     },
     {
       "name": "@codemirror/state",
-      "version": "6.6.0",
+      "version": "6.7.0",
       "license": "MIT",
       "homepage": null,
-      "repository": "git+https://github.com/codemirror/state.git",
+      "repository": "git+https://code.haverbeke.berlin/codemirror/state.git",
       "description": "Editor state data structures for the CodeMirror code editor",
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@codemirror_state@6.6.0",
+      "licenseFolder": "licenses/@codemirror_state@6.7.0",
       "sourcePackageDir": "packages/markdown/node_modules/@codemirror/state"
     },
     {
       "name": "@codemirror/view",
-      "version": "6.41.1",
+      "version": "6.43.4",
       "license": "MIT",
       "homepage": null,
       "repository": "git+https://code.haverbeke.berlin/codemirror/view.git",
@@ -51,7 +90,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@codemirror_view@6.41.1",
+      "licenseFolder": "licenses/@codemirror_view@6.43.4",
       "sourcePackageDir": "packages/markdown/node_modules/@codemirror/view"
     },
     {
@@ -68,6 +107,58 @@
       "sourcePackageDir": "apps/web/node_modules/@eslint/js"
     },
     {
+      "name": "@floating-ui/core",
+      "version": "1.7.5",
+      "license": "MIT",
+      "homepage": "https://floating-ui.com",
+      "repository": "https://github.com/floating-ui/floating-ui.git",
+      "description": "Positioning library for floating elements: tooltips, popovers, dropdowns, and more",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@floating-ui_core@1.7.5",
+      "sourcePackageDir": "apps/web/node_modules/@floating-ui/core"
+    },
+    {
+      "name": "@floating-ui/dom",
+      "version": "1.7.6",
+      "license": "MIT",
+      "homepage": "https://floating-ui.com",
+      "repository": "https://github.com/floating-ui/floating-ui.git",
+      "description": "Floating UI for the web",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@floating-ui_dom@1.7.6",
+      "sourcePackageDir": "apps/web/node_modules/@floating-ui/dom"
+    },
+    {
+      "name": "@floating-ui/react-dom",
+      "version": "2.1.8",
+      "license": "MIT",
+      "homepage": "https://floating-ui.com/docs/react-dom",
+      "repository": "https://github.com/floating-ui/floating-ui.git",
+      "description": "Floating UI for React DOM",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@floating-ui_react-dom@2.1.8",
+      "sourcePackageDir": "apps/web/node_modules/@floating-ui/react-dom"
+    },
+    {
+      "name": "@floating-ui/utils",
+      "version": "0.2.11",
+      "license": "MIT",
+      "homepage": "https://floating-ui.com",
+      "repository": "https://github.com/floating-ui/floating-ui.git",
+      "description": "Utilities for Floating UI",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@floating-ui_utils@0.2.11",
+      "sourcePackageDir": "apps/web/node_modules/@floating-ui/utils"
+    },
+    {
       "name": "@fontsource-variable/inter",
       "version": "5.2.8",
       "license": "OFL-1.1",
@@ -81,8 +172,21 @@
       "sourcePackageDir": "apps/web/node_modules/@fontsource-variable/inter"
     },
     {
+      "name": "@fontsource-variable/public-sans",
+      "version": "5.2.7",
+      "license": "OFL-1.1",
+      "homepage": "https://fontsource.org/fonts/public-sans",
+      "repository": "git+https://github.com/fontsource/font-files.git",
+      "description": "Self-host the Public Sans font in a neatly bundled NPM package.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@fontsource-variable_public-sans@5.2.7",
+      "sourcePackageDir": "apps/web/node_modules/@fontsource-variable/public-sans"
+    },
+    {
       "name": "@livekit/components-react",
-      "version": "2.9.20",
+      "version": "2.9.21",
       "license": "Apache-2.0",
       "homepage": null,
       "repository": "https://github.com/livekit/components-js.git",
@@ -90,7 +194,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@livekit_components-react@2.9.20",
+      "licenseFolder": "licenses/@livekit_components-react@2.9.21",
       "sourcePackageDir": "packages/call/node_modules/@livekit/components-react"
     },
     {
@@ -104,11 +208,245 @@
         "LICENSE"
       ],
       "licenseFolder": "licenses/@noble_curves@2.2.0",
-      "sourcePackageDir": "apps/web/node_modules/@noble/curves"
+      "sourcePackageDir": "packages/crypto/node_modules/@noble/curves"
+    },
+    {
+      "name": "@noble/hashes",
+      "version": "2.2.0",
+      "license": "MIT",
+      "homepage": "https://paulmillr.com/noble/",
+      "repository": "git+https://github.com/paulmillr/noble-hashes.git",
+      "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@noble_hashes@2.2.0",
+      "sourcePackageDir": "packages/crypto/node_modules/@noble/hashes"
+    },
+    {
+      "name": "@radix-ui/primitive",
+      "version": "1.1.4",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_primitive@1.1.4",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/primitive"
+    },
+    {
+      "name": "@radix-ui/react-compose-refs",
+      "version": "1.1.3",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-compose-refs@1.1.3",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-compose-refs"
+    },
+    {
+      "name": "@radix-ui/react-context",
+      "version": "1.1.4",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-context@1.1.4",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-context"
+    },
+    {
+      "name": "@radix-ui/react-dialog",
+      "version": "1.1.18",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-dialog@1.1.18",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-dialog"
+    },
+    {
+      "name": "@radix-ui/react-dismissable-layer",
+      "version": "1.1.14",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-dismissable-layer@1.1.14",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-dismissable-layer"
+    },
+    {
+      "name": "@radix-ui/react-focus-guards",
+      "version": "1.1.4",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-focus-guards@1.1.4",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-focus-guards"
+    },
+    {
+      "name": "@radix-ui/react-focus-scope",
+      "version": "1.1.11",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-focus-scope@1.1.11",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-focus-scope"
+    },
+    {
+      "name": "@radix-ui/react-id",
+      "version": "1.1.2",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-id@1.1.2",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-id"
+    },
+    {
+      "name": "@radix-ui/react-portal",
+      "version": "1.1.13",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-portal@1.1.13",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-portal"
+    },
+    {
+      "name": "@radix-ui/react-presence",
+      "version": "1.1.6",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-presence@1.1.6",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-presence"
+    },
+    {
+      "name": "@radix-ui/react-primitive",
+      "version": "2.1.7",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-primitive@2.1.7",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-primitive"
+    },
+    {
+      "name": "@radix-ui/react-slot",
+      "version": "1.2.1",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-slot@1.3.0",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-slot"
+    },
+    {
+      "name": "@radix-ui/react-use-callback-ref",
+      "version": "1.1.2",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-use-callback-ref@1.1.2",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-use-callback-ref"
+    },
+    {
+      "name": "@radix-ui/react-use-controllable-state",
+      "version": "1.2.3",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-use-controllable-state@1.2.3",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-use-controllable-state"
+    },
+    {
+      "name": "@radix-ui/react-use-effect-event",
+      "version": "0.0.2",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-use-effect-event@0.0.2",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-use-effect-event"
+    },
+    {
+      "name": "@radix-ui/react-use-layout-effect",
+      "version": "1.1.2",
+      "license": "MIT",
+      "homepage": "https://radix-ui.com/primitives",
+      "repository": "git+https://github.com/radix-ui/primitives.git",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@radix-ui_react-use-layout-effect@1.1.2",
+      "sourcePackageDir": "apps/web/node_modules/@radix-ui/react-use-layout-effect"
+    },
+    {
+      "name": "@reduxjs/toolkit",
+      "version": "2.12.0",
+      "license": "MIT",
+      "homepage": "https://redux-toolkit.js.org",
+      "repository": "git+https://github.com/reduxjs/redux-toolkit.git",
+      "description": "The official, opinionated, batteries-included toolset for efficient Redux development",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@reduxjs_toolkit@2.12.0",
+      "sourcePackageDir": "apps/web/node_modules/@reduxjs/toolkit"
     },
     {
       "name": "@tailwindcss/vite",
-      "version": "4.2.4",
+      "version": "4.3.2",
       "license": "MIT",
       "homepage": "https://tailwindcss.com",
       "repository": "https://github.com/tailwindlabs/tailwindcss.git",
@@ -116,25 +454,25 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@tailwindcss_vite@4.2.4",
+      "licenseFolder": "licenses/@tailwindcss_vite@4.3.2",
       "sourcePackageDir": "apps/web/node_modules/@tailwindcss/vite"
     },
     {
-      "name": "@tanstack/react-query",
-      "version": "5.100.8",
+      "name": "@tanstack/devtools-event-client",
+      "version": "0.3.5",
       "license": "MIT",
-      "homepage": "https://tanstack.com/query",
-      "repository": "git+https://github.com/TanStack/query.git",
-      "description": "Hooks for managing, caching and syncing asynchronous and remote data in React",
+      "homepage": "https://tanstack.com/devtools",
+      "repository": "https://github.com/TanStack/devtools.git",
+      "description": "TanStack Event Client is a lightweight event client for TanStack Devtools event bus.",
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@tanstack_react-query@5.100.8",
-      "sourcePackageDir": "packages/call/node_modules/@tanstack/react-query"
+      "licenseFolder": "licenses/@tanstack_devtools-event-client@0.3.5",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/devtools-event-client"
     },
     {
-      "name": "@tanstack/react-router",
-      "version": "1.169.1",
+      "name": "@tanstack/history",
+      "version": "1.162.0",
       "license": "MIT",
       "homepage": "https://tanstack.com/router",
       "repository": "git+https://github.com/TanStack/router.git",
@@ -142,12 +480,77 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@tanstack_react-router@1.169.1",
+      "licenseFolder": "licenses/@tanstack_history@1.162.0",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/history"
+    },
+    {
+      "name": "@tanstack/pacer",
+      "version": "0.21.1",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/pacer",
+      "repository": "git+https://github.com/TanStack/pacer.git",
+      "description": "Utilities for debouncing, throttling, rate-limiting, queuing, and more.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_pacer@0.21.1",
+      "sourcePackageDir": "packages/chat/node_modules/@tanstack/pacer"
+    },
+    {
+      "name": "@tanstack/query-core",
+      "version": "5.101.2",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/query",
+      "repository": "git+https://github.com/TanStack/query.git",
+      "description": "The framework agnostic core that powers TanStack Query",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_query-core@5.101.2",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/query-core"
+    },
+    {
+      "name": "@tanstack/react-query",
+      "version": "5.101.2",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/query",
+      "repository": "git+https://github.com/TanStack/query.git",
+      "description": "Hooks for managing, caching and syncing asynchronous and remote data in React",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_react-query@5.101.2",
+      "sourcePackageDir": "packages/chat/node_modules/@tanstack/react-query"
+    },
+    {
+      "name": "@tanstack/react-router",
+      "version": "1.170.17",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/router",
+      "repository": "git+https://github.com/TanStack/router.git",
+      "description": "Modern and scalable routing for React applications",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_react-router@1.170.17",
       "sourcePackageDir": "apps/web/node_modules/@tanstack/react-router"
     },
     {
+      "name": "@tanstack/react-store",
+      "version": "0.9.3",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/store",
+      "repository": "https://github.com/TanStack/store.git",
+      "description": "Framework agnostic type-safe store w/ reactive framework adapters",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_react-store@0.9.3",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/react-store"
+    },
+    {
       "name": "@tanstack/react-virtual",
-      "version": "3.13.24",
+      "version": "3.14.5",
       "license": "MIT",
       "homepage": "https://tanstack.com/virtual",
       "repository": "git+https://github.com/TanStack/virtual.git",
@@ -155,40 +558,79 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@tanstack_react-virtual@3.13.24",
+      "licenseFolder": "licenses/@tanstack_react-virtual@3.14.5",
       "sourcePackageDir": "apps/web/node_modules/@tanstack/react-virtual"
     },
     {
+      "name": "@tanstack/router-core",
+      "version": "1.171.14",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/router",
+      "repository": "git+https://github.com/TanStack/router.git",
+      "description": "Modern and scalable routing for React applications",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_router-core@1.171.14",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/router-core"
+    },
+    {
+      "name": "@tanstack/store",
+      "version": "0.9.3",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/store",
+      "repository": "git+https://github.com/TanStack/store.git",
+      "description": "Framework agnostic type-safe store w/ reactive framework adapters",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_store@0.9.3",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/store"
+    },
+    {
+      "name": "@tanstack/virtual-core",
+      "version": "3.17.3",
+      "license": "MIT",
+      "homepage": "https://tanstack.com/virtual",
+      "repository": "git+https://github.com/TanStack/virtual.git",
+      "description": "Headless UI for virtualizing scrollable elements in TS/JS + Frameworks",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@tanstack_virtual-core@3.17.3",
+      "sourcePackageDir": "apps/web/node_modules/@tanstack/virtual-core"
+    },
+    {
       "name": "@tauri-apps/api",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "license": "Apache-2.0 OR MIT",
       "homepage": "https://github.com/tauri-apps/tauri#readme",
       "repository": "git+https://github.com/tauri-apps/tauri.git",
       "description": "Tauri API definitions",
       "files": [
-        "LICENSE_MIT",
-        "LICENSE_APACHE-2.0"
+        "LICENSE_APACHE-2.0",
+        "LICENSE_MIT"
       ],
-      "licenseFolder": "licenses/@tauri-apps_api@2.11.0",
+      "licenseFolder": "licenses/@tauri-apps_api@2.11.1",
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/api"
     },
     {
       "name": "@tauri-apps/cli",
-      "version": "2.11.0",
+      "version": "2.11.4",
       "license": "Apache-2.0 OR MIT",
       "homepage": "https://github.com/tauri-apps/tauri#readme",
       "repository": "git+https://github.com/tauri-apps/tauri.git",
       "description": "Command line interface for building Tauri apps",
       "files": [
-        "LICENSE_MIT",
-        "LICENSE_APACHE-2.0"
+        "LICENSE_APACHE-2.0",
+        "LICENSE_MIT"
       ],
-      "licenseFolder": "licenses/@tauri-apps_cli@2.11.0",
+      "licenseFolder": "licenses/@tauri-apps_cli@2.11.4",
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/cli"
     },
     {
       "name": "@tauri-apps/plugin-barcode-scanner",
-      "version": "2.4.4",
+      "version": "2.4.5",
       "license": "MIT OR Apache-2.0",
       "homepage": null,
       "repository": "https://github.com/tauri-apps/plugins-workspace",
@@ -196,7 +638,7 @@
       "files": [
         "LICENSE.spdx"
       ],
-      "licenseFolder": "licenses/@tauri-apps_plugin-barcode-scanner@2.4.4",
+      "licenseFolder": "licenses/@tauri-apps_plugin-barcode-scanner@2.4.5",
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-barcode-scanner"
     },
     {
@@ -213,45 +655,45 @@
       "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-deep-link"
     },
     {
-      "name": "@tauri-apps/plugin-opener",
-      "version": "2.5.4",
+      "name": "@tauri-apps/plugin-log",
+      "version": "2.8.0",
       "license": "MIT OR Apache-2.0",
       "homepage": null,
       "repository": "https://github.com/tauri-apps/plugins-workspace",
-      "description": "Open files and URLs using their default application.",
+      "description": "Configurable logging for your Tauri app.",
       "files": [
         "LICENSE.spdx"
       ],
-      "licenseFolder": "licenses/@tauri-apps_plugin-opener@2.5.4",
-      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-opener"
+      "licenseFolder": "licenses/@tauri-apps_plugin-log@2.8.0",
+      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-log"
     },
     {
-      "name": "@tensamin/ttp-core",
-      "version": "0.0.19",
-      "license": "UNKNOWN",
+      "name": "@tauri-apps/plugin-notification",
+      "version": "2.3.3",
+      "license": "MIT OR Apache-2.0",
       "homepage": null,
-      "repository": null,
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
       "description": null,
       "files": [
-        "LICENSE"
+        "LICENSE.spdx"
       ],
-      "licenseFolder": "licenses/@tensamin_ttp-core@0.0.19",
-      "sourcePackageDir": "packages/ttp/node_modules/@tensamin/ttp-core"
+      "licenseFolder": "licenses/@tauri-apps_plugin-notification@2.3.3",
+      "sourcePackageDir": "apps/tauri/node_modules/@tauri-apps/plugin-notification"
     },
     {
       "name": "@tensamin/ui",
-      "version": "0.0.34",
+      "version": "0.0.39",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
       "description": null,
       "files": [],
-      "licenseFolder": "licenses/@tensamin_ui@0.0.34",
+      "licenseFolder": "licenses/@tensamin_ui@0.0.39",
       "sourcePackageDir": "apps/tauri/node_modules/@tensamin/ui"
     },
     {
       "name": "@types/node",
-      "version": "25.6.0",
+      "version": "25.9.4",
       "license": "MIT",
       "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
@@ -259,8 +701,8 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@types_node@25.6.0",
-      "sourcePackageDir": "node_modules/@types/node"
+      "licenseFolder": "licenses/@types_node@25.9.4",
+      "sourcePackageDir": "apps/electron/node_modules/@types/node"
     },
     {
       "name": "@types/qrcode",
@@ -277,7 +719,7 @@
     },
     {
       "name": "@types/react",
-      "version": "19.2.14",
+      "version": "19.2.17",
       "license": "MIT",
       "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
@@ -285,7 +727,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@types_react@19.2.14",
+      "licenseFolder": "licenses/@types_react@19.2.17",
       "sourcePackageDir": "apps/web/node_modules/@types/react"
     },
     {
@@ -303,7 +745,7 @@
     },
     {
       "name": "@typescript-eslint/parser",
-      "version": "8.59.1",
+      "version": "8.62.1",
       "license": "MIT",
       "homepage": "https://typescript-eslint.io/packages/parser",
       "repository": "https://github.com/typescript-eslint/typescript-eslint.git",
@@ -311,12 +753,12 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@typescript-eslint_parser@8.59.1",
+      "licenseFolder": "licenses/@typescript-eslint_parser@8.62.1",
       "sourcePackageDir": "node_modules/@typescript-eslint/parser"
     },
     {
       "name": "@vitejs/plugin-react",
-      "version": "6.0.1",
+      "version": "6.0.3",
       "license": "MIT",
       "homepage": "https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#readme",
       "repository": "git+https://github.com/vitejs/vite-plugin-react.git",
@@ -324,8 +766,21 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@vitejs_plugin-react@6.0.1",
+      "licenseFolder": "licenses/@vitejs_plugin-react@6.0.3",
       "sourcePackageDir": "apps/web/node_modules/@vitejs/plugin-react"
+    },
+    {
+      "name": "aria-hidden",
+      "version": "1.2.6",
+      "license": "MIT",
+      "homepage": "https://github.com/theKashey/aria-hidden#readme",
+      "repository": "git+https://github.com/theKashey/aria-hidden.git",
+      "description": "Cast aria-hidden to everything, except...",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/aria-hidden@1.2.6",
+      "sourcePackageDir": "apps/web/node_modules/aria-hidden"
     },
     {
       "name": "class-variance-authority",
@@ -354,6 +809,19 @@
       "sourcePackageDir": "apps/web/node_modules/clsx"
     },
     {
+      "name": "cmdk",
+      "version": "1.1.1",
+      "license": "MIT",
+      "homepage": "https://github.com/pacocoursey/cmdk#readme",
+      "repository": "git+https://github.com/pacocoursey/cmdk.git",
+      "description": null,
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/cmdk@1.1.1",
+      "sourcePackageDir": "apps/web/node_modules/cmdk"
+    },
+    {
       "name": "comlink",
       "version": "4.4.2",
       "license": "Apache-2.0",
@@ -364,11 +832,193 @@
         "LICENSE"
       ],
       "licenseFolder": "licenses/comlink@4.4.2",
-      "sourcePackageDir": "apps/web/node_modules/comlink"
+      "sourcePackageDir": "packages/crypto/node_modules/comlink"
+    },
+    {
+      "name": "cookie-es",
+      "version": "3.1.1",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "unjs/cookie-es",
+      "description": null,
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/cookie-es@3.1.1",
+      "sourcePackageDir": "apps/web/node_modules/cookie-es"
+    },
+    {
+      "name": "d3-array",
+      "version": "3.2.4",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-array/",
+      "repository": "https://github.com/d3/d3-array.git",
+      "description": "Array manipulation, ordering, searching, summarizing, etc.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-array@3.2.4",
+      "sourcePackageDir": "apps/web/node_modules/d3-array"
+    },
+    {
+      "name": "d3-color",
+      "version": "3.1.0",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-color/",
+      "repository": "https://github.com/d3/d3-color.git",
+      "description": "Color spaces! RGB, HSL, Cubehelix, Lab and HCL (Lch).",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-color@3.1.0",
+      "sourcePackageDir": "apps/web/node_modules/d3-color"
+    },
+    {
+      "name": "d3-ease",
+      "version": "3.0.1",
+      "license": "BSD-3-Clause",
+      "homepage": "https://d3js.org/d3-ease/",
+      "repository": "https://github.com/d3/d3-ease.git",
+      "description": "Easing functions for smooth animation.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-ease@3.0.1",
+      "sourcePackageDir": "apps/web/node_modules/d3-ease"
+    },
+    {
+      "name": "d3-format",
+      "version": "3.1.2",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-format/",
+      "repository": "https://github.com/d3/d3-format.git",
+      "description": "Format numbers for human consumption.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-format@3.1.2",
+      "sourcePackageDir": "apps/web/node_modules/d3-format"
+    },
+    {
+      "name": "d3-interpolate",
+      "version": "3.0.1",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-interpolate/",
+      "repository": "https://github.com/d3/d3-interpolate.git",
+      "description": "Interpolate numbers, colors, strings, arrays, objects, whatever!",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-interpolate@3.0.1",
+      "sourcePackageDir": "apps/web/node_modules/d3-interpolate"
+    },
+    {
+      "name": "d3-path",
+      "version": "3.1.0",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-path/",
+      "repository": "https://github.com/d3/d3-path.git",
+      "description": "Serialize Canvas path commands to SVG.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-path@3.1.0",
+      "sourcePackageDir": "apps/web/node_modules/d3-path"
+    },
+    {
+      "name": "d3-scale",
+      "version": "4.0.2",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-scale/",
+      "repository": "https://github.com/d3/d3-scale.git",
+      "description": "Encodings that map abstract data to visual representation.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-scale@4.0.2",
+      "sourcePackageDir": "apps/web/node_modules/d3-scale"
+    },
+    {
+      "name": "d3-shape",
+      "version": "3.2.0",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-shape/",
+      "repository": "https://github.com/d3/d3-shape.git",
+      "description": "Graphical primitives for visualization, such as lines and areas.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-shape@3.2.0",
+      "sourcePackageDir": "apps/web/node_modules/d3-shape"
+    },
+    {
+      "name": "d3-time",
+      "version": "3.1.0",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-time/",
+      "repository": "https://github.com/d3/d3-time.git",
+      "description": "A calculator for humanity’s peculiar conventions of time.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-time@3.1.0",
+      "sourcePackageDir": "apps/web/node_modules/d3-time"
+    },
+    {
+      "name": "d3-time-format",
+      "version": "4.1.0",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-time-format/",
+      "repository": "https://github.com/d3/d3-time-format.git",
+      "description": "A JavaScript time formatter and parser inspired by strftime and strptime.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-time-format@4.1.0",
+      "sourcePackageDir": "apps/web/node_modules/d3-time-format"
+    },
+    {
+      "name": "d3-timer",
+      "version": "3.0.1",
+      "license": "ISC",
+      "homepage": "https://d3js.org/d3-timer/",
+      "repository": "https://github.com/d3/d3-timer.git",
+      "description": "An efficient queue capable of managing thousands of concurrent animations.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/d3-timer@3.0.1",
+      "sourcePackageDir": "apps/web/node_modules/d3-timer"
+    },
+    {
+      "name": "date-fns",
+      "version": "4.4.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/date-fns/date-fns",
+      "description": "Modern JavaScript date utility library",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/date-fns@4.4.0",
+      "sourcePackageDir": "apps/web/node_modules/date-fns"
+    },
+    {
+      "name": "decimal.js-light",
+      "version": "2.5.1",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/MikeMcl/decimal.js-light.git",
+      "description": "An arbitrary-precision Decimal type for JavaScript.",
+      "files": [
+        "LICENCE.md"
+      ],
+      "licenseFolder": "licenses/decimal.js-light@2.5.1",
+      "sourcePackageDir": "apps/web/node_modules/decimal.js-light"
     },
     {
       "name": "deepfilternet3-noise-filter",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "license": "(Apache-2.0 OR MIT)",
       "homepage": "https://github.com/mezonai/mezon-noise-suppression#readme",
       "repository": "git+https://github.com/mezonai/mezon-noise-suppression.git",
@@ -381,6 +1031,104 @@
       "sourcePackageDir": "packages/call/node_modules/deepfilternet3-noise-filter"
     },
     {
+      "name": "detect-node-es",
+      "version": "1.1.0",
+      "license": "MIT",
+      "homepage": "https://github.com/thekashey/detect-node",
+      "repository": "https://github.com/thekashey/detect-node",
+      "description": "Detect Node.JS (as opposite to browser environment). ESM modification",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/detect-node-es@1.1.0",
+      "sourcePackageDir": "apps/web/node_modules/detect-node-es"
+    },
+    {
+      "name": "dijkstrajs",
+      "version": "1.0.3",
+      "license": "MIT",
+      "homepage": "https://github.com/tcort/dijkstrajs",
+      "repository": "git://github.com/tcort/dijkstrajs",
+      "description": "A simple JavaScript implementation of Dijkstra's single-source shortest-paths algorithm.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/dijkstrajs@1.0.3",
+      "sourcePackageDir": "apps/web/node_modules/dijkstrajs"
+    },
+    {
+      "name": "electron",
+      "version": "39.8.10",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/electron/electron",
+      "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/electron@39.8.10",
+      "sourcePackageDir": "apps/electron/node_modules/electron"
+    },
+    {
+      "name": "electron-builder",
+      "version": "26.15.3",
+      "license": "MIT",
+      "homepage": "https://github.com/electron-userland/electron-builder",
+      "repository": "git+https://github.com/electron-userland/electron-builder.git",
+      "description": "A complete solution to package and build a ready for distribution Electron app for MacOS, Windows and Linux with “auto update” support out of the box",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/electron-builder@26.15.3",
+      "sourcePackageDir": "apps/electron/node_modules/electron-builder"
+    },
+    {
+      "name": "embla-carousel",
+      "version": "8.6.0",
+      "license": "MIT",
+      "homepage": "https://www.embla-carousel.com",
+      "repository": "git+https://github.com/davidjerleke/embla-carousel",
+      "description": "A lightweight carousel library with fluid motion and great swipe precision",
+      "files": [],
+      "licenseFolder": "licenses/embla-carousel@8.6.0",
+      "sourcePackageDir": "apps/web/node_modules/embla-carousel"
+    },
+    {
+      "name": "embla-carousel-react",
+      "version": "8.6.0",
+      "license": "MIT",
+      "homepage": "https://www.embla-carousel.com",
+      "repository": "git+https://github.com/davidjerleke/embla-carousel",
+      "description": "A lightweight carousel library with fluid motion and great swipe precision",
+      "files": [],
+      "licenseFolder": "licenses/embla-carousel-react@8.6.0",
+      "sourcePackageDir": "apps/web/node_modules/embla-carousel-react"
+    },
+    {
+      "name": "embla-carousel-reactive-utils",
+      "version": "8.6.0",
+      "license": "MIT",
+      "homepage": "https://www.embla-carousel.com",
+      "repository": "git+https://github.com/davidjerleke/embla-carousel",
+      "description": "Reactive utilities for Embla Carousel",
+      "files": [],
+      "licenseFolder": "licenses/embla-carousel-reactive-utils@8.6.0",
+      "sourcePackageDir": "apps/web/node_modules/embla-carousel-reactive-utils"
+    },
+    {
+      "name": "es-toolkit",
+      "version": "1.49.0",
+      "license": "MIT",
+      "homepage": "https://es-toolkit.dev",
+      "repository": "https://github.com/toss/es-toolkit.git",
+      "description": "A state-of-the-art, high-performance JavaScript utility library with a small bundle size and strong type annotations.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/es-toolkit@1.49.0",
+      "sourcePackageDir": "apps/web/node_modules/es-toolkit"
+    },
+    {
       "name": "esbuild",
       "version": "0.25.12",
       "license": "MIT",
@@ -391,11 +1139,11 @@
         "LICENSE.md"
       ],
       "licenseFolder": "licenses/esbuild@0.25.12",
-      "sourcePackageDir": "apps/web/node_modules/esbuild"
+      "sourcePackageDir": "apps/electron/node_modules/esbuild"
     },
     {
       "name": "eslint",
-      "version": "10.3.0",
+      "version": "10.6.0",
       "license": "MIT",
       "homepage": "https://eslint.org",
       "repository": "eslint/eslint",
@@ -403,7 +1151,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/eslint@10.3.0",
+      "licenseFolder": "licenses/eslint@10.6.0",
       "sourcePackageDir": "apps/web/node_modules/eslint"
     },
     {
@@ -420,21 +1168,45 @@
       "sourcePackageDir": "node_modules/eslint-plugin-react-hooks"
     },
     {
-      "name": "framer-motion",
-      "version": "12.38.0",
+      "name": "eventemitter3",
+      "version": "5.0.4",
       "license": "MIT",
       "homepage": null,
-      "repository": "https://github.com/motiondivision/motion/",
-      "description": "A simple and powerful JavaScript animation library",
+      "repository": "git://github.com/primus/eventemitter3.git",
+      "description": "EventEmitter3 focuses on performance while maintaining a Node.js AND browser compatible interface.",
       "files": [
-        "LICENSE.md"
+        "LICENSE"
       ],
-      "licenseFolder": "licenses/framer-motion@12.38.0",
-      "sourcePackageDir": "apps/web/node_modules/framer-motion"
+      "licenseFolder": "licenses/eventemitter3@5.0.4",
+      "sourcePackageDir": "apps/web/node_modules/eventemitter3"
+    },
+    {
+      "name": "fallow",
+      "version": "2.104.0",
+      "license": "MIT",
+      "homepage": "https://docs.fallow.tools",
+      "repository": "git+https://github.com/fallow-rs/fallow.git",
+      "description": "Deterministic codebase intelligence for TypeScript and JavaScript. Quality, risk, architecture, dependencies, duplication, and safe cleanup evidence for humans, CI, and agents. Optional runtime intelligence layer (Fallow Runtime) adds production execution evidence. Rust-native, sub-second, zero-config framework support.",
+      "files": [],
+      "licenseFolder": "licenses/fallow@2.104.0",
+      "sourcePackageDir": "node_modules/fallow"
+    },
+    {
+      "name": "get-nonce",
+      "version": "1.0.1",
+      "license": "MIT",
+      "homepage": "https://github.com/theKashey/get-nonce",
+      "repository": "git@github.com:theKashey/get-nonce.git",
+      "description": "returns nonce",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/get-nonce@1.0.1",
+      "sourcePackageDir": "apps/web/node_modules/get-nonce"
     },
     {
       "name": "globals",
-      "version": "17.6.0",
+      "version": "17.7.0",
       "license": "MIT",
       "homepage": null,
       "repository": "sindresorhus/globals",
@@ -442,8 +1214,45 @@
       "files": [
         "license"
       ],
-      "licenseFolder": "licenses/globals@17.6.0",
+      "licenseFolder": "licenses/globals@17.7.0",
       "sourcePackageDir": "apps/web/node_modules/globals"
+    },
+    {
+      "name": "immer",
+      "version": "10.2.0",
+      "license": "MIT",
+      "homepage": "https://github.com/immerjs/immer#readme",
+      "repository": "https://github.com/immerjs/immer.git",
+      "description": "Create your next immutable state by mutating the current one",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/immer@10.2.0",
+      "sourcePackageDir": "apps/web/node_modules/immer"
+    },
+    {
+      "name": "input-otp",
+      "version": "1.4.2",
+      "license": "MIT",
+      "homepage": "https://input-otp.rodz.dev/",
+      "repository": "git+https://github.com/guilhermerodz/input-otp.git",
+      "description": "One-time password input component for React.",
+      "files": [],
+      "licenseFolder": "licenses/input-otp@1.4.2",
+      "sourcePackageDir": "apps/web/node_modules/input-otp"
+    },
+    {
+      "name": "internmap",
+      "version": "2.0.3",
+      "license": "ISC",
+      "homepage": "https://github.com/mbostock/internmap/",
+      "repository": "https://github.com/mbostock/internmap.git",
+      "description": "Map and Set with automatic key interning",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/internmap@2.0.3",
+      "sourcePackageDir": "apps/web/node_modules/internmap"
     },
     {
       "name": "jsonc-parser",
@@ -460,7 +1269,7 @@
     },
     {
       "name": "livekit-client",
-      "version": "2.18.8",
+      "version": "2.20.0",
       "license": "Apache-2.0",
       "homepage": null,
       "repository": "git@github.com:livekit/client-sdk-js.git",
@@ -468,12 +1277,12 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/livekit-client@2.18.8",
+      "licenseFolder": "licenses/livekit-client@2.20.0",
       "sourcePackageDir": "packages/call/node_modules/livekit-client"
     },
     {
       "name": "lucide-react",
-      "version": "1.14.0",
+      "version": "1.23.0",
       "license": "ISC",
       "homepage": "https://lucide.dev",
       "repository": "https://github.com/lucide-icons/lucide.git",
@@ -481,12 +1290,49 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/lucide-react@1.14.0",
-      "sourcePackageDir": "apps/tauri/node_modules/lucide-react"
+      "licenseFolder": "licenses/lucide-react@1.23.0",
+      "sourcePackageDir": "apps/web/node_modules/lucide-react"
+    },
+    {
+      "name": "mtp",
+      "version": "0.1.0",
+      "license": "UNKNOWN",
+      "homepage": null,
+      "repository": null,
+      "description": "MTP TypeScript SDK",
+      "files": [],
+      "licenseFolder": "licenses/mtp@0.1.0",
+      "sourcePackageDir": "packages/mtp/node_modules/mtp"
+    },
+    {
+      "name": "next-themes",
+      "version": "0.4.6",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/pacocoursey/next-themes.git",
+      "description": null,
+      "files": [
+        "license.md"
+      ],
+      "licenseFolder": "licenses/next-themes@0.4.6",
+      "sourcePackageDir": "apps/web/node_modules/next-themes"
+    },
+    {
+      "name": "pngjs",
+      "version": "5.0.0",
+      "license": "MIT",
+      "homepage": "https://github.com/lukeapage/pngjs",
+      "repository": "git://github.com/lukeapage/pngjs.git",
+      "description": "PNG encoder/decoder in pure JS, supporting any bit size & interlace, async & sync with full test suite.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/pngjs@5.0.0",
+      "sourcePackageDir": "apps/web/node_modules/pngjs"
     },
     {
       "name": "prettier",
-      "version": "3.8.3",
+      "version": "3.9.4",
       "license": "MIT",
       "homepage": "https://prettier.io",
       "repository": "prettier/prettier",
@@ -494,7 +1340,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/prettier@3.8.3",
+      "licenseFolder": "licenses/prettier@3.9.4",
       "sourcePackageDir": "node_modules/prettier"
     },
     {
@@ -512,7 +1358,7 @@
     },
     {
       "name": "react",
-      "version": "19.2.5",
+      "version": "19.2.7",
       "license": "MIT",
       "homepage": "https://react.dev/",
       "repository": "https://github.com/facebook/react.git",
@@ -520,12 +1366,25 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/react@19.2.5",
+      "licenseFolder": "licenses/react@19.2.7",
       "sourcePackageDir": "apps/tauri/node_modules/react"
     },
     {
+      "name": "react-day-picker",
+      "version": "10.0.1",
+      "license": "MIT",
+      "homepage": "https://daypicker.dev",
+      "repository": "git+https://github.com/gpbl/react-day-picker.git",
+      "description": "Customizable Date Picker for React",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/react-day-picker@10.0.1",
+      "sourcePackageDir": "apps/web/node_modules/react-day-picker"
+    },
+    {
       "name": "react-dom",
-      "version": "19.2.5",
+      "version": "19.2.7",
       "license": "MIT",
       "homepage": "https://react.dev/",
       "repository": "https://github.com/facebook/react.git",
@@ -533,8 +1392,84 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/react-dom@19.2.5",
+      "licenseFolder": "licenses/react-dom@19.2.7",
       "sourcePackageDir": "apps/tauri/node_modules/react-dom"
+    },
+    {
+      "name": "react-is",
+      "version": "19.2.7",
+      "license": "MIT",
+      "homepage": "https://react.dev/",
+      "repository": "https://github.com/facebook/react.git",
+      "description": "Brand checking of React Elements.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/react-is@19.2.7",
+      "sourcePackageDir": "apps/web/node_modules/react-is"
+    },
+    {
+      "name": "react-redux",
+      "version": "9.3.0",
+      "license": "MIT",
+      "homepage": "https://github.com/reduxjs/react-redux",
+      "repository": "github:reduxjs/react-redux",
+      "description": "Official React bindings for Redux",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/react-redux@9.3.0",
+      "sourcePackageDir": "apps/web/node_modules/react-redux"
+    },
+    {
+      "name": "react-remove-scroll",
+      "version": "2.7.2",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/theKashey/react-remove-scroll",
+      "description": "Disables scroll outside of `children` node.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/react-remove-scroll@2.7.2",
+      "sourcePackageDir": "apps/web/node_modules/react-remove-scroll"
+    },
+    {
+      "name": "react-remove-scroll-bar",
+      "version": "2.3.8",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/theKashey/react-remove-scroll-bar",
+      "description": "Removes body scroll without content _shake_",
+      "files": [],
+      "licenseFolder": "licenses/react-remove-scroll-bar@2.3.8",
+      "sourcePackageDir": "apps/web/node_modules/react-remove-scroll-bar"
+    },
+    {
+      "name": "react-resizable-panels",
+      "version": "4.12.0",
+      "license": "MIT",
+      "homepage": "https://react-resizable-panels.vercel.app/",
+      "repository": "https://github.com/bvaughn/react-resizable-panels.git",
+      "description": null,
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/react-resizable-panels@4.12.0",
+      "sourcePackageDir": "apps/web/node_modules/react-resizable-panels"
+    },
+    {
+      "name": "react-style-singleton",
+      "version": "2.2.3",
+      "license": "MIT",
+      "homepage": "https://github.com/theKashey/react-style-singleton#readme",
+      "repository": "https://github.com/theKashey/react-style-singleton",
+      "description": "Just create a single stylesheet...",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/react-style-singleton@2.2.3",
+      "sourcePackageDir": "apps/web/node_modules/react-style-singleton"
     },
     {
       "name": "recharts",
@@ -547,11 +1482,89 @@
         "LICENSE"
       ],
       "licenseFolder": "licenses/recharts@3.8.1",
-      "sourcePackageDir": "packages/call/node_modules/recharts"
+      "sourcePackageDir": "apps/web/node_modules/recharts"
+    },
+    {
+      "name": "redux",
+      "version": "5.0.1",
+      "license": "MIT",
+      "homepage": "http://redux.js.org",
+      "repository": "github:reduxjs/redux",
+      "description": "Predictable state container for JavaScript apps",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/redux@5.0.1",
+      "sourcePackageDir": "apps/web/node_modules/redux"
+    },
+    {
+      "name": "redux-thunk",
+      "version": "3.1.0",
+      "license": "MIT",
+      "homepage": "https://github.com/reduxjs/redux-thunk",
+      "repository": "github:reduxjs/redux-thunk",
+      "description": "Thunk middleware for Redux.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/redux-thunk@3.1.0",
+      "sourcePackageDir": "apps/web/node_modules/redux-thunk"
+    },
+    {
+      "name": "reselect",
+      "version": "5.1.1",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/reduxjs/reselect.git",
+      "description": "Selectors for Redux.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/reselect@5.1.1",
+      "sourcePackageDir": "apps/web/node_modules/reselect"
+    },
+    {
+      "name": "scheduler",
+      "version": "0.27.0",
+      "license": "MIT",
+      "homepage": "https://react.dev/",
+      "repository": "https://github.com/facebook/react.git",
+      "description": "Cooperative scheduler for the browser environment.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/scheduler@0.27.0",
+      "sourcePackageDir": "apps/web/node_modules/scheduler"
+    },
+    {
+      "name": "seroval",
+      "version": "1.5.4",
+      "license": "MIT",
+      "homepage": "https://github.com/lxsmnsyc/seroval/tree/main/packages/seroval",
+      "repository": "https://github.com/lxsmnsyc/seroval.git",
+      "description": "Stringify JS values",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/seroval@1.5.4",
+      "sourcePackageDir": "apps/web/node_modules/seroval"
+    },
+    {
+      "name": "seroval-plugins",
+      "version": "1.5.4",
+      "license": "MIT",
+      "homepage": "https://github.com/lxsmnsyc/seroval/tree/main/packages/plugins",
+      "repository": "https://github.com/lxsmnsyc/seroval.git",
+      "description": "Stringify JS values",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/seroval-plugins@1.5.4",
+      "sourcePackageDir": "apps/web/node_modules/seroval-plugins"
     },
     {
       "name": "shadcn",
-      "version": "4.6.0",
+      "version": "4.12.0",
       "license": "MIT",
       "homepage": null,
       "repository": "https://github.com/shadcn-ui/ui.git",
@@ -559,7 +1572,7 @@
       "files": [
         "LICENSE.md"
       ],
-      "licenseFolder": "licenses/shadcn@4.6.0",
+      "licenseFolder": "licenses/shadcn@4.12.0",
       "sourcePackageDir": "apps/web/node_modules/shadcn"
     },
     {
@@ -577,7 +1590,7 @@
     },
     {
       "name": "tailwind-merge",
-      "version": "3.5.0",
+      "version": "3.6.0",
       "license": "MIT",
       "homepage": "https://github.com/dcastil/tailwind-merge",
       "repository": "https://github.com/dcastil/tailwind-merge.git",
@@ -585,7 +1598,7 @@
       "files": [
         "LICENSE.md"
       ],
-      "licenseFolder": "licenses/tailwind-merge@3.5.0",
+      "licenseFolder": "licenses/tailwind-merge@3.6.0",
       "sourcePackageDir": "apps/web/node_modules/tailwind-merge"
     },
     {
@@ -603,7 +1616,7 @@
     },
     {
       "name": "tailwindcss",
-      "version": "4.2.4",
+      "version": "4.3.2",
       "license": "MIT",
       "homepage": "https://tailwindcss.com",
       "repository": "https://github.com/tailwindlabs/tailwindcss.git",
@@ -611,7 +1624,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/tailwindcss@4.2.4",
+      "licenseFolder": "licenses/tailwindcss@4.3.2",
       "sourcePackageDir": "apps/web/node_modules/tailwindcss"
     },
     {
@@ -625,7 +1638,33 @@
         "LICENSE"
       ],
       "licenseFolder": "licenses/tauri-plugin-app-events-api@0.2.0",
-      "sourcePackageDir": "apps/web/node_modules/tauri-plugin-app-events-api"
+      "sourcePackageDir": "packages/mtp/node_modules/tauri-plugin-app-events-api"
+    },
+    {
+      "name": "tiny-invariant",
+      "version": "1.3.3",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/alexreardon/tiny-invariant.git",
+      "description": "A tiny invariant function",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/tiny-invariant@1.3.3",
+      "sourcePackageDir": "apps/web/node_modules/tiny-invariant"
+    },
+    {
+      "name": "tslib",
+      "version": "2.8.1",
+      "license": "0BSD",
+      "homepage": "https://www.typescriptlang.org/",
+      "repository": "https://github.com/Microsoft/tslib.git",
+      "description": "Runtime library for TypeScript helper functions",
+      "files": [
+        "LICENSE.txt"
+      ],
+      "licenseFolder": "licenses/tslib@2.8.1",
+      "sourcePackageDir": "apps/web/node_modules/tslib"
     },
     {
       "name": "tw-animate-css",
@@ -651,11 +1690,11 @@
         "LICENSE.txt"
       ],
       "licenseFolder": "licenses/typescript@6.0.3",
-      "sourcePackageDir": "apps/web/node_modules/typescript"
+      "sourcePackageDir": "apps/electron/node_modules/typescript"
     },
     {
       "name": "typescript-eslint",
-      "version": "8.59.1",
+      "version": "8.62.1",
       "license": "MIT",
       "homepage": "https://typescript-eslint.io/packages/typescript-eslint",
       "repository": "https://github.com/typescript-eslint/typescript-eslint.git",
@@ -663,12 +1702,75 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/typescript-eslint@8.59.1",
+      "licenseFolder": "licenses/typescript-eslint@8.62.1",
       "sourcePackageDir": "apps/web/node_modules/typescript-eslint"
     },
     {
+      "name": "use-callback-ref",
+      "version": "1.3.3",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/theKashey/use-callback-ref/",
+      "description": "The same useRef, but with callback",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/use-callback-ref@1.3.3",
+      "sourcePackageDir": "apps/web/node_modules/use-callback-ref"
+    },
+    {
+      "name": "use-sidecar",
+      "version": "1.1.3",
+      "license": "MIT",
+      "homepage": "https://github.com/theKashey/use-sidecar",
+      "repository": "https://github.com/theKashey/use-sidecar",
+      "description": "Sidecar code splitting utils",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/use-sidecar@1.1.3",
+      "sourcePackageDir": "apps/web/node_modules/use-sidecar"
+    },
+    {
+      "name": "use-sync-external-store",
+      "version": "1.6.0",
+      "license": "MIT",
+      "homepage": null,
+      "repository": "https://github.com/facebook/react.git",
+      "description": "Backwards compatible shim for React's useSyncExternalStore. Works with any React that supports hooks.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/use-sync-external-store@1.6.0",
+      "sourcePackageDir": "apps/web/node_modules/use-sync-external-store"
+    },
+    {
+      "name": "vaul",
+      "version": "1.1.2",
+      "license": "MIT",
+      "homepage": "https://vaul.emilkowal.ski/",
+      "repository": "https://github.com/emilkowalski/vaul.git",
+      "description": "Drawer component for React.",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/vaul@1.1.2",
+      "sourcePackageDir": "apps/web/node_modules/vaul"
+    },
+    {
+      "name": "victory-vendor",
+      "version": "37.3.6",
+      "license": "MIT AND ISC",
+      "homepage": "https://commerce.nearform.com/open-source/victory",
+      "repository": "https://github.com/FormidableLabs/victory",
+      "description": "Vendored dependencies for Victory",
+      "files": [],
+      "licenseFolder": "licenses/victory-vendor@37.3.6",
+      "sourcePackageDir": "apps/web/node_modules/victory-vendor"
+    },
+    {
       "name": "vite",
-      "version": "8.0.10",
+      "version": "8.1.3",
       "license": "MIT",
       "homepage": "https://vite.dev",
       "repository": "git+https://github.com/vitejs/vite.git",
@@ -676,12 +1778,51 @@
       "files": [
         "LICENSE.md"
       ],
-      "licenseFolder": "licenses/vite@8.0.10",
+      "licenseFolder": "licenses/vite@8.1.3",
       "sourcePackageDir": "apps/web/node_modules/vite"
     },
     {
+      "name": "vitest",
+      "version": "4.1.9",
+      "license": "MIT",
+      "homepage": "https://vitest.dev",
+      "repository": "git+https://github.com/vitest-dev/vitest.git",
+      "description": "Next generation testing framework powered by Vite",
+      "files": [
+        "LICENSE.md"
+      ],
+      "licenseFolder": "licenses/vitest@4.1.9",
+      "sourcePackageDir": "node_modules/vitest"
+    },
+    {
+      "name": "yaml",
+      "version": "2.9.0",
+      "license": "ISC",
+      "homepage": "https://eemeli.org/yaml/",
+      "repository": "github:eemeli/yaml",
+      "description": "JavaScript parser and stringifier for YAML",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/yaml@2.9.0",
+      "sourcePackageDir": "node_modules/yaml"
+    },
+    {
+      "name": "yargs",
+      "version": "15.4.1",
+      "license": "MIT",
+      "homepage": "https://yargs.js.org/",
+      "repository": "https://github.com/yargs/yargs.git",
+      "description": "yargs the modern, pirate-themed, successor to optimist.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/yargs@15.4.1",
+      "sourcePackageDir": "apps/web/node_modules/yargs"
+    },
+    {
       "name": "zod",
-      "version": "4.4.2",
+      "version": "4.4.3",
       "license": "MIT",
       "homepage": "https://zod.dev",
       "repository": "git+https://github.com/colinhacks/zod.git",
@@ -689,12 +1830,12 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/zod@4.4.2",
+      "licenseFolder": "licenses/zod@4.4.3",
       "sourcePackageDir": "apps/web/node_modules/zod"
     },
     {
       "name": "zustand",
-      "version": "5.0.12",
+      "version": "5.0.14",
       "license": "MIT",
       "homepage": "https://github.com/pmndrs/zustand",
       "repository": "git+https://github.com/pmndrs/zustand.git",
@@ -702,7 +1843,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/zustand@5.0.12",
+      "licenseFolder": "licenses/zustand@5.0.14",
       "sourcePackageDir": "packages/call/node_modules/zustand"
     }
   ]

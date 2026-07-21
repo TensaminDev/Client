@@ -9,12 +9,13 @@
     "./values": "./src/values.ts"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@tensamin/ttp": "workspace:*",
+    "@tensamin/cache": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "react": "^19.2.0",

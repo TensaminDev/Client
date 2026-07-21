@@ -1,4 +1,4 @@
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import {
   createContext,
   type ReactNode,
@@ -8,6 +8,8 @@ import {
 } from "react";
 import { useStorage } from "./context";
 import type { Contacts, Communities, Calls } from "@tensamin/shared/data";
+import { createCache } from "@tensamin/cache";
+import { secureValueCodec } from "./secure";
 
 interface SessionContextType {
   contacts: Contacts;
@@ -21,29 +23,41 @@ interface SessionContextType {
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export default function SessionProvider({ children }: { children: ReactNode }) {
-  const { freshContacts, freshCommunities, freshCalls } = useTTP();
+  const { freshContacts, freshCommunities, freshCalls, contextReady } =
+    useMTP();
   const { load, save } = useStorage();
   const [contacts, setContacts] = useState<Contacts>([]);
   const [communities, setCommunities] = useState<Communities>([]);
   const [localCalls, setLocalCalls] = useState<Calls>([]);
+  const [accountId, setAccountId] = useState<number | null>(null);
   const calls = [
     ...freshCalls,
     ...localCalls.filter(
-      (call) => !freshCalls.some((fresh) => fresh.call_id === call.call_id),
+      (call) => !freshCalls.some((fresh) => fresh.CallId === call.CallId),
     ),
   ];
 
-  // Cached session data fills in items the server did not return freshly.
   useEffect(() => {
-    load("cached_contacts").then((cachedData) => {
-      setContacts([
-        ...freshContacts,
-        ...cachedData.filter(
-          (item) =>
-            !freshContacts.some((fresh) => fresh.user_id === item.user_id),
-        ),
-      ]);
+    void load("user_id").then(setAccountId);
+  }, [load]);
+
+  // Cached contacts seed the session, then authenticated server data replaces them.
+  useEffect(() => {
+    if (!accountId) return;
+    const cache = createCache(String(accountId), {
+      codec: secureValueCodec,
     });
+    void cache.contacts.get().then((cached) => {
+      if (cached) setContacts(cached);
+    });
+  }, [accountId]);
+
+  useEffect(() => {
+    if (!accountId || !contextReady) return;
+    setContacts(freshContacts);
+  }, [accountId, contextReady, freshContacts]);
+
+  useEffect(() => {
     load("cached_communities").then((cachedData) => {
       if (cachedData && freshCommunities) {
         setCommunities([
@@ -57,11 +71,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         ]);
       }
     });
-  }, [load, freshContacts, freshCommunities]);
-
-  useEffect(() => {
-    save("cached_contacts", contacts);
-  }, [contacts, save]);
+  }, [load, freshCommunities]);
   useEffect(() => {
     save("cached_communities", communities);
   }, [communities, save]);
@@ -69,24 +79,28 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const moveUserIdToTop = (userId: number) => {
     setContacts((prevContacts) => {
       const userIndex = prevContacts.findIndex(
-        (contact) => contact.user_id === userId,
+        (contact) => contact.UserId === userId,
       );
       if (userIndex === -1) return prevContacts;
-      const [user] = prevContacts.splice(userIndex, 1);
-      return [user, ...prevContacts];
+      const user = prevContacts[userIndex];
+      return [
+        user,
+        ...prevContacts.slice(0, userIndex),
+        ...prevContacts.slice(userIndex + 1),
+      ];
     });
   };
 
   const insertContact = (userId: number) => {
     setContacts((prevContacts) => {
-      if (prevContacts.some((contact) => contact.user_id === userId)) {
+      if (prevContacts.some((contact) => contact.UserId === userId)) {
         return prevContacts;
       }
 
       const newUser = {
-        user_id: userId,
-        last_message_at: new Date().getTime(),
-        messages: [],
+        UserId: userId,
+        LastMessageAt: new Date().getTime(),
+        Messages: [],
       } satisfies Contacts[0];
 
       return [newUser, ...prevContacts];
@@ -95,7 +109,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
 
   const insertCall = (call: Calls[number]) => {
     setLocalCalls((prevCalls) => {
-      if (prevCalls.some((prevCall) => prevCall.call_id === call.call_id)) {
+      if (prevCalls.some((prevCall) => prevCall.CallId === call.CallId)) {
         return prevCalls;
       }
 

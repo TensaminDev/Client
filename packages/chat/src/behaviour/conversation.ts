@@ -1,5 +1,4 @@
-import type { BoundSendFn } from "@tensamin/ttp";
-import type { TTP } from "@tensamin/shared/data";
+import type { BoundSendFn } from "@tensamin/mtp";
 import type { RawMessages } from "../values";
 
 /**
@@ -7,24 +6,24 @@ import type { RawMessages } from "../values";
  * @param send Parameter send.
  * @param amount Parameter amount.
  * @param offset Parameter offset.
- * @param user_id Parameter user_id.
+ * @param UserId Parameter UserId.
  * @returns Promise<RawMessages>.
  */
 export async function getMessages(
-  send: BoundSendFn<TTP>,
-  amount: number,
-  offset: number,
-  user_id: number,
+  send: BoundSendFn,
+  Amount: number,
+  Offset: number,
+  UserId: number,
 ): Promise<RawMessages> {
-  const messages = await send("messages_get", {
-    amount: amount,
-    offset: offset,
-    user_id: user_id,
+  const messages = await send("MessagesGet", {
+    Amount,
+    Offset,
+    UserId,
   });
 
   if (messages.type.startsWith("error")) {
     throw new Error(messages.type);
   }
 
-  return messages.data.messages;
+  return messages.data.Messages;
 }

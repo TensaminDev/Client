@@ -1,8 +1,11 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 // Config
 const PLACEHOLDER_VERSION = "0.0.0";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const rootPackageJsonPath = path.resolve(__dirname, "../../package.json");
 const cargoTomlPath = path.resolve(__dirname, "./src-tauri/Cargo.toml");

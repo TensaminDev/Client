@@ -115,7 +115,7 @@ function Overlay({
   user: User;
   participant: Participant;
 }) {
-  const isAdmin = getRoomMetadata()?.admins.includes(user.user_id) === true;
+  const isAdmin = getRoomMetadata()?.admins.includes(user.UserId) === true;
   const isDeafened = participant.attributes["deafened"] === "true";
 
   return (
@@ -145,7 +145,7 @@ function Overlay({
         </TransparentButton>
       )}
       <TransparentButton>
-        <p className="text-sm">{user.display}</p>
+        <p className="text-sm">{user.Display}</p>
       </TransparentButton>
     </div>
   );
@@ -171,7 +171,7 @@ export default function Base({
   const [avatarBackgroundColor, setAvatarBackgroundColor] = useState<
     string | undefined
   >(undefined);
-  const isSpeaking = useIsSpeaking(user?.user_id ?? -1);
+  const isSpeaking = useIsSpeaking(user?.UserId ?? -1);
   const screenSharePublication = getTrackPublicationBySource(
     participant,
     Track.Source.ScreenShare,
@@ -209,14 +209,14 @@ export default function Base({
   }, [participant, get]);
 
   useEffect(() => {
-    if (type !== "user" || !user?.avatar) {
+    if (type !== "user" || !user?.Avatar) {
       setAvatarBackgroundColor(undefined);
       return;
     }
 
     let active = true;
 
-    void getAverageImageColor(user.avatar).then((color) => {
+    void getAverageImageColor(user.Avatar).then((color) => {
       if (active) {
         setAvatarBackgroundColor(color);
       }
@@ -225,7 +225,7 @@ export default function Base({
     return () => {
       active = false;
     };
-  }, [type, user?.avatar]);
+  }, [type, user?.Avatar]);
 
   // Avatar calc
   const currentCard = useRef<HTMLDivElement>(null);
@@ -242,12 +242,12 @@ export default function Base({
 
   const onClick = () => {
     if (view === "grid") {
-      focusParticipant(user.user_id, type);
+      focusParticipant(user.UserId, type);
     } else {
-      if (user.user_id === focusedParticipantId) {
+      if (user.UserId === focusedParticipantId) {
         setCallView("grid");
       } else {
-        focusParticipant(user.user_id, type);
+        focusParticipant(user.UserId, type);
       }
     }
   };
@@ -256,7 +256,7 @@ export default function Base({
     screenSharePublication?.isSubscribed && screenSharePublication.track;
 
   const isFocusedInFocusedView =
-    view === "focused" && user.user_id === focusedParticipantId;
+    view === "focused" && user.UserId === focusedParticipantId;
 
   return (
     <UIContextMenu>
@@ -276,7 +276,7 @@ export default function Base({
                       variant="outline"
                       onClick={(event) => {
                         if (isFocusedInFocusedView) event.stopPropagation();
-                        startWatchingStream(user.user_id);
+                        startWatchingStream(user.UserId);
                       }}
                     >
                       Watch Stream
@@ -286,7 +286,7 @@ export default function Base({
                         variant="outline"
                         onClick={(event) => {
                           event.stopPropagation();
-                          startWatchingStream(user.user_id);
+                          startWatchingStream(user.UserId);
                         }}
                       >
                         <Plus className="w-8 h-8" />
@@ -295,8 +295,7 @@ export default function Base({
                   </div>
                 )}
                 {view === "grid" ||
-                (view === "focused" &&
-                  user.user_id !== focusedParticipantId) ? (
+                (view === "focused" && user.UserId !== focusedParticipantId) ? (
                   <Overlay type={type} user={user} participant={participant} />
                 ) : null}
               </>
@@ -343,13 +342,13 @@ export default function Base({
                     height: "32cqh",
                   }}
                 >
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={user.Avatar} />
                   <AvatarFallback
                     style={{
                       fontSize: "11cqh",
                     }}
                   >
-                    {user.display.slice(0, 2).toUpperCase()}
+                    {user.Display.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               )}

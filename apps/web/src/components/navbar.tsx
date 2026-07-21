@@ -28,7 +28,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const { id } = useSearch({ strict: false });
 
   const currentCalls = calls.filter((call) =>
-    call.call_members.some((member) => member === id),
+    call.CallMembers.some((member) => member === id),
   );
 
   const isMobile = useIsMobile();
@@ -58,7 +58,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <House className="size-4.5" />
             </Button>
             <Button
-              // @ts-expect-error TanStack router doesn't properly detect the settings route
               onClick={() => navigate({ to: "/settings" })}
               className="w-9 h-9 aspect-square rounded-lg"
               variant="outline"
@@ -72,7 +71,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             userId={id}
             component={(user) =>
               isMobile ? (
-                <p className="font-medium text-[1.07rem]">{user?.display}</p>
+                <p className="font-medium text-[1.07rem]">{user?.Display}</p>
               ) : (
                 <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
                   <PopoverTrigger
@@ -85,7 +84,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                         }}
                       >
                         <p className="font-medium text-[1.07rem]">
-                          {user?.display}
+                          {user?.Display}
                         </p>
                       </Button>
                     }
@@ -96,7 +95,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 </Popover>
               )
             }
-            loading={<Skeleton className="ml-3 w-40 h-5" />}
+            loading={<Skeleton className="w-30 h-5" />}
           />
         )}
       </div>
@@ -121,8 +120,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 onClick={() => {
                   void joinCall(
                     id,
-                    currentCalls[0].call_secret,
-                    currentCalls[0].call_id,
+                    currentCalls[0].CallSecret,
+                    currentCalls[0].CallId,
                   );
                 }}
                 className="w-9 h-9 aspect-square rounded-lg"
@@ -147,13 +146,13 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                   <SelectContent className="p-1">
                     {currentCalls.map((call) => (
                       <SelectItem
-                        value={call.call_id}
-                        key={call.call_id}
+                        value={call.CallId}
+                        key={call.CallId}
                         onSelect={() => {
-                          void joinCall(id, call.call_secret, call.call_id);
+                          void joinCall(id, call.CallSecret, call.CallId);
                         }}
                       >
-                        {displayCallId(call.call_id)}
+                        {displayCallId(call.CallId)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -195,7 +194,6 @@ export function MobileNavbar() {
         </Button>
         <Button
           onClick={() => {
-            // @ts-expect-error TanStack router doesn't properly detect the settings route
             navigate({ to: "/settings" });
             setOpenMobile(false);
           }}

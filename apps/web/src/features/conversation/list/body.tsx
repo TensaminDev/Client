@@ -65,7 +65,7 @@ export default function List() {
                   {category === "conversations" ? (
                     contacts?.[virtualItem.index] ? (
                       <ConversationModal
-                        userId={contacts[virtualItem.index].user_id}
+                        userId={contacts[virtualItem.index].UserId}
                       />
                     ) : null
                   ) : communities?.[virtualItem.index] ? (

@@ -1,4 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, vi } from "vitest";
+
+vi.mock("mtp", () => ({
+  crypto: {},
+}));
+
 import { createCryptoActions } from "./context";
 
 /**
@@ -44,12 +49,6 @@ describe("createCryptoActions", () => {
         secret: string,
         ciphertext: string,
       ): Promise<string> => `${secret}|${ciphertext}`,
-      getSharedSecret: async (
-        ownPrivateKey: string,
-        ownPublicKey: string,
-        otherPublicKey: string,
-      ): Promise<string> =>
-        `${ownPrivateKey}.${ownPublicKey}.${otherPublicKey}`,
     };
 
     const actions = createCryptoActions(() => api);
@@ -62,6 +61,5 @@ describe("createCryptoActions", () => {
     ).toBe("s|c");
     expect(await actions.encryptText("s", "p")).toBe("s:p");
     expect(await actions.decryptText("s", "c")).toBe("s|c");
-    expect(await actions.getSharedSecret("a", "b", "c")).toBe("a.b.c");
   });
 });

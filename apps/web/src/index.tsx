@@ -14,7 +14,7 @@ import "@tensamin/ui/index.css";
 import NotFound from "@/routes/404";
 
 import AppLayout from "@/routes/app/layout";
-import SettingsLayout from "@/features/settings/layout";
+import { createSettingsRoute } from "@tensamin/settings";
 
 import Home from "@/routes/app/home";
 import ChatScreen from "@tensamin/chat/screen";
@@ -23,15 +23,16 @@ import Login from "@/routes/screens/login";
 
 import CallPopout from "@tensamin/call/popout";
 import ChatContext from "@tensamin/chat/context";
-import { useInitializeCall } from "@tensamin/call/store";
-import { Provider as TTPProvider } from "@tensamin/ttp";
-import UserContext from "@tensamin/user/context";
+import { useCall, useInitializeCall } from "@tensamin/call/store";
+import { useIsSpeaking } from "@tensamin/call/speakingState";
+import { Provider as MTPProvider } from "@tensamin/mtp";
+import UserProvider from "@tensamin/user/context";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
-import { ThemeProvider, useTheme } from "@tensamin/ui";
+import { ErrorScreen, ThemeProvider, useTheme } from "@tensamin/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -40,8 +41,10 @@ import Storage from "@tensamin/storage/context";
 import Session from "@tensamin/storage/session";
 import Crypto from "@tensamin/crypto/context";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
+import { log } from "@tensamin/shared/log";
 
 import LegalWrapper from "@/features/legal/screen";
+import CacheSync from "@tensamin/cache/sync";
 
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
@@ -70,34 +73,39 @@ window.setLogLevelToMax = () => {
 function LoginWrapper({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
 
-  const { load } = useStorage();
+  const { load, secureStorage } = useStorage();
 
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    if (secureStorage === null) return;
     let active = true;
 
-    load("user_id").then((userId) => {
-      if (!active) {
-        return;
-      }
-
-      if (userId !== 0) {
-        setLoggedIn(true);
-        return;
-      }
-
-      setLoggedIn(false);
-      navigate({
-        to: "/login",
+    Promise.all([load("user_id"), load("mtp_keyring")])
+      .then(([userId, keyring]) => {
+        if (!active) return;
+        if (userId !== 0 && keyring !== "") {
+          setLoggedIn(true);
+          if (location.pathname === "/login") {
+            void navigate({ to: "/", replace: true });
+          }
+          return;
+        }
+        setLoggedIn(false);
+        void navigate({
+          to: "/login",
+          replace: true,
+        });
+      })
+      .catch((error) => {
+        log(0, "login", "red", "Failed to load login state", error);
       });
-    });
 
     return () => {
       active = false;
     };
-  }, [load, navigate]);
+  }, [load, location.pathname, navigate, secureStorage]);
 
   if (loggedIn !== true && location.pathname !== "/login") {
     return null;
@@ -119,6 +127,10 @@ function ThemeStorageBridge() {
     setThemePolarity,
     themeTint,
     setThemeTint,
+    themeBorderRadius,
+    setThemeBorderRadius,
+    themeCustomCss,
+    setThemeCustomCss,
   } = useTheme();
   const loadedRef = useRef(false);
 
@@ -131,25 +143,41 @@ function ThemeStorageBridge() {
       load("theme_primary_color"),
       load("theme_polarity"),
       load("theme_tint"),
-    ]).then(([color, palette, primaryColor, polarity, tint]) => {
-      if (!active) {
-        return;
-      }
+      load("theme_border_radius"),
+      load("theme_custom_css"),
+    ]).then(
+      ([
+        color,
+        palette,
+        primaryColor,
+        polarity,
+        tint,
+        borderRadius,
+        customCss,
+      ]) => {
+        if (!active) {
+          return;
+        }
 
-      setThemeColor(color);
-      setThemePalette(palette);
-      setThemePrimaryColor(primaryColor);
-      setThemePolarity(polarity);
-      setThemeTint(tint);
-      loadedRef.current = true;
-    });
+        setThemeColor(color);
+        setThemePalette(palette);
+        setThemePrimaryColor(primaryColor);
+        setThemePolarity(polarity);
+        setThemeTint(tint);
+        setThemeBorderRadius(borderRadius);
+        setThemeCustomCss(customCss);
+        loadedRef.current = true;
+      },
+    );
 
     return () => {
       active = false;
     };
   }, [
     load,
+    setThemeBorderRadius,
     setThemeColor,
+    setThemeCustomCss,
     setThemePalette,
     setThemePolarity,
     setThemePrimaryColor,
@@ -157,44 +185,32 @@ function ThemeStorageBridge() {
   ]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_color", themeColor);
+    if (loadedRef.current) save("theme_color", themeColor);
   }, [save, themeColor]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_palette", themePalette);
+    if (loadedRef.current) save("theme_palette", themePalette);
   }, [save, themePalette]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_primary_color", themePrimaryColor);
+    if (loadedRef.current) save("theme_primary_color", themePrimaryColor);
   }, [save, themePrimaryColor]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_polarity", themePolarity);
+    if (loadedRef.current) save("theme_polarity", themePolarity);
   }, [save, themePolarity]);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      return;
-    }
-
-    save("theme_tint", themeTint);
+    if (loadedRef.current) save("theme_tint", themeTint);
   }, [save, themeTint]);
+
+  useEffect(() => {
+    if (loadedRef.current) save("theme_border_radius", themeBorderRadius);
+  }, [save, themeBorderRadius]);
+
+  useEffect(() => {
+    if (loadedRef.current) save("theme_custom_css", themeCustomCss);
+  }, [save, themeCustomCss]);
 
   return null;
 }
@@ -210,6 +226,8 @@ function RootShell() {
         paletteStorageKey={null}
         primaryColorStorageKey={null}
         tintStorageKey={null}
+        borderRadiusStorageKey={null}
+        customCssStorageKey={null}
       >
         <div className="w-screen h-dvh overflow-hidden">
           <Toaster
@@ -244,9 +262,10 @@ function RootShell() {
 
 function AppShell() {
   return (
-    <TTPProvider>
+    <MTPProvider>
+      <CacheSync />
       <Session>
-        <UserContext>
+        <UserProvider>
           <CallInit />
           <CallPopout />
           <TAuthWrapper>
@@ -258,18 +277,110 @@ function AppShell() {
               </ChatContext>
             </AppLayout>
           </TAuthWrapper>
-        </UserContext>
+        </UserProvider>
       </Session>
-    </TTPProvider>
+    </MTPProvider>
   );
 }
 
+function createCallTrayIcon(color: string, speaking: boolean) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 32;
+  canvas.height = 32;
+
+  const context = canvas.getContext("2d");
+  if (!context) return undefined;
+
+  context.globalAlpha = speaking ? 1 : 0.55;
+  context.fillStyle = color;
+  context.beginPath();
+  context.arc(16, 16, 13, 0, Math.PI * 2);
+  context.fill();
+
+  if (speaking) {
+    context.globalAlpha = 0.3;
+    context.fillStyle = "#ffffff";
+    context.fill();
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
 function CallInit() {
-  return useInitializeCall();
+  useInitializeCall();
+
+  const { load } = useStorage();
+  const {
+    themeColor,
+    themePalette,
+    themePrimaryColor,
+    themePolarity,
+    themeTint,
+    themeCustomCss,
+  } = useTheme();
+  const [localUserId, setLocalUserId] = useState(-1);
+  const [primaryColor, setPrimaryColor] = useState("");
+  const inCall = useCall((state) => state.state === "open");
+  const speaking = useIsSpeaking(localUserId);
+
+  useEffect(() => {
+    let active = true;
+
+    load("user_id").then((userId) => {
+      if (active) setLocalUserId(userId);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [load]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setPrimaryColor(
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--primary")
+          .trim(),
+      );
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [
+    themeColor,
+    themeCustomCss,
+    themePalette,
+    themePolarity,
+    themePrimaryColor,
+    themeTint,
+  ]);
+
+  useEffect(() => {
+    const iconDataUrl = primaryColor
+      ? createCallTrayIcon(primaryColor, speaking)
+      : undefined;
+
+    void window.tensaminDesktop?.call
+      ?.setStatus?.({
+        inCall,
+        speaking: inCall && speaking,
+        iconDataUrl: inCall ? iconDataUrl : undefined,
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to update desktop call status", error);
+      });
+  }, [inCall, primaryColor, speaking]);
+
+  return null;
 }
 
 const rootRoute = createRootRoute({
   component: RootShell,
+  errorComponent: ({ error }: { error: Error }) => (
+    <ErrorScreen
+      description={error.message}
+      error={"Unknown Error: " + error.name}
+    />
+  ),
 });
 
 const appRoute = createRoute({
@@ -279,47 +390,7 @@ const appRoute = createRoute({
   notFoundComponent: NotFound,
 });
 
-const settingsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "settings",
-  component: SettingsLayout,
-  staticData: {
-    showMobileNavbar: true,
-  },
-});
-
-type SettingsRouteModule = {
-  default?: () => React.JSX.Element;
-  component?: () => React.JSX.Element;
-};
-
-const settingsRouteModules = import.meta.glob<SettingsRouteModule>(
-  "./routes/settings/*.tsx",
-  { eager: true },
-);
-
-const settingsChildren = Object.entries(settingsRouteModules).map(
-  ([filePath, module]) => {
-    const fileName = filePath.split("/").pop()?.replace(".tsx", "") ?? "";
-    const path = fileName === "index" ? "/" : fileName;
-    const component = module.component ?? module.default;
-
-    if (!component) {
-      throw new Error(
-        `Settings route module "${filePath}" must export a default component`,
-      );
-    }
-
-    return createRoute({
-      getParentRoute: () => settingsRoute,
-      path,
-      component,
-      staticData: {
-        showMobileNavbar: true,
-      },
-    });
-  },
-);
+const settingsRoute = createSettingsRoute(appRoute);
 
 const homeRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -361,12 +432,7 @@ const loginRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([
-    homeRoute,
-    chatRoute,
-    callRoute,
-    settingsRoute.addChildren(settingsChildren),
-  ]),
+  appRoute.addChildren([homeRoute, chatRoute, callRoute, settingsRoute]),
   loginRoute,
 ]);
 

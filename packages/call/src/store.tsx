@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { create } from "zustand";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
-import { ttp } from "@tensamin/shared/data";
-import { useCrypto } from "@tensamin/crypto/context";
+import { mtp } from "@tensamin/shared/data";
+import { bytesToBase64 } from "mtp";
+import {
+  deriveCallSecretId,
+  kemPublicKeyFromPublicKeyBundle,
+  unwrapCallSecret,
+  wrapCallSecret,
+} from "@tensamin/crypto/callSecret";
 import { useStorage } from "@tensamin/storage/context";
 import { useSession } from "@tensamin/storage/session";
 import { useUser } from "@tensamin/user/context";
@@ -46,14 +52,23 @@ setLogExtension(
 
 type CallState = "closed" | "closing" | "connecting" | "open" | "encrypting";
 type CallView = "preview" | "focused" | "grid";
+type ProtocolCallSecret = NonNullable<
+  z.infer<typeof mtp.CallInvite.response>["CallSecret"]
+>;
+type WrappedCallSecret = {
+  secretId: string;
+  versionNumber: number;
+  encryptedSecret: Uint8Array;
+  kemCiphertext: Uint8Array;
+  wrappingScheme: string;
+};
 type IncomingCallInvite = {
   callId: string;
-  callSecret: string;
+  callSecret: WrappedCallSecret;
   senderId: number;
 };
 type CurrentCallData =
-  | (z.infer<typeof ttp.call_data.response> & { exists: boolean })
-  | null;
+  (z.infer<typeof mtp.CallData.response> & { exists: boolean }) | null;
 
 type NavigateFn = (options: {
   to: string;
@@ -63,23 +78,13 @@ type SendFn = (
   type: string,
   data: Record<string, unknown>,
 ) => Promise<{ data: unknown }>;
-type GetSharedSecretFn = (
-  privateKey: unknown,
-  ownPublicKey: string,
-  remotePublicKey: string,
-) => Promise<string>;
-type DecryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
-type EncryptTextFn = (sharedSecret: string, text: string) => Promise<string>;
 type LoadFn = (key: string) => Promise<unknown>;
-type GetUserFn = (userId: number) => Promise<{ public_key: string }>;
+type GetUserFn = (userId: number) => Promise<{ PublicKey: string }>;
 type RemoteVideoTrackSelector = Track.Kind | Track.Source;
 
 type Runtime = {
   navigate: NavigateFn;
   send: SendFn;
-  getSharedSecret: GetSharedSecretFn;
-  decryptText: DecryptTextFn;
-  encryptText: EncryptTextFn;
   load: LoadFn;
   getUser: GetUserFn;
 };
@@ -104,6 +109,7 @@ type CallStore = {
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
   isEncrypted: boolean;
+  ownCallSecretInvitePending: boolean;
   callIsFullscreen: boolean;
   callIsPopout: boolean;
   layoutVersion: number;
@@ -149,10 +155,45 @@ export function getRoom(): Room {
 
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
 
+const CALL_SECRET_VERSION = 1;
 const SCREEN_SHARE_PREVIEW_MAX_WIDTH = 320;
 const SCREEN_SHARE_PREVIEW_MAX_HEIGHT = 180;
 const SCREEN_SHARE_PREVIEW_QUALITY = 0.7;
 const SCREEN_SHARE_PREVIEW_TIMEOUT_MS = 5000;
+
+function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  return new Uint8Array(bytes);
+}
+
+function normalizeWrappedCallSecret(
+  callSecret: WrappedCallSecret | ProtocolCallSecret,
+): WrappedCallSecret {
+  if ("secretId" in callSecret) {
+    return callSecret;
+  }
+
+  return {
+    secretId: callSecret.SecretId,
+    versionNumber: callSecret.VersionNumber,
+    encryptedSecret: callSecret.EncryptedSecret,
+    kemCiphertext: callSecret.KemCiphertext,
+    wrappingScheme: callSecret.WrappingScheme,
+  };
+}
+
+function protocolCallSecret(callSecret: WrappedCallSecret): ProtocolCallSecret {
+  return {
+    SecretId: callSecret.secretId,
+    VersionNumber: callSecret.versionNumber,
+    EncryptedSecret: protocolBytes(callSecret.encryptedSecret),
+    KemCiphertext: protocolBytes(callSecret.kemCiphertext),
+    WrappingScheme: callSecret.wrappingScheme,
+  };
+}
+
+function randomCallSecret(): string {
+  return bytesToBase64(globalThis.crypto.getRandomValues(new Uint8Array(32)));
+}
 
 // audio helpers
 function attachRemoteAudio(trackSid: string, element: HTMLMediaElement) {
@@ -605,16 +646,16 @@ export async function openCallPage(callId: string) {
 // Request the LiveKit token that authorizes this client to join a call.
 export async function getCallToken(callId: string): Promise<string> {
   const response = await requireRuntime(useCall.getState().runtime)
-    .send("call_token", {
-      call_id: callId,
+    .send("CallToken", {
+      CallId: callId,
     })
     .catch((err) => {
       log(1, "call", "red", "Failed to get call secret", err);
       throw err;
     });
 
-  const data = response.data as { call_token: string };
-  return data.call_token;
+  const data = response.data as { CallToken: string };
+  return data.CallToken;
 }
 
 // Encrypt the active call secret for a recipient and send the call invite.
@@ -626,28 +667,28 @@ export async function sendCallInvite(userId: number) {
     throw new Error("Cannot send call invite without an active call.");
   }
 
-  const ownUserId = (await runtime.load("user_id")) as number;
-  const privateKey = await runtime.load("private_key");
-  const ownPublicKey = await runtime
-    .getUser(ownUserId)
-    .then((data) => data.public_key);
   const remotePublicKey = await runtime
     .getUser(userId)
-    .then((data) => data.public_key);
-  const sharedSecret = await runtime.getSharedSecret(
-    privateKey,
-    ownPublicKey,
-    remotePublicKey,
-  );
-  const encryptedCallSecret = await runtime.encryptText(
-    sharedSecret,
+    .then((data) => data.PublicKey);
+  const secretId = deriveCallSecretId(callId);
+  const wrapped = await wrapCallSecret({
     callSecret,
-  );
+    recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(remotePublicKey),
+    callId,
+    secretId,
+    version: CALL_SECRET_VERSION,
+  });
 
-  await runtime.send("call_invite", {
-    receiver_id: userId,
-    call_id: callId,
-    call_secret: encryptedCallSecret,
+  await runtime.send("CallInvite", {
+    ReceiverId: userId,
+    CallId: callId,
+    CallSecret: {
+      SecretId: secretId,
+      VersionNumber: CALL_SECRET_VERSION,
+      EncryptedSecret: protocolBytes(wrapped.encryptedSecret),
+      KemCiphertext: protocolBytes(wrapped.kemCiphertext),
+      WrappingScheme: wrapped.wrappingScheme,
+    },
   });
 }
 
@@ -857,6 +898,7 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
+    ownCallSecretInvitePending: false,
     callIsFullscreen: false,
     lastFocusedParticipantId: null,
   });
@@ -878,7 +920,7 @@ export async function disconnect() {
 // Prepare encryption and join or create a call with another user.
 export async function joinCall(
   userId: number,
-  callSecret?: string,
+  callSecret?: WrappedCallSecret | ProtocolCallSecret,
   existingCallId?: string,
   sendInvite = true,
 ) {
@@ -890,24 +932,29 @@ export async function joinCall(
   }
 
   log(2, "call", "purple", "Call creation initialised");
+  const isNewCall = !callSecret && !existingCallId;
   useCall.setState({
     state: "encrypting",
     invitedUserId: sendInvite && !existingCallId ? userId : null,
+    ownCallSecretInvitePending: isNewCall,
   });
 
   if (callSecret) {
     try {
-      const sharedSecret = await runtime.getSharedSecret(
-        await runtime.load("private_key"),
-        await runtime
-          .getUser((await runtime.load("user_id")) as number)
-          .then((res) => res.public_key),
-        await runtime.getUser(userId).then((res) => res.public_key),
-      );
-      const decryptedSecret = await runtime.decryptText(
-        sharedSecret,
-        callSecret,
-      );
+      if (!existingCallId) {
+        throw new Error("Cannot unwrap call secret without a call id");
+      }
+
+      const wrappedCallSecret = normalizeWrappedCallSecret(callSecret);
+      const decryptedSecret = await unwrapCallSecret({
+        encryptedSecret: wrappedCallSecret.encryptedSecret,
+        kemCiphertext: wrappedCallSecret.kemCiphertext,
+        keyring: String(await runtime.load("mtp_keyring")),
+        callId: existingCallId,
+        secretId: wrappedCallSecret.secretId,
+        version: wrappedCallSecret.versionNumber,
+        wrappingScheme: wrappedCallSecret.wrappingScheme,
+      });
 
       await getKeyProvider().setKey(decryptedSecret);
       await getRoom().setE2EEEnabled(true);
@@ -918,7 +965,7 @@ export async function joinCall(
       return;
     }
   } else {
-    const random = crypto.randomUUID();
+    const random = randomCallSecret();
 
     await getKeyProvider().setKey(random);
     await getRoom().setE2EEEnabled(true);
@@ -1076,6 +1123,7 @@ export const useCall = create<CallStore>(() => ({
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],
   isEncrypted: false,
+  ownCallSecretInvitePending: false,
   callIsFullscreen: false,
   callIsPopout: false,
   layoutVersion: 0,
@@ -1088,8 +1136,7 @@ export const useCall = create<CallStore>(() => ({
 export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { send, subscribePush } = useTTP();
-  const { getSharedSecret, decryptText, encryptText } = useCrypto();
+  const { send, subscribePush } = useMTP();
   const { load } = useStorage();
   const { insertCall } = useSession();
   const { get } = useUser();
@@ -1117,16 +1164,13 @@ export function useInitializeCall() {
     setCallRuntime({
       navigate,
       send: send as SendFn,
-      getSharedSecret: getSharedSecret as GetSharedSecretFn,
-      decryptText: decryptText as DecryptTextFn,
-      encryptText: encryptText as EncryptTextFn,
       load: load as LoadFn,
       getUser: get as GetUserFn,
     });
-  }, [decryptText, encryptText, get, getSharedSecret, load, navigate, send]);
+  }, [get, load, navigate, send]);
 
   const showCallingScreen = useCallback(
-    (callId: string, callSecret: string, senderId: number) => {
+    (callId: string, callSecret: WrappedCallSecret, senderId: number) => {
       useCall.setState({
         incomingCallInvite: { callId, callSecret, senderId },
       });
@@ -1151,9 +1195,9 @@ export function useInitializeCall() {
       }
 
       insertCall({
-        call_id: invite.callId,
-        call_secret: invite.callSecret,
-        call_members: [invite.senderId],
+        CallId: invite.callId,
+        CallSecret: protocolCallSecret(invite.callSecret),
+        CallMembers: [invite.senderId],
       });
 
       if (accepted) {
@@ -1178,18 +1222,26 @@ export function useInitializeCall() {
 
   // listen to call invites
   useEffect(() => {
-    subscribePush(async (message) => {
-      if (message.type !== "call_invite") return;
+    return subscribePush(async (message) => {
+      if (message.type !== "CallInvite") return;
 
-      const { call_id, call_secret, sender_id } = message.data as {
-        call_id: string;
-        call_secret: string;
-        sender_id: number;
+      const { CallId, CallSecret, SenderId } = message.data as {
+        CallId: string;
+        CallSecret: ProtocolCallSecret;
+        SenderId: number;
       };
 
-      showCallingScreen(call_id, call_secret, sender_id);
+      if (SenderId === Number(await load("user_id"))) {
+        return;
+      }
+
+      showCallingScreen(
+        CallId,
+        normalizeWrappedCallSecret(CallSecret),
+        SenderId,
+      );
     });
-  }, [subscribePush, showCallingScreen]);
+  }, [load, subscribePush, showCallingScreen]);
 
   // get callId from url
   useEffect(() => {
@@ -1290,6 +1342,23 @@ export function useInitializeCall() {
       }
 
       const invitedUserId = useCall.getState().invitedUserId;
+      const ownCallSecretInvitePending =
+        useCall.getState().ownCallSecretInvitePending;
+
+      if (ownCallSecretInvitePending) {
+        useCall.setState({ ownCallSecretInvitePending: false });
+        void load("user_id")
+          .then((ownUserId) => sendCallInvite(Number(ownUserId)))
+          .catch((error) => {
+            log(
+              1,
+              "call",
+              "red",
+              "Failed to send own call secret invite",
+              error,
+            );
+          });
+      }
 
       if (invitedUserId != null) {
         setTimeout(async () => {
@@ -1501,10 +1570,22 @@ export function useInitializeCall() {
       return;
     }
 
-    send("call_data", { call_id: callId })
+    send("CallData", { CallId: callId })
       .then((data) => {
+        if (data.type === "ErrorNotFound") {
+          setCurrentCallData({
+            UserIds: [],
+            exists: false,
+          });
+          return;
+        }
+
+        if (data.type.startsWith("Error")) {
+          throw new Error(`CallData failed: ${data.type}`);
+        }
+
         setCurrentCallData({
-          ...(data.data as z.infer<typeof ttp.call_data.response>),
+          ...(data.data as z.infer<typeof mtp.CallData.response>),
           exists: true,
         });
       })
@@ -1514,7 +1595,7 @@ export function useInitializeCall() {
           error: err,
         });
         setCurrentCallData({
-          user_ids: [],
+          UserIds: [],
           exists: false,
         });
       });

@@ -12,40 +12,125 @@ const fileFromMessage = z.object({
   type: z.enum(["image", "image_top_right", "file"]),
 });
 
-export const message = z.object({
-  height: z.number(),
-  not_encrypted: z.boolean().optional(),
-  sent_by_self: z.boolean().optional(),
-  send_time: z.number(),
-  content: z.base64(),
-  files: z.array(fileFromMessage).optional(),
-  tint: z.string().length(7).startsWith("#").optional(),
-  avatar: z.boolean().optional(),
-  display: z.boolean().optional(),
-  message_state: z
-    .enum(["read", "received", "sent", "sending", "awaiting"])
-    .default("received"), // awaiting for 'internal' use
+const bytesLike = z.union([
+  z.instanceof(Uint8Array),
+  z.array(z.number().int().min(0).max(255)),
+  z.base64(),
+]);
+
+const protocolBytes = z.instanceof(Uint8Array);
+
+function bytesFromProtocol(value: z.infer<typeof bytesLike>): Uint8Array {
+  if (value instanceof Uint8Array) return value;
+  if (Array.isArray(value)) return new Uint8Array(value);
+
+  const bin = atob(value);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+const protocolBytesResponse = bytesLike.transform(bytesFromProtocol);
+
+const chatSecretResponse = z.object({
+  UserId: z.string(),
+  ChatId: z.string(),
+  SecretId: z.string(),
+  VersionNumber: z.number(),
+  EncryptedSecret: bytesLike,
+  KemCiphertext: bytesLike,
+  WrappingScheme: z.string(),
+  CreatedAt: z.number(),
+  UpdatedAt: z.number(),
+});
+
+const chatSecretRecipient = z.object({
+  UserId: z.string(),
+  EncryptedSecret: protocolBytes,
+  KemCiphertext: protocolBytes,
+});
+
+const callSecretEnvelopeResponse = z.object({
+  SecretId: z.string(),
+  VersionNumber: z.number(),
+  EncryptedSecret: protocolBytesResponse,
+  KemCiphertext: protocolBytesResponse,
+  WrappingScheme: z.string(),
+});
+
+const callSecretEnvelopeRequest = z.object({
+  SecretId: z.string(),
+  VersionNumber: z.number(),
+  EncryptedSecret: protocolBytes,
+  KemCiphertext: protocolBytes,
+  WrappingScheme: z.string(),
+});
+
+export const Reaction = z.object({
+  Reaction: z.string(),
+  SenderId: z.number(),
+});
+
+export const Message = z.object({
+  NotEncrypted: z.boolean().optional(),
+  SenderId: z.number(),
+  SendTime: z.number(),
+  Content: z.base64(),
+  Files: z.array(fileFromMessage).optional(),
+  Tint: z.string().length(7).startsWith("#").optional(),
+  Avatar: z.boolean().optional(),
+  Display: z.boolean().optional(),
+  ReplyId: z.number().optional(),
+  MessageState: z
+    .enum(["read", "received", "sent", "sending", "awaiting"]) // awaiting for 'internal' use
+    .default("received"),
+  Edited: z.boolean().optional(),
+  Reactions: z.array(Reaction).optional(),
 });
 
 export const failedUser = {
-  display: "Failed",
-  iota_id: 0,
-  omikron_connections: [],
-  online_status: "user_borked",
-  public_key: "",
-  sub_end: 0,
-  sub_level: 0,
-  user_id: 0,
-  username: "unknown",
-} as z.infer<typeof ttp.get_user_data.response>;
+  Display: "Failed",
+  IotaId: 0,
+  OmikronConnections: [],
+  OnlineStatus: "user_borked",
+  PublicKey: "",
+  SubEnd: 0,
+  SubLevel: 0,
+  UserId: 0,
+  Username: "unknown",
+} as z.infer<typeof mtp.GetUserData.response>;
 
-export type Contacts = z.infer<
-  typeof ttp.challenge_response.response.shape.contacts
->;
-export type Communities = z.infer<
-  typeof ttp.challenge_response.response.shape.communities
->;
-export type Calls = z.infer<typeof ttp.challenge_response.response.shape.calls>;
+const authPayload = z.object({
+  Communities: z.array(z.object({})).default([]),
+  Contacts: z
+    .array(
+      z.object({
+        LastMessageAt: z.number(),
+        UserId: z.number(),
+        LastMessage: z
+          .object({
+            Content: z.base64(),
+            SenderId: z.number(),
+          })
+          .optional(),
+        Messages: z.array(Message),
+      }),
+    )
+    .default([]),
+  Calls: z
+    .array(
+      z.object({
+        CallId: z.string(),
+        CallSecret: callSecretEnvelopeResponse.optional(),
+        CallMembers: z.array(z.number()),
+      }),
+    )
+    .default([]),
+});
+
+export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
+export type Communities = z.infer<typeof authPayload.shape.Communities>;
+export type Calls = z.infer<typeof authPayload.shape.Calls>;
 
 type Base16Palette = Record<
   | "base00"
@@ -67,15 +152,15 @@ type Base16Palette = Record<
   string
 >;
 
-// TTP
+// MTP
 const user = z.object({
-  about: z.string().max(255).optional(),
-  avatar: z.string().optional(),
-  display: z.string().min(1).max(15),
-  iota_id: z.number(),
-  omikron_connections: z.array(z.number()),
-  omikron_id: z.number().optional(),
-  online_status: z.enum([
+  About: z.string().max(255).optional(),
+  Avatar: z.string().optional(),
+  Display: z.string().min(1).max(15),
+  IotaId: z.number(),
+  OmikronConnections: z.array(z.number()),
+  OmikronId: z.number().optional(),
+  OnlineStatus: z.enum([
     "user_offline",
     "user_online",
     "user_dnd",
@@ -86,187 +171,256 @@ const user = z.object({
     "iota_online",
     "iota_borked",
   ]),
-  public_key: z.base64(),
-  status: z.string().max(15).optional(),
-  sub_end: z.number(),
-  sub_level: z.number(),
-  user_id: z.number(),
-  username: z.string().min(1).max(15),
+  PublicKey: z.base64(),
+  Status: z.string().max(15).optional(),
+  SubEnd: z.number(),
+  SubLevel: z.number(),
+  UserId: z.number(),
+  Username: z.string().min(1).max(15),
 });
-export const ttp = {
-  identification: {
-    request: z.object({
-      version: z.string(),
-      session_id: z.number(),
-      user_id: z.number(),
-    }),
-    response: z.object({
-      challenge: z.string(),
-      public_key: z.base64(),
-    }),
+export const mtp = {
+  IdentificationResponse: {
+    request: z.object({}).optional(),
+    response: authPayload,
   },
-  challenge_response: {
+  GetUserData: {
     request: z.object({
-      challenge: z.base64(),
-    }),
-    response: z.object({
-      communities: z.array(z.object({})).optional(),
-      contacts: z.array(
-        z.object({
-          last_message_at: z.number(),
-          user_id: z.number(),
-          last_message: z
-            .object({
-              content: z.base64(),
-              sender_id: z.number(),
-            })
-            .optional(),
-          messages: z.array(message),
-        }),
-      ),
-      calls: z.array(
-        z.object({
-          call_id: z.string(),
-          call_secret: z.base64().optional(),
-          call_members: z.array(z.number()),
-        }),
-      ),
-    }),
-  },
-  get_user_data: {
-    request: z.object({
-      user_id: z.number().optional(),
-      username: z.string().optional(),
+      UserId: z.number().optional(),
+      Username: z.string().optional(),
     }),
     response: user,
   },
-  change_user_data: {
+  ChangeUserData: {
     request: user.partial(),
     response: z.object({}),
   },
-  ping: {
+  Ping: {
     request: z.object({
-      last_ping: z.number(),
+      LastPing: z.number(),
     }),
     response: z.object({
-      ping_iota: z.number(),
+      PingIota: z.number(),
     }),
   },
-  message_live: {
+  MessageDelete: {
+    request: z.object({
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+    response: z.object({}),
+  },
+  MessageDeleteLive: {
+    request: z.object({}),
+    response: z.object({
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+  },
+  MessageEditLive: {
+    request: z.object({}),
+    response: z.object({
+      Content: z.base64(),
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+  },
+  MessageEdit: {
+    request: z.object({
+      Content: z.base64(),
+      ChatPartnerId: z.number(),
+      SendTime: z.number(),
+    }),
+    response: z.object({}),
+  },
+  MessageReactionAdd: {
+    request: z.object({
+      Reaction: z.string(),
+      SendTime: z.number(),
+      ChatPartnerId: z.number(),
+    }),
+    response: z.object(),
+  },
+  MessageReactionRemove: {
+    request: z.object({
+      Reaction: z.string(),
+      SendTime: z.number(),
+      ChatPartnerId: z.number(),
+    }),
+    response: z.object(),
+  },
+  MessageReactionLive: {
+    request: z.object(),
+    response: z.object({
+      Reaction: z.string(),
+      SendTime: z.number(),
+      ChatPartnerId: z.number(),
+    }),
+  },
+  MessageLive: {
     request: z.object({}).optional(),
     response: z.object({
-      sender_id: z.number(),
-      message,
+      SenderId: z.number(),
+      Message,
     }),
   },
-  messages_get: {
+  MessageGet: {
     request: z.object({
-      user_id: z.number(),
-      amount: z.number(),
-      offset: z.number(),
+      SendTime: z.number(),
+    }),
+    response: Message,
+  },
+  MessagesGet: {
+    request: z.object({
+      UserId: z.number(),
+      Amount: z.number(),
+      Offset: z.number(),
     }),
     response: z.object({
-      messages: z.array(message),
+      Messages: z.array(Message),
     }),
   },
-  message_send: {
+  MessageSend: {
     request: z.object({
-      height: z.number(),
-      content: z.base64(),
-      receiver_id: z.number(),
-      send_time: z.number(),
-      files: z.array(fileFromMessage).optional(),
+      Content: z.base64(),
+      ReceiverId: z.number(),
+      SendTime: z.number(),
+      Files: z.array(fileFromMessage).optional(),
     }),
     response: z.object({}),
   },
-  add_conversation: {
+  AddConversation: {
     request: z.object({
-      chat_partner_id: z.number().optional(),
-      chat_partner_name: z.string().min(1).max(15).optional(),
+      ChatPartnerId: z.number().optional(),
+      ChatPartnerName: z.string().min(1).max(15).optional(),
     }),
     response: z.object({}),
   },
-  message_state: {
+  MessageState: {
     request: z
       .object({
-        chat_partner_id: z.number(),
-        send_time: z.number(),
-        message_state: message.shape.message_state,
+        ChatPartnerId: z.number(),
+        SendTime: z.number(),
+        MessageState: Message.shape.MessageState,
       })
       .or(
         z.object({
-          message_state: message.shape.message_state,
+          MessageState: Message.shape.MessageState,
         }),
       ),
     response: z.object({
-      chat_partner_id: z.number(),
-      message_state: message.shape.message_state,
-      send_time: z.number(),
+      ChatPartnerId: z.number(),
+      MessageState: Message.shape.MessageState,
+      SendTime: z.number(),
     }),
   },
 
-  load_txt_record: {
+  LoadTxtRecord: {
     request: z.object({
-      path: z.string(),
+      Path: z.string(),
     }),
     response: z.object({
-      content: z.string(),
+      Content: z.string(),
     }),
   },
-  authenticate_app: {
+  AuthenticateApp: {
     request: z.object({
-      app_identifier: z.string(),
+      AppIdentifier: z.string(),
     }),
     response: z.object({
-      challenge: z.base64(),
+      Challenge: z.base64(),
     }),
   },
-  create_app: {
+  CreateApp: {
     request: z.object({
-      app_public_key: z.base64(),
-      app_identifier: z.string(),
+      AppPublicKey: z.base64(),
+      AppIdentifier: z.string(),
     }),
     response: z.object({}),
   },
 
   // Calls
-  call_token: {
+  CallToken: {
     request: z.object({
-      call_id: z.string(),
+      CallId: z.string(),
     }),
     response: z.object({
-      call_token: z.string(),
+      CallToken: z.string(),
     }),
   },
-  call_data: {
+  CallData: {
     request: z.object({
-      call_id: z.string(),
+      CallId: z.string(),
     }),
     response: z.object({
-      user_ids: z.array(z.number()),
+      UserIds: z.array(z.number()),
     }),
   },
-  call_invite: {
+  CallInvite: {
     request: z.object({
-      call_id: z.string(),
-      call_secret: z.base64(),
-      receiver_id: z.number(),
+      CallId: z.string(),
+      CallSecret: callSecretEnvelopeRequest,
+      ReceiverId: z.number(),
     }),
     response: z.object({
-      call_id: z.string().optional(),
-      call_secret: z.base64().optional(),
-      sender_id: z.number().optional(),
+      CallId: z.string().optional(),
+      CallSecret: callSecretEnvelopeResponse.optional(),
+      SenderId: z.number().optional(),
     }),
+  },
+  SetChatSecret: {
+    request: z.object({
+      ChatId: z.string(),
+      SecretId: z.string(),
+      VersionNumber: z.number(),
+      WrappingScheme: z.string(),
+      CreatedAt: z.number(),
+      Recipients: z.array(chatSecretRecipient).min(1),
+    }),
+    response: z.object({}),
+  },
+  GetChatSecret: {
+    request: z.object({
+      UserId: z.string(),
+      ChatId: z.string(),
+      SecretId: z.string().optional(),
+    }),
+    response: chatSecretResponse,
+  },
+  ChatSecretResponse: {
+    request: z.object({}).optional(),
+    response: chatSecretResponse,
+  },
+  ChatSecretForward: {
+    request: z.object({
+      ChatId: z.string(),
+      SenderUserId: z.string(),
+      RecipientUserId: z.string(),
+      SecretId: z.string(),
+      VersionNumber: z.number(),
+      EncryptedSecret: protocolBytes,
+      KemCiphertext: protocolBytes,
+      WrappingScheme: z.string(),
+      CreatedAt: z.number(),
+    }),
+    response: z.object({}),
+  },
+  ErrorNoIota: {
+    request: z.object({}).optional(),
+    response: z.object({}),
+  },
+  ErrorNotSet: {
+    request: z.object({}).optional(),
+    response: z.object({}),
   },
 } satisfies Record<string, { request: z.ZodType; response: z.ZodType }>;
 
-export type TTP = typeof ttp;
+export type MTP = typeof mtp;
 
 // Storage
 export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
-  private_key: string;
+  mtp_keyring: string;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -276,8 +430,11 @@ export interface Storage extends SettingsStorageDefaults {
   legal_docs: z.infer<typeof legalDocsSchema>;
   cached_contacts: Contacts;
   cached_communities: Communities;
-  ttp_url: string;
-  ttp_server_cert: string;
+  cache_contacts: number;
+  cache_messages_per_chat: number;
+  omega_url: string;
+  forced_omikron_url: string | undefined;
+  forced_omikron_public_key: string | undefined;
   call_mute_range_start: number;
   call_mute_range_end: number;
   theme_color: string;
@@ -285,6 +442,8 @@ export interface Storage extends SettingsStorageDefaults {
   theme_primary_color: string;
   theme_polarity: "dark" | "light" | "system";
   theme_tint: "soft" | "hard" | "extreme";
+  theme_border_radius: number;
+  theme_custom_css: string;
   chat_trusted_domains: string[];
   chat_picker_saved_media: string[];
   chat_picker_last_tab: "gif" | "meme" | "saved";
@@ -292,12 +451,13 @@ export interface Storage extends SettingsStorageDefaults {
     width: number;
     height: number;
   } | null;
+  reactions: Record<string, number>;
 }
 
 export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
-  private_key: "",
+  mtp_keyring: "",
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,
@@ -324,8 +484,11 @@ export const storageDefaults: Storage = {
   },
   cached_contacts: [],
   cached_communities: [],
-  ttp_url: "https://tensamin.net:959",
-  ttp_server_cert: "",
+  cache_contacts: 5,
+  cache_messages_per_chat: 20,
+  omega_url: "https://omega.tensamin.net",
+  forced_omikron_url: undefined,
+  forced_omikron_public_key: undefined,
   call_mute_range_start: -55,
   call_mute_range_end: -45,
   theme_color: "",
@@ -333,6 +496,8 @@ export const storageDefaults: Storage = {
   theme_primary_color: "",
   theme_polarity: "system",
   theme_tint: "soft",
+  theme_border_radius: 0.55,
+  theme_custom_css: "",
   chat_trusted_domains: [
     // Other platforms
     "cdn.discordapp.com",
@@ -360,11 +525,16 @@ export const storageDefaults: Storage = {
   chat_picker_saved_media: [],
   chat_picker_last_tab: "gif",
   chat_picker_size: null,
+  reactions: {
+    ":thumbsup:": 3,
+    ":fire:": 2,
+    ":white_check_mark:": 1,
+  },
 };
 
 // User Status
 export function getStatusColor(
-  status: z.infer<typeof ttp.get_user_data.response.shape.online_status>,
+  status: z.infer<typeof mtp.GetUserData.response.shape.OnlineStatus>,
 ) {
   switch (status) {
     case "user_online":

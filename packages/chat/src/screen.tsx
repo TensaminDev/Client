@@ -1,9 +1,6 @@
 import * as React from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { failedUser } from "@tensamin/shared/data";
-import { useStorage } from "@tensamin/storage/context";
-import { useUser, type User } from "@tensamin/user/context";
 
 import InputComponent from "./components/input";
 import Message from "./components/message";
@@ -15,18 +12,14 @@ import {
   type LiveMessage,
   type RawMessage,
 } from "./values";
+import Wrapper from "@tensamin/user/wrapper";
+import { Skeleton } from "@tensamin/ui";
 
 type MessageChunk = {
   key: string;
   messages: Array<RawMessage | LiveMessage>;
   startIndex: number;
 };
-
-function getEstimatedMessageHeight(message: { height?: number }) {
-  return typeof message.height === "number" && Number.isFinite(message.height)
-    ? Math.max(1, Math.ceil(message.height))
-    : FALLBACK_MESSAGE_HEIGHT;
-}
 
 function shouldFetchPreviousPage({
   entry,
@@ -48,7 +41,7 @@ function shouldFetchPreviousPage({
 }
 
 function getMessageRenderKey(message: RawMessage | LiveMessage) {
-  return "localId" in message ? message.localId : String(message.send_time);
+  return "localId" in message ? message.localId : String(message.SendTime);
 }
 
 function buildMessageChunks(
@@ -80,11 +73,15 @@ function buildMessageChunks(
  * @returns Chat screen JSX.
  */
 export default function Screen() {
-  const { getMessages, liveMessages, clearLiveMessages, userId, sharedSecret } =
-    useChat();
-  const { get: getUser } = useUser();
-  const { load } = useStorage();
-
+  const {
+    getMessages,
+    liveMessages,
+    clearLiveMessages,
+    userId,
+    chatSecret,
+    error,
+    errorDescription,
+  } = useChat();
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const topSentinelRef = React.useRef<HTMLDivElement | null>(null);
   const didInitialScrollRef = React.useRef(false);
@@ -96,22 +93,19 @@ export default function Screen() {
   const isFetchingNextPageRef = React.useRef(false);
   const fetchNextPageRef = React.useRef<(() => void) | null>(null);
 
-  const [messageUsers, setMessageUsers] = React.useState<
-    Record<string, User | undefined>
-  >({});
   const [lastLiveMessageCount, setLastLiveMessageCount] = React.useState(0);
   const [didInitialScroll, setDidInitialScroll] = React.useState(false);
   const [viewportHeight, setViewportHeight] = React.useState(0);
   const [value, setValue] = React.useState("");
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
-  const hasSharedSecret = sharedSecret.length > 0;
+  const hasChatSecret = chatSecret !== null;
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: ["chat-messages", String(userId), hasSharedSecret],
+    queryKey: ["chat-messages", String(userId), hasChatSecret],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
-    enabled: hasValidChatUser && hasSharedSecret,
+    enabled: hasValidChatUser && hasChatSecret,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_SIZE) {
         return undefined;
@@ -132,11 +126,7 @@ export default function Screen() {
     fetchNextPageRef.current = () => {
       void fetchMessagesNextPage();
     };
-  }, [
-    fetchMessagesNextPage,
-    hasMessagesNextPage,
-    isFetchingMessagesNextPage,
-  ]);
+  }, [fetchMessagesNextPage, hasMessagesNextPage, isFetchingMessagesNextPage]);
 
   React.useEffect(() => {
     clearLiveMessages();
@@ -147,52 +137,17 @@ export default function Screen() {
     setLastLiveMessageCount(0);
   }, [clearLiveMessages, userId]);
 
-  React.useEffect(() => {
-    if (!hasValidChatUser) {
-      setMessageUsers({});
-      return;
-    }
-
-    let active = true;
-
-    const loadMessageUser = async (
-      key: string,
-      resolveUserId: () => Promise<number>,
-    ) => {
-      try {
-        const resolvedUserId = await resolveUserId();
-        const value = await getUser(resolvedUserId);
-
-        if (active) {
-          setMessageUsers((prev) => ({ ...prev, [key]: value }));
-        }
-      } catch {
-        if (active) {
-          setMessageUsers((prev) => ({ ...prev, [key]: failedUser }));
-        }
-      }
-    };
-
-    setMessageUsers({});
-    void loadMessageUser("peer", async () => userId);
-    void loadMessageUser("own", async () => Number(await load("user_id")));
-
-    return () => {
-      active = false;
-    };
-  }, [getUser, hasValidChatUser, load, userId]);
-
   const historicalMessages = React.useMemo(() => {
     const pages = messagesQuery.data?.pages ?? [];
     const seenSendTimes = new Set<number>();
     const dedupedMessages: RawMessage[] = [];
 
     for (const message of [...pages].reverse().flat()) {
-      if (seenSendTimes.has(message.send_time)) {
+      if (seenSendTimes.has(message.SendTime)) {
         continue;
       }
 
-      seenSendTimes.add(message.send_time);
+      seenSendTimes.add(message.SendTime);
       dedupedMessages.push(message);
     }
 
@@ -203,11 +158,11 @@ export default function Screen() {
 
   const liveWithoutDuplicates = React.useMemo(() => {
     const historicalSendTimes = new Set(
-      historicalMessages.map((message) => message.send_time),
+      historicalMessages.map((message) => message.SendTime),
     );
 
     return liveMessagesSnapshot.filter(
-      (message) => !historicalSendTimes.has(message.send_time),
+      (message) => !historicalSendTimes.has(message.SendTime),
     );
   }, [historicalMessages, liveMessagesSnapshot]);
 
@@ -231,43 +186,14 @@ export default function Screen() {
     return [...liveMessageChunks, ...historicalMessageChunks];
   }, [historicalMessageChunks, liveMessageChunks]);
 
-  const shouldShowConversationStart =
-    !!messagesQuery.data && !messagesQuery.hasNextPage;
-  const virtualRowCount =
-    messageChunks.length + (shouldShowConversationStart ? 1 : 0);
+  const virtualRowCount = messageChunks.length;
 
   const getItemKey = React.useCallback(
-    (index: number) => {
-      if (shouldShowConversationStart && index === messageChunks.length) {
-        return "conversation-start";
-      }
-
-      return messageChunks[index]?.key ?? index;
-    },
-    [messageChunks, shouldShowConversationStart],
+    (index: number) => messageChunks[index]?.key ?? index,
+    [messageChunks],
   );
 
-  const estimateSize = React.useCallback(
-    (index: number) => {
-      const isConversationStart =
-        shouldShowConversationStart && index === messageChunks.length;
-      if (isConversationStart) {
-        return FALLBACK_MESSAGE_HEIGHT;
-      }
-
-      const chunk = messageChunks[index];
-
-      if (!chunk) {
-        return FALLBACK_MESSAGE_HEIGHT;
-      }
-
-      return chunk.messages.reduce(
-        (total, message) => total + getEstimatedMessageHeight(message),
-        0,
-      );
-    },
-    [messageChunks, shouldShowConversationStart],
-  );
+  const estimateSize = React.useCallback(() => FALLBACK_MESSAGE_HEIGHT, []);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
@@ -483,112 +409,98 @@ export default function Screen() {
 
   if (!hasValidChatUser) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-xl text-foreground/80">
-        Invalid user
+      <div className="w-full h-full flex flex-col gap-2 items-center justify-center">
+        <p className="font-semibold text-xl">Invalid User</p>
       </div>
     );
   }
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div
-        ref={scrollRef}
-        id="chat_container"
-        className="min-h-0 flex-1 overflow-y-auto"
-        style={{
-          overflowAnchor: "none",
-          paddingTop: "22px",
-          transform: "scaleY(-1)",
-        }}
-        onScroll={handleContainerScroll}
-      >
-        <div
-          className="relative w-full"
-          style={{ height: `${contentHeight}px` }}
-        >
+      {error !== "" && errorDescription !== "" ? (
+        <div className="w-full h-full flex flex-col gap-2 items-center justify-center">
+          <p className="font-semibold text-xl">{error}</p>
+          <p className="text-muted-foreground text-lg">{errorDescription}</p>
+        </div>
+      ) : (
+        <>
           <div
-            ref={topSentinelRef}
-            className="absolute bottom-0 left-0 h-px w-full"
-          />
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            if (
-              shouldShowConversationStart &&
-              virtualRow.index === messageChunks.length
-            ) {
-              return (
-                <div
-                  key="conversation-start"
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${verticalOffset + virtualRow.start}px)`,
-                  }}
-                >
-                  <div className="w-full flex justify-start scale-y-[-1]">
-                    <div className="text-sm text-foreground/55 px-2.5">
-                      Conversation start
+            ref={scrollRef}
+            id="chat_container"
+            className="min-h-0 flex-1 overflow-y-auto"
+            style={{
+              overflowAnchor: "none",
+              paddingTop: "22px",
+              transform: "scaleY(-1)",
+            }}
+            onScroll={handleContainerScroll}
+          >
+            <div
+              className="relative w-full"
+              style={{ height: `${contentHeight}px` }}
+            >
+              <div
+                ref={topSentinelRef}
+                className="absolute bottom-0 left-0 h-px w-full"
+              />
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const chunkIndex = virtualRow.index;
+                const chunk = messageChunks[chunkIndex];
+                if (!chunk) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={chunk.key}
+                    data-index={virtualRow.index}
+                    className="flex flex-col"
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${verticalOffset + virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="flex flex-col scale-y-[-1]">
+                      {chunk.messages.map((message, chunkMessageIndex) => {
+                        const messageIndex =
+                          chunk.startIndex + chunkMessageIndex;
+                        const lastMessage = messages[messageIndex - 1];
+                        const isGrouped =
+                          lastMessage &&
+                          lastMessage.SenderId === message.SenderId &&
+                          Math.round(lastMessage.SendTime / 10000) ===
+                            Math.round(message.SendTime / 10000);
+
+                        return (
+                          <Wrapper
+                            key={getMessageRenderKey(message)}
+                            userId={message.SenderId}
+                            loading={<Skeleton className="w-30 h-5" />}
+                            component={(user) => (
+                              <Message
+                                grouped={isGrouped}
+                                message={message}
+                                user={user}
+                              />
+                            )}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
-              );
-            }
-
-            const chunkIndex = virtualRow.index;
-            const chunk = messageChunks[chunkIndex];
-            if (!chunk) {
-              return null;
-            }
-
-            return (
-              <div
-                key={chunk.key}
-                data-index={virtualRow.index}
-                className="flex flex-col"
-                ref={virtualizer.measureElement}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${verticalOffset + virtualRow.start}px)`,
-                }}
-              >
-                <div className="flex flex-col scale-y-[-1]">
-                  {chunk.messages.map((message, chunkMessageIndex) => {
-                    const messageIndex = chunk.startIndex + chunkMessageIndex;
-                    const lastMessage = messages[messageIndex - 1];
-                    const isGrouped =
-                      lastMessage &&
-                      lastMessage.sent_by_self === message.sent_by_self &&
-                      Math.round(lastMessage.send_time / 10000) ===
-                        Math.round(message.send_time / 10000);
-
-                    return (
-                      <Message
-                        key={getMessageRenderKey(message)}
-                        grouped={isGrouped}
-                        message={message}
-                        user={
-                          message.sent_by_self
-                            ? (messageUsers.own ?? null)
-                            : (messageUsers.peer ?? null)
-                        }
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <div className="z-10 shrink-0">
-        <InputComponent setValue={setValue} value={value} />
-      </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="z-10 shrink-0">
+            <InputComponent setValue={setValue} value={value} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

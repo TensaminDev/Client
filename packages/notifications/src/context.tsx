@@ -1,16 +1,16 @@
-import { useCrypto } from "@tensamin/crypto/context";
 import { useStorage } from "@tensamin/storage/context";
 import { useUser } from "@tensamin/user/context";
 import { useChat } from "@tensamin/chat/context";
-import { useTTP } from "@tensamin/ttp";
+import { useMTP } from "@tensamin/mtp";
 import { createContext, useEffect, useContext } from "react";
-import z from "zod";
 import { toast as sonnerToast } from "sonner";
-import { message as messageSchema } from "@tensamin/shared/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@tensamin/ui";
 import { isTauri } from "@tauri-apps/api/core";
 import { useSession } from "@tensamin/storage/session";
 import { useNavigate } from "@tanstack/react-router";
+import { decryptChatText } from "@tensamin/crypto/chatSecret";
+import { log } from "@tensamin/shared/log";
+import { type RawMessage } from "@tensamin/chat/values";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -24,125 +24,115 @@ async function requestNotificationPermission() {
 }
 
 export default function Provider(props: { children: React.ReactNode }) {
-  const { subscribePush, send } = useTTP();
+  const { subscribePush, send } = useMTP();
   const { load } = useStorage();
   const { get } = useUser();
-  const { decryptText, getSharedSecret } = useCrypto();
-  const { addLiveMessage, userId } = useChat();
+  const { addLiveMessage, getChatSecret, userId } = useChat();
   const { moveUserIdToTop } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
-    return subscribePush(async (ttpMessage) => {
-      if (ttpMessage.type === "message_live") {
-        const { message, sender_id } = ttpMessage.data as {
-          message: z.infer<typeof messageSchema>;
-          sender_id: number;
+    return subscribePush(async (message) => {
+      if (message.type === "MessageLive") {
+        const data = message.data as {
+          Message?: RawMessage;
+          SenderId?: number;
         };
 
-        const user = await get(sender_id);
+        if (!data.SenderId) return;
 
-        const decryptedContent = await decryptText(
-          await getSharedSecret(
-            await load("private_key"),
-            await get(await load("user_id")).then((data) => data.public_key),
-            user.public_key,
-          ),
-          message.content,
-        );
+        const chatSecret = await getChatSecret(data.SenderId);
 
-        // Update message state
-        if (
-          (await load("settings.read_confirmations")) &&
-          userId === sender_id
-        ) {
-          void send(
-            "message_state",
-            {
-              message_state: "read",
-            },
-            {
-              id: ttpMessage.id,
-            },
-          );
-        } else {
-          void send(
-            "message_state",
-            {
-              message_state: "received",
-            },
-            {
-              id: ttpMessage.id,
-            },
-          );
-        }
+        if (!data.Message || !chatSecret) return;
+        const user = await get(data.SenderId);
 
-        if (userId === sender_id) {
-          addLiveMessage({
-            ...message,
-            content: decryptedContent,
-            sent_by_self: false,
-          });
-
-          return;
-        }
-
-        // todo: add notification symbol to conversation cards (incl. message start)
-
-        moveUserIdToTop(sender_id);
-
-        if (isTauri()) {
-          console.log("weewoo");
-        } else {
-          const hasPermissions = await requestNotificationPermission();
-
-          if (hasPermissions) {
-            const notification = new Notification(user.display, {
-              body: decryptedContent,
-              icon: user.avatar || user.display.slice(0, 2).toUpperCase(),
-              badge: user.avatar || user.display.slice(0, 2).toUpperCase(),
-              tag: `message-${user.user_id}`,
-              silent: true,
+        void decryptChatText(chatSecret, data.Message.Content)
+          .catch((err) => {
+            log(1, "chat", "red", "Failed to decrypt live message", err, {
+              SendTime: data.Message?.SendTime,
             });
+            return null;
+          })
+          .then(async (content) => {
+            if (!data.Message || !content || !data.SenderId) return;
 
-            notification.onclick = () => {
-              window.focus();
-              navigate({
-                to: `/chat?id=${user.user_id}`,
+            if (userId === data.SenderId) {
+              addLiveMessage({
+                ...data.Message,
+                Content: content ?? "Failed to decrypt message",
+                decryptionFailed: content === null,
               });
+              return;
+            }
 
-              notification.close();
-            };
-          } else {
-            sonnerToast(user.display, {
-              classNames: {
-                content: "pl-4",
-              },
-              description: decryptedContent,
-              icon: (
-                <Avatar>
-                  <AvatarImage src={user.avatar} />
-                  <AvatarFallback>
-                    {user.display.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              ),
-            });
-          }
-        }
+            // todo: add notification symbol to conversation cards (incl. message start)
+            moveUserIdToTop(data.SenderId);
+
+            if (await load("settings.receive_confirmations")) {
+              void send(
+                "MessageState",
+                {
+                  MessageState: "received",
+                },
+                {
+                  id: data.Message.SendTime,
+                },
+              );
+            }
+
+            if (isTauri()) {
+              console.log("weewoo");
+            } else {
+              const hasPermissions = await requestNotificationPermission();
+
+              if (hasPermissions) {
+                const notification = new Notification(user.Display, {
+                  body: content,
+                  icon: user.Avatar || user.Display.slice(0, 2).toUpperCase(),
+                  badge: user.Avatar || user.Display.slice(0, 2).toUpperCase(),
+                  tag: `message-${user.UserId}`,
+                  silent: true,
+                });
+
+                notification.onclick = () => {
+                  window.focus();
+                  navigate({
+                    to: `/chat?id=${user.UserId}`,
+                  });
+
+                  notification.close();
+                };
+              } else {
+                sonnerToast(user.Display, {
+                  classNames: {
+                    content: "pl-4",
+                  },
+                  description: content,
+                  icon: (
+                    <Avatar>
+                      <AvatarImage src={user.Avatar} />
+                      <AvatarFallback>
+                        {user.Display.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ),
+                });
+              }
+            }
+          });
+        return;
       }
     });
   }, [
-    subscribePush,
-    decryptText,
-    getSharedSecret,
-    load,
-    get,
     addLiveMessage,
-    userId,
-    moveUserIdToTop,
-    send,
+    get,
+    load,
     navigate,
+    send,
+    moveUserIdToTop,
+    subscribePush,
+    getChatSecret,
+    userId,
   ]);
 
   return (

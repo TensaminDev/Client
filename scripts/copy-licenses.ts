@@ -1,10 +1,10 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { parse } from "jsonc-parser";
+import { parse } from "yaml";
 
-type BunLock = {
+type PnpmLock = {
   lockfileVersion?: number;
-  workspaces?: Record<string, WorkspaceEntry>;
+  importers?: Record<string, WorkspaceEntry>;
   packages?: Record<string, unknown>;
 };
 
@@ -36,7 +36,7 @@ type ResolvedPackage = {
 };
 
 const ROOT = process.cwd();
-const LOCKFILE_PATH = path.join(ROOT, "bun.lock");
+const LOCKFILE_PATH = path.join(ROOT, "pnpm-lock.yaml");
 const OUTPUT_DIR = path.join(ROOT, "licenses");
 
 const COMPLIANCE_FILE_PATTERNS = [
@@ -48,15 +48,15 @@ const COMPLIANCE_FILE_PATTERNS = [
 async function main(): Promise<void> {
   await ensureExists(
     LOCKFILE_PATH,
-    "Could not find bun.lock in the project root.",
+    "Could not find pnpm-lock.yaml in the project root.",
   );
 
-  const lock = await readBunLock();
+  const lock = await readPnpmLock();
   const nodeModulesRoots = await getNodeModulesRoots(lock);
 
   if (nodeModulesRoots.length === 0) {
     throw new Error(
-      "Could not find any node_modules directories in the repo root or workspace folders. Run `bun install` first.",
+      "Could not find any node_modules directories in the repo root or workspace folders. Run `pnpm install` first.",
     );
   }
 
@@ -95,25 +95,25 @@ async function main(): Promise<void> {
   );
 }
 
-async function readBunLock(): Promise<BunLock> {
+async function readPnpmLock(): Promise<PnpmLock> {
   const raw = await fs.readFile(LOCKFILE_PATH, "utf8");
   const parsed = parse(raw);
 
   if (!parsed || typeof parsed !== "object") {
-    throw new Error("Failed to parse bun.lock");
+    throw new Error("Failed to parse pnpm-lock.yaml");
   }
 
-  return parsed as BunLock;
+  return parsed as PnpmLock;
 }
 
-async function getNodeModulesRoots(lock: BunLock): Promise<string[]> {
+async function getNodeModulesRoots(lock: PnpmLock): Promise<string[]> {
   const candidates = new Set<string>();
 
   candidates.add(path.join(ROOT, "node_modules"));
 
-  for (const workspacePath of Object.keys(lock.workspaces ?? {})) {
+  for (const workspacePath of Object.keys(lock.importers ?? {})) {
     const workspaceDir =
-      workspacePath === "" ? ROOT : path.join(ROOT, workspacePath);
+      workspacePath === "." ? ROOT : path.join(ROOT, workspacePath);
     candidates.add(path.join(workspaceDir, "node_modules"));
   }
 
@@ -130,25 +130,15 @@ async function getNodeModulesRoots(lock: BunLock): Promise<string[]> {
   return existing;
 }
 
-function extractResolvedThirdPartyPackages(lock: BunLock): ResolvedPackage[] {
+function extractResolvedThirdPartyPackages(lock: PnpmLock): ResolvedPackage[] {
   const results = new Map<string, ResolvedPackage>();
   const packages = lock.packages ?? {};
 
-  for (const rawValue of Object.values(packages)) {
-    if (!Array.isArray(rawValue) || rawValue.length === 0) continue;
+  for (const rawKey of Object.keys(packages)) {
+    const resolved = parsePnpmPackageKey(rawKey);
+    if (!resolved) continue;
 
-    const first = rawValue[0];
-    if (typeof first !== "string") continue;
-
-    // Examples:
-    // react@19.2.0
-    // @types/react@19.2.2
-    // @tensamin/ui@workspace:packages/ui
-    const atIndex = first.lastIndexOf("@");
-    if (atIndex <= 0) continue;
-
-    const name = first.slice(0, atIndex);
-    const version = first.slice(atIndex + 1);
+    const { name, version } = resolved;
 
     if (!name || !version) continue;
     if (version.startsWith("workspace:")) continue;
@@ -160,6 +150,21 @@ function extractResolvedThirdPartyPackages(lock: BunLock): ResolvedPackage[] {
   }
 
   return [...results.values()];
+}
+
+function parsePnpmPackageKey(rawKey: string): ResolvedPackage | null {
+  const withoutPeerSuffix = rawKey.replace(/\(.+\)$/, "");
+  const normalized = withoutPeerSuffix.startsWith("/")
+    ? withoutPeerSuffix.slice(1)
+    : withoutPeerSuffix;
+  const atIndex = normalized.lastIndexOf("@");
+
+  if (atIndex <= 0) return null;
+
+  return {
+    name: normalized.slice(0, atIndex),
+    version: normalized.slice(atIndex + 1),
+  };
 }
 
 async function processInstalledPackage(
@@ -354,7 +359,7 @@ async function writeThirdPartyNotices(records: PackageRecord[]): Promise<void> {
   lines.push("# Third-Party Notices");
   lines.push("");
   lines.push(
-    "Generated from bun.lock and installed packages in workspace node_modules folders.",
+    "Generated from pnpm-lock.yaml and installed packages in workspace node_modules folders.",
   );
   lines.push("");
 
@@ -442,7 +447,7 @@ async function writeCycloneDxSbom(records: PackageRecord[]): Promise<void> {
       tools: [
         {
           vendor: "OpenAI",
-          name: "custom bun license generator",
+          name: "custom pnpm license generator",
         },
       ],
       component: {

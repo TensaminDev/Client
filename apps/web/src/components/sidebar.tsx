@@ -12,7 +12,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuGroup,
-  DropdownMenuLabel,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -38,12 +37,10 @@ import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
 import type { User } from "@tensamin/user/context";
 import type z from "zod";
-import { ttp } from "@tensamin/shared/data";
-import { useTTP } from "@tensamin/ttp";
+import { mtp } from "@tensamin/shared/data";
+import { useMTP } from "@tensamin/mtp";
 
-type OnlineStatus = z.infer<
-  typeof ttp.get_user_data.response.shape.online_status
->;
+type OnlineStatus = z.infer<typeof mtp.GetUserData.response.shape.OnlineStatus>;
 
 const onlineStatusLabels: Record<OnlineStatus, string> = {
   user_online: "Online",
@@ -74,7 +71,7 @@ function StatusDialog({
   user: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  send: ReturnType<typeof useTTP>["send"];
+  send: ReturnType<typeof useMTP>["send"];
   draftStatus: string;
   setDraftStatus: (value: string) => void;
   draftOnlineStatus: OnlineStatus;
@@ -89,8 +86,8 @@ function StatusDialog({
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
-          setDraftStatus(user.status ?? "");
-          setDraftOnlineStatus(user.online_status);
+          setDraftStatus(user.Status ?? "");
+          setDraftOnlineStatus(user.OnlineStatus);
           setErrorMessage("");
           setSaveSucceeded(false);
         }
@@ -145,11 +142,10 @@ function StatusDialog({
             onClick={async () => {
               const payload = {
                 ...(draftStatus && { status: draftStatus }),
-                online_status: draftOnlineStatus,
+                OnlineStatus: draftOnlineStatus,
               };
 
-              const validation =
-                ttp.change_user_data.request.safeParse(payload);
+              const validation = mtp.ChangeUserData.request.safeParse(payload);
 
               if (!validation.success) {
                 setSaveSucceeded(false);
@@ -160,7 +156,7 @@ function StatusDialog({
               }
 
               try {
-                await send("change_user_data", validation.data);
+                await send("ChangeUserData", validation.data);
                 setSaveSucceeded(true);
                 setErrorMessage("");
               } catch (err) {
@@ -195,7 +191,7 @@ export default function Sidebar() {
   const [statusErrorMessage, setStatusErrorMessage] = useState("");
   const [statusSaveSucceeded, setStatusSaveSucceeded] = useState(false);
 
-  const { send } = useTTP();
+  const { send } = useMTP();
 
   const content = (
     <>
@@ -228,11 +224,10 @@ export default function Sidebar() {
                         />
                         <DropdownMenuContent>
                           <DropdownMenuGroup>
-                            <DropdownMenuLabel>Profile</DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => {
-                                setDraftStatus(user.status ?? "");
-                                setDraftOnlineStatus(user.online_status);
+                                setDraftStatus(user.Status ?? "");
+                                setDraftOnlineStatus(user.OnlineStatus);
                                 setStatusErrorMessage("");
                                 setStatusSaveSucceeded(false);
                                 setDialogOpen(true);
@@ -250,8 +245,8 @@ export default function Sidebar() {
                     open={dialogOpen}
                     onOpenChange={(nextOpen) => {
                       if (!nextOpen) {
-                        setDraftStatus(user.status ?? "");
-                        setDraftOnlineStatus(user.online_status);
+                        setDraftStatus(user.Status ?? "");
+                        setDraftOnlineStatus(user.OnlineStatus);
                         setStatusErrorMessage("");
                         setStatusSaveSucceeded(false);
                       }

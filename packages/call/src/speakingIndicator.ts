@@ -1,4 +1,3 @@
-import { log } from "@tensamin/shared/log";
 import {
   clearSpeakingParticipants,
   removeSpeakingParticipant,
@@ -138,10 +137,8 @@ class SpeakingDetector {
     const db = 20 * Math.log10(Math.max(rms, 0.0001));
 
     if (!this.localMicGateClosed && db < this.gateThresholdStart) {
-      log(3, "noise gate", "purple", "closed");
       this.muteLocalTrack(true);
     } else if (this.localMicGateClosed && db > this.gateThresholdEnd) {
-      log(3, "noise gate", "purple", "opened");
       this.muteLocalTrack(false);
     }
   }

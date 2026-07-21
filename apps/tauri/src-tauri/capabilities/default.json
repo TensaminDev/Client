@@ -9,17 +9,9 @@
     "core:default",
     "opener:default",
     "core:window:default",
-    "core:window:allow-start-dragging",
-    "core:window:allow-close",
-    "core:window:allow-toggle-maximize",
-    "core:window:allow-minimize",
     "core:event:default",
     "deep-link:default",
     "notification:default",
-    "log:default",
-    "ttp-tauri:allow-connect",
-    "ttp-tauri:allow-send",
-    "ttp-tauri:allow-close",
-    "ttp-tauri:allow-ready-state"
+    "log:default"
   ]
 }

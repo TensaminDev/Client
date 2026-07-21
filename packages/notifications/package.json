@@ -7,7 +7,7 @@
     "./context": "./src/context.tsx"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
     "build": "tsc -p tsconfig.json --noEmit"
   },
@@ -18,7 +18,7 @@
     "@tensamin/shared": "workspace:*",
     "@tensamin/chat": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/ttp": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
     "react": "^19.2.0",

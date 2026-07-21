@@ -1,4 +1,5 @@
 import { log } from "@tensamin/shared/log";
+import type {} from "@tensamin/shared/desktopMedia";
 import {
   type LocalTrack,
   Room,
@@ -20,39 +21,6 @@ type ScreenShareStoreSetState = (
     | Partial<ScreenShareStoreState>
     | ((state: ScreenShareStoreState) => Partial<ScreenShareStoreState>),
 ) => void;
-
-declare global {
-  interface Window {
-    tensaminDesktop?: {
-      media?: {
-        getScreenShareCapabilities?: () => Promise<{
-          runtime?: "electron" | "tauri";
-          platform: "linux" | "macos" | "windows" | "other";
-          showAudioOutputSelector: boolean;
-          showAudioSwitch: boolean;
-          hasReliableSystemAudio: boolean;
-        }>;
-        listScreenShareSources?: () => Promise<
-          Array<{
-            id: string;
-            kind: "screen" | "window";
-            name: string;
-            subtitle?: string | null;
-            thumbnail?: string | null;
-          }>
-        >;
-        listScreenShareAudioOutputs?: () => Promise<
-          Array<{
-            id: string;
-            name: string;
-            isDefault: boolean;
-          }>
-        >;
-        selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
-      };
-    };
-  }
-}
 
 type ScreenShareControllerOptions = {
   room: Room;

@@ -34,7 +34,7 @@ for (const fullPath of packageDirs) {
   const entry = fullPath.replace(packagesDir + "/", "");
   console.log(`Updating ${entry}...`);
   try {
-    execSync("bun update --interactive", { cwd: fullPath, stdio: "inherit" });
+    execSync("pnpm update --interactive", { cwd: fullPath, stdio: "inherit" });
     console.log(`${entry} updated successfully.`);
   } catch {
     console.error(`Failed to update ${entry}.`);

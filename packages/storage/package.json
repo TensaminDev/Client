@@ -6,16 +6,17 @@
   "exports": {
     "./session": "./src/session.tsx",
     "./context": "./src/context.tsx",
-    "./indexed-db": "./src/indexed-db.ts"
+    "./secure": "./src/secure.ts"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@tensamin/cache": "workspace:*",
     "@tensamin/shared": "workspace:*",
-    "@tensamin/ttp": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/ui": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

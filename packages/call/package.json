@@ -5,13 +5,14 @@
   "type": "module",
   "exports": {
     "./store": "./src/store.tsx",
+    "./speakingState": "./src/speakingState.ts",
     "./screen": "./src/screen.tsx",
     "./utils": "./src/utils.ts",
     "./sidebarBox": "./src/components/sidebarBox.tsx",
     "./popout": "./src/components/popout.tsx"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
     "build": "tsc -p tsconfig.json --noEmit"
   },
@@ -22,10 +23,10 @@
     "@tensamin/crypto": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/ttp": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/ui": "*",
     "@tensamin/user": "workspace:*",
-    "deepfilternet3-noise-filter": "^1.2.1",
+    "deepfilternet3-noise-filter": "1.2.1",
     "livekit-client": "^2.18.8",
     "lucide-react": "^1.14.0",
     "react": "^19.2.0",

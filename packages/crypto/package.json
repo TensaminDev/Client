@@ -5,17 +5,16 @@
   "type": "module",
   "exports": {
     "./context": "./src/context.tsx",
-    "./worker": "./src/worker.ts"
+    "./chatSecret": "./src/chatSecret.ts",
+    "./callSecret": "./src/callSecret.ts"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
-    "test": "bun test",
-    "build": "bun run test && tsc -p tsconfig.json --noEmit"
+    "test": "vitest run",
+    "build": "pnpm run test && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@noble/curves": "^2.0.1",
-    "comlink": "^4.4.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   }

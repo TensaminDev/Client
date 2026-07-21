@@ -3,11 +3,11 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-05-21T10:15:15.541Z",
+    "timestamp": "2026-07-03T19:50:00.640Z",
     "tools": [
       {
         "vendor": "OpenAI",
-        "name": "custom bun license generator"
+        "name": "custom pnpm license generator"
       }
     ],
     "component": {
@@ -18,10 +18,111 @@
   "components": [
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/commands@6.10.3",
+      "bomRef": "pkg:npm/%40babel/runtime@7.29.7",
+      "name": "@babel/runtime",
+      "version": "7.29.7",
+      "purl": "pkg:npm/%40babel/runtime@7.29.7",
+      "description": "babel's modular runtime helpers",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://babel.dev/docs/en/next/babel-runtime"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/babel/babel.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@babel_runtime@7.29.7"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@babel/runtime"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40base-ui/react@1.6.0",
+      "name": "@base-ui/react",
+      "version": "1.6.0",
+      "purl": "pkg:npm/%40base-ui/react@1.6.0",
+      "description": "Base UI is a library of headless ('unstyled') React components and low-level hooks. You gain complete control over your app's CSS and accessibility features.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://base-ui.com"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/mui/base-ui.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@base-ui_react@1.6.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@base-ui/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40base-ui/utils@0.3.1",
+      "name": "@base-ui/utils",
+      "version": "0.3.1",
+      "purl": "pkg:npm/%40base-ui/utils@0.3.1",
+      "description": "A collection of React utility functions for Base UI.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/mui/base-ui.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@base-ui_utils@0.3.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@base-ui/utils"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40codemirror/commands@6.10.4",
       "name": "@codemirror/commands",
-      "version": "6.10.3",
-      "purl": "pkg:npm/%40codemirror/commands@6.10.3",
+      "version": "6.10.4",
+      "purl": "pkg:npm/%40codemirror/commands@6.10.4",
       "description": "Collection of editing commands for the CodeMirror code editor",
       "licenses": [
         {
@@ -33,13 +134,13 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "git+https://github.com/codemirror/commands.git"
+          "url": "git+https://code.haverbeke.berlin/codemirror/commands.git"
         }
       ],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_commands@6.10.3"
+          "value": "licenses/@codemirror_commands@6.10.4"
         },
         {
           "name": "local:sourcePackageDir",
@@ -80,10 +181,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/state@6.6.0",
+      "bomRef": "pkg:npm/%40codemirror/state@6.7.0",
       "name": "@codemirror/state",
-      "version": "6.6.0",
-      "purl": "pkg:npm/%40codemirror/state@6.6.0",
+      "version": "6.7.0",
+      "purl": "pkg:npm/%40codemirror/state@6.7.0",
       "description": "Editor state data structures for the CodeMirror code editor",
       "licenses": [
         {
@@ -95,13 +196,13 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "git+https://github.com/codemirror/state.git"
+          "url": "git+https://code.haverbeke.berlin/codemirror/state.git"
         }
       ],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_state@6.6.0"
+          "value": "licenses/@codemirror_state@6.7.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -111,10 +212,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/view@6.41.1",
+      "bomRef": "pkg:npm/%40codemirror/view@6.43.4",
       "name": "@codemirror/view",
-      "version": "6.41.1",
-      "purl": "pkg:npm/%40codemirror/view@6.41.1",
+      "version": "6.43.4",
+      "purl": "pkg:npm/%40codemirror/view@6.43.4",
       "description": "DOM view component for the CodeMirror code editor",
       "licenses": [
         {
@@ -132,7 +233,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_view@6.41.1"
+          "value": "licenses/@codemirror_view@6.43.4"
         },
         {
           "name": "local:sourcePackageDir",
@@ -177,6 +278,146 @@
     },
     {
       "type": "library",
+      "bomRef": "pkg:npm/%40floating-ui/core@1.7.5",
+      "name": "@floating-ui/core",
+      "version": "1.7.5",
+      "purl": "pkg:npm/%40floating-ui/core@1.7.5",
+      "description": "Positioning library for floating elements: tooltips, popovers, dropdowns, and more",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://floating-ui.com"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/floating-ui/floating-ui.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@floating-ui_core@1.7.5"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@floating-ui/core"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40floating-ui/dom@1.7.6",
+      "name": "@floating-ui/dom",
+      "version": "1.7.6",
+      "purl": "pkg:npm/%40floating-ui/dom@1.7.6",
+      "description": "Floating UI for the web",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://floating-ui.com"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/floating-ui/floating-ui.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@floating-ui_dom@1.7.6"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@floating-ui/dom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40floating-ui/react-dom@2.1.8",
+      "name": "@floating-ui/react-dom",
+      "version": "2.1.8",
+      "purl": "pkg:npm/%40floating-ui/react-dom@2.1.8",
+      "description": "Floating UI for React DOM",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://floating-ui.com/docs/react-dom"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/floating-ui/floating-ui.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@floating-ui_react-dom@2.1.8"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@floating-ui/react-dom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40floating-ui/utils@0.2.11",
+      "name": "@floating-ui/utils",
+      "version": "0.2.11",
+      "purl": "pkg:npm/%40floating-ui/utils@0.2.11",
+      "description": "Utilities for Floating UI",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://floating-ui.com"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/floating-ui/floating-ui.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@floating-ui_utils@0.2.11"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@floating-ui/utils"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "bomRef": "pkg:npm/%40fontsource-variable/inter@5.2.8",
       "name": "@fontsource-variable/inter",
       "version": "5.2.8",
@@ -212,10 +453,45 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40livekit/components-react@2.9.20",
+      "bomRef": "pkg:npm/%40fontsource-variable/public-sans@5.2.7",
+      "name": "@fontsource-variable/public-sans",
+      "version": "5.2.7",
+      "purl": "pkg:npm/%40fontsource-variable/public-sans@5.2.7",
+      "description": "Self-host the Public Sans font in a neatly bundled NPM package.",
+      "licenses": [
+        {
+          "license": {
+            "id": "OFL-1.1"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://fontsource.org/fonts/public-sans"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/fontsource/font-files.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@fontsource-variable_public-sans@5.2.7"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@fontsource-variable/public-sans"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40livekit/components-react@2.9.21",
       "name": "@livekit/components-react",
-      "version": "2.9.20",
-      "purl": "pkg:npm/%40livekit/components-react@2.9.20",
+      "version": "2.9.21",
+      "purl": "pkg:npm/%40livekit/components-react@2.9.21",
       "licenses": [
         {
           "license": {
@@ -232,7 +508,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@livekit_components-react@2.9.20"
+          "value": "licenses/@livekit_components-react@2.9.21"
         },
         {
           "name": "local:sourcePackageDir",
@@ -271,16 +547,630 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/@noble/curves"
+          "value": "packages/crypto/node_modules/@noble/curves"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tailwindcss/vite@4.2.4",
+      "bomRef": "pkg:npm/%40noble/hashes@2.2.0",
+      "name": "@noble/hashes",
+      "version": "2.2.0",
+      "purl": "pkg:npm/%40noble/hashes@2.2.0",
+      "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://paulmillr.com/noble/"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/paulmillr/noble-hashes.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@noble_hashes@2.2.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/crypto/node_modules/@noble/hashes"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/primitive@1.1.4",
+      "name": "@radix-ui/primitive",
+      "version": "1.1.4",
+      "purl": "pkg:npm/%40radix-ui/primitive@1.1.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_primitive@1.1.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/primitive"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-compose-refs@1.1.3",
+      "name": "@radix-ui/react-compose-refs",
+      "version": "1.1.3",
+      "purl": "pkg:npm/%40radix-ui/react-compose-refs@1.1.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-compose-refs@1.1.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-compose-refs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-context@1.1.4",
+      "name": "@radix-ui/react-context",
+      "version": "1.1.4",
+      "purl": "pkg:npm/%40radix-ui/react-context@1.1.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-context@1.1.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-context"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-dialog@1.1.18",
+      "name": "@radix-ui/react-dialog",
+      "version": "1.1.18",
+      "purl": "pkg:npm/%40radix-ui/react-dialog@1.1.18",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-dialog@1.1.18"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-dialog"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-dismissable-layer@1.1.14",
+      "name": "@radix-ui/react-dismissable-layer",
+      "version": "1.1.14",
+      "purl": "pkg:npm/%40radix-ui/react-dismissable-layer@1.1.14",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-dismissable-layer@1.1.14"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-dismissable-layer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-focus-guards@1.1.4",
+      "name": "@radix-ui/react-focus-guards",
+      "version": "1.1.4",
+      "purl": "pkg:npm/%40radix-ui/react-focus-guards@1.1.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-focus-guards@1.1.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-focus-guards"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-focus-scope@1.1.11",
+      "name": "@radix-ui/react-focus-scope",
+      "version": "1.1.11",
+      "purl": "pkg:npm/%40radix-ui/react-focus-scope@1.1.11",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-focus-scope@1.1.11"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-focus-scope"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-id@1.1.2",
+      "name": "@radix-ui/react-id",
+      "version": "1.1.2",
+      "purl": "pkg:npm/%40radix-ui/react-id@1.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-id@1.1.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-id"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-portal@1.1.13",
+      "name": "@radix-ui/react-portal",
+      "version": "1.1.13",
+      "purl": "pkg:npm/%40radix-ui/react-portal@1.1.13",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-portal@1.1.13"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-portal"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-presence@1.1.6",
+      "name": "@radix-ui/react-presence",
+      "version": "1.1.6",
+      "purl": "pkg:npm/%40radix-ui/react-presence@1.1.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-presence@1.1.6"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-presence"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-primitive@2.1.7",
+      "name": "@radix-ui/react-primitive",
+      "version": "2.1.7",
+      "purl": "pkg:npm/%40radix-ui/react-primitive@2.1.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-primitive@2.1.7"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-primitive"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-slot@1.3.0",
+      "name": "@radix-ui/react-slot",
+      "version": "1.3.0",
+      "purl": "pkg:npm/%40radix-ui/react-slot@1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-slot@1.3.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-slot"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-use-callback-ref@1.1.2",
+      "name": "@radix-ui/react-use-callback-ref",
+      "version": "1.1.2",
+      "purl": "pkg:npm/%40radix-ui/react-use-callback-ref@1.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-use-callback-ref@1.1.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-use-callback-ref"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-use-controllable-state@1.2.3",
+      "name": "@radix-ui/react-use-controllable-state",
+      "version": "1.2.3",
+      "purl": "pkg:npm/%40radix-ui/react-use-controllable-state@1.2.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-use-controllable-state@1.2.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-use-controllable-state"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-use-effect-event@0.0.2",
+      "name": "@radix-ui/react-use-effect-event",
+      "version": "0.0.2",
+      "purl": "pkg:npm/%40radix-ui/react-use-effect-event@0.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-use-effect-event@0.0.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-use-effect-event"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40radix-ui/react-use-layout-effect@1.1.2",
+      "name": "@radix-ui/react-use-layout-effect",
+      "version": "1.1.2",
+      "purl": "pkg:npm/%40radix-ui/react-use-layout-effect@1.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://radix-ui.com/primitives"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/radix-ui/primitives.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@radix-ui_react-use-layout-effect@1.1.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@radix-ui/react-use-layout-effect"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40reduxjs/toolkit@2.12.0",
+      "name": "@reduxjs/toolkit",
+      "version": "2.12.0",
+      "purl": "pkg:npm/%40reduxjs/toolkit@2.12.0",
+      "description": "The official, opinionated, batteries-included toolset for efficient Redux development",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://redux-toolkit.js.org"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/reduxjs/redux-toolkit.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@reduxjs_toolkit@2.12.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@reduxjs/toolkit"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tailwindcss/vite@4.3.2",
       "name": "@tailwindcss/vite",
-      "version": "4.2.4",
-      "purl": "pkg:npm/%40tailwindcss/vite@4.2.4",
+      "version": "4.3.2",
+      "purl": "pkg:npm/%40tailwindcss/vite@4.3.2",
       "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
       "licenses": [
         {
@@ -302,7 +1192,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tailwindcss_vite@4.2.4"
+          "value": "licenses/@tailwindcss_vite@4.3.2"
         },
         {
           "name": "local:sourcePackageDir",
@@ -312,11 +1202,11 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tanstack/react-query@5.100.8",
-      "name": "@tanstack/react-query",
-      "version": "5.100.8",
-      "purl": "pkg:npm/%40tanstack/react-query@5.100.8",
-      "description": "Hooks for managing, caching and syncing asynchronous and remote data in React",
+      "bomRef": "pkg:npm/%40tanstack/devtools-event-client@0.3.5",
+      "name": "@tanstack/devtools-event-client",
+      "version": "0.3.5",
+      "purl": "pkg:npm/%40tanstack/devtools-event-client@0.3.5",
+      "description": "TanStack Event Client is a lightweight event client for TanStack Devtools event bus.",
       "licenses": [
         {
           "license": {
@@ -327,30 +1217,30 @@
       "externalReferences": [
         {
           "type": "website",
-          "url": "https://tanstack.com/query"
+          "url": "https://tanstack.com/devtools"
         },
         {
           "type": "vcs",
-          "url": "git+https://github.com/TanStack/query.git"
+          "url": "https://github.com/TanStack/devtools.git"
         }
       ],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tanstack_react-query@5.100.8"
+          "value": "licenses/@tanstack_devtools-event-client@0.3.5"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "packages/call/node_modules/@tanstack/react-query"
+          "value": "apps/web/node_modules/@tanstack/devtools-event-client"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tanstack/react-router@1.169.1",
-      "name": "@tanstack/react-router",
-      "version": "1.169.1",
-      "purl": "pkg:npm/%40tanstack/react-router@1.169.1",
+      "bomRef": "pkg:npm/%40tanstack/history@1.162.0",
+      "name": "@tanstack/history",
+      "version": "1.162.0",
+      "purl": "pkg:npm/%40tanstack/history@1.162.0",
       "description": "Modern and scalable routing for React applications",
       "licenses": [
         {
@@ -372,7 +1262,147 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tanstack_react-router@1.169.1"
+          "value": "licenses/@tanstack_history@1.162.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@tanstack/history"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tanstack/pacer@0.21.1",
+      "name": "@tanstack/pacer",
+      "version": "0.21.1",
+      "purl": "pkg:npm/%40tanstack/pacer@0.21.1",
+      "description": "Utilities for debouncing, throttling, rate-limiting, queuing, and more.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/pacer"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/TanStack/pacer.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_pacer@0.21.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/chat/node_modules/@tanstack/pacer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tanstack/query-core@5.101.2",
+      "name": "@tanstack/query-core",
+      "version": "5.101.2",
+      "purl": "pkg:npm/%40tanstack/query-core@5.101.2",
+      "description": "The framework agnostic core that powers TanStack Query",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/query"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/TanStack/query.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_query-core@5.101.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@tanstack/query-core"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tanstack/react-query@5.101.2",
+      "name": "@tanstack/react-query",
+      "version": "5.101.2",
+      "purl": "pkg:npm/%40tanstack/react-query@5.101.2",
+      "description": "Hooks for managing, caching and syncing asynchronous and remote data in React",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/query"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/TanStack/query.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_react-query@5.101.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/chat/node_modules/@tanstack/react-query"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tanstack/react-router@1.170.17",
+      "name": "@tanstack/react-router",
+      "version": "1.170.17",
+      "purl": "pkg:npm/%40tanstack/react-router@1.170.17",
+      "description": "Modern and scalable routing for React applications",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/router"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/TanStack/router.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_react-router@1.170.17"
         },
         {
           "name": "local:sourcePackageDir",
@@ -382,10 +1412,45 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tanstack/react-virtual@3.13.24",
+      "bomRef": "pkg:npm/%40tanstack/react-store@0.9.3",
+      "name": "@tanstack/react-store",
+      "version": "0.9.3",
+      "purl": "pkg:npm/%40tanstack/react-store@0.9.3",
+      "description": "Framework agnostic type-safe store w/ reactive framework adapters",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/store"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/TanStack/store.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_react-store@0.9.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@tanstack/react-store"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tanstack/react-virtual@3.14.5",
       "name": "@tanstack/react-virtual",
-      "version": "3.13.24",
-      "purl": "pkg:npm/%40tanstack/react-virtual@3.13.24",
+      "version": "3.14.5",
+      "purl": "pkg:npm/%40tanstack/react-virtual@3.14.5",
       "description": "Headless UI for virtualizing scrollable elements in React",
       "licenses": [
         {
@@ -407,7 +1472,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tanstack_react-virtual@3.13.24"
+          "value": "licenses/@tanstack_react-virtual@3.14.5"
         },
         {
           "name": "local:sourcePackageDir",
@@ -417,10 +1482,115 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/api@2.11.0",
+      "bomRef": "pkg:npm/%40tanstack/router-core@1.171.14",
+      "name": "@tanstack/router-core",
+      "version": "1.171.14",
+      "purl": "pkg:npm/%40tanstack/router-core@1.171.14",
+      "description": "Modern and scalable routing for React applications",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/router"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/TanStack/router.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_router-core@1.171.14"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@tanstack/router-core"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tanstack/store@0.9.3",
+      "name": "@tanstack/store",
+      "version": "0.9.3",
+      "purl": "pkg:npm/%40tanstack/store@0.9.3",
+      "description": "Framework agnostic type-safe store w/ reactive framework adapters",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/store"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/TanStack/store.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_store@0.9.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@tanstack/store"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tanstack/virtual-core@3.17.3",
+      "name": "@tanstack/virtual-core",
+      "version": "3.17.3",
+      "purl": "pkg:npm/%40tanstack/virtual-core@3.17.3",
+      "description": "Headless UI for virtualizing scrollable elements in TS/JS + Frameworks",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tanstack.com/virtual"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/TanStack/virtual.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@tanstack_virtual-core@3.17.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/@tanstack/virtual-core"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40tauri-apps/api@2.11.1",
       "name": "@tauri-apps/api",
-      "version": "2.11.0",
-      "purl": "pkg:npm/%40tauri-apps/api@2.11.0",
+      "version": "2.11.1",
+      "purl": "pkg:npm/%40tauri-apps/api@2.11.1",
       "description": "Tauri API definitions",
       "licenses": [
         {
@@ -442,7 +1612,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_api@2.11.0"
+          "value": "licenses/@tauri-apps_api@2.11.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -452,10 +1622,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/cli@2.11.0",
+      "bomRef": "pkg:npm/%40tauri-apps/cli@2.11.4",
       "name": "@tauri-apps/cli",
-      "version": "2.11.0",
-      "purl": "pkg:npm/%40tauri-apps/cli@2.11.0",
+      "version": "2.11.4",
+      "purl": "pkg:npm/%40tauri-apps/cli@2.11.4",
       "description": "Command line interface for building Tauri apps",
       "licenses": [
         {
@@ -477,7 +1647,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_cli@2.11.0"
+          "value": "licenses/@tauri-apps_cli@2.11.4"
         },
         {
           "name": "local:sourcePackageDir",
@@ -487,10 +1657,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/plugin-barcode-scanner@2.4.4",
+      "bomRef": "pkg:npm/%40tauri-apps/plugin-barcode-scanner@2.4.5",
       "name": "@tauri-apps/plugin-barcode-scanner",
-      "version": "2.4.4",
-      "purl": "pkg:npm/%40tauri-apps/plugin-barcode-scanner@2.4.4",
+      "version": "2.4.5",
+      "purl": "pkg:npm/%40tauri-apps/plugin-barcode-scanner@2.4.5",
       "description": "Scan QR codes, EAN-13 and other kinds of barcodes on Android and iOS",
       "licenses": [
         {
@@ -508,7 +1678,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_plugin-barcode-scanner@2.4.4"
+          "value": "licenses/@tauri-apps_plugin-barcode-scanner@2.4.5"
         },
         {
           "name": "local:sourcePackageDir",
@@ -549,11 +1719,11 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/plugin-opener@2.5.4",
-      "name": "@tauri-apps/plugin-opener",
-      "version": "2.5.4",
-      "purl": "pkg:npm/%40tauri-apps/plugin-opener@2.5.4",
-      "description": "Open files and URLs using their default application.",
+      "bomRef": "pkg:npm/%40tauri-apps/plugin-log@2.8.0",
+      "name": "@tauri-apps/plugin-log",
+      "version": "2.8.0",
+      "purl": "pkg:npm/%40tauri-apps/plugin-log@2.8.0",
+      "description": "Configurable logging for your Tauri app.",
       "licenses": [
         {
           "license": {
@@ -570,43 +1740,55 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_plugin-opener@2.5.4"
+          "value": "licenses/@tauri-apps_plugin-log@2.8.0"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/@tauri-apps/plugin-opener"
+          "value": "apps/tauri/node_modules/@tauri-apps/plugin-log"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tensamin/ttp-core@0.0.19",
-      "name": "@tensamin/ttp-core",
-      "version": "0.0.19",
-      "purl": "pkg:npm/%40tensamin/ttp-core@0.0.19",
-      "externalReferences": [],
+      "bomRef": "pkg:npm/%40tauri-apps/plugin-notification@2.3.3",
+      "name": "@tauri-apps/plugin-notification",
+      "version": "2.3.3",
+      "purl": "pkg:npm/%40tauri-apps/plugin-notification@2.3.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/tauri-apps/plugins-workspace"
+        }
+      ],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tensamin_ttp-core@0.0.19"
+          "value": "licenses/@tauri-apps_plugin-notification@2.3.3"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "packages/ttp/node_modules/@tensamin/ttp-core"
+          "value": "apps/tauri/node_modules/@tauri-apps/plugin-notification"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tensamin/ui@0.0.34",
+      "bomRef": "pkg:npm/%40tensamin/ui@0.0.39",
       "name": "@tensamin/ui",
-      "version": "0.0.34",
-      "purl": "pkg:npm/%40tensamin/ui@0.0.34",
+      "version": "0.0.39",
+      "purl": "pkg:npm/%40tensamin/ui@0.0.39",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tensamin_ui@0.0.34"
+          "value": "licenses/@tensamin_ui@0.0.39"
         },
         {
           "name": "local:sourcePackageDir",
@@ -616,10 +1798,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40types/node@25.6.0",
+      "bomRef": "pkg:npm/%40types/node@25.9.4",
       "name": "@types/node",
-      "version": "25.6.0",
-      "purl": "pkg:npm/%40types/node@25.6.0",
+      "version": "25.9.4",
+      "purl": "pkg:npm/%40types/node@25.9.4",
       "description": "TypeScript definitions for node",
       "licenses": [
         {
@@ -641,11 +1823,11 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@types_node@25.6.0"
+          "value": "licenses/@types_node@25.9.4"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "node_modules/@types/node"
+          "value": "apps/electron/node_modules/@types/node"
         }
       ]
     },
@@ -686,10 +1868,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40types/react@19.2.14",
+      "bomRef": "pkg:npm/%40types/react@19.2.17",
       "name": "@types/react",
-      "version": "19.2.14",
-      "purl": "pkg:npm/%40types/react@19.2.14",
+      "version": "19.2.17",
+      "purl": "pkg:npm/%40types/react@19.2.17",
       "description": "TypeScript definitions for react",
       "licenses": [
         {
@@ -711,7 +1893,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@types_react@19.2.14"
+          "value": "licenses/@types_react@19.2.17"
         },
         {
           "name": "local:sourcePackageDir",
@@ -756,10 +1938,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.59.1",
+      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.62.1",
       "name": "@typescript-eslint/parser",
-      "version": "8.59.1",
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.59.1",
+      "version": "8.62.1",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.62.1",
       "description": "An ESLint custom parser which leverages TypeScript ESTree",
       "licenses": [
         {
@@ -781,7 +1963,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@typescript-eslint_parser@8.59.1"
+          "value": "licenses/@typescript-eslint_parser@8.62.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -791,10 +1973,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40vitejs/plugin-react@6.0.1",
+      "bomRef": "pkg:npm/%40vitejs/plugin-react@6.0.3",
       "name": "@vitejs/plugin-react",
-      "version": "6.0.1",
-      "purl": "pkg:npm/%40vitejs/plugin-react@6.0.1",
+      "version": "6.0.3",
+      "purl": "pkg:npm/%40vitejs/plugin-react@6.0.3",
       "description": "The default Vite plugin for React projects",
       "licenses": [
         {
@@ -816,11 +1998,46 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@vitejs_plugin-react@6.0.1"
+          "value": "licenses/@vitejs_plugin-react@6.0.3"
         },
         {
           "name": "local:sourcePackageDir",
           "value": "apps/web/node_modules/@vitejs/plugin-react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/aria-hidden@1.2.6",
+      "name": "aria-hidden",
+      "version": "1.2.6",
+      "purl": "pkg:npm/aria-hidden@1.2.6",
+      "description": "Cast aria-hidden to everything, except...",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/theKashey/aria-hidden#readme"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/theKashey/aria-hidden.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/aria-hidden@1.2.6"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/aria-hidden"
         }
       ]
     },
@@ -892,6 +2109,40 @@
     },
     {
       "type": "library",
+      "bomRef": "pkg:npm/cmdk@1.1.1",
+      "name": "cmdk",
+      "version": "1.1.1",
+      "purl": "pkg:npm/cmdk@1.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/pacocoursey/cmdk#readme"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/pacocoursey/cmdk.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/cmdk@1.1.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/cmdk"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "bomRef": "pkg:npm/comlink@4.4.2",
       "name": "comlink",
       "version": "4.4.2",
@@ -917,7 +2168,484 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/comlink"
+          "value": "packages/crypto/node_modules/comlink"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/cookie-es@3.1.1",
+      "name": "cookie-es",
+      "version": "3.1.1",
+      "purl": "pkg:npm/cookie-es@3.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "unjs/cookie-es"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/cookie-es@3.1.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/cookie-es"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-array@3.2.4",
+      "name": "d3-array",
+      "version": "3.2.4",
+      "purl": "pkg:npm/d3-array@3.2.4",
+      "description": "Array manipulation, ordering, searching, summarizing, etc.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-array/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-array.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-array@3.2.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-array"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-color@3.1.0",
+      "name": "d3-color",
+      "version": "3.1.0",
+      "purl": "pkg:npm/d3-color@3.1.0",
+      "description": "Color spaces! RGB, HSL, Cubehelix, Lab and HCL (Lch).",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-color/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-color.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-color@3.1.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-color"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-ease@3.0.1",
+      "name": "d3-ease",
+      "version": "3.0.1",
+      "purl": "pkg:npm/d3-ease@3.0.1",
+      "description": "Easing functions for smooth animation.",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-ease/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-ease.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-ease@3.0.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-ease"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-format@3.1.2",
+      "name": "d3-format",
+      "version": "3.1.2",
+      "purl": "pkg:npm/d3-format@3.1.2",
+      "description": "Format numbers for human consumption.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-format/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-format.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-format@3.1.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-format"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-interpolate@3.0.1",
+      "name": "d3-interpolate",
+      "version": "3.0.1",
+      "purl": "pkg:npm/d3-interpolate@3.0.1",
+      "description": "Interpolate numbers, colors, strings, arrays, objects, whatever!",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-interpolate/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-interpolate.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-interpolate@3.0.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-interpolate"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-path@3.1.0",
+      "name": "d3-path",
+      "version": "3.1.0",
+      "purl": "pkg:npm/d3-path@3.1.0",
+      "description": "Serialize Canvas path commands to SVG.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-path/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-path.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-path@3.1.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-path"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-scale@4.0.2",
+      "name": "d3-scale",
+      "version": "4.0.2",
+      "purl": "pkg:npm/d3-scale@4.0.2",
+      "description": "Encodings that map abstract data to visual representation.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-scale/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-scale.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-scale@4.0.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-scale"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-shape@3.2.0",
+      "name": "d3-shape",
+      "version": "3.2.0",
+      "purl": "pkg:npm/d3-shape@3.2.0",
+      "description": "Graphical primitives for visualization, such as lines and areas.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-shape/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-shape.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-shape@3.2.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-shape"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-time@3.1.0",
+      "name": "d3-time",
+      "version": "3.1.0",
+      "purl": "pkg:npm/d3-time@3.1.0",
+      "description": "A calculator for humanity’s peculiar conventions of time.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-time/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-time.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-time@3.1.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-time"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-time-format@4.1.0",
+      "name": "d3-time-format",
+      "version": "4.1.0",
+      "purl": "pkg:npm/d3-time-format@4.1.0",
+      "description": "A JavaScript time formatter and parser inspired by strftime and strptime.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-time-format/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-time-format.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-time-format@4.1.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-time-format"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/d3-timer@3.0.1",
+      "name": "d3-timer",
+      "version": "3.0.1",
+      "purl": "pkg:npm/d3-timer@3.0.1",
+      "description": "An efficient queue capable of managing thousands of concurrent animations.",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://d3js.org/d3-timer/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/d3/d3-timer.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/d3-timer@3.0.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/d3-timer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/date-fns@4.4.0",
+      "name": "date-fns",
+      "version": "4.4.0",
+      "purl": "pkg:npm/date-fns@4.4.0",
+      "description": "Modern JavaScript date utility library",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/date-fns/date-fns"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/date-fns@4.4.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/date-fns"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/decimal.js-light@2.5.1",
+      "name": "decimal.js-light",
+      "version": "2.5.1",
+      "purl": "pkg:npm/decimal.js-light@2.5.1",
+      "description": "An arbitrary-precision Decimal type for JavaScript.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/MikeMcl/decimal.js-light.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/decimal.js-light@2.5.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/decimal.js-light"
         }
       ]
     },
@@ -958,6 +2686,282 @@
     },
     {
       "type": "library",
+      "bomRef": "pkg:npm/detect-node-es@1.1.0",
+      "name": "detect-node-es",
+      "version": "1.1.0",
+      "purl": "pkg:npm/detect-node-es@1.1.0",
+      "description": "Detect Node.JS (as opposite to browser environment). ESM modification",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/thekashey/detect-node"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/thekashey/detect-node"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/detect-node-es@1.1.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/detect-node-es"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/dijkstrajs@1.0.3",
+      "name": "dijkstrajs",
+      "version": "1.0.3",
+      "purl": "pkg:npm/dijkstrajs@1.0.3",
+      "description": "A simple JavaScript implementation of Dijkstra's single-source shortest-paths algorithm.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/tcort/dijkstrajs"
+        },
+        {
+          "type": "vcs",
+          "url": "git://github.com/tcort/dijkstrajs"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/dijkstrajs@1.0.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/dijkstrajs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/electron@39.8.10",
+      "name": "electron",
+      "version": "39.8.10",
+      "purl": "pkg:npm/electron@39.8.10",
+      "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron/electron"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/electron@39.8.10"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/electron/node_modules/electron"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/electron-builder@26.15.3",
+      "name": "electron-builder",
+      "version": "26.15.3",
+      "purl": "pkg:npm/electron-builder@26.15.3",
+      "description": "A complete solution to package and build a ready for distribution Electron app for MacOS, Windows and Linux with “auto update” support out of the box",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/electron-userland/electron-builder"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/electron-userland/electron-builder.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/electron-builder@26.15.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/electron/node_modules/electron-builder"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/embla-carousel@8.6.0",
+      "name": "embla-carousel",
+      "version": "8.6.0",
+      "purl": "pkg:npm/embla-carousel@8.6.0",
+      "description": "A lightweight carousel library with fluid motion and great swipe precision",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.embla-carousel.com"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/davidjerleke/embla-carousel"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/embla-carousel@8.6.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/embla-carousel"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/embla-carousel-react@8.6.0",
+      "name": "embla-carousel-react",
+      "version": "8.6.0",
+      "purl": "pkg:npm/embla-carousel-react@8.6.0",
+      "description": "A lightweight carousel library with fluid motion and great swipe precision",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.embla-carousel.com"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/davidjerleke/embla-carousel"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/embla-carousel-react@8.6.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/embla-carousel-react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/embla-carousel-reactive-utils@8.6.0",
+      "name": "embla-carousel-reactive-utils",
+      "version": "8.6.0",
+      "purl": "pkg:npm/embla-carousel-reactive-utils@8.6.0",
+      "description": "Reactive utilities for Embla Carousel",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.embla-carousel.com"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/davidjerleke/embla-carousel"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/embla-carousel-reactive-utils@8.6.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/embla-carousel-reactive-utils"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/es-toolkit@1.49.0",
+      "name": "es-toolkit",
+      "version": "1.49.0",
+      "purl": "pkg:npm/es-toolkit@1.49.0",
+      "description": "A state-of-the-art, high-performance JavaScript utility library with a small bundle size and strong type annotations.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://es-toolkit.dev"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/toss/es-toolkit.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/es-toolkit@1.49.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/es-toolkit"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "bomRef": "pkg:npm/esbuild@0.25.12",
       "name": "esbuild",
       "version": "0.25.12",
@@ -983,16 +2987,16 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/esbuild"
+          "value": "apps/electron/node_modules/esbuild"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/eslint@10.3.0",
+      "bomRef": "pkg:npm/eslint@10.6.0",
       "name": "eslint",
-      "version": "10.3.0",
-      "purl": "pkg:npm/eslint@10.3.0",
+      "version": "10.6.0",
+      "purl": "pkg:npm/eslint@10.6.0",
       "description": "An AST-based pattern checker for JavaScript.",
       "licenses": [
         {
@@ -1014,7 +3018,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/eslint@10.3.0"
+          "value": "licenses/eslint@10.6.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1059,11 +3063,11 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/framer-motion@12.38.0",
-      "name": "framer-motion",
-      "version": "12.38.0",
-      "purl": "pkg:npm/framer-motion@12.38.0",
-      "description": "A simple and powerful JavaScript animation library",
+      "bomRef": "pkg:npm/eventemitter3@5.0.4",
+      "name": "eventemitter3",
+      "version": "5.0.4",
+      "purl": "pkg:npm/eventemitter3@5.0.4",
+      "description": "EventEmitter3 focuses on performance while maintaining a Node.js AND browser compatible interface.",
       "licenses": [
         {
           "license": {
@@ -1074,26 +3078,96 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "https://github.com/motiondivision/motion/"
+          "url": "git://github.com/primus/eventemitter3.git"
         }
       ],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/framer-motion@12.38.0"
+          "value": "licenses/eventemitter3@5.0.4"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/framer-motion"
+          "value": "apps/web/node_modules/eventemitter3"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/globals@17.6.0",
+      "bomRef": "pkg:npm/fallow@2.104.0",
+      "name": "fallow",
+      "version": "2.104.0",
+      "purl": "pkg:npm/fallow@2.104.0",
+      "description": "Deterministic codebase intelligence for TypeScript and JavaScript. Quality, risk, architecture, dependencies, duplication, and safe cleanup evidence for humans, CI, and agents. Optional runtime intelligence layer (Fallow Runtime) adds production execution evidence. Rust-native, sub-second, zero-config framework support.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://docs.fallow.tools"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/fallow-rs/fallow.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/fallow@2.104.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "node_modules/fallow"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/get-nonce@1.0.1",
+      "name": "get-nonce",
+      "version": "1.0.1",
+      "purl": "pkg:npm/get-nonce@1.0.1",
+      "description": "returns nonce",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/theKashey/get-nonce"
+        },
+        {
+          "type": "vcs",
+          "url": "git@github.com:theKashey/get-nonce.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/get-nonce@1.0.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/get-nonce"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/globals@17.7.0",
       "name": "globals",
-      "version": "17.6.0",
-      "purl": "pkg:npm/globals@17.6.0",
+      "version": "17.7.0",
+      "purl": "pkg:npm/globals@17.7.0",
       "description": "Global identifiers from different JavaScript environments",
       "licenses": [
         {
@@ -1111,11 +3185,116 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/globals@17.6.0"
+          "value": "licenses/globals@17.7.0"
         },
         {
           "name": "local:sourcePackageDir",
           "value": "apps/web/node_modules/globals"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/immer@10.2.0",
+      "name": "immer",
+      "version": "10.2.0",
+      "purl": "pkg:npm/immer@10.2.0",
+      "description": "Create your next immutable state by mutating the current one",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/immerjs/immer#readme"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/immerjs/immer.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/immer@10.2.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/immer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/input-otp@1.4.2",
+      "name": "input-otp",
+      "version": "1.4.2",
+      "purl": "pkg:npm/input-otp@1.4.2",
+      "description": "One-time password input component for React.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://input-otp.rodz.dev/"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/guilhermerodz/input-otp.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/input-otp@1.4.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/input-otp"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/internmap@2.0.3",
+      "name": "internmap",
+      "version": "2.0.3",
+      "purl": "pkg:npm/internmap@2.0.3",
+      "description": "Map and Set with automatic key interning",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/mbostock/internmap/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/mbostock/internmap.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/internmap@2.0.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/internmap"
         }
       ]
     },
@@ -1152,10 +3331,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/livekit-client@2.18.8",
+      "bomRef": "pkg:npm/livekit-client@2.20.0",
       "name": "livekit-client",
-      "version": "2.18.8",
-      "purl": "pkg:npm/livekit-client@2.18.8",
+      "version": "2.20.0",
+      "purl": "pkg:npm/livekit-client@2.20.0",
       "description": "JavaScript/TypeScript client SDK for LiveKit",
       "licenses": [
         {
@@ -1173,7 +3352,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/livekit-client@2.18.8"
+          "value": "licenses/livekit-client@2.20.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1183,10 +3362,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/lucide-react@1.14.0",
+      "bomRef": "pkg:npm/lucide-react@1.23.0",
       "name": "lucide-react",
-      "version": "1.14.0",
-      "purl": "pkg:npm/lucide-react@1.14.0",
+      "version": "1.23.0",
+      "purl": "pkg:npm/lucide-react@1.23.0",
       "description": "A Lucide icon library package for React applications.",
       "licenses": [
         {
@@ -1208,20 +3387,104 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/lucide-react@1.14.0"
+          "value": "licenses/lucide-react@1.23.0"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/lucide-react"
+          "value": "apps/web/node_modules/lucide-react"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/prettier@3.8.3",
+      "bomRef": "pkg:npm/mtp@0.1.0",
+      "name": "mtp",
+      "version": "0.1.0",
+      "purl": "pkg:npm/mtp@0.1.0",
+      "description": "MTP TypeScript SDK",
+      "externalReferences": [],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/mtp@0.1.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/mtp/node_modules/mtp"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/next-themes@0.4.6",
+      "name": "next-themes",
+      "version": "0.4.6",
+      "purl": "pkg:npm/next-themes@0.4.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pacocoursey/next-themes.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/next-themes@0.4.6"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/next-themes"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/pngjs@5.0.0",
+      "name": "pngjs",
+      "version": "5.0.0",
+      "purl": "pkg:npm/pngjs@5.0.0",
+      "description": "PNG encoder/decoder in pure JS, supporting any bit size & interlace, async & sync with full test suite.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/lukeapage/pngjs"
+        },
+        {
+          "type": "vcs",
+          "url": "git://github.com/lukeapage/pngjs.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/pngjs@5.0.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/pngjs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/prettier@3.9.4",
       "name": "prettier",
-      "version": "3.8.3",
-      "purl": "pkg:npm/prettier@3.8.3",
+      "version": "3.9.4",
+      "purl": "pkg:npm/prettier@3.9.4",
       "description": "Prettier is an opinionated code formatter",
       "licenses": [
         {
@@ -1243,7 +3506,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/prettier@3.8.3"
+          "value": "licenses/prettier@3.9.4"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1288,10 +3551,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/react@19.2.5",
+      "bomRef": "pkg:npm/react@19.2.7",
       "name": "react",
-      "version": "19.2.5",
-      "purl": "pkg:npm/react@19.2.5",
+      "version": "19.2.7",
+      "purl": "pkg:npm/react@19.2.7",
       "description": "React is a JavaScript library for building user interfaces.",
       "licenses": [
         {
@@ -1313,7 +3576,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/react@19.2.5"
+          "value": "licenses/react@19.2.7"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1323,10 +3586,45 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/react-dom@19.2.5",
+      "bomRef": "pkg:npm/react-day-picker@10.0.1",
+      "name": "react-day-picker",
+      "version": "10.0.1",
+      "purl": "pkg:npm/react-day-picker@10.0.1",
+      "description": "Customizable Date Picker for React",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://daypicker.dev"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/gpbl/react-day-picker.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/react-day-picker@10.0.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/react-day-picker"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/react-dom@19.2.7",
       "name": "react-dom",
-      "version": "19.2.5",
-      "purl": "pkg:npm/react-dom@19.2.5",
+      "version": "19.2.7",
+      "purl": "pkg:npm/react-dom@19.2.7",
       "description": "React package for working with the DOM.",
       "licenses": [
         {
@@ -1348,11 +3646,212 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/react-dom@19.2.5"
+          "value": "licenses/react-dom@19.2.7"
         },
         {
           "name": "local:sourcePackageDir",
           "value": "apps/tauri/node_modules/react-dom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/react-is@19.2.7",
+      "name": "react-is",
+      "version": "19.2.7",
+      "purl": "pkg:npm/react-is@19.2.7",
+      "description": "Brand checking of React Elements.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://react.dev/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/react-is@19.2.7"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/react-is"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/react-redux@9.3.0",
+      "name": "react-redux",
+      "version": "9.3.0",
+      "purl": "pkg:npm/react-redux@9.3.0",
+      "description": "Official React bindings for Redux",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/reduxjs/react-redux"
+        },
+        {
+          "type": "vcs",
+          "url": "github:reduxjs/react-redux"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/react-redux@9.3.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/react-redux"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/react-remove-scroll@2.7.2",
+      "name": "react-remove-scroll",
+      "version": "2.7.2",
+      "purl": "pkg:npm/react-remove-scroll@2.7.2",
+      "description": "Disables scroll outside of `children` node.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/theKashey/react-remove-scroll"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/react-remove-scroll@2.7.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/react-remove-scroll"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/react-remove-scroll-bar@2.3.8",
+      "name": "react-remove-scroll-bar",
+      "version": "2.3.8",
+      "purl": "pkg:npm/react-remove-scroll-bar@2.3.8",
+      "description": "Removes body scroll without content _shake_",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/theKashey/react-remove-scroll-bar"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/react-remove-scroll-bar@2.3.8"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/react-remove-scroll-bar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/react-resizable-panels@4.12.0",
+      "name": "react-resizable-panels",
+      "version": "4.12.0",
+      "purl": "pkg:npm/react-resizable-panels@4.12.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://react-resizable-panels.vercel.app/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/bvaughn/react-resizable-panels.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/react-resizable-panels@4.12.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/react-resizable-panels"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/react-style-singleton@2.2.3",
+      "name": "react-style-singleton",
+      "version": "2.2.3",
+      "purl": "pkg:npm/react-style-singleton@2.2.3",
+      "description": "Just create a single stylesheet...",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/theKashey/react-style-singleton#readme"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/theKashey/react-style-singleton"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/react-style-singleton@2.2.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/react-style-singleton"
         }
       ]
     },
@@ -1387,16 +3886,222 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "packages/call/node_modules/recharts"
+          "value": "apps/web/node_modules/recharts"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/shadcn@4.6.0",
+      "bomRef": "pkg:npm/redux@5.0.1",
+      "name": "redux",
+      "version": "5.0.1",
+      "purl": "pkg:npm/redux@5.0.1",
+      "description": "Predictable state container for JavaScript apps",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "http://redux.js.org"
+        },
+        {
+          "type": "vcs",
+          "url": "github:reduxjs/redux"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/redux@5.0.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/redux"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/redux-thunk@3.1.0",
+      "name": "redux-thunk",
+      "version": "3.1.0",
+      "purl": "pkg:npm/redux-thunk@3.1.0",
+      "description": "Thunk middleware for Redux.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/reduxjs/redux-thunk"
+        },
+        {
+          "type": "vcs",
+          "url": "github:reduxjs/redux-thunk"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/redux-thunk@3.1.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/redux-thunk"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/reselect@5.1.1",
+      "name": "reselect",
+      "version": "5.1.1",
+      "purl": "pkg:npm/reselect@5.1.1",
+      "description": "Selectors for Redux.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/reduxjs/reselect.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/reselect@5.1.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/reselect"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/scheduler@0.27.0",
+      "name": "scheduler",
+      "version": "0.27.0",
+      "purl": "pkg:npm/scheduler@0.27.0",
+      "description": "Cooperative scheduler for the browser environment.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://react.dev/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/scheduler@0.27.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/scheduler"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/seroval@1.5.4",
+      "name": "seroval",
+      "version": "1.5.4",
+      "purl": "pkg:npm/seroval@1.5.4",
+      "description": "Stringify JS values",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/lxsmnsyc/seroval/tree/main/packages/seroval"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/lxsmnsyc/seroval.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/seroval@1.5.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/seroval"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/seroval-plugins@1.5.4",
+      "name": "seroval-plugins",
+      "version": "1.5.4",
+      "purl": "pkg:npm/seroval-plugins@1.5.4",
+      "description": "Stringify JS values",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/lxsmnsyc/seroval/tree/main/packages/plugins"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/lxsmnsyc/seroval.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/seroval-plugins@1.5.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/seroval-plugins"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/shadcn@4.12.0",
       "name": "shadcn",
-      "version": "4.6.0",
-      "purl": "pkg:npm/shadcn@4.6.0",
+      "version": "4.12.0",
+      "purl": "pkg:npm/shadcn@4.12.0",
       "description": "Add components to your apps.",
       "licenses": [
         {
@@ -1414,7 +4119,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/shadcn@4.6.0"
+          "value": "licenses/shadcn@4.12.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1459,10 +4164,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/tailwind-merge@3.5.0",
+      "bomRef": "pkg:npm/tailwind-merge@3.6.0",
       "name": "tailwind-merge",
-      "version": "3.5.0",
-      "purl": "pkg:npm/tailwind-merge@3.5.0",
+      "version": "3.6.0",
+      "purl": "pkg:npm/tailwind-merge@3.6.0",
       "description": "Merge Tailwind CSS classes without style conflicts",
       "licenses": [
         {
@@ -1484,7 +4189,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/tailwind-merge@3.5.0"
+          "value": "licenses/tailwind-merge@3.6.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1529,10 +4234,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/tailwindcss@4.2.4",
+      "bomRef": "pkg:npm/tailwindcss@4.3.2",
       "name": "tailwindcss",
-      "version": "4.2.4",
-      "purl": "pkg:npm/tailwindcss@4.2.4",
+      "version": "4.3.2",
+      "purl": "pkg:npm/tailwindcss@4.3.2",
       "description": "A utility-first CSS framework for rapidly building custom user interfaces.",
       "licenses": [
         {
@@ -1554,7 +4259,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/tailwindcss@4.2.4"
+          "value": "licenses/tailwindcss@4.3.2"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1593,7 +4298,73 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/tauri-plugin-app-events-api"
+          "value": "packages/mtp/node_modules/tauri-plugin-app-events-api"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/tiny-invariant@1.3.3",
+      "name": "tiny-invariant",
+      "version": "1.3.3",
+      "purl": "pkg:npm/tiny-invariant@1.3.3",
+      "description": "A tiny invariant function",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/alexreardon/tiny-invariant.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/tiny-invariant@1.3.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/tiny-invariant"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/tslib@2.8.1",
+      "name": "tslib",
+      "version": "2.8.1",
+      "purl": "pkg:npm/tslib@2.8.1",
+      "description": "Runtime library for TypeScript helper functions",
+      "licenses": [
+        {
+          "license": {
+            "id": "0BSD"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.typescriptlang.org/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/Microsoft/tslib.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/tslib@2.8.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/tslib"
         }
       ]
     },
@@ -1663,16 +4434,16 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/typescript"
+          "value": "apps/electron/node_modules/typescript"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/typescript-eslint@8.59.1",
+      "bomRef": "pkg:npm/typescript-eslint@8.62.1",
       "name": "typescript-eslint",
-      "version": "8.59.1",
-      "purl": "pkg:npm/typescript-eslint@8.59.1",
+      "version": "8.62.1",
+      "purl": "pkg:npm/typescript-eslint@8.62.1",
       "description": "Tooling which enables you to use TypeScript with ESLint",
       "licenses": [
         {
@@ -1694,7 +4465,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/typescript-eslint@8.59.1"
+          "value": "licenses/typescript-eslint@8.62.1"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1704,10 +4475,177 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/vite@8.0.10",
+      "bomRef": "pkg:npm/use-callback-ref@1.3.3",
+      "name": "use-callback-ref",
+      "version": "1.3.3",
+      "purl": "pkg:npm/use-callback-ref@1.3.3",
+      "description": "The same useRef, but with callback",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/theKashey/use-callback-ref/"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/use-callback-ref@1.3.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/use-callback-ref"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/use-sidecar@1.1.3",
+      "name": "use-sidecar",
+      "version": "1.1.3",
+      "purl": "pkg:npm/use-sidecar@1.1.3",
+      "description": "Sidecar code splitting utils",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/theKashey/use-sidecar"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/theKashey/use-sidecar"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/use-sidecar@1.1.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/use-sidecar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/use-sync-external-store@1.6.0",
+      "name": "use-sync-external-store",
+      "version": "1.6.0",
+      "purl": "pkg:npm/use-sync-external-store@1.6.0",
+      "description": "Backwards compatible shim for React's useSyncExternalStore. Works with any React that supports hooks.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/use-sync-external-store@1.6.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/use-sync-external-store"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/vaul@1.1.2",
+      "name": "vaul",
+      "version": "1.1.2",
+      "purl": "pkg:npm/vaul@1.1.2",
+      "description": "Drawer component for React.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://vaul.emilkowal.ski/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/emilkowalski/vaul.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/vaul@1.1.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/vaul"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/victory-vendor@37.3.6",
+      "name": "victory-vendor",
+      "version": "37.3.6",
+      "purl": "pkg:npm/victory-vendor@37.3.6",
+      "description": "Vendored dependencies for Victory",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT AND ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://commerce.nearform.com/open-source/victory"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/FormidableLabs/victory"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/victory-vendor@37.3.6"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/victory-vendor"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/vite@8.1.3",
       "name": "vite",
-      "version": "8.0.10",
-      "purl": "pkg:npm/vite@8.0.10",
+      "version": "8.1.3",
+      "purl": "pkg:npm/vite@8.1.3",
       "description": "Native-ESM powered web dev build tool",
       "licenses": [
         {
@@ -1729,7 +4667,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/vite@8.0.10"
+          "value": "licenses/vite@8.1.3"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1739,10 +4677,115 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/zod@4.4.2",
+      "bomRef": "pkg:npm/vitest@4.1.9",
+      "name": "vitest",
+      "version": "4.1.9",
+      "purl": "pkg:npm/vitest@4.1.9",
+      "description": "Next generation testing framework powered by Vite",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://vitest.dev"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/vitest-dev/vitest.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/vitest@4.1.9"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "node_modules/vitest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/yaml@2.9.0",
+      "name": "yaml",
+      "version": "2.9.0",
+      "purl": "pkg:npm/yaml@2.9.0",
+      "description": "JavaScript parser and stringifier for YAML",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://eemeli.org/yaml/"
+        },
+        {
+          "type": "vcs",
+          "url": "github:eemeli/yaml"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/yaml@2.9.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "node_modules/yaml"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/yargs@15.4.1",
+      "name": "yargs",
+      "version": "15.4.1",
+      "purl": "pkg:npm/yargs@15.4.1",
+      "description": "yargs the modern, pirate-themed, successor to optimist.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://yargs.js.org/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/yargs/yargs.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/yargs@15.4.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/web/node_modules/yargs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/zod@4.4.3",
       "name": "zod",
-      "version": "4.4.2",
-      "purl": "pkg:npm/zod@4.4.2",
+      "version": "4.4.3",
+      "purl": "pkg:npm/zod@4.4.3",
       "description": "TypeScript-first schema declaration and validation library with static type inference",
       "licenses": [
         {
@@ -1764,7 +4807,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/zod@4.4.2"
+          "value": "licenses/zod@4.4.3"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1774,10 +4817,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/zustand@5.0.12",
+      "bomRef": "pkg:npm/zustand@5.0.14",
       "name": "zustand",
-      "version": "5.0.12",
-      "purl": "pkg:npm/zustand@5.0.12",
+      "version": "5.0.14",
+      "purl": "pkg:npm/zustand@5.0.14",
       "description": "🐻 Bear necessities for state management in React",
       "licenses": [
         {
@@ -1799,7 +4842,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/zustand@5.0.12"
+          "value": "licenses/zustand@5.0.14"
         },
         {
           "name": "local:sourcePackageDir",

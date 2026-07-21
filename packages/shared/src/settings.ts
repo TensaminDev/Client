@@ -46,6 +46,7 @@ const settings = {
     },
   },
   application: {
+    cache: {},
     theme: {},
     licenses: {},
   },

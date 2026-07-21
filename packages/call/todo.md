@@ -7,3 +7,4 @@
 - Implement context menu features
 - Add quality selection
 - Good preview page
+- Settings page

@@ -20,6 +20,22 @@ export type DesktopScreenShareCapabilities = {
   hasReliableSystemAudio: boolean;
 };
 
+export type DesktopCallStatus = {
+  inCall: boolean;
+  speaking: boolean;
+  iconDataUrl?: string;
+};
+
+export type DesktopSecureStorageStatus = {
+  available: boolean;
+  backend: string | null;
+};
+
+export const secureStorageLimits = {
+  maxKeyBytes: 256,
+  maxValueBytes: 1024 * 1024,
+} as const;
+
 export type ReleaseArtifact = {
   name: string;
   platform: string;
@@ -55,4 +71,10 @@ export const ipcChannels = {
   closeWindow: "window:close",
   getVersion: "app:getVersion",
   checkForUpdates: "updates:checkForUpdates",
+  setCallStatus: "call:setStatus",
+  getSecureStorageStatus: "secureStorage:getStatus",
+  loadSecureStorage: "secureStorage:load",
+  saveSecureStorage: "secureStorage:save",
+  deleteSecureStorage: "secureStorage:delete",
+  clearSecureStorage: "secureStorage:clear",
 } as const;

@@ -1,0 +1,30 @@
+{
+  "name": "@tensamin/mtp",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "format": "pnpm exec prettier --write .",
+    "lint": "eslint src --ext .ts,.tsx",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tensamin/crypto": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "@tensamin/ui": "*",
+    "lucide-react": "^1.14.0",
+    "mtp": "*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tauri-plugin-app-events-api": "^0.2.0",
+    "zod": "^4.4.2"
+  },
+  "devDependencies": {
+    "eslint": "^10.0.3"
+  }
+}

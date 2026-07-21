@@ -1,5 +1,5 @@
-import * as React from "react";
-import * as Comlink from "comlink";
+import { createContext, useContext } from "react";
+import { base64ToBytes, crypto } from "mtp";
 
 type CryptoContextType = {
   decrypt: (
@@ -12,205 +12,62 @@ type CryptoContextType = {
     input: Uint8Array<ArrayBuffer>,
   ) => Promise<Uint8Array<ArrayBuffer>>;
   encryptText: (secret: string, plaintext: string) => Promise<string>;
-  getSharedSecret: (
-    ownPrivateKey: string,
-    ownPublicKey: string,
-    otherPublicKey: string,
-  ) => Promise<string>;
 };
 
-type ApiRef = {
-  encrypt: (
-    secret: string,
-    input: Uint8Array<ArrayBuffer>,
-  ) => Promise<Uint8Array<ArrayBuffer>>;
-  decrypt: (
-    secret: string,
-    input: Uint8Array<ArrayBuffer>,
-  ) => Promise<Uint8Array<ArrayBuffer>>;
-  decryptText: (secret: string, ciphertext: string) => Promise<string>;
-  encryptText: (secret: string, plaintext: string) => Promise<string>;
-  getSharedSecret: (
-    ownPrivateKey: string,
-    ownPublicKey: string,
-    otherPublicKey: string,
-  ) => Promise<string>;
-};
+export const context = createContext<CryptoContextType | undefined>(undefined);
 
-export function bytesToBase64(bytes: Uint8Array<ArrayBuffer>): string {
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
-}
-
-export function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-export const context = React.createContext<CryptoContextType | undefined>(
-  undefined,
-);
-
-/**
- * Provides cryptographic actions backed by a worker without coupling to UI state.
- * @param props Component props with children.
- * @returns Crypto context provider JSX.
- */
-export default function Provider(props: { children: React.ReactNode }) {
-  const apiRef = React.useRef<ApiRef | null>(null);
-
-  const value = React.useMemo<CryptoContextType>(
-    () => ({
-      encrypt: async (secret, plaintext) => {
-        const api = apiRef.current;
-        if (!api) throw new Error("API not initialized");
-        return await api.encrypt(secret, plaintext);
-      },
-      decrypt: async (secret, ciphertext) => {
-        const api = apiRef.current;
-        if (!api) throw new Error("API not initialized");
-        return await api.decrypt(secret, ciphertext);
-      },
-      encryptText: async (secret, plaintext) => {
-        const api = apiRef.current;
-        if (!api) throw new Error("API not initialized");
-        return await api.encryptText(secret, plaintext);
-      },
-      decryptText: async (secret, ciphertext) => {
-        const api = apiRef.current;
-        if (!api) throw new Error("API not initialized");
-        return await api.decryptText(secret, ciphertext);
-      },
-      getSharedSecret: async (ownPrivateKey, ownPublicKey, otherPublicKey) => {
-        const api = apiRef.current;
-        if (!api) throw new Error("API not initialized");
-        return await api.getSharedSecret(
-          ownPrivateKey,
-          ownPublicKey,
-          otherPublicKey,
-        );
-      },
-    }),
-    [],
-  );
-
-  React.useEffect(() => {
-    const worker = new Worker(new URL("./worker.ts", import.meta.url), {
-      type: "module",
-    });
-
-    apiRef.current = Comlink.wrap<ApiRef>(worker);
-
-    return () => {
-      apiRef.current = null;
-      worker.terminate();
-    };
-  }, []);
-
-  return <context.Provider value={value}>{props.children}</context.Provider>;
-}
-
-/**
- * Creates crypto action functions that safely delegate to the worker API.
- * @param getApiRef Function that returns the worker API reference.
- * @returns Typed crypto action functions.
- */
 export function createCryptoActions(
-  getApiRef: () => ApiRef | null,
+  getApi: () => CryptoContextType | null | undefined,
 ): CryptoContextType {
-  /**
-   * Encrypts bytes by delegating to the crypto worker API.
-   * @param secret Hex-encoded shared secret.
-   * @param input Plaintext bytes to encrypt.
-   * @returns Ciphertext bytes.
-   */
-  const encrypt = async (
-    secret: string,
-    input: Uint8Array<ArrayBuffer>,
-  ): Promise<Uint8Array<ArrayBuffer>> => {
-    const api = getApiRef();
-    if (!api) throw new Error("API not initialized");
-    return await api.encrypt(secret, input);
+  const requireApi = () => {
+    const api = getApi();
+    if (!api) {
+      throw new Error("Crypto API not initialized");
+    }
+    return api;
   };
 
-  /**
-   * Decrypts bytes by delegating to the crypto worker API.
-   * @param secret Hex-encoded shared secret.
-   * @param input Ciphertext bytes to decrypt.
-   * @returns Plaintext bytes.
-   */
-  const decrypt = async (
-    secret: string,
-    input: Uint8Array<ArrayBuffer>,
-  ): Promise<Uint8Array<ArrayBuffer>> => {
-    const api = getApiRef();
-    if (!api) throw new Error("API not initialized");
-    return await api.decrypt(secret, input);
+  return {
+    decrypt: (secret, input) => requireApi().decrypt(secret, input),
+    decryptText: (secret, ciphertext) =>
+      requireApi().decryptText(secret, ciphertext),
+    encrypt: (secret, input) => requireApi().encrypt(secret, input),
+    encryptText: (secret, plaintext) =>
+      requireApi().encryptText(secret, plaintext),
   };
-
-  /**
-   * Encrypts plaintext text by delegating to the crypto worker API.
-   * @param secret Hex-encoded shared secret.
-   * @param plaintext Plaintext to encrypt.
-   * @returns Base64 ciphertext.
-   */
-  const encryptText = async (
-    secret: string,
-    plaintext: string,
-  ): Promise<string> => {
-    const api = getApiRef();
-    if (!api) throw new Error("API not initialized");
-    return await api.encryptText(secret, plaintext);
-  };
-
-  /**
-   * Decrypts base64 ciphertext text by delegating to the crypto worker API.
-   * @param secret Hex-encoded shared secret.
-   * @param ciphertext Base64 ciphertext to decrypt.
-   * @returns Decrypted plaintext.
-   */
-  const decryptText = async (
-    secret: string,
-    ciphertext: string,
-  ): Promise<string> => {
-    const api = getApiRef();
-    if (!api) throw new Error("API not initialized");
-    return await api.decryptText(secret, ciphertext);
-  };
-
-  /**
-   * Derives a shared secret from local and peer key material via the worker API.
-   * @param ownPrivateKey Local private key.
-   * @param ownPublicKey Local public key.
-   * @param otherPublicKey Peer public key.
-   * @returns Hex-encoded shared secret.
-   */
-  const getSharedSecret = async (
-    ownPrivateKey: string,
-    ownPublicKey: string,
-    otherPublicKey: string,
-  ): Promise<string> => {
-    const api = getApiRef();
-    if (!api) throw new Error("API not initialized");
-    return await api.getSharedSecret(
-      ownPrivateKey,
-      ownPublicKey,
-      otherPublicKey,
-    );
-  };
-
-  return { encrypt, decrypt, encryptText, decryptText, getSharedSecret };
 }
 
-/**
- * Returns the crypto actions from the nearest provider.
- * Throws when used outside of the crypto provider tree.
- */
+function ownedBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const out = new Uint8Array(bytes.byteLength);
+  out.set(bytes);
+  return out;
+}
+
+function secretKeyFromString(secret: string): Uint8Array {
+  return crypto.deriveEncryptionKey(
+    base64ToBytes(secret),
+    new Uint8Array(0),
+    new TextEncoder().encode("tensamin:shared-secret-text"),
+  );
+}
+
+export default function Provider(props: { children: React.ReactNode }) {
+  const actions = createCryptoActions(() => ({
+    decrypt: async (secret, input) =>
+      ownedBytes(await crypto.decrypt(secretKeyFromString(secret), input)),
+    decryptText: (secret, ciphertext) =>
+      crypto.decryptText(secretKeyFromString(secret), ciphertext),
+    encrypt: async (secret, input) =>
+      ownedBytes(await crypto.encrypt(secretKeyFromString(secret), input)),
+    encryptText: (secret, plaintext) =>
+      crypto.encryptText(secretKeyFromString(secret), plaintext),
+  }));
+
+  return <context.Provider value={actions}>{props.children}</context.Provider>;
+}
+
 export function useCrypto(): CryptoContextType {
-  const ctx = React.useContext(context);
+  const ctx = useContext(context);
   if (!ctx) {
     throw new Error("useCrypto must be used within a CryptoProvider");
   }

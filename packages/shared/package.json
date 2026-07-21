@@ -4,16 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
+    "./asyncQueue": "./src/asyncQueue.ts",
     "./code": "./src/code.ts",
     "./data": "./src/data.ts",
     "./desktopMedia": "./src/desktopMedia.tsx",
     "./log": "./src/log.tsx",
+    "./indexedDb": "./src/indexedDb.ts",
     "./settings": "./src/settings.ts",
     "./features/legal/schema": "./src/features/legal/schema.ts",
     "./features/conversation/schema": "./src/features/conversation/schema.ts"
   },
   "scripts": {
-    "format": "bunx prettier --write .",
+    "format": "pnpm exec prettier --write .",
     "lint": "eslint src",
     "build": "tsc -p tsconfig.json --noEmit"
   },

@@ -39,25 +39,20 @@ export default function MediaSaveButton({
   }
 
   return (
-    <div
+    <Button
+      aria-label={ariaLabel ?? (isSaved ? "Unsave media" : "Save media")}
       className={cn(
-        "absolute right-1 top-1 z-10 h-9 w-9 -translate-y-2 rounded-sm bg-black opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100",
+        "rounded-sm border-0! p-0 absolute right-1 top-1 z-10 h-9 w-9 -translate-y-2 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100 bg-card",
         className,
       )}
+      onClick={handleClick}
     >
-      <Button
-        aria-label={ariaLabel ?? (isSaved ? "Unsave media" : "Save media")}
-        className="h-full w-full rounded-sm border-0! p-0"
-        onClick={handleClick}
-        variant="secondary"
-      >
-        <Save
-          className={cn(
-            "size-4.5 stroke-1.5!",
-            isSaved && "fill-(--primary) stroke-(--primary-foreground-alt)",
-          )}
-        />
-      </Button>
-    </div>
+      <Save
+        className={cn(
+          "size-4.5 stroke-1.5!",
+          isSaved && "fill-(--primary) stroke-(--primary-foreground-alt)",
+        )}
+      />
+    </Button>
   );
 }
