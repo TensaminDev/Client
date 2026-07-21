@@ -6,7 +6,6 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-<<<<<<< HEAD
   outputs =
     {
       self,
@@ -34,30 +33,6 @@
             };
           };
           debArtifact = "Tensamin-${version}-linux-amd64.deb";
-=======
-  outputs = {
-    self,
-    nixpkgs,
-    rust-overlay,
-    ...
-  }: let
-    systems = ["x86_64-linux"];
-    forAllSystems = nixpkgs.lib.genAttrs systems;
-    version = "0.0.10";
-    x86_64DebHash = "sha256-9s47HyPJf/6yA6XGgKBJ+60gTXLTV/jvE2tS/Fth8zA=";
-    forgejoBaseUrl = "https://git.methanium.net/tensamin/client/releases/download/${version}";
-  in {
-    packages = forAllSystems (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [(import rust-overlay)];
-        config = {
-          allowUnfree = true;
-          android_sdk.accept_license = true;
-        };
-      };
-      debArtifact = "Tensamin-${version}-linux-amd64.deb";
->>>>>>> refs/remotes/origin/dev
 
           electronRuntimeLibs = with pkgs; [
             alsa-lib
