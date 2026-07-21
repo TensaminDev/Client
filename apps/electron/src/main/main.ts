@@ -30,6 +30,9 @@ const verbose = process.argv.includes("--verbose");
 let mainWindow: BrowserWindow | null = null;
 let selectedScreenShareSourceId: string | null = null;
 
+app.setName("tensamin");
+app.setPath("userData", join(app.getPath("appData"), "tensamin", "electron"));
+
 if (verbose) {
   app.commandLine.appendSwitch("enable-logging", "stderr");
   app.commandLine.appendSwitch("v", "1");
