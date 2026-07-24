@@ -6,5 +6,5 @@ allowBuilds:
   electron-winstaller: true
   esbuild: true
 overrides:
-  "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz"
+  "@tensamin/ui": "https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz"
   mtp: "https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz"

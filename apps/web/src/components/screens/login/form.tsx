@@ -8,6 +8,7 @@ import * as React from "react";
 import { z } from "zod";
 import { isTauri } from "@tauri-apps/api/core";
 import QrCodeScanner from "@tensamin/tauri/qrCodeScanner";
+import { useNavigate } from "@tanstack/react-router";
 
 const fetchedUser = z.object({
   id: z.uuidv4(),
@@ -80,6 +81,7 @@ export default function Form() {
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const { save } = useStorage();
+  const navigate = useNavigate();
   const loginPendingRef = React.useRef(false);
 
   const persistLogin = React.useCallback(
@@ -91,18 +93,13 @@ export default function Form() {
         await save("mtp_keyring", privateKey, { secure: true });
         await save("session_id", Date.now());
         await save("user_id", userId);
-        window.history.replaceState(
-          null,
-          "",
-          window.location.protocol === "file:" ? "#/" : "/",
-        );
-        window.location.reload();
+        await navigate({ to: "/", replace: true });
         return true;
       } finally {
         loginPendingRef.current = false;
       }
     },
-    [save],
+    [navigate, save],
   );
 
   // Process dropped files

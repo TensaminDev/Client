@@ -1,7 +1,7 @@
 import { LeaveIcon } from "@livekit/components-react";
-import { Button } from "@tensamin/ui";
+import { Button, withTooltip } from "@tensamin/ui";
 import { disconnect, useCall } from "../../store";
-import { type CallButtonProps, iconScale, withTooltip } from "./tooltipButton";
+import { type CallButtonProps, iconScale } from "./tooltipButton";
 
 export default function LeaveButton({
   className,

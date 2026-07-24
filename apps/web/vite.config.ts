@@ -136,6 +136,7 @@ export default defineConfig({
       "@tensamin/markdown",
       "@tensamin/mtp",
       "@tensamin/notifications",
+      "@tensamin/onboarding",
       "@tensamin/shared",
       "@tensamin/shared/data",
       "@tensamin/shared/log",

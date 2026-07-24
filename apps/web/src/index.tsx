@@ -15,6 +15,7 @@ import NotFound from "@/routes/404";
 
 import AppLayout from "@/routes/app/layout";
 import { createSettingsRoute } from "@tensamin/settings";
+import OnboardingGate from "@tensamin/onboarding";
 
 import Home from "@/routes/app/home";
 import ChatScreen from "@tensamin/chat/screen";
@@ -43,7 +44,6 @@ import Crypto from "@tensamin/crypto/context";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
 import { log } from "@tensamin/shared/log";
 
-import LegalWrapper from "@/features/legal/screen";
 import CacheSync from "@tensamin/cache/sync";
 
 import { useStorage } from "@tensamin/storage/context";
@@ -244,13 +244,7 @@ function RootShell() {
             <Storage>
               <ThemeStorageBridge />
               <LoginWrapper>
-                <LegalWrapper>
-                  <Crypto>
-                    <DesktopMediaProvider>
-                      <Outlet />
-                    </DesktopMediaProvider>
-                  </Crypto>
-                </LegalWrapper>
+                <Outlet />
               </LoginWrapper>
             </Storage>
           </TooltipProvider>
@@ -262,24 +256,30 @@ function RootShell() {
 
 function AppShell() {
   return (
-    <MTPProvider>
-      <CacheSync />
-      <Session>
-        <UserProvider>
-          <CallInit />
-          <CallPopout />
-          <TAuthWrapper>
-            <AppLayout>
-              <ChatContext>
-                <NotificationsProvider>
-                  <Outlet />
-                </NotificationsProvider>
-              </ChatContext>
-            </AppLayout>
-          </TAuthWrapper>
-        </UserProvider>
-      </Session>
-    </MTPProvider>
+    <OnboardingGate>
+      <Crypto>
+        <DesktopMediaProvider>
+          <MTPProvider>
+            <CacheSync />
+            <Session>
+              <UserProvider>
+                <CallInit />
+                <CallPopout />
+                <TAuthWrapper>
+                  <AppLayout>
+                    <ChatContext>
+                      <NotificationsProvider>
+                        <Outlet />
+                      </NotificationsProvider>
+                    </ChatContext>
+                  </AppLayout>
+                </TAuthWrapper>
+              </UserProvider>
+            </Session>
+          </MTPProvider>
+        </DesktopMediaProvider>
+      </Crypto>
+    </OnboardingGate>
   );
 }
 

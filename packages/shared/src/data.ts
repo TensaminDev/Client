@@ -421,6 +421,7 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
+  onboarding_done: boolean;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -458,6 +459,7 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
+  onboarding_done: false,
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,

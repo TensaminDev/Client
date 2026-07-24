@@ -1,7 +1,7 @@
-import { Button } from "@tensamin/ui";
+import { Button, withTooltip } from "@tensamin/ui";
 import { toggleDeaf, useCall } from "../../store";
 import { HeadphoneOff, Headphones } from "lucide-react";
-import { type CallButtonProps, iconScale, withTooltip } from "./tooltipButton";
+import { type CallButtonProps, iconScale } from "./tooltipButton";
 
 export default function DeafButton({
   className,

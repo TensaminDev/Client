@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@tensamin/ui': https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
+  '@tensamin/ui': https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
   mtp: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
 
 importers:
@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       mtp:
         specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
         version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
@@ -107,8 +107,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       react:
         specifier: ^19.2.0
         version: 19.2.7
@@ -257,6 +257,9 @@ importers:
       '@tensamin/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
+      '@tensamin/onboarding':
+        specifier: workspace:*
+        version: link:../../packages/onboarding
       '@tensamin/settings':
         specifier: workspace:*
         version: link:../../packages/settings
@@ -273,8 +276,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/tauth
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tensamin/user':
         specifier: workspace:*
         version: link:../../packages/user
@@ -547,8 +550,8 @@ importers:
         specifier: workspace:*
         version: link:../storage
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tensamin/user':
         specifier: workspace:*
         version: link:../user
@@ -610,8 +613,8 @@ importers:
         specifier: workspace:*
         version: link:../storage
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tensamin/user':
         specifier: workspace:*
         version: link:../user
@@ -661,8 +664,8 @@ importers:
         specifier: ^6.41.1
         version: 6.43.4
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@twemoji/api':
         specifier: ^17.0.3
         version: 17.0.3
@@ -691,8 +694,8 @@ importers:
         specifier: workspace:*
         version: link:../storage
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       lucide-react:
         specifier: ^1.14.0
         version: 1.23.0(react@19.2.7)
@@ -740,8 +743,8 @@ importers:
         specifier: workspace:*
         version: link:../storage
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tensamin/user':
         specifier: workspace:*
         version: link:../user
@@ -754,6 +757,30 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      zod:
+        specifier: ^4.3.6
+        version: 4.4.3
+
+  packages/onboarding:
+    dependencies:
+      '@tensamin/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tensamin/storage':
+        specifier: workspace:*
+        version: link:../storage
+      '@tensamin/ui':
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.23.0(react@19.2.7)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
       zod:
         specifier: ^4.3.6
         version: 4.4.3
@@ -779,8 +806,8 @@ importers:
         specifier: workspace:*
         version: link:../storage
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tensamin/user':
         specifier: workspace:*
         version: link:../user
@@ -801,8 +828,8 @@ importers:
   packages/shared:
     dependencies:
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       lucide-react:
         specifier: ^1.14.0
         version: 1.23.0(react@19.2.7)
@@ -831,8 +858,8 @@ importers:
         specifier: workspace:*
         version: link:../shared
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       react:
         specifier: ^19.2.0
         version: 19.2.7
@@ -864,8 +891,8 @@ importers:
         specifier: workspace:*
         version: link:../../apps/tauri
       '@tensamin/ui':
-        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz
-        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz
+        version: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tensamin/user':
         specifier: workspace:*
         version: link:../user
@@ -2125,9 +2152,9 @@ packages:
   '@tauri-apps/plugin-notification@2.3.3':
     resolution: {integrity: sha512-Zw+ZH18RJb41G4NrfHgIuofJiymusqN+q8fGUIIV7vyCH+5sSn5coqRv/MWB9qETsUs97vmU045q7OyseCV3Qg==}
 
-  '@tensamin/ui@https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz':
-    resolution: {integrity: sha512-xyzw3/XAYKczV1cYQ2QuzhFzFYbU9U2U/gi/TMU/U7MC0vp1xHCVssTcB1kot8yk9YEIEcDBK2X49Ftzj6bJeQ==, tarball: https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz}
-    version: 0.0.40
+  '@tensamin/ui@https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz':
+    resolution: {integrity: sha512-H68VGR6Dy/3cO+VhhUdUdMkPWnUqP0lDmu3v3NPdfuB++SUmSm/zVVXB0I5Y5bnNXTD3FOVLIdP+AplaXuEGDg==, tarball: https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz}
+    version: 0.0.41
     peerDependencies:
       react: ^19.2.7
       react-dom: ^19.2.7
@@ -6206,7 +6233,7 @@ snapshots:
     dependencies:
       '@tauri-apps/api': 2.11.1
 
-  '@tensamin/ui@https://git.methanium.net/tensamin/ui/releases/download/0.0.40/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)':
+  '@tensamin/ui@https://git.methanium.net/tensamin/ui/releases/download/0.0.41/tensamin-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)':
     dependencies:
       '@base-ui/react': 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@fontsource-variable/inter': 5.2.8

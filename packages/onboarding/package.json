@@ -1,0 +1,23 @@
+{
+  "name": "@tensamin/onboarding",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "scripts": {
+    "format": "pnpm exec prettier --write .",
+    "lint": "eslint src",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "@tensamin/ui": "*",
+    "lucide-react": "^1.14.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.3.6"
+  }
+}
