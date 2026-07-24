@@ -7,7 +7,7 @@ import { dirname } from "node:path";
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 
-const packagesDir = join(_dirname, "..", "packages");
+const packagesDir = join(_dirname, "..", "..", "packages");
 
 function getPackageDirs(dir: string): string[] {
   const entries = readdirSync(dir);
@@ -32,12 +32,12 @@ const packageDirs = getPackageDirs(packagesDir);
 
 for (const fullPath of packageDirs) {
   const entry = fullPath.replace(packagesDir + "/", "");
-  console.log(`Updating ${entry}...`);
+  console.log(`Building ${entry}...`);
   try {
-    execSync("pnpm update --interactive", { cwd: fullPath, stdio: "inherit" });
-    console.log(`${entry} updated successfully.`);
+    execSync("pnpm run build", { cwd: fullPath, stdio: "inherit" });
+    console.log(`${entry} built successfully.`);
   } catch {
-    console.error(`Failed to update ${entry}.`);
+    console.error(`Failed to build ${entry}.`);
     process.exit(1);
   }
 }

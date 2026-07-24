@@ -31,6 +31,15 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@base-ui_utils@0.3.1`
 - Source package dir: `apps/web/node_modules/@base-ui/utils`
 
+## @codemirror/autocomplete@6.20.3
+
+- License: MIT
+- Repository: git+https://code.haverbeke.berlin/codemirror/autocomplete.git
+- Description: Autocompletion for the CodeMirror code editor
+- Included files: LICENSE
+- Folder: `licenses/@codemirror_autocomplete@6.20.3`
+- Source package dir: `packages/markdown/node_modules/@codemirror/autocomplete`
+
 ## @codemirror/commands@6.10.4
 
 - License: MIT
@@ -48,6 +57,15 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Included files: LICENSE
 - Folder: `licenses/@codemirror_lang-markdown@6.5.0`
 - Source package dir: `packages/markdown/node_modules/@codemirror/lang-markdown`
+
+## @codemirror/language@6.12.4
+
+- License: MIT
+- Repository: git+https://code.haverbeke.berlin/codemirror/language.git
+- Description: Language support infrastructure for the CodeMirror code editor
+- Included files: LICENSE
+- Folder: `licenses/@codemirror_language@6.12.4`
+- Source package dir: `packages/markdown/node_modules/@codemirror/language`
 
 ## @codemirror/state@6.7.0
 
@@ -144,26 +162,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Included files: LICENSE
 - Folder: `licenses/@livekit_components-react@2.9.21`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
-
-## @noble/curves@2.2.0
-
-- License: MIT
-- Homepage: https://paulmillr.com/noble/
-- Repository: git+https://github.com/paulmillr/noble-curves.git
-- Description: Audited & minimal JS implementation of elliptic curve cryptography
-- Included files: LICENSE
-- Folder: `licenses/@noble_curves@2.2.0`
-- Source package dir: `packages/crypto/node_modules/@noble/curves`
-
-## @noble/hashes@2.2.0
-
-- License: MIT
-- Homepage: https://paulmillr.com/noble/
-- Repository: git+https://github.com/paulmillr/noble-hashes.git
-- Description: Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt
-- Included files: LICENSE
-- Folder: `licenses/@noble_hashes@2.2.0`
-- Source package dir: `packages/crypto/node_modules/@noble/hashes`
 
 ## @radix-ui/primitive@1.1.4
 
@@ -494,12 +492,22 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@tauri-apps_plugin-notification@2.3.3`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-notification`
 
-## @tensamin/ui@0.0.39
+## @tensamin/ui@0.0.41
 
 - License: UNKNOWN
 - Included files: none found
-- Folder: `licenses/@tensamin_ui@0.0.39`
+- Folder: `licenses/@tensamin_ui@0.0.41`
 - Source package dir: `apps/tauri/node_modules/@tensamin/ui`
+
+## @twemoji/api@17.0.3
+
+- License: MIT AND CC-BY-4.0
+- Homepage: https://github.com/jdecked/twemoji
+- Repository: git://github.com/jdecked/twemoji.git
+- Description: A Unicode standard based way to implement emoji across all platforms.
+- Included files: LICENSE
+- Folder: `licenses/@twemoji_api@17.0.3`
+- Source package dir: `packages/markdown/node_modules/@twemoji/api`
 
 ## @types/node@25.9.4
 
@@ -598,15 +606,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Included files: LICENSE.md
 - Folder: `licenses/cmdk@1.1.1`
 - Source package dir: `apps/web/node_modules/cmdk`
-
-## comlink@4.4.2
-
-- License: Apache-2.0
-- Repository: https://github.com/GoogleChromeLabs/comlink.git
-- Description: Comlink makes WebWorkers enjoyable
-- Included files: LICENSE
-- Folder: `licenses/comlink@4.4.2`
-- Source package dir: `packages/crypto/node_modules/comlink`
 
 ## cookie-es@3.1.1
 
@@ -823,6 +822,15 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/embla-carousel-reactive-utils@8.6.0`
 - Source package dir: `apps/web/node_modules/embla-carousel-reactive-utils`
 
+## emojibase-data@17.0.0
+
+- License: MIT
+- Repository: git@github.com:milesj/emojibase.git
+- Description: Evergreen emoji datasets.
+- Included files: LICENSE
+- Folder: `licenses/emojibase-data@17.0.0`
+- Source package dir: `packages/markdown/node_modules/emojibase-data`
+
 ## es-toolkit@1.49.0
 
 - License: MIT
@@ -958,12 +966,21 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/lucide-react@1.23.0`
 - Source package dir: `apps/web/node_modules/lucide-react`
 
-## mtp@0.1.0
+## motion@12.42.2
+
+- License: MIT
+- Repository: https://github.com/motiondivision/motion
+- Description: An animation library for JavaScript and React.
+- Included files: LICENSE.md
+- Folder: `licenses/motion@12.42.2`
+- Source package dir: `packages/chat/node_modules/motion`
+
+## mtp@0.2.0
 
 - License: UNKNOWN
 - Description: MTP TypeScript SDK
 - Included files: none found
-- Folder: `licenses/mtp@0.1.0`
+- Folder: `licenses/mtp@0.2.0`
 - Source package dir: `packages/mtp/node_modules/mtp`
 
 ## next-themes@0.4.6

@@ -1,8 +1,7 @@
-import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
 import { AlertTriangle, Check, Ellipse, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
 import {
@@ -384,7 +383,7 @@ function MessageComponent({
   );
 }
 
-export default React.memo(MessageComponent, (prev, next) => {
+export default memo(MessageComponent, (prev, next) => {
   return (
     prev.message.SendTime === next.message.SendTime &&
     prev.message.Content === next.message.Content &&

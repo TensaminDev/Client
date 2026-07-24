@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { basename, join } from "node:path";
-import packageJson from "../package.json" with { type: "json" };
+import packageJson from "../../package.json" with { type: "json" };
 
 const { version } = packageJson;
 const releaseVersion = process.env.TENSAMIN_RELEASE_VERSION || version;

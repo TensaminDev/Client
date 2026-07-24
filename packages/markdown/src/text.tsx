@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useMemo } from "react";
 
 import {
   ensureMarkdownStyles,
@@ -18,11 +18,8 @@ export type TextProps = {
 export default function Text(props: TextProps) {
   ensureMarkdownStyles();
 
-  const blocks = React.useMemo(
-    () => parseMarkdownBlocks(props.value),
-    [props.value],
-  );
-  const renderedBlocks = React.useMemo(() => renderBlocks(blocks), [blocks]);
+  const blocks = useMemo(() => parseMarkdownBlocks(props.value), [props.value]);
+  const renderedBlocks = useMemo(() => renderBlocks(blocks), [blocks]);
 
   return <div className="tm-md-root">{renderedBlocks}</div>;
 }

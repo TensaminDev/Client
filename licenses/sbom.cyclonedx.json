@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-03T19:50:00.640Z",
+    "timestamp": "2026-07-24T10:43:11.914Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -119,6 +119,37 @@
     },
     {
       "type": "library",
+      "bomRef": "pkg:npm/%40codemirror/autocomplete@6.20.3",
+      "name": "@codemirror/autocomplete",
+      "version": "6.20.3",
+      "purl": "pkg:npm/%40codemirror/autocomplete@6.20.3",
+      "description": "Autocompletion for the CodeMirror code editor",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git+https://code.haverbeke.berlin/codemirror/autocomplete.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@codemirror_autocomplete@6.20.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/markdown/node_modules/@codemirror/autocomplete"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "bomRef": "pkg:npm/%40codemirror/commands@6.10.4",
       "name": "@codemirror/commands",
       "version": "6.10.4",
@@ -176,6 +207,37 @@
         {
           "name": "local:sourcePackageDir",
           "value": "packages/markdown/node_modules/@codemirror/lang-markdown"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40codemirror/language@6.12.4",
+      "name": "@codemirror/language",
+      "version": "6.12.4",
+      "purl": "pkg:npm/%40codemirror/language@6.12.4",
+      "description": "Language support infrastructure for the CodeMirror code editor",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git+https://code.haverbeke.berlin/codemirror/language.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@codemirror_language@6.12.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/markdown/node_modules/@codemirror/language"
         }
       ]
     },
@@ -513,76 +575,6 @@
         {
           "name": "local:sourcePackageDir",
           "value": "packages/call/node_modules/@livekit/components-react"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40noble/curves@2.2.0",
-      "name": "@noble/curves",
-      "version": "2.2.0",
-      "purl": "pkg:npm/%40noble/curves@2.2.0",
-      "description": "Audited & minimal JS implementation of elliptic curve cryptography",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://paulmillr.com/noble/"
-        },
-        {
-          "type": "vcs",
-          "url": "git+https://github.com/paulmillr/noble-curves.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@noble_curves@2.2.0"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/crypto/node_modules/@noble/curves"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40noble/hashes@2.2.0",
-      "name": "@noble/hashes",
-      "version": "2.2.0",
-      "purl": "pkg:npm/%40noble/hashes@2.2.0",
-      "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://paulmillr.com/noble/"
-        },
-        {
-          "type": "vcs",
-          "url": "git+https://github.com/paulmillr/noble-hashes.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@noble_hashes@2.2.0"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/crypto/node_modules/@noble/hashes"
         }
       ]
     },
@@ -1780,19 +1772,54 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tensamin/ui@0.0.39",
+      "bomRef": "pkg:npm/%40tensamin/ui@0.0.41",
       "name": "@tensamin/ui",
-      "version": "0.0.39",
-      "purl": "pkg:npm/%40tensamin/ui@0.0.39",
+      "version": "0.0.41",
+      "purl": "pkg:npm/%40tensamin/ui@0.0.41",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@tensamin_ui@0.0.39"
+          "value": "licenses/@tensamin_ui@0.0.41"
         },
         {
           "name": "local:sourcePackageDir",
           "value": "apps/tauri/node_modules/@tensamin/ui"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40twemoji/api@17.0.3",
+      "name": "@twemoji/api",
+      "version": "17.0.3",
+      "purl": "pkg:npm/%40twemoji/api@17.0.3",
+      "description": "A Unicode standard based way to implement emoji across all platforms.",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT AND CC-BY-4.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/jdecked/twemoji"
+        },
+        {
+          "type": "vcs",
+          "url": "git://github.com/jdecked/twemoji.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@twemoji_api@17.0.3"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/markdown/node_modules/@twemoji/api"
         }
       ]
     },
@@ -2138,37 +2165,6 @@
         {
           "name": "local:sourcePackageDir",
           "value": "apps/web/node_modules/cmdk"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/comlink@4.4.2",
-      "name": "comlink",
-      "version": "4.4.2",
-      "purl": "pkg:npm/comlink@4.4.2",
-      "description": "Comlink makes WebWorkers enjoyable",
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/GoogleChromeLabs/comlink.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/comlink@4.4.2"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/crypto/node_modules/comlink"
         }
       ]
     },
@@ -2927,6 +2923,37 @@
     },
     {
       "type": "library",
+      "bomRef": "pkg:npm/emojibase-data@17.0.0",
+      "name": "emojibase-data",
+      "version": "17.0.0",
+      "purl": "pkg:npm/emojibase-data@17.0.0",
+      "description": "Evergreen emoji datasets.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "git@github.com:milesj/emojibase.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/emojibase-data@17.0.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/markdown/node_modules/emojibase-data"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "bomRef": "pkg:npm/es-toolkit@1.49.0",
       "name": "es-toolkit",
       "version": "1.49.0",
@@ -3397,16 +3424,47 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/mtp@0.1.0",
+      "bomRef": "pkg:npm/motion@12.42.2",
+      "name": "motion",
+      "version": "12.42.2",
+      "purl": "pkg:npm/motion@12.42.2",
+      "description": "An animation library for JavaScript and React.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/motiondivision/motion"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/motion@12.42.2"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/chat/node_modules/motion"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/mtp@0.2.0",
       "name": "mtp",
-      "version": "0.1.0",
-      "purl": "pkg:npm/mtp@0.1.0",
+      "version": "0.2.0",
+      "purl": "pkg:npm/mtp@0.2.0",
       "description": "MTP TypeScript SDK",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/mtp@0.1.0"
+          "value": "licenses/mtp@0.2.0"
         },
         {
           "name": "local:sourcePackageDir",

@@ -1,4 +1,12 @@
-import * as React from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useMTP } from "@tensamin/mtp";
 
 import { mtp as schemas } from "@tensamin/shared/data";
@@ -13,25 +21,23 @@ interface contextValue {
   get(userId: number): Promise<User>;
 }
 
-const UserContext = React.createContext<contextValue | undefined>(undefined);
+const UserContext = createContext<contextValue | undefined>(undefined);
 
 /**
  * Executes UserProvider.
  * @param props Parameter props.
  * @returns unknown.
  */
-export default function UserProvider(props: { children: React.ReactNode }) {
-  const storageRef = React.useRef<Record<number, User>>({});
-  const pendingRef = React.useRef<Record<number, Promise<User> | undefined>>(
-    {},
-  );
+export default function UserProvider(props: { children: ReactNode }) {
+  const storageRef = useRef<Record<number, User>>({});
+  const pendingRef = useRef<Record<number, Promise<User> | undefined>>({});
 
   const { send } = useMTP();
   const { load } = useStorage();
   const { contacts } = useSession();
-  const [accountId, setAccountId] = React.useState<number | null>(null);
+  const [accountId, setAccountId] = useState<number | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     void load("user_id").then((accountId) => {
       setAccountId(accountId);
     });
@@ -42,7 +48,7 @@ export default function UserProvider(props: { children: React.ReactNode }) {
    * @param userId Parameter userId.
    * @returns Promise<User>.
    */
-  const get = React.useCallback(
+  const get = useCallback(
     async (userId: number): Promise<User> => {
       if (userId == null) {
         throw new Error("userId is required");
@@ -85,7 +91,7 @@ export default function UserProvider(props: { children: React.ReactNode }) {
     [accountId, send],
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!accountId) return;
     for (const contact of contacts) void get(contact.UserId);
   }, [accountId, contacts, get]);
@@ -103,7 +109,7 @@ export default function UserProvider(props: { children: React.ReactNode }) {
  * @returns contextValue.
  */
 export function useUser(): contextValue {
-  const context = React.useContext(UserContext);
+  const context = useContext(UserContext);
   if (!context) {
     throw new Error("useUser must be used within a UserProvider");
   }

@@ -12,6 +12,6 @@
     "moduleResolution": "nodenext",
     "types": ["node"]
   },
-  "include": ["scripts", "eslint.config.ts"],
+  "include": ["utils", "eslint.config.ts"],
   "exclude": ["node_modules", "dist"]
 }
