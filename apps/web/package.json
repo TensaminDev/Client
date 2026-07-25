@@ -60,7 +60,7 @@
     "@tensamin/mtp": "workspace:*",
     "@tensamin/tauth": "workspace:*",
     "@tensamin/markdown": "workspace:*",
-    "@tensamin/ui": "*",
+    "@methanium/ui": "*",
     "@tensamin/user": "workspace:*",
     "@tensamin/notifications": "workspace:*",
     "@tensamin/onboarding": "workspace:*",

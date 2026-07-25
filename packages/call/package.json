@@ -24,7 +24,7 @@
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "@tensamin/mtp": "workspace:*",
-    "@tensamin/ui": "*",
+    "@methanium/ui": "*",
     "@tensamin/user": "workspace:*",
     "deepfilternet3-noise-filter": "1.2.1",
     "livekit-client": "^2.18.8",
