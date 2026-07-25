@@ -1548,7 +1548,7 @@ packages:
     resolution: {integrity: sha512-FY+MKLBoTsLNJF/eLWaOsXGdz6uh3Iu1axjPf6TUq92IYumcTcXWHoS747JARLkcdlJ/Waiaxc5wQfFO8jC6NA==}
 
   '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.1/methanium-ui.tgz':
-    resolution: {tarball: https://git.methanium.net/methanium/ui/releases/download/0.0.1/methanium-ui.tgz}
+    resolution: {integrity: sha512-qS2q/CJg05245YN3tbgr7+JcJ3LqQE1S9AZ+zMMsMUFkwBK95cFfNrMVsNNsxt0ScMcBKSG2dZ3uFO8R2LE9JA==, tarball: https://git.methanium.net/methanium/ui/releases/download/0.0.1/methanium-ui.tgz}
     version: 0.0.1
     peerDependencies:
       react: ^19.2.7
