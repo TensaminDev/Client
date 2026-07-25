@@ -403,12 +403,6 @@ export function Provider(props: {
 
         clientRef.current = client;
         setReadyState(client.state);
-        await client.connect();
-
-        if (disposed) {
-          client.disconnect();
-          return;
-        }
 
         const authPayload = new Promise<
           ProtocolMessage<"IdentificationResponse">
