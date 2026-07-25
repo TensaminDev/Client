@@ -7,7 +7,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { Loader2, Search } from "lucide-react";
 import MediaSaveButton from "./mediaSaveButton";

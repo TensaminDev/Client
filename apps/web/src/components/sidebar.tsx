@@ -26,9 +26,9 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
-import { useIsMobile } from "@tensamin/ui";
+import { useIsMobile } from "@methanium/ui";
 import { MobileNavbar } from "./navbar";
 
 import SidebarBox from "@tensamin/call/sidebarBox";

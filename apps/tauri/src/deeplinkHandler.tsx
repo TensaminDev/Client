@@ -7,7 +7,7 @@ import {
 } from "react";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { isTauri } from "@tauri-apps/api/core";
-import { useIsMobile } from "@tensamin/ui";
+import { useIsMobile } from "@methanium/ui";
 
 type DeeplinkContextValue = {
   deeplinks: readonly string[];

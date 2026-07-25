@@ -17,7 +17,7 @@ import {
   getDatabaseEntry,
   setDatabaseEntry,
 } from "@tensamin/shared/indexedDb";
-import { ErrorScreen } from "@tensamin/ui";
+import { ErrorScreen } from "@methanium/ui";
 import { log } from "@tensamin/shared/log";
 import {
   decodeSecureValue,

@@ -1,4 +1,4 @@
-import { Badge, Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Dialog, DialogContent, DialogTrigger } from "@tensamin/ui";
+import { Badge, Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Dialog, DialogContent, DialogTrigger } from "@methanium/ui";
 import { generatedAt, packageCount, packages } from "../../../../licenses/third-party-credits.json";
 
 const licenseTexts = import.meta.glob("../../../../licenses/**/*", { eager: true, import: "default", query: "?raw" }) as Record<string, string>;

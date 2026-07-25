@@ -1,4 +1,4 @@
-import type { OnboardingStep } from "@tensamin/ui";
+import type { OnboardingStep } from "@methanium/ui";
 import OnboardingPage from "./pages/onboarding";
 
 // Add future onboarding pages here. Completed users skip this entire manifest.

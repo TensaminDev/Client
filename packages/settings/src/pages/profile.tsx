@@ -2,7 +2,7 @@ import MDInput from "@tensamin/markdown/input";
 import { useMTP } from "@tensamin/mtp";
 import { mtp } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
-import { Avatar, AvatarFallback, AvatarImage, Button, cn, Input, useIsMobile } from "@tensamin/ui";
+import { Avatar, AvatarFallback, AvatarImage, Button, cn, Input, useIsMobile } from "@methanium/ui";
 import { useUser, type User } from "@tensamin/user/context";
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

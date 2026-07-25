@@ -1,1 +1,0 @@
-- Make the legal loader use ldrs line wobble to better fit to the LoadingScreen from @tensamin/ui

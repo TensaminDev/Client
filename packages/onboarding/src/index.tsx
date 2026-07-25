@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
-  CreateScreen,
   ErrorScreen,
-  Link,
+  LoadingScreen,
   OnboardingFlow,
-  Spinner,
   type OnboardingStep,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import { log } from "@tensamin/shared/log";
@@ -19,7 +17,7 @@ export {
   useOnboardingStep,
   type OnboardingStep,
   type OnboardingStepControls,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 
 type LegalDocs = z.infer<typeof legalDocsSchema>;
 
@@ -137,20 +135,7 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
 
   if (!state) {
     if (!showLoading) return null;
-    return (
-      <CreateScreen>
-        <div className="flex flex-col items-center gap-3">
-          <Spinner className="size-8" />
-          <p className="text-sm text-muted-foreground">
-            Fetching legal documents...
-          </p>
-          <Link
-            label="status.methanium.net"
-            link="https://status.methanium.net"
-          />
-        </div>
-      </CreateScreen>
-    );
+    return <LoadingScreen noProgress title="Fetching legal documents..." />;
   }
 
   const steps: OnboardingStep[] = [];

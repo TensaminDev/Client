@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
   Switch,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import {
   type DesktopScreenShareAudioOutput,
   type DesktopScreenShareCapabilities,

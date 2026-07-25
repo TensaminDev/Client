@@ -1,7 +1,7 @@
 import { VideoTrack, useParticipantTracks } from "@livekit/components-react";
 import { TrackPublication } from "livekit-client";
 import { getRoom } from "../store";
-import { cn } from "@tensamin/ui";
+import { cn } from "@methanium/ui";
 import { Loader2 } from "lucide-react";
 
 export default function VideoViewer({

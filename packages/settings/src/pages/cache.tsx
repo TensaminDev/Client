@@ -2,7 +2,7 @@ import { createCache } from "@tensamin/cache";
 import { storageDefaults } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
 import { secureValueCodec } from "@tensamin/storage/secure";
-import { Button, Input, Label } from "@tensamin/ui";
+import { Button, Input, Label } from "@methanium/ui";
 import { useEffect, useState } from "react";
 
 const validLimit = (value: number) => Number.isSafeInteger(value) && value >= 0;

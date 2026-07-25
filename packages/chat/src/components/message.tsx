@@ -11,7 +11,7 @@ import {
   Button,
   cn,
   Skeleton,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 import { useStorage } from "@tensamin/storage/context";

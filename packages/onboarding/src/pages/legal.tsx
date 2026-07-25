@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
-import { Checkbox, Label, Link } from "@tensamin/ui";
+import { Checkbox, Label, Link } from "@methanium/ui";
 import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import type { z } from "zod";
 
-import { useOnboardingStep } from "@tensamin/ui";
+import { useOnboardingStep } from "@methanium/ui";
 
 type LegalDocs = z.infer<typeof legalDocsSchema>;
 

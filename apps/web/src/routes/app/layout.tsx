@@ -4,7 +4,7 @@ import Sidebar from "@/components/sidebar";
 import Navbar, { MobileNavbar } from "@/components/navbar";
 import { useShowMobileNavbar } from "./useShowMobileNavbar";
 
-import { useIsMobile, cn, SidebarProvider } from "@tensamin/ui";
+import { useIsMobile, cn, SidebarProvider } from "@methanium/ui";
 
 import { isTauri } from "@tauri-apps/api/core";
 

@@ -5,7 +5,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { useEffect, useState } from "react";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";

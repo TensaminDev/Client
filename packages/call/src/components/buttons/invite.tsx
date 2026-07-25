@@ -7,7 +7,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import Wrapper from "@tensamin/user/wrapper";
 import { Mail } from "lucide-react";
 import { sendCallInvite, useCall } from "../../store";

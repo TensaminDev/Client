@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import ScreenshareButton from "./buttons/screenshare";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";

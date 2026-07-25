@@ -1,4 +1,4 @@
-import { Button, cn } from "@tensamin/ui";
+import { Button, cn } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";

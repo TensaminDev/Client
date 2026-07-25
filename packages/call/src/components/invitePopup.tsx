@@ -5,7 +5,7 @@ import {
   Button,
   Dialog,
   DialogContent,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import Wrapper from "@tensamin/user/wrapper";
 import { PhoneIncoming, X } from "lucide-react";
 

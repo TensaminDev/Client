@@ -5,7 +5,7 @@ import {
   Button,
   ContextMenu as UIContextMenu,
   ContextMenuTrigger,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import {
   focusParticipant,
   getRoomMetadata,

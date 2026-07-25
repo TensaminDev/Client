@@ -4,7 +4,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   Slider,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import type { User } from "@tensamin/user/context";
 import { useCall } from "../../store";
 import { useState } from "react";

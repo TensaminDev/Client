@@ -4,17 +4,17 @@ import {
   PopoverContent,
   PopoverTrigger,
   useIsMobile,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
-import { Skeleton } from "@tensamin/ui";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@tensamin/ui";
+import { Skeleton } from "@methanium/ui";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@methanium/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
-import { SidebarTrigger, useSidebar } from "@tensamin/ui";
-import { WindowControls as Controls } from "@tensamin/ui";
+import { SidebarTrigger, useSidebar } from "@methanium/ui";
+import { WindowControls as Controls } from "@methanium/ui";
 import { useSession } from "@tensamin/storage/session";
 import Profile from "./modals/profile";
 

@@ -4,7 +4,7 @@ import { useChat } from "@tensamin/chat/context";
 import { useMTP } from "@tensamin/mtp";
 import { createContext, useEffect, useContext } from "react";
 import { toast as sonnerToast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@tensamin/ui";
+import { Avatar, AvatarFallback, AvatarImage } from "@methanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
 import { useSession } from "@tensamin/storage/session";
 import { useNavigate } from "@tanstack/react-router";

@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import {
   Clipboard,
   Ellipsis,

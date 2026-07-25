@@ -1,6 +1,6 @@
 import Text from "@tensamin/markdown/text";
 import { useStorage } from "@tensamin/storage/context";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@methanium/ui";
 import { TriangleAlert } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import MediaSaveButton from "./mediaSaveButton";

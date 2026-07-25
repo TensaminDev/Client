@@ -1,5 +1,5 @@
 import Form from "@/components/screens/login/form";
-import { CreateScreen } from "@tensamin/ui";
+import { CreateScreen } from "@methanium/ui";
 
 /**
  * Executes Page.

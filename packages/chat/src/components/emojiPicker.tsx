@@ -1,4 +1,4 @@
-import { Button } from "@tensamin/ui";
+import { Button } from "@methanium/ui";
 import Emoji from "@tensamin/markdown/emoji";
 import { getRecentEmojis, useEmojiRanks } from "./emojiRanks";
 

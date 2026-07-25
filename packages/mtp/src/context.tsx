@@ -14,7 +14,7 @@ import { MTPClient } from "mtp";
 import { type z } from "zod";
 import { ConnectionState } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
-import { toast as sonnerToast } from "@tensamin/ui";
+import { toast as sonnerToast } from "@methanium/ui";
 
 import {
   type Calls,

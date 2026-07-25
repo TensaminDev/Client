@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import "./index.css";
-import "@tensamin/ui/index.css";
+import "@methanium/ui/index.css";
 
 import NotFound from "@/routes/404";
 
@@ -33,7 +33,7 @@ import NotificationsProvider from "@tensamin/notifications/context";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
-import { ErrorScreen, ThemeProvider, useTheme } from "@tensamin/ui";
+import { ErrorScreen, ThemeProvider, useTheme } from "@methanium/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -48,7 +48,7 @@ import CacheSync from "@tensamin/cache/sync";
 
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useIsMobile, Toaster, TooltipProvider } from "@tensamin/ui";
+import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
 
 const wrapper = document.getElementById("root");

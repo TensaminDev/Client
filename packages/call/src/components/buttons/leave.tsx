@@ -1,5 +1,5 @@
 import { LeaveIcon } from "@livekit/components-react";
-import { Button, withTooltip } from "@tensamin/ui";
+import { Button, withTooltip } from "@methanium/ui";
 import { disconnect, useCall } from "../../store";
 import { type CallButtonProps, iconScale } from "./tooltipButton";
 

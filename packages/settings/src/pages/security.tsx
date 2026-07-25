@@ -1,5 +1,5 @@
 import { useStorage } from "@tensamin/storage/context";
-import { Button, Input, Label } from "@tensamin/ui";
+import { Button, Input, Label } from "@methanium/ui";
 import { useEffect, useState } from "react";
 
 export default function Page() {

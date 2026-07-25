@@ -1,4 +1,4 @@
-import { Button, withTooltip } from "@tensamin/ui";
+import { Button, withTooltip } from "@methanium/ui";
 import { toggleDeaf, useCall } from "../../store";
 import { HeadphoneOff, Headphones } from "lucide-react";
 import { type CallButtonProps, iconScale } from "./tooltipButton";

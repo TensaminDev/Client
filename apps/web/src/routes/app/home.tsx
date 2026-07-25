@@ -9,7 +9,7 @@ import {
   Input,
   Button,
   useIsMobile,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import z from "zod";
 import { useMTP } from "@tensamin/mtp";
 import { useState } from "react";

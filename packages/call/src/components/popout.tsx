@@ -3,7 +3,7 @@ import VideoViewer from "./videoViewer";
 import { useLocation } from "@tanstack/react-router";
 import { getRoom, stopWatchingStream, useCall } from "../store";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Button, cn } from "@tensamin/ui";
+import { Button, cn } from "@methanium/ui";
 import { ScreenShareOff } from "lucide-react";
 
 function getTrackPublicationBySource(

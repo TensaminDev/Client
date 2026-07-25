@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { Button, ClearStorageButton, cn, useIsMobile } from "@tensamin/ui";
+import { Button, ClearStorageButton, cn, useIsMobile } from "@methanium/ui";
 
 import { settingsNavigation } from "./manifest";
 

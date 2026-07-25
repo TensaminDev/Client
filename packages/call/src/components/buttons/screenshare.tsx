@@ -7,7 +7,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { MonitorDot, ScreenShare } from "lucide-react";
 import { toast } from "@tensamin/shared/log";
 import { isTauri } from "@tauri-apps/api/core";

@@ -6,9 +6,9 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from "@tensamin/ui";
-import { Card, CardHeader } from "@tensamin/ui";
-import { Skeleton } from "@tensamin/ui";
+} from "@methanium/ui";
+import { Card, CardHeader } from "@methanium/ui";
+import { Skeleton } from "@methanium/ui";
 import { getStatusColor } from "@tensamin/shared/data";
 
 export function Basic({

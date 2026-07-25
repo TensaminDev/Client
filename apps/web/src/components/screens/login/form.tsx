@@ -1,6 +1,6 @@
-import { Button, cn, useIsMobile } from "@tensamin/ui";
-import { Input } from "@tensamin/ui";
-import { Label } from "@tensamin/ui";
+import { Button, cn, useIsMobile } from "@methanium/ui";
+import { Input } from "@methanium/ui";
+import { Label } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
 import { File } from "lucide-react";

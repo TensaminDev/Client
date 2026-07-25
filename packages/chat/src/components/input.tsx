@@ -9,16 +9,16 @@ import {
   PopoverContent,
   PopoverTrigger,
   Skeleton,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import React, { useEffect, useState, useRef } from "react";
-import { Button } from "@tensamin/ui";
+import { Button } from "@methanium/ui";
 
 import { Plus, Laugh, FileVideo, Forward, X } from "lucide-react";
 import { useChat, useReplyMessage } from "../context";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
-import { cn, useIsMobile } from "@tensamin/ui";
+import { cn, useIsMobile } from "@methanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/storage/session";

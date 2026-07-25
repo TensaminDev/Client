@@ -1,4 +1,4 @@
-import { useIsMobile } from "@tensamin/ui";
+import { useIsMobile } from "@methanium/ui";
 import { SettingsSidebar } from "../layout";
 
 export default function Page() {
