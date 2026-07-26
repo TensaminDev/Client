@@ -18,6 +18,9 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
+      - name: Pull git submodules
+        run: git submodule update --init --recursive
+
       - name: Install dependencies
         run: nix develop .#electron --command pnpm install --frozen-lockfile
 
@@ -41,6 +44,9 @@ jobs:
 
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Pull git submodules
+        run: git submodule update --init --recursive
 
       - name: Install dependencies
         run: nix develop .#tauri --command pnpm install --frozen-lockfile
@@ -128,6 +134,9 @@ jobs:
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
+      - name: Pull git submodules
+        run: git submodule update --init --recursive
+
       - name: Install dependencies
         run: nix develop .#electron --command pnpm install --frozen-lockfile
 
@@ -179,6 +188,9 @@ jobs:
         uses: https://data.forgejo.org/actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Pull git submodules
+        run: git submodule update --init --recursive
 
       - name: Install dependencies
         run: nix develop .#electron --command pnpm install --frozen-lockfile
