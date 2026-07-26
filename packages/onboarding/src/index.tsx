@@ -36,6 +36,9 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
   const [showLoading, setShowLoading] = useState(false);
   const [error, setError] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
+  const [onboardingThemeId, setOnboardingThemeId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let active = true;
@@ -63,13 +66,19 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
           return;
         }
 
-        const [localDocs, acceptedPP, acceptedTOS, onboardingDone] =
-          await Promise.all([
-            load("legal_docs"),
-            load("accepted_privacy_policy"),
-            load("accepted_terms_of_service"),
-            load("onboarding_done"),
-          ]);
+        const [
+          localDocs,
+          acceptedPP,
+          acceptedTOS,
+          onboardingDone,
+          onboardingStarted,
+        ] = await Promise.all([
+          load("legal_docs"),
+          load("accepted_privacy_policy"),
+          load("accepted_terms_of_service"),
+          load("onboarding_done"),
+          load("onboarding_started"),
+        ]);
 
         if (!active) return;
 
@@ -78,10 +87,14 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
         const currentAcceptedTOS =
           acceptedTOS && localDocs.tos.hash === parsed.data.tos.hash;
         const existingUser = acceptedPP && acceptedTOS;
-        const includeOnboarding = !onboardingDone && !existingUser;
+        const includeOnboarding =
+          !onboardingDone && (!existingUser || onboardingStarted);
 
-        if (!onboardingDone && existingUser) {
+        if (!onboardingDone && existingUser && !onboardingStarted) {
           await save("onboarding_done", true);
+          if (!active) return;
+        } else if (includeOnboarding && !onboardingStarted) {
+          await save("onboarding_started", true);
           if (!active) return;
         }
 
@@ -124,7 +137,10 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
 
   const finish = useCallback(async () => {
     if (state?.includeOnboarding) {
-      await save("onboarding_done", true);
+      await Promise.all([
+        save("onboarding_done", true),
+        save("onboarding_started", false),
+      ]);
     }
     setComplete(true);
   }, [save, state?.includeOnboarding]);
@@ -142,6 +158,8 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
   if (state.includeLegal) {
     steps.push({
       id: "legal",
+      title: "Privacy Policy & ToS",
+      description: `${state.docs.pp.version} / ${state.docs.tos.version}`,
       defaultCanContinue: false,
       content: (
         <LegalPage
@@ -154,7 +172,7 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
     });
   }
   if (state.includeOnboarding) {
-    steps.push(...onboardingSteps);
+    steps.push(...onboardingSteps(onboardingThemeId, setOnboardingThemeId));
   }
 
   if (complete || steps.length === 0) return <>{children}</>;

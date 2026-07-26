@@ -131,7 +131,11 @@ function AddConversationButton() {
         setOpen(value);
       }}
     >
-      <DialogTrigger render={<Button>Add Conversation</Button>} />
+      <DialogTrigger
+        render={({ onClick }) => (
+          <Button onClick={onClick}>Add Conversation</Button>
+        )}
+      />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New Conversation</DialogTitle>

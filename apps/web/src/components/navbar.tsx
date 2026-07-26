@@ -10,7 +10,12 @@ import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
 import { Skeleton } from "@methanium/ui";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@methanium/ui";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@methanium/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@methanium/ui";
@@ -43,7 +48,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
       <div className="flex items-center justify-center gap-2">
         {forMobile ? (
           <SidebarTrigger
-            className="w-9 h-9 aspect-square rounded-lg ml-2"
+            className="w-9 h-9! aspect-square rounded-lg ml-2 bg-(--input)/35!"
             variant="outline"
           >
             <ArrowLeft className="size-4.5" />
@@ -52,14 +57,14 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           <>
             <Button
               onClick={() => navigate({ to: "/" })}
-              className="w-9 h-9 aspect-square rounded-lg"
+              className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
               variant="outline"
             >
               <House className="size-4.5" />
             </Button>
             <Button
               onClick={() => navigate({ to: "/settings" })}
-              className="w-9 h-9 aspect-square rounded-lg"
+              className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
               variant="outline"
             >
               <Settings className="size-4.5" />
@@ -109,7 +114,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 onClick={() => {
                   void joinCall(id);
                 }}
-                className="w-9 h-9 aspect-square rounded-lg"
+                className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
                 variant="outline"
               >
                 <Phone />
@@ -124,7 +129,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                     currentCalls[0].CallId,
                   );
                 }}
-                className="w-9 h-9 aspect-square rounded-lg"
+                className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
               >
                 <Phone />
               </Button>
@@ -175,7 +180,7 @@ export function MobileNavbar() {
     <div className="z-51 w-full shrink-0 pb-[env(safe-area-inset-bottom)] bg-card border-t">
       <div className="z-51 w-full h-15 grid grid-cols-3 items-center place-items-center px-5">
         <SidebarTrigger
-          className="text-foreground w-12! h-12! aspect-square rounded-xl flex flex-col gap-1"
+          className="text-foreground w-12! h-12! aspect-square rounded-xl flex flex-col gap-1 border-0!"
           variant="link"
         >
           <User className="size-4.5" />
@@ -186,7 +191,7 @@ export function MobileNavbar() {
             navigate({ to: "/" });
             setOpenMobile(false);
           }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1"
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! hover:bg-transparent!"
           variant="link"
         >
           <House className="size-4.5" />
@@ -197,7 +202,7 @@ export function MobileNavbar() {
             navigate({ to: "/settings" });
             setOpenMobile(false);
           }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1"
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! hover:bg-transparent!"
           variant="link"
         >
           <Settings className="size-4.5" />

@@ -1,6 +1,6 @@
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import { AlertTriangle, Check, Ellipse, RefreshCw } from "lucide-react";
+import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
@@ -289,11 +289,11 @@ function MessageComponent({
                           color="var(--primary-foreground-alt)"
                         />
                       ) : message.MessageState === "received" ? (
-                        <Check size={12} color="var(--muted-foreground)" />
+                        <CheckLine size={12} color="var(--muted-foreground)" />
                       ) : message.MessageState === "sent" ? (
-                        <RefreshCw size={12} color="var(--muted-foreground)" />
+                        <Check size={12} color="var(--muted-foreground)" />
                       ) : message.MessageState === "sending" ? (
-                        <Ellipse size={12} color="var(--muted-foreground)" />
+                        <RefreshCw size={12} color="var(--muted-foreground)" />
                       ) : null}
                       {actuallyFailed && (
                         <AlertTriangle color="var(--destructive)" size={12} />

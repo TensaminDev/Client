@@ -7,6 +7,7 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { mtp } from "mtp/vite";
+import { methaniumUi } from "@methanium/ui/vite";
 
 const host = process.env.TAURI_DEV_HOST;
 const appDir = dirname(fileURLToPath(import.meta.url));
@@ -153,8 +154,9 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
   plugins: [
+    methaniumUi({ defaultThemeId: "tensamin" }),
     deepFilterAssetHeaders(resolve(appDir, "public")),
-    mtp({ typeMaps: resolve(appDir, "../../type-maps.yaml") }),
+    mtp({ typeMaps: resolve(appDir, "../../mtp-type-maps/type-maps.yaml") }),
     {
       name: "workspace-realpath-resolution",
       enforce: "post",

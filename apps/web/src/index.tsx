@@ -131,6 +131,11 @@ function ThemeStorageBridge() {
     setThemeBorderRadius,
     themeCustomCss,
     setThemeCustomCss,
+    parentThemeId,
+    setParentThemeId,
+    applyThemePreset,
+    themeDesign,
+    setThemeDesign,
   } = useTheme();
   const loadedRef = useRef(false);
 
@@ -145,6 +150,8 @@ function ThemeStorageBridge() {
       load("theme_tint"),
       load("theme_border_radius"),
       load("theme_custom_css"),
+      load("theme_parent"),
+      load("theme_design"),
     ]).then(
       ([
         color,
@@ -154,18 +161,23 @@ function ThemeStorageBridge() {
         tint,
         borderRadius,
         customCss,
+        parent,
+        design,
       ]) => {
         if (!active) {
           return;
         }
 
+        if (customCss === "" && parent) applyThemePreset(parent);
+        else setParentThemeId(parent || null);
         setThemeColor(color);
         setThemePalette(palette);
         setThemePrimaryColor(primaryColor);
         setThemePolarity(polarity);
         setThemeTint(tint);
         setThemeBorderRadius(borderRadius);
-        setThemeCustomCss(customCss);
+        if (customCss !== "") setThemeCustomCss(customCss);
+        setThemeDesign(design);
         loadedRef.current = true;
       },
     );
@@ -175,9 +187,12 @@ function ThemeStorageBridge() {
     };
   }, [
     load,
+    applyThemePreset,
     setThemeBorderRadius,
     setThemeColor,
     setThemeCustomCss,
+    setParentThemeId,
+    setThemeDesign,
     setThemePalette,
     setThemePolarity,
     setThemePrimaryColor,
@@ -212,6 +227,14 @@ function ThemeStorageBridge() {
     if (loadedRef.current) save("theme_custom_css", themeCustomCss);
   }, [save, themeCustomCss]);
 
+  useEffect(() => {
+    if (loadedRef.current) save("theme_parent", parentThemeId ?? "");
+  }, [parentThemeId, save]);
+
+  useEffect(() => {
+    if (loadedRef.current) save("theme_design", themeDesign);
+  }, [save, themeDesign]);
+
   return null;
 }
 
@@ -228,6 +251,8 @@ function RootShell() {
         tintStorageKey={null}
         borderRadiusStorageKey={null}
         customCssStorageKey={null}
+        parentThemeStorageKey={null}
+        designStorageKey={null}
       >
         <div className="w-screen h-dvh overflow-hidden">
           <Toaster

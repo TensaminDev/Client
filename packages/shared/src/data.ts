@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ThemeDesign } from "@methanium/ui";
 
 import { legalDocsSchema } from "./features/legal/schema";
 import {
@@ -422,6 +423,7 @@ export interface Storage extends SettingsStorageDefaults {
   user_id: number;
   mtp_keyring: string;
   onboarding_done: boolean;
+  onboarding_started: boolean;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -445,6 +447,8 @@ export interface Storage extends SettingsStorageDefaults {
   theme_tint: "soft" | "hard" | "extreme";
   theme_border_radius: number;
   theme_custom_css: string;
+  theme_parent: string;
+  theme_design: ThemeDesign;
   chat_trusted_domains: string[];
   chat_picker_saved_media: string[];
   chat_picker_last_tab: "gif" | "meme" | "saved";
@@ -460,6 +464,7 @@ export const storageDefaults: Storage = {
   user_id: 0,
   mtp_keyring: "",
   onboarding_done: false,
+  onboarding_started: false,
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,
@@ -498,8 +503,18 @@ export const storageDefaults: Storage = {
   theme_primary_color: "",
   theme_polarity: "system",
   theme_tint: "soft",
-  theme_border_radius: 0.55,
+  theme_border_radius: 0.5,
   theme_custom_css: "",
+  theme_parent: "tensamin",
+  theme_design: {
+    density: 1,
+    borderWidth: 1,
+    shadowStrength: 0,
+    fontScale: 1,
+    headingWeight: 600,
+    motion: 1,
+    fontFamily: "public-sans",
+  },
   chat_trusted_domains: [
     // Other platforms
     "cdn.discordapp.com",

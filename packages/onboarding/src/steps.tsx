@@ -1,10 +1,15 @@
-import type { OnboardingStep } from "@methanium/ui";
-import OnboardingPage from "./pages/onboarding";
+import { ThemeOnboardingPage, type OnboardingStep } from "@methanium/ui";
 
-// Add future onboarding pages here. Completed users skip this entire manifest.
-export const onboardingSteps: OnboardingStep[] = [
+export const onboardingSteps = (
+  themeId: string | null,
+  setThemeId: (id: string) => void,
+): OnboardingStep[] => [
   {
-    id: "onboarding",
-    content: <OnboardingPage />,
+    id: "theme",
+    title: "Theming",
+    description:
+      "Pick a main theme and after that ... let's just hope you don't get into decision paralysis",
+    defaultCanContinue: false,
+    content: <ThemeOnboardingPage value={themeId} onValueChange={setThemeId} />,
   },
 ];

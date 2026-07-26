@@ -27,12 +27,16 @@ export default function SettingsLayout() {
 export function SettingsSidebar() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const categories = [...new Set(settingsNavigation.map((page) => page.category))];
+  const categories = [
+    ...new Set(settingsNavigation.map((page) => page.category)),
+  ];
 
   return (
     <div
       className={cn(
-        isMobile ? "w-full p-1" : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
+        isMobile
+          ? "w-full p-1"
+          : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
         "flex flex-col gap-6",
       )}
     >

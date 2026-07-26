@@ -32,16 +32,7 @@ export default function LegalPage({
   });
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-10 p-10 py-20 md:p-24">
-      <div>
-        <h1 className="text-3xl font-bold md:text-4xl" tabIndex={-1}>
-          Privacy Policy &amp; ToS
-        </h1>
-        <p className="pt-3 text-xl text-muted-foreground">
-          {docs.pp.version} / {docs.tos.version}
-        </p>
-      </div>
-
+    <div className="mx-auto flex min-h-[calc(100dvh-17rem)] w-full max-w-5xl flex-col gap-10 p-10 py-20 md:min-h-[calc(100dvh-20.5rem)] md:p-24">
       <div className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-start gap-2">
           <BigCheckbox
