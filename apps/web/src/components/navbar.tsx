@@ -48,7 +48,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
       <div className="flex items-center justify-center gap-2">
         {forMobile ? (
           <SidebarTrigger
-            className="w-9 h-9! aspect-square rounded-lg ml-2 bg-(--input)/35!"
+            className="w-9 h-9! aspect-square rounded-lg ml-2"
             variant="outline"
           >
             <ArrowLeft className="size-4.5" />
@@ -57,14 +57,14 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           <>
             <Button
               onClick={() => navigate({ to: "/" })}
-              className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
+              className="w-9 h-9! aspect-square rounded-lg"
               variant="outline"
             >
               <House className="size-4.5" />
             </Button>
             <Button
               onClick={() => navigate({ to: "/settings" })}
-              className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
+              className="w-9 h-9! aspect-square rounded-lg"
               variant="outline"
             >
               <Settings className="size-4.5" />
@@ -114,7 +114,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 onClick={() => {
                   void joinCall(id);
                 }}
-                className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
+                className="w-9 h-9! aspect-square rounded-lg"
                 variant="outline"
               >
                 <Phone />
@@ -129,7 +129,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                     currentCalls[0].CallId,
                   );
                 }}
-                className="w-9 h-9! aspect-square rounded-lg bg-(--input)/35!"
+                className="w-9 h-9! aspect-square rounded-lg"
               >
                 <Phone />
               </Button>

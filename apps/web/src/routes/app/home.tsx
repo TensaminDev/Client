@@ -164,7 +164,13 @@ function AddConversationButton() {
             {error && (
               <p className="text-sm text-destructive w-full">{error}</p>
             )}
-            <DialogClose render={<Button variant="outline">Cancel</Button>} />
+            <DialogClose
+              render={({ onClick }) => (
+                <Button onClick={onClick} variant="outline">
+                  Cancel
+                </Button>
+              )}
+            />
             <Button disabled={loading} type="submit">
               {loading && <Loader2 className="animate-spin" />} Continue
             </Button>

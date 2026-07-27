@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@methanium/ui': https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
+  '@methanium/ui': https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
   mtp: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
 
 importers:
@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       mtp:
         specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
         version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
@@ -89,8 +89,8 @@ importers:
   apps/tauri:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2
         version: 2.11.1
@@ -153,8 +153,8 @@ importers:
         specifier: ^5.2.7
         version: 5.2.7
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@radix-ui/primitive':
         specifier: ^1.1.0
         version: 1.1.4
@@ -532,8 +532,8 @@ importers:
         specifier: ^2.9.20
         version: 2.9.21(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tslib@2.8.1)
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tanstack/react-router':
         specifier: ^1.169.1
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -583,8 +583,8 @@ importers:
   packages/chat:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tanstack/pacer':
         specifier: ^0.21.1
         version: 0.21.1
@@ -664,8 +664,8 @@ importers:
         specifier: ^6.41.1
         version: 6.43.4
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@twemoji/api':
         specifier: ^17.0.3
         version: 17.0.3
@@ -682,8 +682,8 @@ importers:
   packages/mtp:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2
         version: 2.11.1
@@ -722,8 +722,8 @@ importers:
   packages/notifications:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tanstack/react-router':
         specifier: ^1.169.1
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -764,8 +764,8 @@ importers:
   packages/onboarding:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tensamin/shared':
         specifier: workspace:*
         version: link:../shared
@@ -788,8 +788,8 @@ importers:
   packages/settings:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tanstack/react-router':
         specifier: ^1.169.1
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -828,8 +828,8 @@ importers:
   packages/shared:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       lucide-react:
         specifier: ^1.14.0
         version: 1.23.0(react@19.2.7)
@@ -846,8 +846,8 @@ importers:
   packages/storage:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2
         version: 2.11.1
@@ -870,8 +870,8 @@ importers:
   packages/tauth:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       '@tanstack/react-router':
         specifier: ^1.0.0
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1550,9 +1550,9 @@ packages:
   '@marijn/find-cluster-break@1.0.3':
     resolution: {integrity: sha512-FY+MKLBoTsLNJF/eLWaOsXGdz6uh3Iu1axjPf6TUq92IYumcTcXWHoS747JARLkcdlJ/Waiaxc5wQfFO8jC6NA==}
 
-  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz':
-    resolution: {integrity: sha512-N1XjzbLIkCL9UeRqIGgU5RoUL+rBfJb4bo+kRcWtXwQJmvUBGkuxoh3j2bLsBG3P6wmRytNa2/ReSwLzjKt/UA==, tarball: https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz}
-    version: 0.0.6
+  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz':
+    resolution: {integrity: sha512-aKBV8nJR0GaCXQfbTdxoL9GJn2c43b7ZQf8jU2o1QWfIK3fOSljWh3ueU22amvXXIo3XsIzWQot2FDxPDis+FQ==, tarball: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz}
+    version: 0.0.8
     peerDependencies:
       react: ^19.2.7
       react-dom: ^19.2.7
@@ -5865,7 +5865,7 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.3': {}
 
-  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.6/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)':
+  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)':
     dependencies:
       '@base-ui/react': 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@fontsource-variable/public-sans': 5.3.0
