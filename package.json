@@ -18,7 +18,7 @@
     "build:apps": "pnpm run copy-licenses && pnpm run pre-build && pnpm run build:mobile && pnpm run build:desktop && pnpm run copy-releases",
     "build:packages": "node utils/scripts/build-packages.ts",
     "update:packages": "node utils/scripts/update-packages.ts",
-    "dev:web": "cd apps/web && pnpm dev",
+    "dev": "cd apps/web && pnpm dev",
     "build:web": "cd apps/web && pnpm run build",
     "preview:web": "cd apps/web && pnpm run preview",
     "dev:mobile": "cd apps/tauri && pnpm dev:mobile",

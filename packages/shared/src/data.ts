@@ -225,7 +225,7 @@ export const mtp = {
     request: user.partial(),
     response: z.object({}),
   },
-  Ping: {
+  ClientPing: {
     request: z.object({
       LastPing: z.number(),
     }),

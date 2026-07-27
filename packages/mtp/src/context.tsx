@@ -144,7 +144,7 @@ export function Provider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
-  const { load, save } = useStorage();
+  const { load } = useStorage();
 
   const [readyState, setReadyState] = useState<number>(
     ConnectionState.Disconnected,
@@ -241,7 +241,7 @@ export function Provider(props: {
     const interval = setInterval(async () => {
       try {
         const originalNow = Date.now();
-        const data = await send("Ping", { LastPing: originalNow });
+        const data = await send("ClientPing", { LastPing: originalNow });
         setOwnPing(Date.now() - originalNow);
 
         const remotePing = data.data.PingIota;
@@ -300,18 +300,12 @@ export function Provider(props: {
 
         await MTPClient.init();
 
-        const [userId, keyring, storedSessionId] = await Promise.all([
+        const [userId, keyring] = await Promise.all([
           load("user_id"),
           load("mtp_keyring"),
-          load("session_id"),
         ]);
         if (!userId || !keyring) {
           throw new Error("Missing login credentials");
-        }
-        let sessionId = storedSessionId;
-        if (!Number.isSafeInteger(sessionId) || sessionId <= 0) {
-          sessionId = Date.now();
-          await save("session_id", sessionId);
         }
         const forcedOmikronUrl = await load("forced_omikron_url");
         const forcedOmikronPublicKey = await load("forced_omikron_public_key");
@@ -422,16 +416,27 @@ export function Provider(props: {
         setReadyState(client.state);
         setIdentifying(true);
 
-        await client.auth();
-        const finalResponse = validateResponse(
-          "ClientStateSync",
-          await client.request("ClientConnected", {
-            SessionId: sessionId,
-            VersionNumber: 0,
-            CacheValid: false,
-            CacheSchemaVersion: 0,
-          }),
+        const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
+          (resolve, reject) => {
+            const timeout = setTimeout(() => {
+              unsubscribe();
+              reject(new Error("Initial state synchronization timed out"));
+            }, 120_000);
+            const unsubscribe = client.subscribe(
+              "ClientStateSync",
+              (message) => {
+                clearTimeout(timeout);
+                unsubscribe();
+                try {
+                  resolve(validateResponse("ClientStateSync", message));
+                } catch (error) {
+                  reject(error);
+                }
+              },
+            );
+          },
         );
+        const [, finalResponse] = await Promise.all([client.auth(), stateSync]);
 
         if (finalResponse.type.startsWith("Error")) {
           throw new Error(
@@ -440,7 +445,7 @@ export function Provider(props: {
         }
 
         const acknowledgement = await client.request("ClientStateAck", {
-          SessionId: sessionId,
+          SessionId: finalResponse.data.SessionId,
           VersionNumber: finalResponse.data.VersionNumber,
         });
         if (acknowledgement.type.startsWith("Error")) {
@@ -541,7 +546,7 @@ export function Provider(props: {
       setIdentifying(false);
       sonnerToast.dismiss("mtp-connection-toast");
     };
-  }, [mtpUrl, props.blockConnection, load, save]);
+  }, [mtpUrl, props.blockConnection, load]);
 
   // No Iota check
   useEffect(() => {
