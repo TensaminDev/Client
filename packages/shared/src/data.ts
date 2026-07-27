@@ -106,7 +106,7 @@ const authPayload = z.object({
   Contacts: z
     .array(
       z.object({
-        LastMessageAt: z.number(),
+        LastMessageAt: z.number().default(0),
         UserId: z.number(),
         LastMessage: z
           .object({
@@ -114,7 +114,7 @@ const authPayload = z.object({
             SenderId: z.number(),
           })
           .optional(),
-        Messages: z.array(Message),
+        Messages: z.array(Message).default([]),
       }),
     )
     .default([]),
@@ -127,6 +127,16 @@ const authPayload = z.object({
       }),
     )
     .default([]),
+});
+
+const clientStateSync = authPayload.extend({
+  SessionId: z.number().int().positive(),
+  VersionNumber: z.number().int().nonnegative(),
+  CacheSchemaVersion: z.number().int().nonnegative(),
+  SyncMode: z.enum(["full", "delta"]),
+  Messages: z.array(Message).default([]),
+  DeletedMessageIds: z.array(z.number()).default([]),
+  DeletedContactIds: z.array(z.number()).default([]),
 });
 
 export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
@@ -183,6 +193,26 @@ export const mtp = {
   IdentificationResponse: {
     request: z.object({}).optional(),
     response: authPayload,
+  },
+  ClientConnected: {
+    request: z.object({
+      SessionId: z.number().int().positive(),
+      VersionNumber: z.number().int().nonnegative(),
+      CacheValid: z.boolean(),
+      CacheSchemaVersion: z.number().int().nonnegative(),
+    }),
+    response: clientStateSync,
+  },
+  ClientStateSync: {
+    request: z.object({}).optional(),
+    response: clientStateSync,
+  },
+  ClientStateAck: {
+    request: z.object({
+      SessionId: z.number().int().positive(),
+      VersionNumber: z.number().int().nonnegative(),
+    }),
+    response: z.object({}),
   },
   GetUserData: {
     request: z.object({

@@ -144,7 +144,7 @@ export function Provider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
-  const { load } = useStorage();
+  const { load, save } = useStorage();
 
   const [readyState, setReadyState] = useState<number>(
     ConnectionState.Disconnected,
@@ -300,12 +300,18 @@ export function Provider(props: {
 
         await MTPClient.init();
 
-        const [userId, keyring] = await Promise.all([
+        const [userId, keyring, storedSessionId] = await Promise.all([
           load("user_id"),
           load("mtp_keyring"),
+          load("session_id"),
         ]);
         if (!userId || !keyring) {
           throw new Error("Missing login credentials");
+        }
+        let sessionId = storedSessionId;
+        if (!Number.isSafeInteger(sessionId) || sessionId <= 0) {
+          sessionId = Date.now();
+          await save("session_id", sessionId);
         }
         const forcedOmikronUrl = await load("forced_omikron_url");
         const forcedOmikronPublicKey = await load("forced_omikron_public_key");
@@ -404,27 +410,6 @@ export function Provider(props: {
         clientRef.current = client;
         setReadyState(client.state);
 
-        const authPayload = new Promise<
-          ProtocolMessage<"IdentificationResponse">
-        >((resolve, reject) => {
-          const unsubscribe = client.subscribe(
-            "IdentificationResponse",
-            (message) => {
-              try {
-                unsubscribe();
-                if (message.type.startsWith("Error")) {
-                  reject(new Error(`Authentication failed: ${message.type}`));
-                  return;
-                }
-                resolve(validateResponse("IdentificationResponse", message));
-              } catch (authPayloadError) {
-                unsubscribe();
-                reject(authPayloadError);
-              }
-            },
-          );
-        });
-
         clearReconnectTimer();
 
         // Schedule reconnect reset
@@ -438,7 +423,31 @@ export function Provider(props: {
         setIdentifying(true);
 
         await client.auth();
-        const finalResponse = await authPayload;
+        const finalResponse = validateResponse(
+          "ClientStateSync",
+          await client.request("ClientConnected", {
+            SessionId: sessionId,
+            VersionNumber: 0,
+            CacheValid: false,
+            CacheSchemaVersion: 0,
+          }),
+        );
+
+        if (finalResponse.type.startsWith("Error")) {
+          throw new Error(
+            `State synchronization failed: ${finalResponse.type}`,
+          );
+        }
+
+        const acknowledgement = await client.request("ClientStateAck", {
+          SessionId: sessionId,
+          VersionNumber: finalResponse.data.VersionNumber,
+        });
+        if (acknowledgement.type.startsWith("Error")) {
+          throw new Error(
+            `State acknowledgement failed: ${acknowledgement.type}`,
+          );
+        }
 
         if (disposed || clientRef.current !== client) return;
 
@@ -451,11 +460,15 @@ export function Provider(props: {
       } catch (connectError) {
         if (disposed) return;
         cleanup();
+        const connectErrorMessage =
+          connectError instanceof Error
+            ? connectError.message
+            : String(connectError ?? "Unknown error");
         log(
           0,
           "mtp",
           "red",
-          "Connection/authentication attempt failed",
+          `Connection/authentication attempt failed: ${connectErrorMessage}`,
           getProtocolErrorDetails(connectError) ?? connectError,
         );
 
@@ -465,10 +478,7 @@ export function Provider(props: {
           log(0, "mtp", "red", "Reconnection attempts exhausted", connectError);
           sonnerToast.error("Connection failed", {
             id: "mtp-connection-toast",
-            description:
-              connectError instanceof Error
-                ? connectError.message.split(":")[0]
-                : String(connectError ?? "Unknown error"),
+            description: connectErrorMessage.split(":")[0],
             icon: null,
             duration: Infinity,
             closeButton: true,
@@ -531,7 +541,7 @@ export function Provider(props: {
       setIdentifying(false);
       sonnerToast.dismiss("mtp-connection-toast");
     };
-  }, [mtpUrl, props.blockConnection, load]);
+  }, [mtpUrl, props.blockConnection, load, save]);
 
   // No Iota check
   useEffect(() => {

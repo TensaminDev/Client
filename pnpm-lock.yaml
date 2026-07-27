@@ -6,7 +6,7 @@ settings:
 
 overrides:
   '@methanium/ui': https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
-  mtp: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
+  mtp: link:../mtp
 
 importers:
 
@@ -16,8 +16,8 @@ importers:
         specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz
         version: https://git.methanium.net/methanium/ui/releases/download/0.0.8/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       mtp:
-        specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
-        version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
+        specifier: link:../mtp
+        version: link:../mtp
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -700,8 +700,8 @@ importers:
         specifier: ^1.14.0
         version: 1.23.0(react@19.2.7)
       mtp:
-        specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
-        version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz
+        specifier: link:../../../mtp
+        version: link:../../../mtp
       react:
         specifier: ^19.2.0
         version: 19.2.7
@@ -4005,10 +4005,6 @@ packages:
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
-
-  mtp@https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz:
-    resolution: {integrity: sha512-Adfwu1N48pSNZXaLpBW//uAeFaDCHYMOjWg+APG4TxEwCyQjXygCxBuEdUOjOxVZP9cK8L/K5Mf5HBO1+bd4HA==, tarball: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz}
-    version: 0.2.0
 
   nanoid@3.3.15:
     resolution: {integrity: sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA==}
@@ -8253,10 +8249,6 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
 
   ms@2.1.3: {}
-
-  mtp@https://git.methanium.net/methanium/mtp/releases/download/0.2.0-3919eb46fd/mtp-0.2.0.tgz:
-    dependencies:
-      yaml: 2.9.0
 
   nanoid@3.3.15: {}
 
