@@ -237,6 +237,7 @@ export function Provider(props: {
     let reconnectScheduled = false;
     let disposed = false;
     let resumeListenerRegistered = false;
+    let connectionGeneration = 0;
 
     const clearReconnectTimer = () => {
       if (!reconnectTimer) return;
@@ -251,16 +252,52 @@ export function Provider(props: {
       reconnectResetTimer = null;
     };
 
+    const scheduleReconnect = (error: unknown) => {
+      if (disposed || reconnectScheduled) return;
+      if (attempts >= RECONNECT_TRIES) {
+        log(0, "mtp", "red", "Reconnection attempts exhausted", error);
+        sonnerToast.error("Connection failed", {
+          id: "mtp-connection-toast",
+          description:
+            error instanceof Error ? error.message.split(":")[0] : "Connection lost",
+          icon: null,
+          duration: Infinity,
+          closeButton: true,
+          promise: null,
+        } as unknown as Parameters<typeof sonnerToast.error>[1]);
+        return;
+      }
+
+      attempts += 1;
+      sonnerToast.loading(
+        `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
+        { id: "mtp-connection-toast" },
+      );
+      reconnectScheduled = true;
+      reconnectTimer = setTimeout(() => {
+        reconnectScheduled = false;
+        reconnectTimer = null;
+        void connect();
+      }, RETRY_INTERVAL);
+    };
+
     async function connect() {
       if (disposed || props.blockConnection) return;
 
+      const generation = ++connectionGeneration;
+      let client: Awaited<ReturnType<typeof MTPClient.create>> | null = null;
+      let failed = false;
       const cleanup = () => {
-        clientRef.current?.disconnect();
-        clientRef.current = null;
+        client?.disconnect();
+        if (clientRef.current === client) {
+          clientRef.current = null;
+        }
         clearReconnectResetTimer();
-        setReadyState(ConnectionState.Disconnected);
-        setIdentified(false);
-        setIdentifying(false);
+        if (generation === connectionGeneration) {
+          setReadyState(ConnectionState.Disconnected);
+          setIdentified(false);
+          setIdentifying(false);
+        }
       };
       try {
         setIdentified(false);
@@ -324,7 +361,7 @@ export function Provider(props: {
 
         log(2, "mtp", "green", "Connecting to: " + url);
 
-        const client = await MTPClient.create({
+        client = await MTPClient.create({
           url,
           credentials: {
             clientId: userId,
@@ -335,9 +372,20 @@ export function Provider(props: {
           pings: true,
           logger: (event) => {
             if (event.type === "state") {
-              setReadyState(
-                clientRef.current?.state ?? ConnectionState.Disconnected,
-              );
+              if (generation !== connectionGeneration) return;
+              const state = client?.state ?? ConnectionState.Disconnected;
+              setReadyState(state);
+              if (
+                state === ConnectionState.Disconnected &&
+                clientRef.current === client &&
+                !failed
+              ) {
+                failed = true;
+                clientRef.current = null;
+                setIdentified(false);
+                setIdentifying(false);
+                scheduleReconnect(new Error("MTP connection lost"));
+              }
             }
 
             if (event.type !== "Pong" && event.type !== "Ping") {
@@ -364,13 +412,14 @@ export function Provider(props: {
           },
         });
 
-        if (disposed) {
+        if (disposed || generation !== connectionGeneration) {
           client.disconnect();
           return;
         }
+        const activeClient = client;
 
-        clientRef.current = client;
-        setReadyState(client.state);
+        clientRef.current = activeClient;
+        setReadyState(activeClient.state);
 
         clearReconnectTimer();
 
@@ -381,7 +430,7 @@ export function Provider(props: {
           reconnectResetTimer = null;
         }, RECONNECT_RESET * 1_000);
 
-        setReadyState(client.state);
+        setReadyState(activeClient.state);
         setIdentifying(true);
 
         const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
@@ -390,7 +439,7 @@ export function Provider(props: {
               unsubscribe();
               reject(new Error("Initial state synchronization timed out"));
             }, 120_000);
-            const unsubscribe = client.subscribe(
+            const unsubscribe = activeClient.subscribe(
               "ClientStateSync",
               (message) => {
                 clearTimeout(timeout);
@@ -404,7 +453,10 @@ export function Provider(props: {
             );
           },
         );
-        const [, finalResponse] = await Promise.all([client.auth(), stateSync]);
+        const [, finalResponse] = await Promise.all([
+          activeClient.auth(),
+          stateSync,
+        ]);
 
         if (finalResponse.type.startsWith("Error")) {
           throw new Error(
@@ -412,7 +464,7 @@ export function Provider(props: {
           );
         }
 
-        const acknowledgement = await client.request("ClientStateAck", {
+        const acknowledgement = await activeClient.request("ClientStateAck", {
           SessionId: finalResponse.data.SessionId,
           VersionNumber: finalResponse.data.VersionNumber,
         });
@@ -422,7 +474,7 @@ export function Provider(props: {
           );
         }
 
-        if (disposed || clientRef.current !== client) return;
+        if (disposed || clientRef.current !== activeClient) return;
 
         setFreshContacts(finalResponse.data.Contacts);
         setFreshCommunities(finalResponse.data.Communities);
@@ -431,7 +483,11 @@ export function Provider(props: {
         setIdentified(true);
         resolveConnectionRef.current?.();
       } catch (connectError) {
-        if (disposed) return;
+        if (disposed || generation !== connectionGeneration) {
+          client?.disconnect();
+          return;
+        }
+        failed = true;
         cleanup();
         const connectErrorMessage =
           connectError instanceof Error
@@ -445,41 +501,14 @@ export function Provider(props: {
           getProtocolErrorDetails(connectError) ?? connectError,
         );
 
-        // Schedule reconnect
-        if (disposed || reconnectScheduled) return;
-        if (attempts >= RECONNECT_TRIES) {
-          log(0, "mtp", "red", "Reconnection attempts exhausted", connectError);
-          sonnerToast.error("Connection failed", {
-            id: "mtp-connection-toast",
-            description: connectErrorMessage.split(":")[0],
-            icon: null,
-            duration: Infinity,
-            closeButton: true,
-            promise: null,
-          } as unknown as Parameters<typeof sonnerToast.error>[1]);
-          return;
-        }
-
-        attempts += 1;
-
-        // Show loading toast
-        sonnerToast.loading(
-          `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
-          { id: "mtp-connection-toast" },
-        );
-
-        reconnectScheduled = true;
-        reconnectTimer = setTimeout(() => {
-          reconnectScheduled = false;
-          reconnectTimer = null;
-          void connect();
-        }, RETRY_INTERVAL);
+        scheduleReconnect(connectError);
       }
     }
 
     async function reconnectAfterResume() {
       if (disposed) return;
 
+      connectionGeneration += 1;
       clientRef.current?.disconnect();
       clientRef.current = null;
       clearReconnectTimer();

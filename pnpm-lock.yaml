@@ -6,7 +6,7 @@ settings:
 
 overrides:
   '@methanium/ui': https://git.methanium.net/methanium/ui/releases/download/0.0.10/methanium-ui.tgz
-  mtp: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz
+  mtp: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz
 
 importers:
 
@@ -16,8 +16,8 @@ importers:
         specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.10/methanium-ui.tgz
         version: https://git.methanium.net/methanium/ui/releases/download/0.0.10/methanium-ui.tgz(@date-fns/tz@1.5.0)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)(typescript@6.0.3)
       mtp:
-        specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz
-        version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz
+        specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz
+        version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -700,8 +700,8 @@ importers:
         specifier: ^1.14.0
         version: 1.23.0(react@19.2.7)
       mtp:
-        specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz
-        version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz
+        specifier: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz
+        version: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz
       react:
         specifier: ^19.2.0
         version: 19.2.7
@@ -4006,8 +4006,8 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  mtp@https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz:
-    resolution: {integrity: sha512-kvJ98CMrr/ZCQr1oVhys9D3c+/OZAl6Oar3DjI6bvnYLelpjnXbrtq/8A31ktbipgMsaRInQuFBKRYMBm/f8OQ==, tarball: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz}
+  mtp@https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz:
+    resolution: {integrity: sha512-WcXHd53aDM0zQfO8eaUnK5tpnRP73GlWjwAMMcstcVAIWrvyFGuINkCRNEkb2RsNk9h57UMhxElCZeBkFrVmCg==, tarball: https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz}
     version: 0.2.0
 
   nanoid@3.3.15:
@@ -8254,7 +8254,7 @@ snapshots:
 
   ms@2.1.3: {}
 
-  mtp@https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-fa271e6/mtp-0.2.0.tgz:
+  mtp@https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-6f673ba/mtp-0.2.0.tgz:
     dependencies:
       yaml: 2.9.0
 
