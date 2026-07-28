@@ -225,14 +225,6 @@ export const mtp = {
     request: user.partial(),
     response: z.object({}),
   },
-  ClientPing: {
-    request: z.object({
-      LastPing: z.number(),
-    }),
-    response: z.object({
-      PingIota: z.number(),
-    }),
-  },
   MessageDelete: {
     request: z.object({
       ChatPartnerId: z.number(),

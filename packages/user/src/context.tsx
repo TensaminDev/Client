@@ -61,17 +61,18 @@ export default function UserProvider(props: { children: ReactNode }) {
 
       const request = (async () => {
         const cache = accountId ? createCache(String(accountId)) : null;
-        const cached =
+        const cachedValue =
           storageRef.current[userId] ?? (await cache?.profiles.get(userId));
+        const cachedResult =
+          schemas.GetUserData.response.safeParse(cachedValue);
+        const cached = cachedResult.success ? cachedResult.data : undefined;
         if (cached) storageRef.current[userId] = cached;
         try {
           const userData = await send("GetUserData", { UserId: userId });
-          const user = {
-            ...userData.data,
-            avatar: userData.data.Avatar
-              ? `data:image/webp;base64,${atob(userData.data.Avatar)}`
-              : undefined,
-          };
+          if (userData.type.startsWith("Error")) {
+            throw new Error(`GetUserData failed: ${userData.type}`);
+          }
+          const user = userData.data;
           storageRef.current[userId] = user;
           return user;
         } catch (error) {

@@ -27,7 +27,6 @@ import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 
 import {
-  PING_INTERVAL,
   RECONNECT_RESET,
   RECONNECT_TRIES,
   RETRY_INTERVAL,
@@ -77,8 +76,6 @@ type ContextType = {
   subscribePush: (handler: PushHandler) => () => void;
   addInterceptor: (interceptor: MTPInterceptor) => () => void;
   readyState: number;
-  ownPing: number;
-  iotaPing: number;
   identified: boolean;
   freshContacts: Contacts;
   freshCommunities: Communities;
@@ -151,9 +148,6 @@ export function Provider(props: {
   );
   const [identified, setIdentified] = useState<boolean>(false);
   const [identifying, setIdentifying] = useState<boolean>(false);
-
-  const [ownPing, setOwnPing] = useState<number>(0);
-  const [iotaPing, setIotaPing] = useState<number>(0);
 
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
@@ -231,32 +225,6 @@ export function Provider(props: {
     interceptorsRef.current.add(interceptor);
     return () => interceptorsRef.current.delete(interceptor);
   }, []);
-
-  // Custom Pings
-  useEffect(() => {
-    if (!connected || !identified) {
-      return;
-    }
-
-    const interval = setInterval(async () => {
-      try {
-        const originalNow = Date.now();
-        const data = await send("ClientPing", { LastPing: originalNow });
-        setOwnPing(Date.now() - originalNow);
-
-        const remotePing = data.data.PingIota;
-        if (typeof remotePing === "number") {
-          setIotaPing(remotePing);
-        }
-      } catch (intervalError) {
-        log(1, "mtp", "yellow", "Ping failed", intervalError);
-      }
-    }, PING_INTERVAL);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [connected, identified, send]);
 
   // Reconnect stuff
   const resolveConnectionRef = useRef(() => {});
@@ -619,8 +587,6 @@ export function Provider(props: {
         subscribePush,
         addInterceptor,
         readyState,
-        ownPing,
-        iotaPing,
         identified,
         freshContacts,
         freshCommunities,
