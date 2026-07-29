@@ -79,7 +79,7 @@ function AddConversationButton() {
       Username: result.data,
     })
       .then((data) => {
-        if (data.data.UserId === 0) {
+        if (data.type === "ErrorNotFound" || data.data.UserId === 0) {
           throw new Error();
         }
 
@@ -101,7 +101,7 @@ function AddConversationButton() {
     const timeout = setTimeout(() => setLoading(true), 500);
 
     send("AddConversation", {
-      ChatPartnerName: result.data,
+      ChatPartnerId: user.data.UserId,
     })
       .then(() => {
         insertContact(user.data.UserId);
