@@ -435,15 +435,21 @@ export function Provider(props: {
 
         const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
           (resolve, reject) => {
+            let unsubscribeStateSync = () => {};
+            let unsubscribeNoIota = () => {};
+            const cleanupStateSync = () => {
+              clearTimeout(timeout);
+              unsubscribeStateSync();
+              unsubscribeNoIota();
+            };
             const timeout = setTimeout(() => {
-              unsubscribe();
+              cleanupStateSync();
               reject(new Error("Initial state synchronization timed out"));
             }, 120_000);
-            const unsubscribe = activeClient.subscribe(
+            unsubscribeStateSync = activeClient.subscribe(
               "ClientStateSync",
               (message) => {
-                clearTimeout(timeout);
-                unsubscribe();
+                cleanupStateSync();
                 try {
                   resolve(validateResponse("ClientStateSync", message));
                 } catch (error) {
@@ -451,6 +457,10 @@ export function Provider(props: {
                 }
               },
             );
+            unsubscribeNoIota = activeClient.subscribe("ErrorNoIota", () => {
+              cleanupStateSync();
+              reject(new Error("No Iota is currently connected"));
+            });
           },
         );
         const [, finalResponse] = await Promise.all([
