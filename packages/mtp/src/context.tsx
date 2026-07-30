@@ -57,7 +57,19 @@ export type BoundSendFn = <T extends keyof Schemas & string>(
   options?: { id?: number },
 ) => Promise<ProtocolMessage<T>>;
 
-export type PushHandler = (message: ProtocolMessage) => void;
+export type PushHandler = (
+  message: ProtocolMessage,
+) => void | Promise<void>;
+
+const PUSH_TYPES = [
+  "MessageLive",
+  "MessageEditLive",
+  "MessageReactionLive",
+  "MessageDeleteLive",
+  "MessageState",
+  "CallInvite",
+  "ErrorNoIota",
+] as const;
 
 export type MTPExchange = {
   type: keyof Schemas & string;
@@ -157,6 +169,7 @@ export function Provider(props: {
     null,
   );
   const interceptorsRef = useRef(new Set<MTPInterceptor>());
+  const pushHandlersRef = useRef(new Set<PushHandler>());
 
   const connected = readyState === ConnectionState.Connected;
 
@@ -197,28 +210,8 @@ export function Provider(props: {
   }, []);
 
   const subscribePush = useCallback((handler: PushHandler) => {
-    const client = clientRef.current;
-    if (!client) {
-      return () => {};
-    }
-
-    const unsubscribers = [
-      "MessageLive",
-      "MessageEditLive",
-      "MessageReactionLive",
-      "MessageDeleteLive",
-      "MessageState",
-      "CallInvite",
-      "ErrorNoIota",
-    ].map((type) =>
-      client.subscribe(type, (message) => {
-        handler(validateResponse(type as keyof Schemas & string, message));
-      }),
-    );
-
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
+    pushHandlersRef.current.add(handler);
+    return () => pushHandlersRef.current.delete(handler);
   }, []);
 
   const addInterceptor = useCallback((interceptor: MTPInterceptor) => {
@@ -419,6 +412,28 @@ export function Provider(props: {
         const activeClient = client;
 
         clientRef.current = activeClient;
+        for (const type of PUSH_TYPES) {
+          activeClient.subscribe(type, (message) => {
+            let validated: ProtocolMessage;
+            try {
+              validated = validateResponse(type, message);
+            } catch (error) {
+              log(1, "mtp", "red", "Failed to validate push message", error, {
+                type,
+                data: message.data,
+              });
+              return;
+            }
+
+            for (const handler of [...pushHandlersRef.current]) {
+              void Promise.resolve()
+                .then(() => handler(validated))
+                .catch((error) => {
+                  log(1, "mtp", "red", "Push handler failed", error, { type });
+                });
+            }
+          });
+        }
         setReadyState(activeClient.state);
 
         clearReconnectTimer();

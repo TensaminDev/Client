@@ -332,7 +332,7 @@ function createCallTrayIcon(color: string, speaking: boolean) {
 }
 
 function CallInit() {
-  useInitializeCall();
+  const callInvitePopup = useInitializeCall();
 
   const { load } = useStorage();
   const {
@@ -395,7 +395,7 @@ function CallInit() {
       });
   }, [inCall, primaryColor, speaking]);
 
-  return null;
+  return callInvitePopup;
 }
 
 const rootRoute = createRootRoute({

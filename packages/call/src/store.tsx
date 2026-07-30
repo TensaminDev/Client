@@ -155,8 +155,8 @@ export function getRoom(): Room {
 }
 
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
-let outgoingJingle: HTMLAudioElement | null = null;
-let outgoingJingleGeneration = 0;
+let callJingle: HTMLAudioElement | null = null;
+let callJingleGeneration = 0;
 
 const CALL_SECRET_VERSION = 1;
 const SCREEN_SHARE_PREVIEW_MAX_WIDTH = 320;
@@ -164,32 +164,32 @@ const SCREEN_SHARE_PREVIEW_MAX_HEIGHT = 180;
 const SCREEN_SHARE_PREVIEW_QUALITY = 0.7;
 const SCREEN_SHARE_PREVIEW_TIMEOUT_MS = 5000;
 
-async function startOutgoingJingle() {
-  const generation = ++outgoingJingleGeneration;
-  stopSound(outgoingJingle);
-  outgoingJingle = null;
+async function startCallJingle(shouldPlay: () => boolean) {
+  const generation = ++callJingleGeneration;
+  stopSound(callJingle);
+  callJingle = null;
 
   const jingle = await requireRuntime(useCall.getState().runtime).load(
     "settings.call_jingle",
   );
 
   if (
-    generation !== outgoingJingleGeneration ||
-    useCall.getState().invitedUserId == null
+    generation !== callJingleGeneration ||
+    !shouldPlay()
   ) {
     return;
   }
 
-  outgoingJingle = playSound(
+  callJingle = playSound(
     jingle === "jingle_2" ? "call_jingle_2" : "call_jingle_1",
     true,
   );
 }
 
-function stopOutgoingJingle() {
-  outgoingJingleGeneration += 1;
-  stopSound(outgoingJingle);
-  outgoingJingle = null;
+function stopCallJingle() {
+  callJingleGeneration += 1;
+  stopSound(callJingle);
+  callJingle = null;
 }
 
 function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
@@ -918,7 +918,7 @@ export async function connect(callId: string) {
 
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
-  stopOutgoingJingle();
+  stopCallJingle();
   disposeSpeakingDetector();
   await clearScreenSharePreview();
 
@@ -993,7 +993,7 @@ export async function joinCall(
   });
 
   if (sendInvite && !existingCallId) {
-    void startOutgoingJingle();
+    void startCallJingle(() => useCall.getState().invitedUserId != null);
   }
 
   if (callSecret) {
@@ -1231,12 +1231,14 @@ export function useInitializeCall() {
       useCall.setState({
         incomingCallInvite: { callId, callSecret, senderId },
       });
+      void startCallJingle(() => useCall.getState().incomingCallInvite != null);
     },
     [],
   );
 
   const setInvitePopupOpen = useCallback((open: boolean) => {
     if (!open) {
+      stopCallJingle();
       useCall.setState({ incomingCallInvite: null });
     }
   }, []);
@@ -1245,6 +1247,7 @@ export function useInitializeCall() {
     (accepted: boolean) => {
       const invite = useCall.getState().incomingCallInvite;
 
+      stopCallJingle();
       useCall.setState({ incomingCallInvite: null });
 
       if (!invite) {
@@ -1289,6 +1292,11 @@ export function useInitializeCall() {
       };
 
       if (SenderId === Number(await load("user_id"))) {
+        return;
+      }
+
+      const currentCall = useCall.getState();
+      if (currentCall.callId === CallId && currentCall.state !== "closed") {
         return;
       }
 
@@ -1434,7 +1442,7 @@ export function useInitializeCall() {
     };
 
     const onDisconnected = () => {
-      stopOutgoingJingle();
+      stopCallJingle();
       playSound("call_leave");
       useCall.setState({ state: "closed" });
       syncParticipantState();
@@ -1445,7 +1453,7 @@ export function useInitializeCall() {
     };
 
     const onParticipantConnected = () => {
-      stopOutgoingJingle();
+      stopCallJingle();
       playSound("call_join");
       syncAllRemoteTrackSubscriptions();
       syncParticipantState();

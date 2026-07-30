@@ -268,7 +268,7 @@ export default function Base({
               flush || fill ? "rounded-none" : "rounded-md"
             } ${
               type === "user" && isSpeaking
-                ? "border-4 border-(--primary-foreground-alt)/75"
+                ? "border-4 border-(--primary-foreground-alt)/75!"
                 : fill
                   ? "border-0"
                   : "border"

@@ -277,14 +277,21 @@ export const mtp = {
       Reaction: z.string(),
       SendTime: z.number(),
       ChatPartnerId: z.number(),
+      SenderId: z.number(),
+      Accepted: z.boolean(),
     }),
   },
   MessageLive: {
     request: z.object({}).optional(),
-    response: z.object({
-      SenderId: z.number(),
-      Message,
-    }),
+    response: z
+      .object({
+        SenderId: z.number(),
+        Message: Message.extend({ SenderId: z.number().optional() }),
+      })
+      .transform(({ SenderId, Message }) => ({
+        SenderId,
+        Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
+      })),
   },
   MessageGet: {
     request: z.object({

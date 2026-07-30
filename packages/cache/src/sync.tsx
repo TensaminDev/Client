@@ -18,7 +18,6 @@ export default function CacheSync() {
   const { load } = useStorage();
   const [accountId, setAccountId] = useState(0);
   const queueRef = useRef(Promise.resolve());
-  const reactionPartnersRef = useRef(new Map<number, number>());
 
   useEffect(() => {
     void load("user_id").then(setAccountId);
@@ -195,23 +194,6 @@ export default function CacheSync() {
         );
         return;
       }
-
-      if (type === "MessageGet") {
-        const message = result as unknown as CachedMessage;
-        const mappedPartner = reactionPartnersRef.current.get(message.SendTime);
-        reactionPartnersRef.current.delete(message.SendTime);
-        if (mappedPartner) {
-          await insertMessage(mappedPartner, message);
-          return;
-        }
-        const windows = await secureCache().conversations.list();
-        const window = windows.find((candidate) =>
-          candidate.Messages.some(
-            (cached) => cached.SendTime === message.SendTime,
-          ),
-        );
-        if (window) await insertMessage(window.UserId, message);
-      }
     },
     [accountId, insertMessage, removeMessage, replaceMessage, secureCache],
   );
@@ -259,13 +241,28 @@ export default function CacheSync() {
         return;
       }
       if (message.type === "MessageReactionLive") {
-        reactionPartnersRef.current.set(
-          Number(data.SendTime),
-          Number(data.ChatPartnerId),
+        const partnerId = Number(data.ChatPartnerId);
+        const sendTime = Number(data.SendTime);
+        const senderId = Number(data.SenderId);
+        const reaction = String(data.Reaction);
+        const cache = secureCache();
+        const window = await cache.conversations.get(partnerId);
+        const target = window?.Messages.find(
+          (candidate) => candidate.SendTime === sendTime,
         );
+        if (!window || !target) return;
+
+        const reactions = (target.Reactions ?? []).filter(
+          (candidate) =>
+            candidate.SenderId !== senderId || candidate.Reaction !== reaction,
+        );
+        if (data.Accepted === true) {
+          reactions.push({ SenderId: senderId, Reaction: reaction });
+        }
+        await replaceMessage(partnerId, sendTime, { Reactions: reactions });
       }
     },
-    [accountId, insertMessage, removeMessage, replaceMessage],
+    [accountId, insertMessage, removeMessage, replaceMessage, secureCache],
   );
 
   useEffect(() => {

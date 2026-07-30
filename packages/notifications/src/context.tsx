@@ -28,7 +28,7 @@ export default function Provider(props: { children: React.ReactNode }) {
   const { subscribePush, send } = useMTP();
   const { load } = useStorage();
   const { get } = useUser();
-  const { addLiveMessage, getChatSecret, userId } = useChat();
+  const { addLiveMessage, chatSecret, getChatSecret, userId } = useChat();
   const { moveUserIdToTop } = useSession();
   const navigate = useNavigate();
 
@@ -42,13 +42,15 @@ export default function Provider(props: { children: React.ReactNode }) {
 
         if (!data.SenderId) return;
 
-        const chatSecret = await getChatSecret(data.SenderId);
+        const messageSecret =
+          userId === data.SenderId && chatSecret
+            ? chatSecret
+            : await getChatSecret(data.SenderId);
 
-        if (!data.Message || !chatSecret) return;
+        if (!data.Message || !messageSecret) return;
         playSound("message");
-        const user = await get(data.SenderId);
 
-        void decryptChatText(chatSecret, data.Message.Content)
+        void decryptChatText(messageSecret, data.Message.Content)
           .catch((err) => {
             log(1, "chat", "red", "Failed to decrypt live message", err, {
               SendTime: data.Message?.SendTime,
@@ -69,6 +71,7 @@ export default function Provider(props: { children: React.ReactNode }) {
 
             // todo: add notification symbol to conversation cards (incl. message start)
             moveUserIdToTop(data.SenderId);
+            const user = await get(data.SenderId);
 
             if (await load("settings.receive_confirmations")) {
               void send(
@@ -127,6 +130,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     });
   }, [
     addLiveMessage,
+    chatSecret,
     get,
     load,
     navigate,
