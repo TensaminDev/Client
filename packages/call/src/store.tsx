@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { mtp } from "@tensamin/shared/data";
+import { playSound, stopSound } from "@tensamin/shared/sounds";
 import { bytesToBase64 } from "mtp";
 import {
   deriveCallSecretId,
@@ -154,12 +155,42 @@ export function getRoom(): Room {
 }
 
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
+let outgoingJingle: HTMLAudioElement | null = null;
+let outgoingJingleGeneration = 0;
 
 const CALL_SECRET_VERSION = 1;
 const SCREEN_SHARE_PREVIEW_MAX_WIDTH = 320;
 const SCREEN_SHARE_PREVIEW_MAX_HEIGHT = 180;
 const SCREEN_SHARE_PREVIEW_QUALITY = 0.7;
 const SCREEN_SHARE_PREVIEW_TIMEOUT_MS = 5000;
+
+async function startOutgoingJingle() {
+  const generation = ++outgoingJingleGeneration;
+  stopSound(outgoingJingle);
+  outgoingJingle = null;
+
+  const jingle = await requireRuntime(useCall.getState().runtime).load(
+    "settings.call_jingle",
+  );
+
+  if (
+    generation !== outgoingJingleGeneration ||
+    useCall.getState().invitedUserId == null
+  ) {
+    return;
+  }
+
+  outgoingJingle = playSound(
+    jingle === "jingle_2" ? "call_jingle_2" : "call_jingle_1",
+    true,
+  );
+}
+
+function stopOutgoingJingle() {
+  outgoingJingleGeneration += 1;
+  stopSound(outgoingJingle);
+  outgoingJingle = null;
+}
 
 function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return new Uint8Array(bytes);
@@ -695,6 +726,16 @@ export async function sendCallInvite(userId: number) {
 // Start tracking a participant's shared screen in the call UI.
 export function startWatchingStream(participantId: number) {
   const trackReady = getScreenShareTrackForParticipant(participantId) != null;
+  const alreadyWatching = useCall
+    .getState()
+    .watchedStreamParticipantIds.includes(participantId);
+  const localParticipantId = getParticipantId(
+    getRoom().localParticipant.identity,
+  );
+
+  if (!alreadyWatching && participantId !== localParticipantId) {
+    playSound("stream_watch_start");
+  }
 
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare);
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShareAudio);
@@ -745,6 +786,17 @@ export function focusParticipant(
 
 // Stop tracking a participant's shared screen and clean up related UI state.
 export function stopWatchingStream(participantId: number) {
+  const wasWatching = useCall
+    .getState()
+    .watchedStreamParticipantIds.includes(participantId);
+  const localParticipantId = getParticipantId(
+    getRoom().localParticipant.identity,
+  );
+
+  if (wasWatching && participantId !== localParticipantId) {
+    playSound("stream_watch_end");
+  }
+
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare, false);
   setParticipantTrackSubscribed(
     participantId,
@@ -866,6 +918,7 @@ export async function connect(callId: string) {
 
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
+  stopOutgoingJingle();
   disposeSpeakingDetector();
   await clearScreenSharePreview();
 
@@ -938,6 +991,10 @@ export async function joinCall(
     invitedUserId: sendInvite && !existingCallId ? userId : null,
     ownCallSecretInvitePending: isNewCall,
   });
+
+  if (sendInvite && !existingCallId) {
+    void startOutgoingJingle();
+  }
 
   if (callSecret) {
     try {
@@ -1303,6 +1360,7 @@ export function useInitializeCall() {
 
     const onConnected = async () => {
       useCall.setState({ state: "open" });
+      playSound("call_join");
       syncParticipantState();
 
       const detector = getSpeakingDetector();
@@ -1376,6 +1434,8 @@ export function useInitializeCall() {
     };
 
     const onDisconnected = () => {
+      stopOutgoingJingle();
+      playSound("call_leave");
       useCall.setState({ state: "closed" });
       syncParticipantState();
       log(2, "call", "purple", "Disconnected from call", {
@@ -1385,11 +1445,14 @@ export function useInitializeCall() {
     };
 
     const onParticipantConnected = () => {
+      stopOutgoingJingle();
+      playSound("call_join");
       syncAllRemoteTrackSubscriptions();
       syncParticipantState();
     };
 
     const onParticipantDisconnected = (participant: Participant) => {
+      playSound("call_leave");
       const participantId = getParticipantId(participant.identity);
 
       if (participantId != null) {
@@ -1416,6 +1479,10 @@ export function useInitializeCall() {
     };
 
     const onLocalTrackPublished = (publication: LocalTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_start_self");
+      }
+
       if (
         publication.kind === Track.Kind.Audio &&
         publication.source === Track.Source.Microphone &&
@@ -1437,6 +1504,10 @@ export function useInitializeCall() {
     };
 
     const onLocalTrackUnpublished = (publication: LocalTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_end_self");
+      }
+
       if (
         publication.kind === Track.Kind.Audio &&
         publication.source === Track.Source.Microphone
@@ -1453,6 +1524,10 @@ export function useInitializeCall() {
       publication: RemoteTrackPublication,
       participant: RemoteParticipant,
     ) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_start_other");
+      }
+
       const participantId = getParticipantId(participant.identity);
 
       if (participantId != null) {
@@ -1464,6 +1539,14 @@ export function useInitializeCall() {
         } else {
           publication.setSubscribed(false);
         }
+      }
+
+      onParticipantStateChange();
+    };
+
+    const onTrackUnpublished = (publication: RemoteTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_end_other");
       }
 
       onParticipantStateChange();
@@ -1526,7 +1609,7 @@ export function useInitializeCall() {
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
     room.on(RoomEvent.TrackPublished, onTrackPublished);
-    room.on(RoomEvent.TrackUnpublished, onParticipantStateChange);
+    room.on(RoomEvent.TrackUnpublished, onTrackUnpublished);
     room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
     room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
     room.on(RoomEvent.TrackMuted, onParticipantStateChange);
@@ -1547,7 +1630,7 @@ export function useInitializeCall() {
       room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
       room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
       room.off(RoomEvent.TrackPublished, onTrackPublished);
-      room.off(RoomEvent.TrackUnpublished, onParticipantStateChange);
+      room.off(RoomEvent.TrackUnpublished, onTrackUnpublished);
       room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
       room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
       room.off(RoomEvent.TrackMuted, onParticipantStateChange);

@@ -45,6 +45,15 @@ const settings = {
       },
     },
   },
+  call: {
+    call: {
+      call_jingle: {
+        display: "Jingle",
+        type: "select",
+        default: "jingle_1" as "jingle_1" | "jingle_2",
+      },
+    },
+  },
   application: {
     cache: {},
     theme: {},
@@ -55,26 +64,35 @@ const settings = {
 // Assemble storage defaults
 export default settings;
 
-type BooleanSettingNames<T extends SettingsSchema> = {
+type SettingStorageEntry<T extends SettingsSchema> = {
   [C in StringKeyOf<T>]: {
     [P in StringKeyOf<T[C]>]: {
-      [S in StringKeyOf<T[C][P]>]: T[C][P][S] extends {
-        type: "boolean";
-        default: boolean;
-      }
-        ? S
+      [S in StringKeyOf<T[C][P]>]: T[C][P][S] extends { default: infer V }
+        ? { key: `settings.${S}`; value: V }
         : never;
     }[StringKeyOf<T[C][P]>];
   }[StringKeyOf<T[C]>];
 }[StringKeyOf<T>];
 
+type Widen<T> = T extends boolean
+  ? boolean
+  : T extends string
+    ? string extends T
+      ? string
+      : T
+    : T extends number
+      ? number
+      : T;
+
 export type SettingsStorageKey<T extends SettingsSchema = typeof settings> =
-  `settings.${BooleanSettingNames<T>}`;
+  SettingStorageEntry<T>["key"];
 
 export type SettingsStorageDefaults<
   T extends SettingsSchema = typeof settings,
 > = {
-  [K in SettingsStorageKey<T>]: boolean;
+  [K in SettingsStorageKey<T>]: Widen<
+    Extract<SettingStorageEntry<T>, { key: K }>["value"]
+  >;
 };
 
 function buildSettingsStorageDefaults<T extends SettingsSchema>(
@@ -85,12 +103,10 @@ function buildSettingsStorageDefaults<T extends SettingsSchema>(
   for (const category of Object.values(schema)) {
     for (const page of Object.values(category)) {
       for (const [settingName, setting] of Object.entries(page)) {
-        if (
-          setting.type === "boolean" &&
-          typeof setting.default === "boolean"
-        ) {
+        if ("default" in setting) {
           const key = `settings.${settingName}` as SettingsStorageKey<T>;
-          defaults[key] = setting.default;
+          defaults[key] =
+            setting.default as SettingsStorageDefaults<T>[typeof key];
         }
       }
     }

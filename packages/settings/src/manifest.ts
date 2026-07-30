@@ -1,4 +1,5 @@
 import Cache from "./pages/cache";
+import Call from "./pages/call";
 import Chat from "./pages/chat";
 import Index from "./pages/index";
 import Licenses from "./pages/licenses";
@@ -21,6 +22,7 @@ export const settingsPages = [
     component: Security,
   },
   { category: "general", path: "chat", label: "Chat", component: Chat },
+  { category: "general", path: "call", label: "Call", component: Call },
   { category: "application", path: "cache", label: "Cache", component: Cache },
   { category: "application", path: "theme", label: "Theme", component: Theme },
   {

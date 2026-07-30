@@ -10,6 +10,7 @@ import { useSession } from "@tensamin/storage/session";
 import { useNavigate } from "@tanstack/react-router";
 import { decryptChatText } from "@tensamin/crypto/chatSecret";
 import { log } from "@tensamin/shared/log";
+import { playSound } from "@tensamin/shared/sounds";
 import { type RawMessage } from "@tensamin/chat/values";
 
 export const context = createContext<contextType | undefined>(undefined);
@@ -44,6 +45,7 @@ export default function Provider(props: { children: React.ReactNode }) {
         const chatSecret = await getChatSecret(data.SenderId);
 
         if (!data.Message || !chatSecret) return;
+        playSound("message");
         const user = await get(data.SenderId);
 
         void decryptChatText(chatSecret, data.Message.Content)

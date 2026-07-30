@@ -571,8 +571,10 @@ export default function MessageContextMenu({
 
   function selectReaction(emoji: string) {
     void onReact(emoji);
+    setActiveMiniMenu(null);
     setReactionDrawerOpen(false);
-    setPickerVisibility(false);
+    setPickerOpen(false);
+    setPickerClosing(false);
   }
   function setPickerVisibility(open: boolean) {
     setPickerOpen(open);
