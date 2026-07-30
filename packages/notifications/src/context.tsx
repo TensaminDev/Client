@@ -6,8 +6,13 @@ import { createContext, useEffect, useContext } from "react";
 import { toast as sonnerToast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@methanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
+import {
+  isPermissionGranted as isTauriNotificationPermissionGranted,
+  requestPermission as requestTauriNotificationPermission,
+  sendNotification as sendTauriNotification,
+} from "@tauri-apps/plugin-notification";
 import { useSession } from "@tensamin/storage/session";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { decryptChatText } from "@tensamin/crypto/chatSecret";
 import { log } from "@tensamin/shared/log";
 import { playSound } from "@tensamin/shared/sounds";
@@ -31,6 +36,7 @@ export default function Provider(props: { children: React.ReactNode }) {
   const { addLiveMessage, chatSecret, getChatSecret, userId } = useChat();
   const { moveUserIdToTop } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     return subscribePush(async (message) => {
@@ -42,13 +48,19 @@ export default function Provider(props: { children: React.ReactNode }) {
 
         if (!data.SenderId) return;
 
+        const isCurrentChat =
+          location.pathname === "/chat" && userId === data.SenderId;
+        const appFocused =
+          document.hasFocus() && document.visibilityState === "visible";
+        const shouldAlert = !isCurrentChat || !appFocused;
+
         const messageSecret =
-          userId === data.SenderId && chatSecret
+          isCurrentChat && chatSecret
             ? chatSecret
             : await getChatSecret(data.SenderId);
 
         if (!data.Message || !messageSecret) return;
-        playSound("message");
+        if (shouldAlert) playSound("message");
 
         void decryptChatText(messageSecret, data.Message.Content)
           .catch((err) => {
@@ -60,33 +72,43 @@ export default function Provider(props: { children: React.ReactNode }) {
           .then(async (content) => {
             if (!data.Message || !content || !data.SenderId) return;
 
-            if (userId === data.SenderId) {
+            if (isCurrentChat) {
               addLiveMessage({
                 ...data.Message,
                 Content: content ?? "Failed to decrypt message",
                 decryptionFailed: content === null,
               });
-              return;
             }
 
-            // todo: add notification symbol to conversation cards (incl. message start)
-            moveUserIdToTop(data.SenderId);
+            if (!shouldAlert) return;
+
+            if (!isCurrentChat) {
+              // todo: add notification symbol to conversation cards (incl. message start)
+              moveUserIdToTop(data.SenderId);
+
+              if (await load("settings.receive_confirmations")) {
+                void send(
+                  "MessageState",
+                  {
+                    MessageState: "received",
+                  },
+                  {
+                    id: data.Message.SendTime,
+                  },
+                );
+              }
+            }
+
             const user = await get(data.SenderId);
 
-            if (await load("settings.receive_confirmations")) {
-              void send(
-                "MessageState",
-                {
-                  MessageState: "received",
-                },
-                {
-                  id: data.Message.SendTime,
-                },
-              );
-            }
-
             if (isTauri()) {
-              console.log("weewoo");
+              const permissionGranted =
+                (await isTauriNotificationPermissionGranted()) ||
+                (await requestTauriNotificationPermission()) === "granted";
+
+              if (permissionGranted) {
+                sendTauriNotification({ title: user.Display, body: content });
+              }
             } else {
               const hasPermissions = await requestNotificationPermission();
 
@@ -133,6 +155,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     chatSecret,
     get,
     load,
+    location.pathname,
     navigate,
     send,
     moveUserIdToTop,

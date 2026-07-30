@@ -185,7 +185,7 @@ export default function View() {
             }
           >
             <Base
-              fill
+              fill={isImmersiveFocusedView}
               flush={isImmersiveFocusedView || isFocusedTileFlush}
               type={focusedTileType}
               participant={focusedParticipant}

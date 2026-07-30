@@ -334,7 +334,8 @@ function MessageComponent({
                         })}
                       </p>
                       <div className="flex items-center justify-start gap-1">
-                        {message.MessageState === "read" ? (
+                        {message.SenderId !==
+                        ownId ? null : message.MessageState === "read" ? (
                           <Check
                             size={12}
                             color="var(--primary-foreground-alt)"
