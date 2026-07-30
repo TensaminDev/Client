@@ -31,7 +31,7 @@ export default function List() {
       <div
         ref={scrollRef}
         id="conversation-list"
-        className="overflow-y-auto flex-1 h-full"
+        className="overflow-y-auto flex-1 h-full p-px"
       >
         {items === null ? (
           <div className="flex items-center justify-center pt-5">

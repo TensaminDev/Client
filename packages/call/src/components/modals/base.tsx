@@ -264,9 +264,15 @@ export default function Base({
         render={
           <div
             onClick={onClick}
-            className={`relative w-full ${fill ? "h-full border-0" : "aspect-video border-2"} ${
+            className={`relative w-full ${fill ? "h-full" : "aspect-video"} ${
               flush || fill ? "rounded-none" : "rounded-md"
-            } ${flush && !fill ? "border-x-0" : ""}`}
+            } ${
+              type === "user" && isSpeaking
+                ? "border-4 border-(--primary-foreground-alt)/75"
+                : fill
+                  ? "border-0"
+                  : "border"
+            } ${flush && !fill ? "border-x-0!" : ""}`}
           >
             <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
               <>
@@ -304,7 +310,7 @@ export default function Base({
               ref={currentCard}
               className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
                 flush ? "rounded-none" : "rounded-sm"
-              } ${type === "user" && isSpeaking ? "border-4 border-(--primary-foreground-alt)/75" : "border-0"}`}
+              }`}
               style={{
                 backgroundColor: avatarBackgroundColor,
                 containerType: "size",

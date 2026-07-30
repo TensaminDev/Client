@@ -1,7 +1,11 @@
-import { Button, withTooltip } from "@methanium/ui";
+import { Button } from "@methanium/ui";
 import { toggleMute, useCall } from "../../store";
 import { Mic, MicOff } from "lucide-react";
-import { type CallButtonProps, iconScale } from "./tooltipButton";
+import {
+  type CallButtonProps,
+  iconScale,
+  withButtonTooltip,
+} from "./tooltipButton";
 
 export default function MuteButton({
   className,
@@ -25,5 +29,5 @@ export default function MuteButton({
     </Button>
   );
 
-  return withTooltip(button, tooltip, portalContainer);
+  return withButtonTooltip(button, tooltip, portalContainer);
 }

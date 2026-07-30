@@ -17,6 +17,8 @@ import { useSession } from "@tensamin/storage/session";
 
 export type User = z.infer<typeof schemas.GetUserData.response>;
 
+const USER_CACHE_MAX_AGE = 5 * 60 * 1000;
+
 interface contextValue {
   get(userId: number): Promise<User>;
 }
@@ -31,6 +33,7 @@ const UserContext = createContext<contextValue | undefined>(undefined);
 export default function UserProvider(props: { children: ReactNode }) {
   const storageRef = useRef<Record<number, User>>({});
   const pendingRef = useRef<Record<number, Promise<User> | undefined>>({});
+  const checkedAtRef = useRef<Record<number, number>>({});
 
   const { send } = useMTP();
   const { load } = useStorage();
@@ -66,17 +69,36 @@ export default function UserProvider(props: { children: ReactNode }) {
         const cachedResult =
           schemas.GetUserData.response.safeParse(cachedValue);
         const cached = cachedResult.success ? cachedResult.data : undefined;
-        if (cached) storageRef.current[userId] = cached;
+        if (cached) {
+          storageRef.current[userId] = cached;
+          const checkedAt = checkedAtRef.current[userId];
+          if (checkedAt && Date.now() - checkedAt < USER_CACHE_MAX_AGE) {
+            return cached;
+          }
+        }
         try {
           const userData = await send("GetUserData", { UserId: userId });
+          if (
+            userData.type === "ErrorNotFound" ||
+            userData.data.UserId === 0
+          ) {
+            delete storageRef.current[userId];
+            delete checkedAtRef.current[userId];
+            await cache?.profiles.delete(userId);
+            throw new Error("GetUserData failed: user not found");
+          }
           if (userData.type.startsWith("Error")) {
             throw new Error(`GetUserData failed: ${userData.type}`);
           }
           const user = userData.data;
           storageRef.current[userId] = user;
+          checkedAtRef.current[userId] = Date.now();
           return user;
         } catch (error) {
-          if (cached) return cached;
+          if (cached && storageRef.current[userId]) {
+            checkedAtRef.current[userId] = Date.now();
+            return cached;
+          }
           throw error;
         }
       })();

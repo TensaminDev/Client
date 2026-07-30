@@ -136,7 +136,7 @@ function AddConversationButton() {
           <Button onClick={onClick}>Add Conversation</Button>
         )}
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>New Conversation</DialogTitle>
         </DialogHeader>

@@ -478,6 +478,7 @@ export default function Screen() {
                         const lastMessage = messages[messageIndex - 1];
                         const isGrouped =
                           lastMessage &&
+                          !message.ReplyId &&
                           lastMessage.SenderId === message.SenderId &&
                           Math.round(lastMessage.SendTime / 10000) ===
                             Math.round(message.SendTime / 10000);

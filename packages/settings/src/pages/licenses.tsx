@@ -40,7 +40,7 @@ export default function Page() {
         <p>Package Count: {packageCount}</p>
       </div>
       <div className="min-h-0 flex-1 max-h-[calc(100vh-180px)] overflow-auto pr-2">
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 p-px">
           {packages.map((licensePackage) => (
             <Card
               className="pb-0!"

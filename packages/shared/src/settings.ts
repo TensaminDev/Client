@@ -36,7 +36,7 @@ const settings = {
       receive_confirmations: {
         display: "Enable Receive Confirmations",
         type: "boolean",
-        default: true,
+        default: false,
       },
       show_start_of_last_message_in_sidebar: {
         display: "Show Start of Last Message in Sidebar",

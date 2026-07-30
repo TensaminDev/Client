@@ -43,16 +43,21 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   return (
     <div
       data-tauri-drag-region
-      className={`${forMobile && "border-b"} w-full shrink-0 gap-2 h-13.5 flex items-center justify-between`}
+      className={`${forMobile && "border-b"} pl-px w-full shrink-0 gap-2 h-13.5 flex items-center justify-between`}
     >
       <div className="flex items-center justify-center gap-2">
         {forMobile ? (
           <SidebarTrigger
-            className="w-9 h-9! aspect-square rounded-lg ml-2"
-            variant="outline"
-          >
-            <ArrowLeft className="size-4.5" />
-          </SidebarTrigger>
+            render={({ onClick }) => (
+              <Button
+                onClick={onClick}
+                className="w-9 h-9! ml-2"
+                variant="ghost"
+              >
+                <ArrowLeft className="size-4.5" />
+              </Button>
+            )}
+          />
         ) : (
           <>
             <Button
@@ -80,10 +85,11 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               ) : (
                 <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
                   <PopoverTrigger
-                    render={
+                    render={({ onClick }) => (
                       <Button
+                        onClick={onClick}
                         variant="link"
-                        className="px-0! text-foreground"
+                        className="text-foreground px-0! border-0! bg-none! bg-transparent!"
                         style={{
                           textDecorationLine: "none",
                         }}
@@ -92,7 +98,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                           {user?.Display}
                         </p>
                       </Button>
-                    }
+                    )}
                   />
                   <PopoverContent side="bottom">
                     <Profile user={user} />
@@ -191,7 +197,7 @@ export function MobileNavbar() {
             navigate({ to: "/" });
             setOpenMobile(false);
           }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! hover:bg-transparent!"
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! bg-none! bg-transparent!"
           variant="link"
         >
           <House className="size-4.5" />
@@ -202,7 +208,7 @@ export function MobileNavbar() {
             navigate({ to: "/settings" });
             setOpenMobile(false);
           }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! hover:bg-transparent!"
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! bg-none! bg-transparent!"
           variant="link"
         >
           <Settings className="size-4.5" />

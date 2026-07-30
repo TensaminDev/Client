@@ -35,11 +35,13 @@ import {
   Reply,
   Trash,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { cloneElement, useMemo, useState, useSyncExternalStore } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
   ReactElement,
   ReactNode,
+  Ref,
 } from "react";
 import { useChat } from "../context";
 import Emoji from "@tensamin/markdown/emoji";
@@ -260,18 +262,32 @@ function MiniMenuTooltip({
   children,
   label,
 }: {
-  children: ReactElement;
+  children: ReactElement<{
+    onClick?: (event: ReactMouseEvent<HTMLElement>) => void;
+    ref?: Ref<HTMLElement>;
+  }>;
   label: string;
 }) {
   return (
     <Tooltip>
-      <TooltipTrigger render={children} />
+      <TooltipTrigger
+        render={({ ref, onClick }) =>
+          cloneElement(children, {
+            ref,
+            onClick: (event) => {
+              onClick?.(event);
+              children.props.onClick?.(event);
+            },
+          })
+        }
+      />
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   );
 }
 
 function MiniMessageMenu({
+  fadeOut,
   isOwnMessage,
   onDelete,
   onEdit,
@@ -283,6 +299,7 @@ function MiniMessageMenu({
   onReply,
   shiftIsPressed,
 }: {
+  fadeOut: boolean;
   isOwnMessage: boolean;
   onDelete: () => void;
   onEdit: () => void;
@@ -295,8 +312,12 @@ function MiniMessageMenu({
   shiftIsPressed: boolean;
 }) {
   return (
-    <div className="absolute right-4 -top-3 z-10">
-      <Card className="flex flex-row justify-end gap-0! rounded-lg! p-0! shadow-lg">
+    <motion.div
+      className="absolute right-4 -top-3 z-10"
+      exit={fadeOut ? { opacity: 0 } : undefined}
+      transition={fadeOut ? { duration: 0.048 } : undefined}
+    >
+      <Card className="flex flex-row justify-end gap-0! rounded-lg! p-px! shadow-lg">
         {quickReactions.map((emoji) => (
           <MiniMenuTooltip
             key={emoji}
@@ -319,15 +340,16 @@ function MiniMessageMenu({
           children={
             usePickerTrigger ? (
               <PopoverTrigger
-                render={
+                render={({ onClick }) => (
                   <Button
+                    onClick={onClick}
                     aria-label="Add reaction"
                     variant="ghost"
                     className="h-8 w-8"
                   >
                     <Laugh />
                   </Button>
-                }
+                )}
               />
             ) : (
               <Button
@@ -397,7 +419,7 @@ function MiniMessageMenu({
           />
         )}
       </Card>
-    </div>
+    </motion.div>
   );
 }
 
@@ -538,8 +560,11 @@ export default function MessageContextMenu({
     [],
   );
   const [mainDrawerOpen, setMainDrawerOpen] = useState(false);
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [reactionDrawerOpen, setReactionDrawerOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerClosing, setPickerClosing] = useState(false);
+  const [fadeMiniMenu, setFadeMiniMenu] = useState(false);
   const { ranks } = useEmojiRanks();
   const quickReactions = getRecentEmojis(ranks, 3);
   const menuReactions = getRecentEmojis(ranks, 5);
@@ -547,7 +572,11 @@ export default function MessageContextMenu({
   function selectReaction(emoji: string) {
     void onReact(emoji);
     setReactionDrawerOpen(false);
-    setPickerOpen(false);
+    setPickerVisibility(false);
+  }
+  function setPickerVisibility(open: boolean) {
+    setPickerOpen(open);
+    setPickerClosing(!isMobile && !open);
   }
   const mainDrawerComponents = useMemo(
     () =>
@@ -578,20 +607,28 @@ export default function MessageContextMenu({
         onPointerLeave={scheduleMiniMenuClose}
       >
         {children}
-        {!isMobile && !hideMiniMenu && activeMenuId === messageId && (
-          <MiniMessageMenu
-            isOwnMessage={isOwnMessage}
-            onDelete={() => deleteMessage(messageId)}
-            onEdit={() => onSetEditing(true)}
-            onOpenMenu={openMenu}
-            onOpenPicker={() => setPickerOpen(true)}
-            usePickerTrigger={!isMobile}
-            onReact={selectReaction}
-            quickReactions={quickReactions}
-            onReply={() => setReplyTo(messageId)}
-            shiftIsPressed={shiftIsPressed}
-          />
-        )}
+        <AnimatePresence onExitComplete={() => setFadeMiniMenu(false)}>
+          {!isMobile &&
+            !hideMiniMenu &&
+            (activeMenuId === messageId ||
+              contextMenuOpen ||
+              pickerOpen ||
+              pickerClosing) && (
+              <MiniMessageMenu
+                fadeOut={fadeMiniMenu}
+                isOwnMessage={isOwnMessage}
+                onDelete={() => deleteMessage(messageId)}
+                onEdit={() => onSetEditing(true)}
+                onOpenMenu={openMenu}
+                onOpenPicker={() => setPickerVisibility(true)}
+                usePickerTrigger={!isMobile}
+                onReact={selectReaction}
+                quickReactions={quickReactions}
+                onReply={() => setReplyTo(messageId)}
+                shiftIsPressed={shiftIsPressed}
+              />
+            )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -636,14 +673,14 @@ export default function MessageContextMenu({
                 emojis={menuReactions}
                 onMore={() => {
                   setReactionDrawerOpen(false);
-                  setPickerOpen(true);
+                  setPickerVisibility(true);
                 }}
                 onSelect={selectReaction}
               />
             </div>
           </DrawerContent>
         </Drawer>
-        <Drawer open={pickerOpen} onOpenChange={setPickerOpen}>
+        <Drawer open={pickerOpen} onOpenChange={setPickerVisibility}>
           <DrawerContent>
             <DrawerTitle className="sr-only">Choose an emoji</DrawerTitle>
             <DrawerDescription className="sr-only">
@@ -672,8 +709,17 @@ export default function MessageContextMenu({
   });
 
   return (
-    <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-      <ContextMenu>
+    <Popover
+      open={pickerOpen}
+      onOpenChange={(open, eventDetails) => {
+        setPickerVisibility(open);
+        setFadeMiniMenu(!open && eventDetails.reason === "outside-press");
+      }}
+      onOpenChangeComplete={(open) => {
+        if (!open) setPickerClosing(false);
+      }}
+    >
+      <ContextMenu onOpenChange={setContextMenuOpen}>
         <ContextMenuTrigger render={child} />
         <MessageMenuContent
           components={desktopMenuComponents}
@@ -681,7 +727,7 @@ export default function MessageContextMenu({
           devEnabled={devEnabled}
           isOwnMessage={isOwnMessage}
           messageId={messageId}
-          onAddReaction={() => setPickerOpen(true)}
+          onAddReaction={() => setPickerVisibility(true)}
           onReact={selectReaction}
           reactionEmojis={menuReactions}
           onSetEditing={onSetEditing}

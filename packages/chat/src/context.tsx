@@ -119,8 +119,45 @@ type SendMessageGet = (
 
 type GetChatSecret = (userId: number) => Promise<Uint8Array | null>;
 
+export async function getMessage({
+  sendTime,
+  ownId,
+  chatPartnerId,
+  send,
+}: {
+  sendTime: number;
+  ownId: number;
+  chatPartnerId: number;
+  send: SendMessageGet;
+}): Promise<RawMessage> {
+  const cache = createCache(String(ownId), {
+    codec: secureValueCodec,
+  });
+  const window = await cache.conversations.get(chatPartnerId);
+  const cachedMessage = window?.Messages.find(
+    (message) => message.SendTime === sendTime,
+  );
+  const message =
+    cachedMessage ??
+    (
+      await send("MessageGet", {
+        SendTime: sendTime,
+      })
+    ).data;
+  const messageChatPartnerId =
+    message.SenderId === ownId ? chatPartnerId : message.SenderId;
+
+  if (messageChatPartnerId !== chatPartnerId) {
+    throw new Error("Reply message does not belong to this chat");
+  }
+
+  return message;
+}
+
 export async function fetchReplyMessage({
   replyTo,
+  ownId,
+  chatUserId,
   send,
   getChatSecret,
 }: {
@@ -130,22 +167,22 @@ export async function fetchReplyMessage({
   send: SendMessageGet;
   getChatSecret: GetChatSecret;
 }) {
-  const value = await send("MessageGet", {
-    SendTime: replyTo,
+  const message = await getMessage({
+    sendTime: replyTo,
+    ownId,
+    chatPartnerId: chatUserId,
+    send,
   });
-  const chatSecret = await getChatSecret(value.data.SenderId);
+  const chatSecret = await getChatSecret(chatUserId);
 
   if (!chatSecret) {
     throw new Error("Missing chat secret");
   }
 
-  const decryptedContent = await decryptChatText(
-    chatSecret,
-    value.data.Content,
-  );
+  const decryptedContent = await decryptChatText(chatSecret, message.Content);
 
   return {
-    ...value.data,
+    ...message,
     Content: decryptedContent,
   };
 }
@@ -791,6 +828,9 @@ export default function Provider({ children }: { children: ReactNode }) {
 
   // Replys
   const [replyTo, setReplyTo] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    setReplyTo(undefined);
+  }, [userIdValue]);
 
   return (
     <QueryClientProvider client={queryClient}>

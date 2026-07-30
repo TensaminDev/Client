@@ -8,7 +8,6 @@ import Theme from "./pages/theme";
 
 export const settingsPages = [
   { path: "/", component: Index },
-  { category: "general", path: "chat", label: "Chat", component: Chat },
   {
     category: "account",
     path: "profile",
@@ -21,6 +20,7 @@ export const settingsPages = [
     label: "Security",
     component: Security,
   },
+  { category: "general", path: "chat", label: "Chat", component: Chat },
   { category: "application", path: "cache", label: "Cache", component: Cache },
   { category: "application", path: "theme", label: "Theme", component: Theme },
   {

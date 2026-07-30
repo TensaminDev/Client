@@ -31,7 +31,7 @@ import {
 import { useStorage } from "@tensamin/storage/context";
 
 export default function Actions() {
-  const sharedClasses = "w-14 h-10";
+  const sharedClasses = "w-14! h-10!";
   const sharedIconSize = 15;
   const view = useCall((state) => state.view);
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
@@ -83,13 +83,15 @@ export default function Actions() {
         {view === "focused" && (
           <Tooltip>
             <TooltipTrigger
-              render={
+              render={({ ref, onClick }) => (
                 <Button
-                  onClick={() =>
-                    setUsersInFocusedViewHidden(!usersInFocusedViewHidden)
-                  }
-                  variant="link"
-                  className="w-11 h-11 p-0! ml-3 text-foreground"
+                  ref={ref as React.Ref<HTMLButtonElement>}
+                  onClick={(event) => {
+                    onClick?.(event);
+                    setUsersInFocusedViewHidden(!usersInFocusedViewHidden);
+                  }}
+                  variant="ghost"
+                  className="w-11 h-11! p-0! ml-3 text-foreground border-0!"
                 >
                   {usersInFocusedViewHidden ? (
                     <ChevronUp className="size-6" />
@@ -97,7 +99,7 @@ export default function Actions() {
                     <ChevronDown className="size-6" />
                   )}
                 </Button>
-              }
+              )}
             />
             <TooltipContent portalProps={{ container: portalContainer }}>
               Hide users
@@ -132,11 +134,15 @@ export default function Actions() {
           {isWatchingFocusedStream && focusedParticipantId !== ownId ? (
             <Tooltip>
               <TooltipTrigger
-                render={
+                render={({ ref, onClick }) => (
                   <Button
+                    ref={ref}
                     className={sharedClasses}
                     variant="destructive"
-                    onClick={() => stopWatchingFocusedStream()}
+                    onClick={(event) => {
+                      onClick?.(event);
+                      stopWatchingFocusedStream();
+                    }}
                   >
                     <ScreenShareOff
                       style={{
@@ -145,7 +151,7 @@ export default function Actions() {
                       }}
                     />
                   </Button>
-                }
+                )}
               />
               <TooltipContent portalProps={{ container: portalContainer }}>
                 Stop watching
@@ -161,14 +167,18 @@ export default function Actions() {
           )}
         </CardContent>
       </Card>
-      <div className="w-30 flex justify-end">
+      <div className="w-30 flex justify-end gap-1.5">
         <Tooltip>
           <TooltipTrigger
-            render={
+            render={({ ref, onClick }) => (
               <Button
-                onClick={() => setCallIsPopout(!callIsPopout)}
-                variant="link"
-                className="w-11 h-11 p-0! text-foreground"
+                ref={ref}
+                onClick={(event) => {
+                  onClick?.(event);
+                  setCallIsPopout(!callIsPopout);
+                }}
+                variant="ghost"
+                className="w-11 h-11! p-0! text-foreground border-0!"
               >
                 {callIsPopout ? (
                   <SquareArrowOutDownLeft className="size-6" />
@@ -176,7 +186,7 @@ export default function Actions() {
                   <SquareArrowOutUpRight className="size-6" />
                 )}
               </Button>
-            }
+            )}
           />
           <TooltipContent portalProps={{ container: portalContainer }}>
             Popout
@@ -184,13 +194,15 @@ export default function Actions() {
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
-            render={
+            render={({ ref, onClick }) => (
               <Button
-                onClick={() => {
+                ref={ref}
+                onClick={(event) => {
+                  onClick?.(event);
                   void toggleFullscreen();
                 }}
-                variant="link"
-                className="w-11 h-11 p-0! mr-3 text-foreground"
+                variant="ghost"
+                className="w-11 h-11! p-0! mr-3 text-foreground border-0!"
               >
                 {callIsFullscreen ? (
                   <Minimize className="size-6" />
@@ -198,7 +210,7 @@ export default function Actions() {
                   <Maximize className="size-6" />
                 )}
               </Button>
-            }
+            )}
           />
           <TooltipContent portalProps={{ container: portalContainer }}>
             Fullscreen

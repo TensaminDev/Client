@@ -1585,7 +1585,7 @@ export function useInitializeCall() {
         }
 
         setCurrentCallData({
-          ...(data.data as z.infer<typeof mtp.CallData.response>),
+          ...mtp.CallData.response.parse(data.data),
           exists: true,
         });
       })

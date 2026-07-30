@@ -69,11 +69,16 @@ export default function ScreenshareButton({
       <Tooltip>
         <Popover onOpenChange={setMenuOpen} open={menuOpen}>
           <PopoverTrigger
-            render={
+            render={({ onClick: popoverClick }) =>
               tooltip ? (
                 <TooltipTrigger
-                  render={
+                  render={({ ref, onClick: tooltipClick }) => (
                     <Button
+                      ref={ref as React.Ref<HTMLButtonElement>}
+                      onClick={(event) => {
+                        popoverClick?.(event);
+                        tooltipClick?.(event);
+                      }}
                       variant={isScreensharing ? "subtleDefault" : "default"}
                       className={className}
                     >
@@ -91,12 +96,13 @@ export default function ScreenshareButton({
                         />
                       )}
                     </Button>
-                  }
+                  )}
                 />
               ) : (
                 <Button
                   variant={isScreensharing ? "subtleDefault" : "default"}
                   className={className}
+                  onClick={popoverClick}
                 >
                   {isScreensharing ? (
                     <MonitorDot

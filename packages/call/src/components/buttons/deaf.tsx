@@ -1,7 +1,11 @@
-import { Button, withTooltip } from "@methanium/ui";
+import { Button } from "@methanium/ui";
 import { toggleDeaf, useCall } from "../../store";
 import { HeadphoneOff, Headphones } from "lucide-react";
-import { type CallButtonProps, iconScale } from "./tooltipButton";
+import {
+  type CallButtonProps,
+  iconScale,
+  withButtonTooltip,
+} from "./tooltipButton";
 
 export default function DeafButton({
   className,
@@ -25,5 +29,5 @@ export default function DeafButton({
     </Button>
   );
 
-  return withTooltip(button, tooltip, portalContainer);
+  return withButtonTooltip(button, tooltip, portalContainer);
 }
