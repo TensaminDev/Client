@@ -9,6 +9,5 @@
 - Add arrow up hotkey to edit last message (req: packages/hotkeys)
 - Drop any unique reactions above 10
 - Add proper loading skeleton for individual messages
-- Sounds
 - Reply jumping
 - Add emoji picker

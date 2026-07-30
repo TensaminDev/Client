@@ -1,6 +1,5 @@
 - Overlay for stream modals
 - Mobile
-- Sounds
 - Admin call actions
   - Timeout
   - Disconnect
