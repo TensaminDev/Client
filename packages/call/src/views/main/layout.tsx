@@ -7,6 +7,7 @@ import {
   triggerCallLayoutCalculation,
   useCall,
 } from "../../store";
+import { useIsMobile } from "@methanium/ui";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const screenRef = useRef<HTMLDivElement>(null);
@@ -129,6 +130,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setIsImmersiveChromeVisible(false);
   };
 
+  const isMobile = useIsMobile();
+
   return (
     <div
       ref={screenRef}
@@ -139,23 +142,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       onMouseMove={showImmersiveChrome}
       onMouseLeave={hideImmersiveChrome}
     >
-      <div
-        ref={topBarRef}
-        className={`shrink-0 w-full z-40 transition-all duration-200 ${
-          isImmersiveFocusedView
-            ? immersiveChromeVisible
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 -translate-y-2 pointer-events-none"
-            : "opacity-100 translate-y-0"
-        }`}
-        style={{
-          position: usersInFocusedViewHidden ? "absolute" : "relative",
-          top: 0,
-          left: 0,
-        }}
-      >
-        <TopBar />
-      </div>
+      {!isMobile && (
+        <div
+          ref={topBarRef}
+          className={`shrink-0 w-full z-40 transition-all duration-200 ${
+            isImmersiveFocusedView
+              ? immersiveChromeVisible
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 -translate-y-2 pointer-events-none"
+              : "opacity-100 translate-y-0"
+          }`}
+          style={{
+            position: usersInFocusedViewHidden ? "absolute" : "relative",
+            top: 0,
+            left: 0,
+          }}
+        >
+          <TopBar />
+        </div>
+      )}
       <div
         className="min-h-0 flex-1 w-full flex justify-center items-center overflow-hidden"
         style={

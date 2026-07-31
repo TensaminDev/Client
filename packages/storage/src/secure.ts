@@ -4,7 +4,10 @@ import { getDatabaseEntry, setDatabaseEntry } from "@tensamin/shared/indexedDb";
 
 export type SecureStorageStatus = {
   backend:
-    "electron-keyring" | "application-storage" | "webcrypto" | "indexeddb";
+    | "electron-keyring"
+    | "application-storage"
+    | "webcrypto"
+    | "indexeddb";
   secure: boolean;
   reason?: string;
 };

@@ -5,6 +5,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  useIsMobile,
+  cn,
 } from "@methanium/ui";
 import { useEffect, useState } from "react";
 import MuteButton from "./buttons/mute";
@@ -77,36 +79,45 @@ export default function Actions() {
     (state) => state.usersInFocusedViewHidden,
   );
 
+  const isMobile = useIsMobile();
+
   return (
-    <div className="w-full flex justify-between items-center">
-      <div className="w-30 flex justify-start">
-        {view === "focused" && (
-          <Tooltip>
-            <TooltipTrigger
-              render={({ ref, onClick }) => (
-                <Button
-                  ref={ref as React.Ref<HTMLButtonElement>}
-                  onClick={(event) => {
-                    onClick?.(event);
-                    setUsersInFocusedViewHidden(!usersInFocusedViewHidden);
-                  }}
-                  variant="ghost"
-                  className="w-11 h-11! p-0! ml-3 text-foreground border-0!"
-                >
-                  {usersInFocusedViewHidden ? (
-                    <ChevronUp className="size-6" />
-                  ) : (
-                    <ChevronDown className="size-6" />
-                  )}
-                </Button>
-              )}
-            />
-            <TooltipContent portalProps={{ container: portalContainer }}>
-              Hide users
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
+    <div
+      className={cn(
+        "w-full flex items-center",
+        isMobile ? "justify-center" : "justify-between",
+      )}
+    >
+      {!isMobile && (
+        <div className="w-30 flex justify-start">
+          {view === "focused" && (
+            <Tooltip>
+              <TooltipTrigger
+                render={({ ref, onClick }) => (
+                  <Button
+                    ref={ref as React.Ref<HTMLButtonElement>}
+                    onClick={(event) => {
+                      onClick?.(event);
+                      setUsersInFocusedViewHidden(!usersInFocusedViewHidden);
+                    }}
+                    variant="ghost"
+                    className="w-11 h-11! p-0! ml-3 text-foreground border-0!"
+                  >
+                    {usersInFocusedViewHidden ? (
+                      <ChevronUp className="size-6" />
+                    ) : (
+                      <ChevronDown className="size-6" />
+                    )}
+                  </Button>
+                )}
+              />
+              <TooltipContent portalProps={{ container: portalContainer }}>
+                Hide users
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      )}
       <Card className="p-1.75">
         <CardContent className="p-0! flex gap-1.75">
           <MuteButton
@@ -167,56 +178,58 @@ export default function Actions() {
           )}
         </CardContent>
       </Card>
-      <div className="w-30 flex justify-end gap-1.5">
-        <Tooltip>
-          <TooltipTrigger
-            render={({ ref, onClick }) => (
-              <Button
-                ref={ref}
-                onClick={(event) => {
-                  onClick?.(event);
-                  setCallIsPopout(!callIsPopout);
-                }}
-                variant="ghost"
-                className="w-11 h-11! p-0! text-foreground border-0!"
-              >
-                {callIsPopout ? (
-                  <SquareArrowOutDownLeft className="size-6" />
-                ) : (
-                  <SquareArrowOutUpRight className="size-6" />
-                )}
-              </Button>
-            )}
-          />
-          <TooltipContent portalProps={{ container: portalContainer }}>
-            Popout
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={({ ref, onClick }) => (
-              <Button
-                ref={ref}
-                onClick={(event) => {
-                  onClick?.(event);
-                  void toggleFullscreen();
-                }}
-                variant="ghost"
-                className="w-11 h-11! p-0! mr-3 text-foreground border-0!"
-              >
-                {callIsFullscreen ? (
-                  <Minimize className="size-6" />
-                ) : (
-                  <Maximize className="size-6" />
-                )}
-              </Button>
-            )}
-          />
-          <TooltipContent portalProps={{ container: portalContainer }}>
-            Fullscreen
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      {!isMobile && (
+        <div className="w-30 flex justify-end gap-1.5">
+          <Tooltip>
+            <TooltipTrigger
+              render={({ ref, onClick }) => (
+                <Button
+                  ref={ref}
+                  onClick={(event) => {
+                    onClick?.(event);
+                    setCallIsPopout(!callIsPopout);
+                  }}
+                  variant="ghost"
+                  className="w-11 h-11! p-0! text-foreground border-0!"
+                >
+                  {callIsPopout ? (
+                    <SquareArrowOutDownLeft className="size-6" />
+                  ) : (
+                    <SquareArrowOutUpRight className="size-6" />
+                  )}
+                </Button>
+              )}
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Popout
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={({ ref, onClick }) => (
+                <Button
+                  ref={ref}
+                  onClick={(event) => {
+                    onClick?.(event);
+                    void toggleFullscreen();
+                  }}
+                  variant="ghost"
+                  className="w-11 h-11! p-0! mr-3 text-foreground border-0!"
+                >
+                  {callIsFullscreen ? (
+                    <Minimize className="size-6" />
+                  ) : (
+                    <Maximize className="size-6" />
+                  )}
+                </Button>
+              )}
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Fullscreen
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
 }

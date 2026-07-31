@@ -26,11 +26,7 @@ import {
 import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 
-import {
-  RECONNECT_RESET,
-  RECONNECT_TRIES,
-  RETRY_INTERVAL,
-} from "./values";
+import { RECONNECT_RESET, RECONNECT_TRIES, RETRY_INTERVAL } from "./values";
 
 function base64ToUint8Array(b64: string) {
   const bin = atob(b64);
@@ -57,9 +53,7 @@ export type BoundSendFn = <T extends keyof Schemas & string>(
   options?: { id?: number },
 ) => Promise<ProtocolMessage<T>>;
 
-export type PushHandler = (
-  message: ProtocolMessage,
-) => void | Promise<void>;
+export type PushHandler = (message: ProtocolMessage) => void | Promise<void>;
 
 const PUSH_TYPES = [
   "MessageLive",
@@ -252,7 +246,9 @@ export function Provider(props: {
         sonnerToast.error("Connection failed", {
           id: "mtp-connection-toast",
           description:
-            error instanceof Error ? error.message.split(":")[0] : "Connection lost",
+            error instanceof Error
+              ? error.message.split(":")[0]
+              : "Connection lost",
           icon: null,
           duration: Infinity,
           closeButton: true,

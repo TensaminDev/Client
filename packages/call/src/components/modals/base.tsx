@@ -5,6 +5,7 @@ import {
   Button,
   ContextMenu as UIContextMenu,
   ContextMenuTrigger,
+  cn,
 } from "@methanium/ui";
 import {
   focusParticipant,
@@ -43,7 +44,7 @@ function TransparentButton({ children }: { children: React.ReactNode }) {
   );
 }
 
-function getAverageImageColor(src: string) {
+export function getAverageImageColor(src: string) {
   return new Promise<string | undefined>((resolve) => {
     const image = new Image();
 
@@ -264,15 +265,14 @@ export default function Base({
         render={
           <div
             onClick={onClick}
-            className={`relative w-full ${fill ? "h-full" : "aspect-video"} ${
-              flush || fill ? "rounded-none" : "rounded-md"
-            } ${
-              type === "user" && isSpeaking
-                ? "border-4 border-(--primary-foreground-alt)/75!"
-                : fill
-                  ? "border-0"
-                  : "border"
-            } ${flush && !fill ? "border-x-0!" : ""}`}
+            className={cn(
+              "relative w-full",
+              fill ? "h-full" : "aspect-video",
+              flush && !fill && "border-x-0!",
+              type === "user" &&
+                isSpeaking &&
+                "border-4 border-(--primary-foreground-alt)/75!",
+            )}
           >
             <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
               <>
@@ -309,7 +309,7 @@ export default function Base({
             <div
               ref={currentCard}
               className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
-                flush ? "rounded-none" : "rounded-sm"
+                flush ? "rounded-none" : "rounded-lg"
               }`}
               style={{
                 backgroundColor: avatarBackgroundColor,

@@ -29,18 +29,22 @@ async function prepImage(
   const scale = Math.max(size / bitmap.width, size / bitmap.height);
   const width = bitmap.width * scale;
   const height = bitmap.height * scale;
-  context.drawImage(
-    bitmap,
-    (size - width) / 2,
-    (size - height) / 2,
-    width,
-    height,
-  );
+  try {
+    context.drawImage(
+      bitmap,
+      (size - width) / 2,
+      (size - height) / 2,
+      width,
+      height,
+    );
+  } finally {
+    bitmap.close();
+  }
   return canvas.toDataURL("image/webp", quality);
 }
 
 export default function Page() {
-  const { get } = useUser();
+  const { get, update } = useUser();
   const { load } = useStorage();
   const { send } = useMTP();
   const isMobile = useIsMobile();
@@ -69,7 +73,7 @@ export default function Page() {
   }, [currentUser]);
   async function handleAvatarUpload(file: File) {
     const avatar = await prepImage(file);
-    updateDraftUser((previous) => ({ ...previous, avatar }));
+    updateDraftUser((previous) => ({ ...previous, Avatar: avatar }));
     if (avatarUploadRef.current) avatarUploadRef.current.value = "";
   }
   if (!currentUser) return <p>Loading...</p>;
@@ -102,7 +106,7 @@ export default function Page() {
                 onClick={() =>
                   updateDraftUser((previous) => ({
                     ...previous,
-                    avatar: "none",
+                    Avatar: undefined,
                   }))
                 }
                 variant="destructive"
@@ -158,7 +162,7 @@ export default function Page() {
               ...draftUsersWithoutAvatar,
               ...(typeof Avatar === "string"
                 ? {
-                    avatar: Avatar.startsWith("data:")
+                    Avatar: Avatar.startsWith("data:")
                       ? (Avatar.split(",", 2)[1] ?? "")
                       : Avatar,
                   }
@@ -173,7 +177,17 @@ export default function Page() {
               return;
             }
             try {
-              await send("ChangeUserData", validation.data);
+              const response = await send("ChangeUserData", validation.data);
+              if (response.type.startsWith("Error")) {
+                throw new Error(response.type);
+              }
+              const updatedUser = mtp.GetUserData.response.parse({
+                ...currentUser,
+                ...draftUser,
+              });
+              await update(updatedUser);
+              setCurrentUser(updatedUser);
+              setDraftUser(updatedUser);
               setSaveSucceeded(true);
               setErrorMessage("");
             } catch (error) {

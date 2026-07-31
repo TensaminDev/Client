@@ -52,9 +52,7 @@ export function SettingsSidebar({
   return (
     <div
       className={cn(
-        mobile
-          ? "w-full p-1"
-          : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
+        mobile ? "w-full p-1" : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
         "flex flex-col gap-6",
         className,
       )}

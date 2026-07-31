@@ -2,6 +2,7 @@ import { RoomEvent } from "livekit-client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCall, getRoom } from "../../store";
 import Base from "../../components/modals/base";
+import { cn, useIsMobile } from "@methanium/ui";
 
 const TILE_ASPECT_RATIO = 16 / 9;
 const GRID_GAP = 12;
@@ -214,6 +215,8 @@ export default function View() {
     return room.getParticipantByIdentity(String(participantId));
   }
 
+  const isMobile = useIsMobile();
+
   return (
     <div
       ref={containerRef}
@@ -221,7 +224,7 @@ export default function View() {
         height: "calc(100% - 2rem)",
         width: "calc(100% - 2rem)",
       }}
-      className="overflow-hidden p-3"
+      className={cn("overflow-hidden", isMobile ? "" : "p-3")}
     >
       <div className="flex h-full w-full flex-col items-center justify-center gap-3">
         {rows.map((row) => (

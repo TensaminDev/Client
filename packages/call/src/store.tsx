@@ -69,7 +69,8 @@ type IncomingCallInvite = {
   senderId: number;
 };
 type CurrentCallData =
-  (z.infer<typeof mtp.CallData.response> & { exists: boolean }) | null;
+  | (z.infer<typeof mtp.CallData.response> & { exists: boolean })
+  | null;
 
 type NavigateFn = (options: {
   to: string;
@@ -173,10 +174,7 @@ async function startCallJingle(shouldPlay: () => boolean) {
     "settings.call_jingle",
   );
 
-  if (
-    generation !== callJingleGeneration ||
-    !shouldPlay()
-  ) {
+  if (generation !== callJingleGeneration || !shouldPlay()) {
     return;
   }
 

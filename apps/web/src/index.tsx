@@ -22,7 +22,6 @@ import ChatScreen from "@tensamin/chat/screen";
 import CallScreen from "@tensamin/call/screen";
 import Login from "@/routes/screens/login";
 
-import CallPopout from "@tensamin/call/popout";
 import ChatContext from "@tensamin/chat/context";
 import { useCall, useInitializeCall } from "@tensamin/call/store";
 import { useIsSpeaking } from "@tensamin/call/speakingState";
@@ -289,7 +288,6 @@ function AppShell() {
             <Session>
               <UserProvider>
                 <CallInit />
-                <CallPopout />
                 <TAuthWrapper>
                   <AppLayout>
                     <ChatContext>
