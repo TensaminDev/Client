@@ -112,6 +112,7 @@ export default function InputComponent({
       Content: encryptedContent,
       ReceiverId: userId,
       SendTime: time,
+      ...(replyTo && { ReplyId: replyTo }),
     }).catch((e) => {
       log(0, "Chat", "red", "Failed to send message", e, {
         ReceiverId: userId,

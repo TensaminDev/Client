@@ -314,6 +314,7 @@ export const mtp = {
       Content: z.base64(),
       ReceiverId: z.number(),
       SendTime: z.number(),
+      ReplyId: z.number().optional(),
       Files: z.array(fileFromMessage).optional(),
     }),
     response: z.object({}),

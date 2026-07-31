@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.WindowManager
+import android.webkit.WebView
 import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -15,6 +16,10 @@ class MainActivity : TauriActivity() {
   private var contentChild: android.view.View? = null
   private var previousUsableHeight = 0
   private var attachLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+
+  override fun onWebViewCreate(webView: WebView) {
+    webView.setInitialScale(300)
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     WindowCompat.setDecorFitsSystemWindows(window, true)

@@ -142,6 +142,7 @@ export default function CacheSync() {
           MessageState: "sent",
           SenderId: accountId,
           SendTime: Number(request.SendTime),
+          ReplyId: request.ReplyId ? Number(request.ReplyId) : undefined,
         });
         return;
       }

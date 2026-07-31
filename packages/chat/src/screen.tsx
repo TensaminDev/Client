@@ -487,7 +487,7 @@ export default function Screen() {
                           <Wrapper
                             key={getMessageRenderKey(message)}
                             userId={message.SenderId}
-                            loading={<Skeleton className="w-30 h-5" />}
+                            loading={null}
                             component={(user) => (
                               <Message
                                 grouped={isGrouped}
