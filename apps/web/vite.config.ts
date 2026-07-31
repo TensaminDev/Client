@@ -106,7 +106,7 @@ export default defineConfig({
       ? {
           protocol: "ws",
           host,
-          port: 1421,
+          clientPort: 3000,
         }
       : undefined,
     watch: {

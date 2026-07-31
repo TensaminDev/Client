@@ -95,7 +95,11 @@
       "target": [
         "dmg"
       ],
-      "icon": "build/icons/icon.icns"
+      "icon": "build/icons/icon.icns",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Tensamin uses your camera when you choose to share it in a call.",
+        "NSMicrophoneUsageDescription": "Tensamin uses your microphone for calls and shared audio."
+      }
     },
     "publish": null
   }

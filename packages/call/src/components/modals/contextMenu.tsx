@@ -6,7 +6,7 @@ import {
   Slider,
 } from "@methanium/ui";
 import type { User } from "@tensamin/user/context";
-import { useCall } from "../../store";
+import { setParticipantCameraDisabled, useCall } from "../../store";
 import { useState } from "react";
 
 function EmptyCheckboxIndicator({ checked }: { checked: boolean }) {
@@ -32,6 +32,9 @@ export default function ContextMenu({
   const [serverMuted, setServerMuted] = useState(false);
   const watchedStreamParticipantIds = useCall(
     (state) => state.watchedStreamParticipantIds,
+  );
+  const cameraDisabled = useCall((state) =>
+    state.disabledCameraParticipantIds.includes(user.UserId),
   );
 
   return (
@@ -71,6 +74,19 @@ export default function ContextMenu({
         <p>Mute Soundboard</p>
         <EmptyCheckboxIndicator checked={soundboardMuted} />
       </ContextMenuCheckboxItem>
+      {user.UserId !== ownId ? (
+        <ContextMenuCheckboxItem
+          checked={cameraDisabled}
+          onCheckedChange={(checked) =>
+            setParticipantCameraDisabled(user.UserId, checked)
+          }
+          onSelect={(e) => e.preventDefault()}
+          className="flex justify-between"
+        >
+          <p>Disable camera</p>
+          <EmptyCheckboxIndicator checked={cameraDisabled} />
+        </ContextMenuCheckboxItem>
+      ) : null}
       <ContextMenuCheckboxItem
         checked={serverDeafened}
         onCheckedChange={setServerDeafened}

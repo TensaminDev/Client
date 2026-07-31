@@ -26,16 +26,16 @@ import {
   Room,
   RoomEvent,
   type RemoteTrack,
-  type ScreenShareCaptureOptions,
   Track,
   setLogExtension,
   getLogger,
 } from "livekit-client";
 import z from "zod";
 import {
-  createScreenShareController,
-  type ScreenShareSession,
-} from "./screenshare";
+  createMediaShareController,
+  type LocalMediaShareSession,
+} from "./mediaShare/controller";
+import type { MediaShareRequest } from "./mediaShare";
 import {
   getSpeakingDetector,
   disposeSpeakingDetector,
@@ -69,8 +69,7 @@ type IncomingCallInvite = {
   senderId: number;
 };
 type CurrentCallData =
-  | (z.infer<typeof mtp.CallData.response> & { exists: boolean })
-  | null;
+  (z.infer<typeof mtp.CallData.response> & { exists: boolean }) | null;
 
 type NavigateFn = (options: {
   to: string;
@@ -102,8 +101,11 @@ type CallStore = {
   currentCallData: CurrentCallData;
   deaf: boolean;
   micEnabled: boolean;
+  cameraEnabled: boolean;
   screenShareEnabled: boolean;
-  screenShareSession: ScreenShareSession | null;
+  screenShareSession: LocalMediaShareSession | null;
+  cameraSession: LocalMediaShareSession | null;
+  disabledCameraParticipantIds: number[];
   focusedParticipantId: number | null;
   focusedParticipantType: "user" | "stream" | null;
   usersInFocusedViewHidden: boolean;
@@ -302,11 +304,21 @@ function matchesRemoteTrackSelector(
 }
 
 function syncRemoteParticipantTrackSubscriptions(participantId: number) {
+  const state = useCall.getState();
+  const watchesScreen =
+    state.watchedStreamParticipantIds.includes(participantId);
+  const cameraDisabled =
+    state.disabledCameraParticipantIds.includes(participantId);
+
   for (const publication of getRemoteTrackPublications(participantId)) {
-    publication.setSubscribed(
-      publication.kind === Track.Kind.Audio &&
-        publication.source !== Track.Source.ScreenShareAudio,
-    );
+    const subscribed =
+      publication.source === Track.Source.Camera
+        ? !cameraDisabled
+        : publication.source === Track.Source.ScreenShare ||
+            publication.source === Track.Source.ScreenShareAudio
+          ? watchesScreen
+          : publication.kind === Track.Kind.Audio;
+    publication.setSubscribed(subscribed);
   }
 }
 
@@ -596,11 +608,13 @@ export function getRoomMetadata() {
 
 // Sync local participant flags and screen-share derived state for the active call UI.
 export function syncParticipantState() {
-  const { screenShareSession } = useCall.getState();
+  const { cameraSession, screenShareSession } = useCall.getState();
   const room = getRoom();
 
   useCall.setState({
     micEnabled: room.localParticipant.isMicrophoneEnabled,
+    cameraEnabled:
+      cameraSession != null || room.localParticipant.isCameraEnabled,
     screenShareEnabled:
       screenShareSession != null || room.localParticipant.isScreenShareEnabled,
     isEncrypted:
@@ -769,6 +783,20 @@ export function setParticipantTrackSubscribed(
   syncParticipantState();
 }
 
+export function setParticipantCameraDisabled(
+  participantId: number,
+  disabled: boolean,
+) {
+  useCall.setState((state) => ({
+    disabledCameraParticipantIds: disabled
+      ? state.disabledCameraParticipantIds.includes(participantId)
+        ? state.disabledCameraParticipantIds
+        : [...state.disabledCameraParticipantIds, participantId]
+      : state.disabledCameraParticipantIds.filter((id) => id !== participantId),
+  }));
+  setParticipantTrackSubscribed(participantId, Track.Source.Camera, !disabled);
+}
+
 // Focus a participant in the main call view even when they are not sharing a screen.
 export function focusParticipant(
   participantId: number,
@@ -835,9 +863,8 @@ export function stopWatchingFocusedStream() {
   stopWatchingStream(focusedParticipantId);
 }
 
-let screenShareController: ReturnType<
-  typeof createScreenShareController
-> | null = null;
+let mediaShareController: ReturnType<typeof createMediaShareController> | null =
+  null;
 
 function getNoiseFilterAssetBaseUrl() {
   if (window.location.protocol === "file:") {
@@ -847,17 +874,21 @@ function getNoiseFilterAssetBaseUrl() {
   return "/assets";
 }
 
-function getScreenShareController() {
-  if (!screenShareController) {
-    screenShareController = createScreenShareController({
+function getMediaShareController() {
+  if (!mediaShareController) {
+    mediaShareController = createMediaShareController({
       room: getRoom(),
       getState: () => ({
         screenShareSession: useCall.getState().screenShareSession,
+        cameraSession: useCall.getState().cameraSession,
       }),
       setState: (updater) => {
         useCall.setState((state) =>
           typeof updater === "function"
-            ? updater({ screenShareSession: state.screenShareSession })
+            ? updater({
+                screenShareSession: state.screenShareSession,
+                cameraSession: state.cameraSession,
+              })
             : updater,
         );
       },
@@ -869,7 +900,7 @@ function getScreenShareController() {
     });
   }
 
-  return screenShareController;
+  return mediaShareController;
 }
 
 // Connect to LiveKit, enable the microphone, and move the UI into the live call.
@@ -921,7 +952,7 @@ export async function disconnect() {
   await clearScreenSharePreview();
 
   try {
-    await getScreenShareController().clearPublishedScreenShare();
+    await getMediaShareController().clearAll();
   } catch (error) {
     log(
       1,
@@ -943,6 +974,9 @@ export async function disconnect() {
     deaf: false,
     view: "preview",
     screenShareSession: null,
+    cameraSession: null,
+    cameraEnabled: false,
+    disabledCameraParticipantIds: [],
     focusedParticipantId: null,
     focusedParticipantType: null,
     usersInFocusedViewHidden: false,
@@ -1070,37 +1104,37 @@ export async function toggleMute() {
   syncParticipantState();
 }
 
-// Start browser-native screen sharing for the current participant.
-export async function startScreenShare(options?: ScreenShareCaptureOptions) {
-  await getScreenShareController().startScreenShare(options);
+export async function startScreenShare(
+  request: Omit<MediaShareRequest, "kind"> = {},
+) {
+  await getMediaShareController().start({ ...request, kind: "screen" });
   await publishScreenSharePreview();
 }
 
-// Start the Linux desktop capture path that renders frames through Tauri.
-export async function startLinuxDesktopScreenShare(sourceId: string) {
-  await getScreenShareController().startLinuxDesktopScreenShare(sourceId);
-  await publishScreenSharePreview();
+export async function startCameraShare(sourceId?: string) {
+  await getMediaShareController().start({ kind: "camera", sourceId });
 }
 
 // Stop the local participant's active screen share and related previews.
 export async function stopScreenShare() {
-  await getScreenShareController().stopScreenShare();
+  await getMediaShareController().stop("screen");
   await clearScreenSharePreview();
+}
+
+export async function stopCameraShare() {
+  await getMediaShareController().stop("camera");
 }
 
 // Toggle screen sharing on or off from UI controls.
 export async function setScreenShareEnabled(
   enabled: boolean,
-  options?: ScreenShareCaptureOptions,
+  request: Omit<MediaShareRequest, "kind"> = {},
 ) {
-  await getScreenShareController().setScreenShareEnabled(enabled, options);
-
   if (enabled) {
-    await publishScreenSharePreview();
+    await startScreenShare(request);
     return;
   }
-
-  await clearScreenSharePreview();
+  await stopScreenShare();
 }
 
 // Reset the in-memory call store when leaving the call experience entirely.
@@ -1115,7 +1149,10 @@ export function resetCallState() {
     livekitToken: null,
     currentCallData: null,
     deaf: false,
+    cameraEnabled: false,
     screenShareSession: null,
+    cameraSession: null,
+    disabledCameraParticipantIds: [],
     focusedParticipantId: null,
     focusedParticipantType: null,
     usersInFocusedViewHidden: false,
@@ -1169,8 +1206,11 @@ export const useCall = create<CallStore>(() => ({
   currentCallData: null,
   deaf: false,
   micEnabled: false,
+  cameraEnabled: false,
   screenShareEnabled: false,
   screenShareSession: null,
+  cameraSession: null,
+  disabledCameraParticipantIds: [],
   focusedParticipantId: null,
   focusedParticipantType: null,
   usersInFocusedViewHidden: false,
@@ -1537,14 +1577,7 @@ export function useInitializeCall() {
       const participantId = getParticipantId(participant.identity);
 
       if (participantId != null) {
-        if (
-          publication.kind === Track.Kind.Audio &&
-          publication.source !== Track.Source.ScreenShareAudio
-        ) {
-          publication.setSubscribed(true);
-        } else {
-          publication.setSubscribed(false);
-        }
+        syncRemoteParticipantTrackSubscriptions(participantId);
       }
 
       onParticipantStateChange();

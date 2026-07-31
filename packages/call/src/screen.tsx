@@ -31,8 +31,13 @@ function copyDocumentStyles(targetDocument: Document) {
   }
 }
 
-function syncDocumentClasses(targetDocument: Document) {
-  targetDocument.documentElement.className = document.documentElement.className;
+function syncDocumentAttributes(targetDocument: Document) {
+  for (const attribute of document.documentElement.attributes) {
+    targetDocument.documentElement.setAttribute(
+      attribute.name,
+      attribute.value,
+    );
+  }
   targetDocument.body.className = document.body.className;
 }
 
@@ -58,11 +63,11 @@ function PopoutScreen() {
     popoutWindow.document.title = document.title;
     popoutWindow.document.body.innerHTML = "";
     popoutWindow.document.body.style.margin = "0";
+    copyDocumentStyles(popoutWindow.document);
+    syncDocumentAttributes(popoutWindow.document);
+
     popoutWindow.document.documentElement.style.height = "100%";
     popoutWindow.document.body.style.height = "100%";
-
-    copyDocumentStyles(popoutWindow.document);
-    syncDocumentClasses(popoutWindow.document);
 
     const containerElement = popoutWindow.document.createElement("div");
     containerElement.style.width = "100%";

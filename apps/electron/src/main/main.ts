@@ -180,6 +180,29 @@ function registerDisplayMediaHandler() {
   );
 }
 
+function registerMediaPermissionHandler() {
+  const isTrustedRenderer = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "file:";
+    } catch {
+      return false;
+    }
+  };
+
+  session.defaultSession.setPermissionCheckHandler(
+    (_webContents, permission, requestingOrigin) =>
+      permission === "media" && isTrustedRenderer(requestingOrigin),
+  );
+  session.defaultSession.setPermissionRequestHandler(
+    (_webContents, permission, callback, details) => {
+      callback(
+        permission === "media" && isTrustedRenderer(details.requestingUrl),
+      );
+    },
+  );
+}
+
 function registerIpc() {
   verboseLog("registering ipc handlers");
 
@@ -360,6 +383,7 @@ async function start() {
   verboseLog("app ready");
   registerIpc();
   registerDisplayMediaHandler();
+  registerMediaPermissionHandler();
   initTray(() => mainWindow);
   await createWindow();
 }

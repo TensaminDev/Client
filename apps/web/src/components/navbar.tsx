@@ -5,7 +5,14 @@ import {
   PopoverTrigger,
   useIsMobile,
 } from "@methanium/ui";
-import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
+import {
+  ArrowLeft,
+  EllipsisVertical,
+  House,
+  Phone,
+  Settings,
+  User,
+} from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
@@ -39,6 +46,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const isMobile = useIsMobile();
 
   const [userInfoOpen, setUserInfoOpen] = useState(false);
+
+  const { callId } = useCall();
 
   return (
     <div
@@ -75,6 +84,9 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <Settings className="size-4.5" />
             </Button>
           </>
+        )}
+        {isMobile && pathname === "/call" && callId && (
+          <p className="font-medium text-[1.07rem]">{displayCallId(callId)}</p>
         )}
         {pathname === "/chat" && id && (
           <Wrapper
@@ -171,6 +183,11 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               </>
             )}
           </>
+        )}
+        {isMobile && pathname === "/call" && callId && (
+          <Button variant="ghost">
+            <EllipsisVertical />
+          </Button>
         )}
         <Controls className="mr-2" />
       </div>

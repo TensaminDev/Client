@@ -178,6 +178,13 @@ export default function Base({
     Track.Source.ScreenShare,
   );
   const screenSharePreview = participant?.attributes["screenSharePreview"];
+  const cameraPublication = getTrackPublicationBySource(
+    participant,
+    Track.Source.Camera,
+  );
+  const cameraDisabled = useCall((state) =>
+    user ? state.disabledCameraParticipantIds.includes(user.UserId) : false,
+  );
 
   const [ownId, setOwnId] = useState(0);
   useEffect(() => {
@@ -271,7 +278,7 @@ export default function Base({
               flush && !fill && "border-x-0!",
               type === "user" &&
                 isSpeaking &&
-                "border-4 border-(--primary-foreground-alt)/75!",
+                "border-4 border-(--primary-foreground-alt)/75! rounded-lg",
             )}
           >
             <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
@@ -341,23 +348,31 @@ export default function Base({
                   </div>
                 ) : null)}
 
-              {type === "user" && (
-                <Avatar
-                  style={{
-                    width: "32cqh",
-                    height: "32cqh",
-                  }}
-                >
-                  <AvatarImage src={user.Avatar} />
-                  <AvatarFallback
+              {type === "user" &&
+                (cameraPublication?.track && !cameraDisabled ? (
+                  <VideoViewer
+                    fill={fill}
+                    flush={flush}
+                    participantId={participant.identity}
+                    publication={cameraPublication}
+                  />
+                ) : (
+                  <Avatar
                     style={{
-                      fontSize: "11cqh",
+                      width: "32cqh",
+                      height: "32cqh",
                     }}
                   >
-                    {user.Display.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              )}
+                    <AvatarImage src={user.Avatar} />
+                    <AvatarFallback
+                      style={{
+                        fontSize: "11cqh",
+                      }}
+                    >
+                      {user.Display.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
             </div>
           </div>
         }

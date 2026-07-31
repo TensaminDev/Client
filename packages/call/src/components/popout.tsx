@@ -69,6 +69,7 @@ function MobileCallPill({
   const [avatarBackgroundColor, setAvatarBackgroundColor] = useState<
     string | undefined
   >(undefined);
+  const safeAreaRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const initialCoords = {
     x: window.innerWidth - MOBILE_PILL_WIDTH - MOBILE_MARGIN,
@@ -120,20 +121,36 @@ function MobileCallPill({
     };
   }, [lastSpeakingUser?.Avatar]);
 
-  const getCoordsForPosition = useCallback((nextPosition: Positions): Point => {
-    const bounds = pillRef.current?.getBoundingClientRect();
-    const width = bounds?.width ?? MOBILE_PILL_WIDTH;
-    const height = bounds?.height ?? MOBILE_PILL_HEIGHT;
-
+  const getSafeArea = useCallback(() => {
+    const element = safeAreaRef.current;
+    if (!element) return { top: 0, right: 0, bottom: 0, left: 0 };
+    const style = getComputedStyle(element);
     return {
-      x: nextPosition.endsWith("right")
-        ? window.innerWidth - width - MOBILE_MARGIN
-        : MOBILE_MARGIN,
-      y: nextPosition.startsWith("bottom")
-        ? window.innerHeight - height - MOBILE_MARGIN
-        : MOBILE_MARGIN,
+      top: parseFloat(style.paddingTop) || 0,
+      right: parseFloat(style.paddingRight) || 0,
+      bottom: parseFloat(style.paddingBottom) || 0,
+      left: parseFloat(style.paddingLeft) || 0,
     };
   }, []);
+
+  const getCoordsForPosition = useCallback(
+    (nextPosition: Positions): Point => {
+      const bounds = pillRef.current?.getBoundingClientRect();
+      const width = bounds?.width ?? MOBILE_PILL_WIDTH;
+      const height = bounds?.height ?? MOBILE_PILL_HEIGHT;
+      const safeArea = getSafeArea();
+
+      return {
+        x: nextPosition.endsWith("right")
+          ? window.innerWidth - safeArea.right - width - MOBILE_MARGIN
+          : safeArea.left + MOBILE_MARGIN,
+        y: nextPosition.startsWith("bottom")
+          ? window.innerHeight - safeArea.bottom - height - MOBILE_MARGIN
+          : safeArea.top + MOBILE_MARGIN,
+      };
+    },
+    [getSafeArea],
+  );
 
   const setCoordsSafe = useCallback((next: Point) => {
     coordsRef.current = next;
@@ -166,90 +183,102 @@ function MobileCallPill({
   }
 
   return (
-    <Card
-      ref={pillRef}
-      onClick={() => {
-        if (movedRef.current) {
-          movedRef.current = false;
-          return;
-        }
-
-        setOpenMobile(false);
-        void openCallPage(callId);
-      }}
-      onPointerDown={(event) => {
-        if (event.button !== 0) return;
-
-        event.currentTarget.setPointerCapture(event.pointerId);
-        dragOffsetRef.current = {
-          x: event.clientX - coordsRef.current.x,
-          y: event.clientY - coordsRef.current.y,
-        };
-        dragStartRef.current = { x: event.clientX, y: event.clientY };
-        movedRef.current = false;
-        setIsDragging(true);
-      }}
-      onPointerMove={(event) => {
-        if (!isDragging) return;
-
-        const bounds = pillRef.current?.getBoundingClientRect();
-        const width = bounds?.width ?? MOBILE_PILL_WIDTH;
-        const height = bounds?.height ?? MOBILE_PILL_HEIGHT;
-        const next = {
-          x: Math.min(
-            window.innerWidth - width - MOBILE_MARGIN,
-            Math.max(MOBILE_MARGIN, event.clientX - dragOffsetRef.current.x),
-          ),
-          y: Math.min(
-            window.innerHeight - height - MOBILE_MARGIN,
-            Math.max(MOBILE_MARGIN, event.clientY - dragOffsetRef.current.y),
-          ),
-        };
-
-        if (
-          Math.abs(event.clientX - dragStartRef.current.x) > 3 ||
-          Math.abs(event.clientY - dragStartRef.current.y) > 3
-        ) {
-          movedRef.current = true;
-        }
-
-        setCoordsSafe(next);
-      }}
-      onPointerUp={(event) => {
-        if (!isDragging) return;
-
-        const nextPosition = `${
-          event.clientY < window.innerHeight / 2 ? "top" : "bottom"
-        }-${event.clientX < window.innerWidth / 2 ? "left" : "right"}` as Positions;
-
-        setIsDragging(false);
-        snapToPosition(nextPosition);
-      }}
-      onPointerCancel={() => {
-        setIsDragging(false);
-        snapToPosition(position);
-      }}
-      className={cn(
-        "fixed left-0 top-0 z-200 flex w-23 h-23! touch-none select-none shadow-xl rounded-2xl flex items-center justify-center",
-        isSpeaking && "border-3! border-(--primary-foreground-alt)/75!",
-        isDragging ? "cursor-grabbing" : "cursor-grab",
-      )}
-      style={{
-        backgroundColor: avatarBackgroundColor,
-        transform: `translate3d(${coords.x}px, ${coords.y}px, 0)`,
-        transition: isDragging
-          ? "none"
-          : "transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-        willChange: "transform",
-      }}
+    <div
+      ref={safeAreaRef}
+      className="pointer-events-none fixed inset-0 z-200 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]"
     >
-      <Avatar className="size-14">
-        <AvatarImage src={lastSpeakingUser?.Avatar} />
-        <AvatarFallback className="text-lg">
-          {lastSpeakingUser?.Display.slice(0, 2).toUpperCase() ?? "..."}
-        </AvatarFallback>
-      </Avatar>
-    </Card>
+      <Card
+        ref={pillRef}
+        onClick={() => {
+          if (movedRef.current) {
+            movedRef.current = false;
+            return;
+          }
+
+          setOpenMobile(false);
+          void openCallPage(callId);
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+
+          event.currentTarget.setPointerCapture(event.pointerId);
+          dragOffsetRef.current = {
+            x: event.clientX - coordsRef.current.x,
+            y: event.clientY - coordsRef.current.y,
+          };
+          dragStartRef.current = { x: event.clientX, y: event.clientY };
+          movedRef.current = false;
+          setIsDragging(true);
+        }}
+        onPointerMove={(event) => {
+          if (!isDragging) return;
+
+          const bounds = pillRef.current?.getBoundingClientRect();
+          const width = bounds?.width ?? MOBILE_PILL_WIDTH;
+          const height = bounds?.height ?? MOBILE_PILL_HEIGHT;
+          const safeArea = getSafeArea();
+          const next = {
+            x: Math.min(
+              window.innerWidth - safeArea.right - width - MOBILE_MARGIN,
+              Math.max(
+                safeArea.left + MOBILE_MARGIN,
+                event.clientX - dragOffsetRef.current.x,
+              ),
+            ),
+            y: Math.min(
+              window.innerHeight - safeArea.bottom - height - MOBILE_MARGIN,
+              Math.max(
+                safeArea.top + MOBILE_MARGIN,
+                event.clientY - dragOffsetRef.current.y,
+              ),
+            ),
+          };
+
+          if (
+            Math.abs(event.clientX - dragStartRef.current.x) > 3 ||
+            Math.abs(event.clientY - dragStartRef.current.y) > 3
+          ) {
+            movedRef.current = true;
+          }
+
+          setCoordsSafe(next);
+        }}
+        onPointerUp={(event) => {
+          if (!isDragging) return;
+
+          const nextPosition = `${
+            event.clientY < window.innerHeight / 2 ? "top" : "bottom"
+          }-${event.clientX < window.innerWidth / 2 ? "left" : "right"}` as Positions;
+
+          setIsDragging(false);
+          snapToPosition(nextPosition);
+        }}
+        onPointerCancel={() => {
+          setIsDragging(false);
+          snapToPosition(position);
+        }}
+        className={cn(
+          "pointer-events-auto fixed left-0 top-0 z-200 flex w-23 h-23! touch-none select-none shadow-xl rounded-2xl flex items-center justify-center",
+          isSpeaking && "border-3! border-(--primary-foreground-alt)/75!",
+          isDragging ? "cursor-grabbing" : "cursor-grab",
+        )}
+        style={{
+          backgroundColor: avatarBackgroundColor,
+          transform: `translate3d(${coords.x}px, ${coords.y}px, 0)`,
+          transition: isDragging
+            ? "none"
+            : "transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          willChange: "transform",
+        }}
+      >
+        <Avatar className="size-14">
+          <AvatarImage src={lastSpeakingUser?.Avatar} />
+          <AvatarFallback className="text-lg">
+            {lastSpeakingUser?.Display.slice(0, 2).toUpperCase() ?? "..."}
+          </AvatarFallback>
+        </Avatar>
+      </Card>
+    </div>
   );
 }
 

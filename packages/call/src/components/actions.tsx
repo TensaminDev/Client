@@ -11,7 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";
-import ScreenshareButton from "./buttons/screenshare";
+import MediaShareButton from "./buttons/mediaShare";
 import LeaveButton from "./buttons/leave";
 import {
   setCallIsPopout,
@@ -132,10 +132,10 @@ export default function Actions() {
             tooltip="Deafen"
             portalContainer={portalContainer}
           />
-          <ScreenshareButton
+          <MediaShareButton
             className={sharedClasses}
             iconSize={sharedIconSize}
-            tooltip="Screenshare"
+            tooltip="Share media"
           />
           <InviteButton
             className={sharedClasses}

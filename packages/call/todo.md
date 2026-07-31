@@ -7,3 +7,4 @@
 - Add quality selection
 - Good preview page
 - Settings page
+- Make the Three-Dots button open a dialog/context-menu to configure the call for anonymous invites or other admin stuff

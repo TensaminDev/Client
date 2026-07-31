@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
   useIsMobile,
 } from "@methanium/ui";
-import ScreenshareButton from "./buttons/screenshare";
+import MediaShareButton from "./buttons/mediaShare";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";
 import { Room, Track } from "livekit-client";
@@ -199,7 +199,7 @@ export default function SidebarBox() {
         <div className="flex justify-center gap-1">
           <MuteButton className="h-9! w-[24%]" />
           <DeafButton className="h-9! w-[24%]" />
-          <ScreenshareButton className="h-9! w-[24%]" defaultPortal />
+          <MediaShareButton className="h-9! w-[24%]!" defaultPortal />
           <LeaveButton className="h-9! w-[24%]" />
         </div>
       </CardContent>

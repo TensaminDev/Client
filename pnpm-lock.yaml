@@ -536,9 +536,6 @@ importers:
       "@tanstack/react-router":
         specifier: ^1.169.1
         version: 1.170.17(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      "@tauri-apps/api":
-        specifier: ^2
-        version: 2.11.1
       "@tensamin/crypto":
         specifier: workspace:*
         version: link:../crypto
