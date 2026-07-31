@@ -20,7 +20,6 @@ import {
   type RawMessage,
 } from "./values";
 import Wrapper from "@tensamin/user/wrapper";
-import { Skeleton } from "@methanium/ui";
 
 type MessageChunk = {
   key: string;
