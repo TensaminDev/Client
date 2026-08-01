@@ -53,6 +53,7 @@
     "@tensamin/cache": "workspace:*",
     "@tensamin/chat": "workspace:*",
     "@tensamin/crypto": "workspace:*",
+    "@tensamin/hotkeys": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/settings": "workspace:*",
     "@tensamin/storage": "workspace:*",

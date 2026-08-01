@@ -487,6 +487,7 @@ export interface Storage extends SettingsStorageDefaults {
     height: number;
   } | null;
   reactions: Record<string, number>;
+  hotkey_overrides: Record<string, string | null>;
 }
 
 export const storageDefaults: Storage = {
@@ -577,6 +578,7 @@ export const storageDefaults: Storage = {
     ":fire:": 2,
     ":white_check_mark:": 1,
   },
+  hotkey_overrides: {},
 };
 
 // User Status

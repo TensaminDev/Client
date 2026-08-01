@@ -38,6 +38,13 @@ type ElectronDesktopApi = {
       iconDataUrl?: string;
     }) => Promise<void>;
   };
+  hotkeys?: {
+    setBindings?: (
+      bindings: Array<{ id: string; accelerator: string }>,
+    ) => Promise<Record<string, boolean>>;
+    setSuspended?: (suspended: boolean) => Promise<Record<string, boolean>>;
+    onTriggered?: (callback: (id: string) => void) => () => void;
+  };
   secureStorage?: {
     getStatus?: () => Promise<{ available: boolean; backend: string | null }>;
     load?: (key: string) => Promise<string | null>;

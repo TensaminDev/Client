@@ -49,6 +49,7 @@ import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
+import { HotkeysProvider } from "@tensamin/hotkeys";
 
 const wrapper = document.getElementById("root");
 
@@ -266,10 +267,12 @@ function RootShell() {
           />
           <TooltipProvider>
             <Storage>
-              <ThemeStorageBridge />
-              <LoginWrapper>
-                <Outlet />
-              </LoginWrapper>
+              <HotkeysProvider>
+                <ThemeStorageBridge />
+                <LoginWrapper>
+                  <Outlet />
+                </LoginWrapper>
+              </HotkeysProvider>
             </Storage>
           </TooltipProvider>
         </div>

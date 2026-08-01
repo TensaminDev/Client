@@ -52,6 +52,12 @@ import Emoji, {
 
 export const MAX_RENDERED_EMOJI_OPTIONS = 100;
 
+export type InputController = {
+  focus: () => void;
+  hasFocus: () => boolean;
+  insertText: (text: string) => void;
+};
+
 export type InputProps = {
   ref?: HTMLDivElement;
   placeholder?: string;
@@ -66,6 +72,8 @@ export type InputProps = {
   className?: string;
   emojiFrequencies?: Readonly<Record<string, number>>;
   onEmojiSelect?: (shortcode: string) => void;
+  autoFocus?: boolean;
+  onControllerChange?: (controller: InputController | null) => void;
 };
 
 type InputStyle = CSSProperties & {
@@ -353,8 +361,23 @@ export default function Input(props: InputProps) {
       state,
       parent: elementRef.current,
     });
+    props.onControllerChange?.({
+      focus: () => viewRef.current?.contentDOM.focus({ preventScroll: true }),
+      hasFocus: () => viewRef.current?.hasFocus ?? false,
+      insertText: (text) => {
+        const editor = viewRef.current;
+        if (!editor) return;
+        editor.dispatch({
+          ...editor.state.replaceSelection(text),
+          annotations: Transaction.userEvent.of("input.type"),
+          scrollIntoView: true,
+        });
+      },
+    });
+    if (props.autoFocus) viewRef.current.focus();
 
     return () => {
+      props.onControllerChange?.(null);
       viewRef.current?.destroy();
       viewRef.current = undefined;
     };

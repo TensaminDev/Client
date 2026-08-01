@@ -6,6 +6,7 @@ import Licenses from "./pages/licenses";
 import Profile from "./pages/profile";
 import Security from "./pages/security";
 import Theme from "./pages/theme";
+import Hotkeys from "./pages/hotkeys";
 
 export const settingsPages = [
   { path: "/", component: Index },
@@ -25,6 +26,12 @@ export const settingsPages = [
   { category: "general", path: "call", label: "Call", component: Call },
   { category: "application", path: "cache", label: "Cache", component: Cache },
   { category: "application", path: "theme", label: "Theme", component: Theme },
+  {
+    category: "application",
+    path: "hotkeys",
+    label: "Hotkeys",
+    component: Hotkeys,
+  },
   {
     category: "application",
     path: "licenses",

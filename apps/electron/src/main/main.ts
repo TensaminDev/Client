@@ -5,6 +5,7 @@ import {
   app,
   BrowserWindow,
   desktopCapturer,
+  globalShortcut,
   ipcMain,
   session,
   shell,
@@ -13,6 +14,7 @@ import { checkForUpdates } from "./updates.js";
 import {
   ipcChannels,
   type DesktopCallStatus,
+  type DesktopGlobalHotkeyBinding,
   type DesktopScreenShareAudioOutput,
   type DesktopScreenShareCapabilities,
 } from "../shared/ipc.js";
@@ -29,6 +31,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const verbose = process.argv.includes("--verbose");
 let mainWindow: BrowserWindow | null = null;
 let selectedScreenShareSourceId: string | null = null;
+let globalHotkeyBindings: DesktopGlobalHotkeyBinding[] = [];
+let globalHotkeysSuspended = false;
 
 app.setName("tensamin");
 app.setPath("userData", join(app.getPath("appData"), "tensamin", "electron"));
@@ -44,6 +48,13 @@ if (
   !app.commandLine.hasSwitch("password-store")
 ) {
   app.commandLine.appendSwitch("password-store", "gnome-libsecret");
+}
+
+if (
+  process.platform === "linux" &&
+  process.env.XDG_SESSION_TYPE === "wayland"
+) {
+  app.commandLine.appendSwitch("enable-features", "GlobalShortcutsPortal");
 }
 
 if (
@@ -242,6 +253,24 @@ function registerIpc() {
     deleteSecureStorage(key),
   );
   ipcMain.handle(ipcChannels.clearSecureStorage, clearSecureStorage);
+  ipcMain.handle(
+    ipcChannels.setGlobalHotkeyBindings,
+    (event, bindings: unknown) => {
+      assertTrustedRenderer(event);
+      return setGlobalHotkeyBindings(bindings);
+    },
+  );
+  ipcMain.handle(
+    ipcChannels.setGlobalHotkeysSuspended,
+    (event, suspended: unknown) => {
+      assertTrustedRenderer(event);
+      if (typeof suspended !== "boolean") {
+        throw new Error("Invalid hotkey suspension state.");
+      }
+      globalHotkeysSuspended = suspended;
+      return applyGlobalHotkeyBindings();
+    },
+  );
   ipcMain.handle(ipcChannels.setCallStatus, (_event, status: unknown) => {
     if (
       typeof status !== "object" ||
@@ -280,6 +309,90 @@ function registerIpc() {
     verboseLog("window:close");
     mainWindow?.close();
   });
+}
+
+function assertTrustedRenderer(event: Electron.IpcMainInvokeEvent) {
+  const target = mainWindow;
+  if (
+    !target ||
+    target.isDestroyed() ||
+    event.sender !== target.webContents ||
+    event.senderFrame !== target.webContents.mainFrame
+  ) {
+    throw new Error("Untrusted hotkey IPC sender.");
+  }
+
+  try {
+    if (fileURLToPath(event.senderFrame.url) === getRendererIndex()) return;
+  } catch {
+    // Fall through to the rejection below.
+  }
+  throw new Error("Untrusted hotkey IPC sender.");
+}
+
+function validGlobalHotkeyBindings(
+  value: unknown,
+): value is DesktopGlobalHotkeyBinding[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 64 &&
+    value.every(
+      (binding) =>
+        binding &&
+        typeof binding === "object" &&
+        typeof (binding as DesktopGlobalHotkeyBinding).id === "string" &&
+        /^[a-z0-9.-]+$/i.test((binding as DesktopGlobalHotkeyBinding).id) &&
+        (binding as DesktopGlobalHotkeyBinding).id.length > 0 &&
+        (binding as DesktopGlobalHotkeyBinding).id.length <= 128 &&
+        typeof (binding as DesktopGlobalHotkeyBinding).accelerator ===
+          "string" &&
+        (binding as DesktopGlobalHotkeyBinding).accelerator.length > 0 &&
+        (binding as DesktopGlobalHotkeyBinding).accelerator.length <= 128,
+    )
+  );
+}
+
+function applyGlobalHotkeyBindings() {
+  globalShortcut.unregisterAll();
+  const statuses = Object.fromEntries(
+    globalHotkeyBindings.map(({ id }) => [id, false]),
+  );
+  if (globalHotkeysSuspended) return statuses;
+
+  const grouped = new Map<string, string[]>();
+  for (const { id, accelerator } of globalHotkeyBindings) {
+    const ids = grouped.get(accelerator) ?? [];
+    ids.push(id);
+    grouped.set(accelerator, ids);
+  }
+
+  for (const [accelerator, ids] of grouped) {
+    let registered = false;
+    try {
+      registered = globalShortcut.register(accelerator, () => {
+        const target = mainWindow;
+        if (!target || target.isDestroyed()) return;
+        ids.forEach((id) =>
+          target.webContents.send(ipcChannels.globalHotkeyTriggered, id),
+        );
+      });
+    } catch (error) {
+      console.error("Failed to register global hotkey", accelerator, error);
+    }
+    ids.forEach((id) => {
+      statuses[id] = registered;
+    });
+  }
+
+  return statuses;
+}
+
+function setGlobalHotkeyBindings(bindings: unknown) {
+  if (!validGlobalHotkeyBindings(bindings)) {
+    throw new Error("Invalid global hotkey bindings.");
+  }
+  globalHotkeyBindings = bindings;
+  return applyGlobalHotkeyBindings();
 }
 
 async function createWindow() {
@@ -365,6 +478,10 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   verboseLog("activate");
   if (BrowserWindow.getAllWindows().length === 0) void createWindow();
+});
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 
 if (verbose) {

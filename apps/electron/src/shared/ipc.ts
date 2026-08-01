@@ -31,6 +31,11 @@ export type DesktopSecureStorageStatus = {
   backend: string | null;
 };
 
+export type DesktopGlobalHotkeyBinding = {
+  id: string;
+  accelerator: string;
+};
+
 export const secureStorageLimits = {
   maxKeyBytes: 256,
   maxValueBytes: 1024 * 1024,
@@ -77,4 +82,7 @@ export const ipcChannels = {
   saveSecureStorage: "secureStorage:save",
   deleteSecureStorage: "secureStorage:delete",
   clearSecureStorage: "secureStorage:clear",
+  setGlobalHotkeyBindings: "hotkeys:setBindings",
+  setGlobalHotkeysSuspended: "hotkeys:setSuspended",
+  globalHotkeyTriggered: "hotkeys:triggered",
 } as const;

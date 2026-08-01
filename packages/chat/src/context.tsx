@@ -927,6 +927,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           removeReaction,
           clearLiveMessages,
           chatSecret: currentChatSecret,
+          ownId,
           userId: userIdValue,
           inputBoxRef,
           error,
@@ -954,6 +955,7 @@ type contextType = {
   removeReaction: (sendTime: number, reaction: string) => Promise<void>;
   clearLiveMessages: () => void;
   chatSecret: Uint8Array | null;
+  ownId: number;
   userId: number;
   inputBoxRef: React.RefObject<HTMLDivElement | null>;
   error: string;

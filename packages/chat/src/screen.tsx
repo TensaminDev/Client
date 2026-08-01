@@ -85,6 +85,8 @@ export default function Screen() {
     clearLiveMessages,
     userId,
     chatSecret,
+    ownId,
+    inputBoxRef,
     error,
     errorDescription,
   } = useChat();
@@ -103,9 +105,24 @@ export default function Screen() {
   const [didInitialScroll, setDidInitialScroll] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [value, setValue] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const previousEditingMessageIdRef = useRef<number | null>(null);
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasChatSecret = chatSecret !== null;
+
+  useEffect(() => {
+    const previousEditingMessageId = previousEditingMessageIdRef.current;
+    previousEditingMessageIdRef.current = editingMessageId;
+    if (previousEditingMessageId === null || editingMessageId !== null) return;
+
+    const frame = requestAnimationFrame(() => {
+      inputBoxRef.current
+        ?.querySelector<HTMLElement>(".cm-content")
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [editingMessageId, inputBoxRef]);
 
   const messagesQuery = useInfiniteQuery({
     queryKey: ["chat-messages", String(userId), hasChatSecret],
@@ -141,6 +158,7 @@ export default function Screen() {
     isAtBottomRef.current = true;
     setDidInitialScroll(false);
     setLastLiveMessageCount(0);
+    setEditingMessageId(null);
   }, [clearLiveMessages, userId]);
 
   const historicalMessages = useMemo(() => {
@@ -212,6 +230,34 @@ export default function Screen() {
   const totalSize = virtualizer.getTotalSize();
   const contentHeight = Math.max(totalSize, viewportHeight);
   const verticalOffset = Math.max(0, viewportHeight - totalSize);
+
+  const editLastMessage = useCallback(() => {
+    if (editingMessageId !== null) return;
+    const message = [...messages]
+      .reverse()
+      .find(
+        (candidate) =>
+          candidate.SenderId === ownId &&
+          candidate.Content.length > 0 &&
+          candidate.MessageState !== "awaiting" &&
+          !("failed" in candidate && candidate.failed) &&
+          !("decryptionFailed" in candidate && candidate.decryptionFailed),
+      );
+    if (!message) return;
+
+    const chunkIndex = messageChunks.findIndex((chunk) =>
+      chunk.messages.some(
+        (candidate) => candidate.SendTime === message.SendTime,
+      ),
+    );
+    const chunkIsRendered = virtualizer
+      .getVirtualItems()
+      .some(({ index }) => index === chunkIndex);
+    if (chunkIndex >= 0 && !chunkIsRendered) {
+      virtualizer.scrollToIndex(chunkIndex, { align: "center" });
+    }
+    setEditingMessageId(message.SendTime);
+  }, [editingMessageId, messageChunks, messages, ownId, virtualizer]);
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
@@ -489,8 +535,14 @@ export default function Screen() {
                             loading={null}
                             component={(user) => (
                               <Message
+                                editing={editingMessageId === message.SendTime}
                                 grouped={isGrouped}
                                 message={message}
+                                onSetEditing={(editing) =>
+                                  setEditingMessageId(
+                                    editing ? message.SendTime : null,
+                                  )
+                                }
                                 user={user}
                               />
                             )}
@@ -504,7 +556,11 @@ export default function Screen() {
             </div>
           </div>
           <div className="z-10 shrink-0">
-            <InputComponent setValue={setValue} value={value} />
+            <InputComponent
+              onEditLastMessage={editLastMessage}
+              setValue={setValue}
+              value={value}
+            />
           </div>
         </>
       )}
