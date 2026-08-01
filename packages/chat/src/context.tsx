@@ -27,7 +27,7 @@ import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { useSession } from "@tensamin/storage/session";
 import { useUser } from "@tensamin/user/context";
-import { createCache } from "@tensamin/cache";
+import { createCache, type ChatDraft } from "@tensamin/cache";
 import { secureValueCodec } from "@tensamin/storage/secure";
 
 export const context = createContext<contextType | undefined>(undefined);
@@ -147,6 +147,17 @@ type SendMessageGet = (
 
 type GetChatSecret = (userId: number) => Promise<Uint8Array | null>;
 
+type StoredDraftState = ChatDraft & {
+  accountId: number;
+  userId: number;
+  loaded: boolean;
+  revision: number;
+};
+
+function draftKey(accountId: number, userId: number) {
+  return `${accountId}:${userId}`;
+}
+
 export async function getMessage({
   sendTime,
   ownId,
@@ -226,6 +237,10 @@ export default function Provider({ children }: { children: ReactNode }) {
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
   const [ownId, setOwnId] = useState(0);
+  const [drafts, setDrafts] = useState<Record<string, StoredDraftState>>({});
+  const draftsRef = useRef<Record<string, StoredDraftState>>({});
+  const loadingDraftsRef = useRef(new Set<string>());
+  const draftWriteQueuesRef = useRef(new Map<string, Promise<void>>());
   const [currentChatSecretState, setCurrentChatSecretState] = useState<{
     userId: number;
     value: Uint8Array | null;
@@ -257,6 +272,142 @@ export default function Provider({ children }: { children: ReactNode }) {
   useEffect(() => {
     load("user_id").then(setOwnId);
   }, [load]);
+
+  const persistDraft = useCallback(
+    (key: string, accountId: number, userId: number, draft: ChatDraft) => {
+      const previous =
+        draftWriteQueuesRef.current.get(key) ?? Promise.resolve();
+      const next = previous
+        .catch(() => undefined)
+        .then(async () => {
+          const cache = createCache(String(accountId), {
+            codec: secureValueCodec,
+          });
+          if (draft.Content === "" && draft.ReplyId === undefined) {
+            await cache.drafts.delete(userId);
+          } else {
+            await cache.drafts.put(userId, draft);
+          }
+        })
+        .catch((err) => {
+          log(1, "chat", "red", "Failed to cache chat draft", err);
+        });
+      draftWriteQueuesRef.current.set(key, next);
+    },
+    [],
+  );
+
+  const updateDraft = useCallback(
+    (
+      accountId: number,
+      userId: number,
+      update: (current: ChatDraft) => ChatDraft,
+    ) => {
+      const key = draftKey(accountId, userId);
+      const current = draftsRef.current[key] ?? {
+        accountId,
+        userId,
+        Content: "",
+        loaded: false,
+        revision: 0,
+      };
+      const changed = update(current);
+      const next: StoredDraftState = {
+        ...current,
+        ...changed,
+        revision: current.revision + 1,
+      };
+      const nextDrafts = { ...draftsRef.current, [key]: next };
+      draftsRef.current = nextDrafts;
+      setDrafts(nextDrafts);
+
+      if (next.loaded) {
+        persistDraft(key, accountId, userId, {
+          Content: next.Content,
+          ReplyId: next.ReplyId,
+        });
+      }
+    },
+    [persistDraft],
+  );
+
+  useEffect(() => {
+    if (
+      !Number.isSafeInteger(ownId) ||
+      ownId <= 0 ||
+      !Number.isSafeInteger(userIdValue) ||
+      userIdValue <= 0
+    ) {
+      return;
+    }
+
+    const key = draftKey(ownId, userIdValue);
+    if (draftsRef.current[key]?.loaded || loadingDraftsRef.current.has(key)) {
+      return;
+    }
+    loadingDraftsRef.current.add(key);
+
+    void (async () => {
+      let stored: ChatDraft | undefined;
+      try {
+        stored = await createCache(String(ownId), {
+          codec: secureValueCodec,
+        }).drafts.get(userIdValue);
+      } catch (err) {
+        log(1, "chat", "red", "Failed to restore chat draft", err);
+      } finally {
+        const current = draftsRef.current[key];
+        const next: StoredDraftState =
+          current && current.revision > 0
+            ? { ...current, loaded: true }
+            : {
+                accountId: ownId,
+                userId: userIdValue,
+                Content: stored?.Content ?? "",
+                ReplyId: stored?.ReplyId,
+                loaded: true,
+                revision: 0,
+              };
+        const nextDrafts = { ...draftsRef.current, [key]: next };
+        draftsRef.current = nextDrafts;
+        setDrafts(nextDrafts);
+        loadingDraftsRef.current.delete(key);
+
+        if (next.revision > 0) {
+          persistDraft(key, ownId, userIdValue, {
+            Content: next.Content,
+            ReplyId: next.ReplyId,
+          });
+        }
+      }
+    })();
+  }, [ownId, persistDraft, userIdValue]);
+
+  const activeDraftKey =
+    ownId > 0 && userIdValue > 0 ? draftKey(ownId, userIdValue) : undefined;
+  const activeDraft = activeDraftKey ? drafts[activeDraftKey] : undefined;
+  const composerValue = activeDraft?.Content ?? "";
+  const replyTo = activeDraft?.ReplyId;
+  const setComposerValue = useCallback(
+    (value: string) => {
+      if (ownId <= 0 || userIdValue <= 0) return;
+      updateDraft(ownId, userIdValue, (current) => ({
+        ...current,
+        Content: value,
+      }));
+    },
+    [ownId, updateDraft, userIdValue],
+  );
+  const setReplyTo = useCallback(
+    (value: number | undefined) => {
+      if (ownId <= 0 || userIdValue <= 0) return;
+      updateDraft(ownId, userIdValue, (current) => ({
+        ...current,
+        ReplyId: value,
+      }));
+    },
+    [ownId, updateDraft, userIdValue],
+  );
 
   useEffect(() => {
     if (!userIdValue) return;
@@ -907,12 +1058,6 @@ export default function Provider({ children }: { children: ReactNode }) {
     userIdValue,
   ]);
 
-  // Replys
-  const [replyTo, setReplyTo] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    setReplyTo(undefined);
-  }, [userIdValue]);
-
   return (
     <QueryClientProvider client={queryClient}>
       <context.Provider
@@ -932,6 +1077,8 @@ export default function Provider({ children }: { children: ReactNode }) {
           inputBoxRef,
           error,
           errorDescription,
+          composerValue,
+          setComposerValue,
           replyTo,
           setReplyTo,
         }}
@@ -960,6 +1107,8 @@ type contextType = {
   inputBoxRef: React.RefObject<HTMLDivElement | null>;
   error: string;
   errorDescription: string;
+  composerValue: string;
+  setComposerValue: (value: string) => void;
   replyTo: number | undefined;
   setReplyTo: (value: number | undefined) => void;
 };

@@ -89,6 +89,8 @@ export default function Screen() {
     inputBoxRef,
     error,
     errorDescription,
+    composerValue,
+    setComposerValue,
   } = useChat();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -104,7 +106,6 @@ export default function Screen() {
   const [lastLiveMessageCount, setLastLiveMessageCount] = useState(0);
   const [didInitialScroll, setDidInitialScroll] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
-  const [value, setValue] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const previousEditingMessageIdRef = useRef<number | null>(null);
 
@@ -558,8 +559,8 @@ export default function Screen() {
           <div className="z-10 shrink-0">
             <InputComponent
               onEditLastMessage={editLastMessage}
-              setValue={setValue}
-              value={value}
+              setValue={setComposerValue}
+              value={composerValue}
             />
           </div>
         </>

@@ -13,9 +13,11 @@ import {
 } from "./helpers";
 import {
   accountIdSchema,
+  chatDraftSchema,
   contactsSchema,
   conversationWindowSchema,
   userProfileSchema,
+  type ChatDraft,
   type Contact,
   type ConversationWindow,
   type UserProfile,
@@ -24,7 +26,7 @@ import {
 export * from "./helpers";
 export * from "./schemas";
 
-type CacheStore = "contacts" | "profiles" | "conversations";
+type CacheStore = "contacts" | "profiles" | "conversations" | "drafts";
 
 export interface SecureValueCodec {
   encode(value: unknown): unknown | Promise<unknown>;
@@ -237,19 +239,25 @@ export function createCache(accountId: string, options: CacheOptions = {}) {
       },
       delete: (userId: number) => remove("conversations", String(userId)),
     },
+    drafts: {
+      get: (userId: number) => read("drafts", String(userId), chatDraftSchema),
+      put: (userId: number, draft: ChatDraft) =>
+        write("drafts", String(userId), chatDraftSchema, draft),
+      delete: (userId: number) => remove("drafts", String(userId)),
+    },
     clearAccount: async () => {
       ensureOpen();
       await Promise.all(
-        (["contacts", "profiles", "conversations"] as CacheStore[]).map(
-          async (store) => {
-            const storedEntries = await entries(store);
-            await Promise.all(
-              storedEntries.map(([key]) =>
-                deleteDatabaseEntry("cache", storedKey(store, key)),
-              ),
-            );
-          },
-        ),
+        (
+          ["contacts", "profiles", "conversations", "drafts"] as CacheStore[]
+        ).map(async (store) => {
+          const storedEntries = await entries(store);
+          await Promise.all(
+            storedEntries.map(([key]) =>
+              deleteDatabaseEntry("cache", storedKey(store, key)),
+            ),
+          );
+        }),
       );
     },
     close: async () => {

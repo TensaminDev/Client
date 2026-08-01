@@ -20,8 +20,14 @@ export const conversationWindowSchema = z.object({
   LastMessageAt: z.number(),
   Messages: z.array(cachedMessageSchema),
 });
+// Unlike cached messages, draft content is plaintext and must use a secure codec.
+export const chatDraftSchema = z.object({
+  Content: z.string(),
+  ReplyId: z.number().optional(),
+});
 
 export type Contact = z.infer<typeof contactSchema>;
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type CachedMessage = z.infer<typeof cachedMessageSchema>;
 export type ConversationWindow = z.infer<typeof conversationWindowSchema>;
+export type ChatDraft = z.infer<typeof chatDraftSchema>;

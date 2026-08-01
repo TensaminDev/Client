@@ -324,6 +324,7 @@ export default function Input(props: InputProps) {
 
   const elementRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | undefined>(undefined);
+  const setValueRef = useRef(props.setValue);
   const onSubmitRef = useRef<InputProps["onSubmit"]>(props.onSubmit);
   const onEmojiSelectRef = useRef<InputProps["onEmojiSelect"]>(
     props.onEmojiSelect,
@@ -334,10 +335,16 @@ export default function Input(props: InputProps) {
   const completionCompartment = completionCompartmentRef.current;
 
   useEffect(() => {
+    setValueRef.current = props.setValue;
     onSubmitRef.current = props.onSubmit;
     onEmojiSelectRef.current = props.onEmojiSelect;
     invertEnterBehaviorRef.current = Boolean(props.invertEnterBehavior);
-  }, [props.onEmojiSelect, props.onSubmit, props.invertEnterBehavior]);
+  }, [
+    props.onEmojiSelect,
+    props.onSubmit,
+    props.invertEnterBehavior,
+    props.setValue,
+  ]);
 
   useEffect(() => {
     if (!elementRef.current) return;
@@ -346,7 +353,7 @@ export default function Input(props: InputProps) {
       doc: props.value,
       extensions: createEditorExtensions(
         (value) => {
-          props.setValue(value);
+          setValueRef.current(value);
         },
         () => props.placeholder,
         () => invertEnterBehaviorRef.current,
