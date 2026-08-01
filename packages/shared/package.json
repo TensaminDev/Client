@@ -11,6 +11,7 @@
     "./log": "./src/log.tsx",
     "./indexedDb": "./src/indexedDb.ts",
     "./settings": "./src/settings.ts",
+    "./sounds": "./src/sounds.ts",
     "./features/legal/schema": "./src/features/legal/schema.ts",
     "./features/conversation/schema": "./src/features/conversation/schema.ts"
   },
@@ -20,7 +21,7 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@tensamin/ui": "*",
+    "@methanium/ui": "*",
     "lucide-react": "^1.14.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

@@ -9,7 +9,7 @@ import {
   Input,
   Button,
   useIsMobile,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import z from "zod";
 import { useMTP } from "@tensamin/mtp";
 import { useState } from "react";
@@ -79,7 +79,7 @@ function AddConversationButton() {
       Username: result.data,
     })
       .then((data) => {
-        if (data.data.UserId === 0) {
+        if (data.type === "ErrorNotFound" || data.data.UserId === 0) {
           throw new Error();
         }
 
@@ -101,7 +101,7 @@ function AddConversationButton() {
     const timeout = setTimeout(() => setLoading(true), 500);
 
     send("AddConversation", {
-      ChatPartnerName: result.data,
+      ChatPartnerId: user.data.UserId,
     })
       .then(() => {
         insertContact(user.data.UserId);
@@ -131,8 +131,12 @@ function AddConversationButton() {
         setOpen(value);
       }}
     >
-      <DialogTrigger render={<Button>Add Conversation</Button>} />
-      <DialogContent>
+      <DialogTrigger
+        render={({ onClick }) => (
+          <Button onClick={onClick}>Add Conversation</Button>
+        )}
+      />
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>New Conversation</DialogTitle>
         </DialogHeader>
@@ -160,7 +164,13 @@ function AddConversationButton() {
             {error && (
               <p className="text-sm text-destructive w-full">{error}</p>
             )}
-            <DialogClose render={<Button variant="outline">Cancel</Button>} />
+            <DialogClose
+              render={({ onClick }) => (
+                <Button onClick={onClick} variant="outline">
+                  Cancel
+                </Button>
+              )}
+            />
             <Button disabled={loading} type="submit">
               {loading && <Loader2 className="animate-spin" />} Continue
             </Button>

@@ -5,11 +5,13 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@tensamin/ui";
+  useIsMobile,
+  cn,
+} from "@methanium/ui";
 import { useEffect, useState } from "react";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";
-import ScreenshareButton from "./buttons/screenshare";
+import MediaShareButton from "./buttons/mediaShare";
 import LeaveButton from "./buttons/leave";
 import {
   setCallIsPopout,
@@ -31,7 +33,7 @@ import {
 import { useStorage } from "@tensamin/storage/context";
 
 export default function Actions() {
-  const sharedClasses = "w-14 h-10";
+  const sharedClasses = "w-14! h-10!";
   const sharedIconSize = 15;
   const view = useCall((state) => state.view);
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
@@ -77,34 +79,45 @@ export default function Actions() {
     (state) => state.usersInFocusedViewHidden,
   );
 
+  const isMobile = useIsMobile();
+
   return (
-    <div className="w-full flex justify-between items-center">
-      <div className="w-30 flex justify-start">
-        {view === "focused" && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  onClick={() =>
-                    setUsersInFocusedViewHidden(!usersInFocusedViewHidden)
-                  }
-                  variant="link"
-                  className="w-11 h-11 p-0! ml-3 text-foreground"
-                >
-                  {usersInFocusedViewHidden ? (
-                    <ChevronUp className="size-6" />
-                  ) : (
-                    <ChevronDown className="size-6" />
-                  )}
-                </Button>
-              }
-            />
-            <TooltipContent portalProps={{ container: portalContainer }}>
-              Hide users
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
+    <div
+      className={cn(
+        "w-full flex items-center",
+        isMobile ? "justify-center" : "justify-between",
+      )}
+    >
+      {!isMobile && (
+        <div className="w-30 flex justify-start">
+          {view === "focused" && (
+            <Tooltip>
+              <TooltipTrigger
+                render={({ ref, onClick }) => (
+                  <Button
+                    ref={ref as React.Ref<HTMLButtonElement>}
+                    onClick={(event) => {
+                      onClick?.(event);
+                      setUsersInFocusedViewHidden(!usersInFocusedViewHidden);
+                    }}
+                    variant="ghost"
+                    className="w-11 h-11! p-0! ml-3 text-foreground border-0!"
+                  >
+                    {usersInFocusedViewHidden ? (
+                      <ChevronUp className="size-6" />
+                    ) : (
+                      <ChevronDown className="size-6" />
+                    )}
+                  </Button>
+                )}
+              />
+              <TooltipContent portalProps={{ container: portalContainer }}>
+                Hide users
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      )}
       <Card className="p-1.75">
         <CardContent className="p-0! flex gap-1.75">
           <MuteButton
@@ -119,10 +132,10 @@ export default function Actions() {
             tooltip="Deafen"
             portalContainer={portalContainer}
           />
-          <ScreenshareButton
+          <MediaShareButton
             className={sharedClasses}
             iconSize={sharedIconSize}
-            tooltip="Screenshare"
+            tooltip="Share media"
           />
           <InviteButton
             className={sharedClasses}
@@ -132,11 +145,15 @@ export default function Actions() {
           {isWatchingFocusedStream && focusedParticipantId !== ownId ? (
             <Tooltip>
               <TooltipTrigger
-                render={
+                render={({ ref, onClick }) => (
                   <Button
+                    ref={ref}
                     className={sharedClasses}
                     variant="destructive"
-                    onClick={() => stopWatchingFocusedStream()}
+                    onClick={(event) => {
+                      onClick?.(event);
+                      stopWatchingFocusedStream();
+                    }}
                   >
                     <ScreenShareOff
                       style={{
@@ -145,7 +162,7 @@ export default function Actions() {
                       }}
                     />
                   </Button>
-                }
+                )}
               />
               <TooltipContent portalProps={{ container: portalContainer }}>
                 Stop watching
@@ -161,50 +178,58 @@ export default function Actions() {
           )}
         </CardContent>
       </Card>
-      <div className="w-30 flex justify-end">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                onClick={() => setCallIsPopout(!callIsPopout)}
-                variant="link"
-                className="w-11 h-11 p-0! text-foreground"
-              >
-                {callIsPopout ? (
-                  <SquareArrowOutDownLeft className="size-6" />
-                ) : (
-                  <SquareArrowOutUpRight className="size-6" />
-                )}
-              </Button>
-            }
-          />
-          <TooltipContent portalProps={{ container: portalContainer }}>
-            Popout
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                onClick={() => {
-                  void toggleFullscreen();
-                }}
-                variant="link"
-                className="w-11 h-11 p-0! mr-3 text-foreground"
-              >
-                {callIsFullscreen ? (
-                  <Minimize className="size-6" />
-                ) : (
-                  <Maximize className="size-6" />
-                )}
-              </Button>
-            }
-          />
-          <TooltipContent portalProps={{ container: portalContainer }}>
-            Fullscreen
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      {!isMobile && (
+        <div className="w-30 flex justify-end gap-1.5">
+          <Tooltip>
+            <TooltipTrigger
+              render={({ ref, onClick }) => (
+                <Button
+                  ref={ref}
+                  onClick={(event) => {
+                    onClick?.(event);
+                    setCallIsPopout(!callIsPopout);
+                  }}
+                  variant="ghost"
+                  className="w-11 h-11! p-0! text-foreground border-0!"
+                >
+                  {callIsPopout ? (
+                    <SquareArrowOutDownLeft className="size-6" />
+                  ) : (
+                    <SquareArrowOutUpRight className="size-6" />
+                  )}
+                </Button>
+              )}
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Popout
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={({ ref, onClick }) => (
+                <Button
+                  ref={ref}
+                  onClick={(event) => {
+                    onClick?.(event);
+                    void toggleFullscreen();
+                  }}
+                  variant="ghost"
+                  className="w-11 h-11! p-0! mr-3 text-foreground border-0!"
+                >
+                  {callIsFullscreen ? (
+                    <Minimize className="size-6" />
+                  ) : (
+                    <Maximize className="size-6" />
+                  )}
+                </Button>
+              )}
+            />
+            <TooltipContent portalProps={{ container: portalContainer }}>
+              Fullscreen
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
 }

@@ -26,9 +26,9 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
-import { useIsMobile } from "@tensamin/ui";
+import { useIsMobile } from "@methanium/ui";
 import { MobileNavbar } from "./navbar";
 
 import SidebarBox from "@tensamin/call/sidebarBox";
@@ -298,7 +298,7 @@ export default function Sidebar() {
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="fixed inset-y-0 left-0 z-50 w-screen bg-sidebar p-0 text-sidebar-foreground transition-[transform,opacity] duration-150 ease-linear"
+          className="fixed inset-y-0 left-0 z-50 w-screen bg-sidebar p-0 text-sidebar-foreground"
           style={{
             transform: openMobile ? "translateX(0)" : "translateX(-100%)",
             opacity: openMobile ? 1 : 0,

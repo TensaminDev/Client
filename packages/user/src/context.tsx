@@ -1,4 +1,12 @@
-import * as React from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useMTP } from "@tensamin/mtp";
 
 import { mtp as schemas } from "@tensamin/shared/data";
@@ -9,29 +17,32 @@ import { useSession } from "@tensamin/storage/session";
 
 export type User = z.infer<typeof schemas.GetUserData.response>;
 
+const USER_CACHE_MAX_AGE = 5 * 60 * 1000;
+
 interface contextValue {
   get(userId: number): Promise<User>;
+  update(user: User): Promise<void>;
 }
 
-const UserContext = React.createContext<contextValue | undefined>(undefined);
+const UserContext = createContext<contextValue | undefined>(undefined);
 
 /**
  * Executes UserProvider.
  * @param props Parameter props.
  * @returns unknown.
  */
-export default function UserProvider(props: { children: React.ReactNode }) {
-  const storageRef = React.useRef<Record<number, User>>({});
-  const pendingRef = React.useRef<Record<number, Promise<User> | undefined>>(
-    {},
-  );
+export default function UserProvider(props: { children: ReactNode }) {
+  const storageRef = useRef<Record<number, User>>({});
+  const pendingRef = useRef<Record<number, Promise<User> | undefined>>({});
+  const checkedAtRef = useRef<Record<number, number>>({});
 
   const { send } = useMTP();
   const { load } = useStorage();
   const { contacts } = useSession();
-  const [accountId, setAccountId] = React.useState<number | null>(null);
+  const [accountId, setAccountId] = useState<number | null>(null);
+  const [cacheVersion, setCacheVersion] = useState(0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     void load("user_id").then((accountId) => {
       setAccountId(accountId);
     });
@@ -42,8 +53,9 @@ export default function UserProvider(props: { children: React.ReactNode }) {
    * @param userId Parameter userId.
    * @returns Promise<User>.
    */
-  const get = React.useCallback(
+  const get = useCallback(
     async (userId: number): Promise<User> => {
+      void cacheVersion;
       if (userId == null) {
         throw new Error("userId is required");
       }
@@ -54,22 +66,40 @@ export default function UserProvider(props: { children: React.ReactNode }) {
       }
 
       const request = (async () => {
-        const cache = accountId ? createCache(String(accountId)) : null;
-        const cached =
-          storageRef.current[userId] ?? (await cache?.profiles.get(userId));
-        if (cached) storageRef.current[userId] = cached;
+        const cache = createCache(String(accountId ?? userId));
+        const cachedValue =
+          storageRef.current[userId] ?? (await cache.profiles.get(userId));
+        const cachedResult =
+          schemas.GetUserData.response.safeParse(cachedValue);
+        const cached = cachedResult.success ? cachedResult.data : undefined;
+        if (cached) {
+          storageRef.current[userId] = cached;
+          const checkedAt = checkedAtRef.current[userId];
+          if (!checkedAt || Date.now() - checkedAt < USER_CACHE_MAX_AGE) {
+            checkedAtRef.current[userId] = Date.now();
+            return cached;
+          }
+        }
         try {
           const userData = await send("GetUserData", { UserId: userId });
-          const user = {
-            ...userData.data,
-            avatar: userData.data.Avatar
-              ? `data:image/webp;base64,${atob(userData.data.Avatar)}`
-              : undefined,
-          };
+          if (userData.type === "ErrorNotFound" || userData.data.UserId === 0) {
+            delete storageRef.current[userId];
+            delete checkedAtRef.current[userId];
+            await cache.profiles.delete(userId);
+            throw new Error("GetUserData failed: user not found");
+          }
+          if (userData.type.startsWith("Error")) {
+            throw new Error(`GetUserData failed: ${userData.type}`);
+          }
+          const user = userData.data;
           storageRef.current[userId] = user;
+          checkedAtRef.current[userId] = Date.now();
           return user;
         } catch (error) {
-          if (cached) return cached;
+          if (cached && storageRef.current[userId]) {
+            checkedAtRef.current[userId] = Date.now();
+            return cached;
+          }
           throw error;
         }
       })();
@@ -82,16 +112,26 @@ export default function UserProvider(props: { children: React.ReactNode }) {
         delete pendingRef.current[userId];
       }
     },
-    [accountId, send],
+    [accountId, cacheVersion, send],
   );
 
-  React.useEffect(() => {
+  const update = useCallback(
+    async (user: User) => {
+      await createCache(String(accountId ?? user.UserId)).profiles.put(user);
+      storageRef.current[user.UserId] = user;
+      checkedAtRef.current[user.UserId] = Date.now();
+      setCacheVersion((version) => version + 1);
+    },
+    [accountId],
+  );
+
+  useEffect(() => {
     if (!accountId) return;
     for (const contact of contacts) void get(contact.UserId);
   }, [accountId, contacts, get]);
 
   return (
-    <UserContext.Provider value={{ get }}>
+    <UserContext.Provider value={{ get, update }}>
       {props.children}
     </UserContext.Provider>
   );
@@ -103,7 +143,7 @@ export default function UserProvider(props: { children: React.ReactNode }) {
  * @returns contextValue.
  */
 export function useUser(): contextValue {
-  const context = React.useContext(UserContext);
+  const context = useContext(UserContext);
   if (!context) {
     throw new Error("useUser must be used within a UserProvider");
   }

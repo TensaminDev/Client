@@ -7,7 +7,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import Wrapper from "@tensamin/user/wrapper";
 import { Mail } from "lucide-react";
 import { sendCallInvite, useCall } from "../../store";
@@ -38,13 +38,13 @@ export default function InviteButton({
           render={
             tooltip ? (
               <TooltipTrigger
-                render={
-                  <Button className={className}>
+                render={({ ref, onClick }) => (
+                  <Button ref={ref} onClick={onClick} className={className}>
                     <Mail
                       style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
                     />
                   </Button>
-                }
+                )}
               />
             ) : (
               <Button className={className}>

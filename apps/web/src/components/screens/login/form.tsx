@@ -1,13 +1,21 @@
-import { Button, cn, useIsMobile } from "@tensamin/ui";
-import { Input } from "@tensamin/ui";
-import { Label } from "@tensamin/ui";
+import { Button, cn, useIsMobile } from "@methanium/ui";
+import { Input } from "@methanium/ui";
+import { Label } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
 import { File } from "lucide-react";
-import * as React from "react";
+import {
+  type ChangeEvent,
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
 import { isTauri } from "@tauri-apps/api/core";
 import QrCodeScanner from "@tensamin/tauri/qrCodeScanner";
+import { useNavigate } from "@tanstack/react-router";
 
 const fetchedUser = z.object({
   id: z.uuidv4(),
@@ -77,12 +85,13 @@ function parseTuFileContent(rawFileContent: string): {
 
 export default function Form() {
   const isMobile = useIsMobile();
-  const uploadRef = React.useRef<HTMLInputElement | null>(null);
-  const [isDragging, setIsDragging] = React.useState(false);
+  const uploadRef = useRef<HTMLInputElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const { save } = useStorage();
-  const loginPendingRef = React.useRef(false);
+  const navigate = useNavigate();
+  const loginPendingRef = useRef(false);
 
-  const persistLogin = React.useCallback(
+  const persistLogin = useCallback(
     async (userId: number, privateKey: string, domain?: string | null) => {
       if (loginPendingRef.current) return false;
       loginPendingRef.current = true;
@@ -91,22 +100,17 @@ export default function Form() {
         await save("mtp_keyring", privateKey, { secure: true });
         await save("session_id", Date.now());
         await save("user_id", userId);
-        window.history.replaceState(
-          null,
-          "",
-          window.location.protocol === "file:" ? "#/" : "/",
-        );
-        window.location.reload();
+        await navigate({ to: "/", replace: true });
         return true;
       } finally {
         loginPendingRef.current = false;
       }
     },
-    [save],
+    [navigate, save],
   );
 
   // Process dropped files
-  const processDroppedFile = React.useCallback(
+  const processDroppedFile = useCallback(
     async (file: globalThis.File): Promise<void> => {
       try {
         if (!file.name.endsWith(".tu")) {
@@ -127,8 +131,8 @@ export default function Form() {
   );
 
   // Handle .tu files
-  const handleFileInputChange = React.useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  const handleFileInputChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
       const file = event.currentTarget.files?.[0];
 
       if (!file) {
@@ -142,7 +146,7 @@ export default function Form() {
   );
 
   // Drag and drop listener
-  React.useEffect(() => {
+  useEffect(() => {
     let dragCounter = 0;
 
     const handleDragEnter = (event: DragEvent) => {
@@ -212,8 +216,8 @@ export default function Form() {
    * @param event Form submit event.
    * @returns Promise that resolves after login processing.
    */
-  const handleCredentialsSubmit = React.useCallback(
-    async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleCredentialsSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>): Promise<void> => {
       event.preventDefault();
 
       const formData = new FormData(event.currentTarget);

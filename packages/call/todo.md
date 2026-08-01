@@ -1,6 +1,5 @@
 - Overlay for stream modals
 - Mobile
-- Sounds
 - Admin call actions
   - Timeout
   - Disconnect
@@ -8,3 +7,4 @@
 - Add quality selection
 - Good preview page
 - Settings page
+- Make the Three-Dots button open a dialog/context-menu to configure the call for anonymous invites or other admin stuff

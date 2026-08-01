@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useMemo, type CSSProperties } from "react";
 
 import {
   ensureMarkdownStyles,
@@ -8,6 +8,7 @@ import {
 
 export type TextProps = {
   value: string;
+  fontSize?: CSSProperties["fontSize"];
 };
 
 /**
@@ -18,11 +19,12 @@ export type TextProps = {
 export default function Text(props: TextProps) {
   ensureMarkdownStyles();
 
-  const blocks = React.useMemo(
-    () => parseMarkdownBlocks(props.value),
-    [props.value],
-  );
-  const renderedBlocks = React.useMemo(() => renderBlocks(blocks), [blocks]);
+  const blocks = useMemo(() => parseMarkdownBlocks(props.value), [props.value]);
+  const renderedBlocks = useMemo(() => renderBlocks(blocks), [blocks]);
 
-  return <div className="tm-md-root">{renderedBlocks}</div>;
+  return (
+    <div className="tm-md-root" style={{ fontSize: props.fontSize }}>
+      {renderedBlocks}
+    </div>
+  );
 }

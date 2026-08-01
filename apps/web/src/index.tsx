@@ -9,19 +9,19 @@ import {
 } from "@tanstack/react-router";
 
 import "./index.css";
-import "@tensamin/ui/index.css";
+import "@methanium/ui/index.css";
 
 import NotFound from "@/routes/404";
 
 import AppLayout from "@/routes/app/layout";
 import { createSettingsRoute } from "@tensamin/settings";
+import OnboardingGate from "@tensamin/onboarding";
 
 import Home from "@/routes/app/home";
 import ChatScreen from "@tensamin/chat/screen";
 import CallScreen from "@tensamin/call/screen";
 import Login from "@/routes/screens/login";
 
-import CallPopout from "@tensamin/call/popout";
 import ChatContext from "@tensamin/chat/context";
 import { useCall, useInitializeCall } from "@tensamin/call/store";
 import { useIsSpeaking } from "@tensamin/call/speakingState";
@@ -32,7 +32,7 @@ import NotificationsProvider from "@tensamin/notifications/context";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
-import { ErrorScreen, ThemeProvider, useTheme } from "@tensamin/ui";
+import { ErrorScreen, ThemeProvider, useTheme } from "@methanium/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -43,12 +43,11 @@ import Crypto from "@tensamin/crypto/context";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
 import { log } from "@tensamin/shared/log";
 
-import LegalWrapper from "@/features/legal/screen";
 import CacheSync from "@tensamin/cache/sync";
 
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useIsMobile, Toaster, TooltipProvider } from "@tensamin/ui";
+import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
 
 const wrapper = document.getElementById("root");
@@ -131,6 +130,11 @@ function ThemeStorageBridge() {
     setThemeBorderRadius,
     themeCustomCss,
     setThemeCustomCss,
+    parentThemeId,
+    setParentThemeId,
+    applyThemePreset,
+    themeDesign,
+    setThemeDesign,
   } = useTheme();
   const loadedRef = useRef(false);
 
@@ -145,6 +149,8 @@ function ThemeStorageBridge() {
       load("theme_tint"),
       load("theme_border_radius"),
       load("theme_custom_css"),
+      load("theme_parent"),
+      load("theme_design"),
     ]).then(
       ([
         color,
@@ -154,18 +160,23 @@ function ThemeStorageBridge() {
         tint,
         borderRadius,
         customCss,
+        parent,
+        design,
       ]) => {
         if (!active) {
           return;
         }
 
+        if (customCss === "" && parent) applyThemePreset(parent);
+        else setParentThemeId(parent || null);
         setThemeColor(color);
         setThemePalette(palette);
         setThemePrimaryColor(primaryColor);
         setThemePolarity(polarity);
         setThemeTint(tint);
         setThemeBorderRadius(borderRadius);
-        setThemeCustomCss(customCss);
+        if (customCss !== "") setThemeCustomCss(customCss);
+        setThemeDesign(design);
         loadedRef.current = true;
       },
     );
@@ -175,9 +186,12 @@ function ThemeStorageBridge() {
     };
   }, [
     load,
+    applyThemePreset,
     setThemeBorderRadius,
     setThemeColor,
     setThemeCustomCss,
+    setParentThemeId,
+    setThemeDesign,
     setThemePalette,
     setThemePolarity,
     setThemePrimaryColor,
@@ -212,6 +226,14 @@ function ThemeStorageBridge() {
     if (loadedRef.current) save("theme_custom_css", themeCustomCss);
   }, [save, themeCustomCss]);
 
+  useEffect(() => {
+    if (loadedRef.current) save("theme_parent", parentThemeId ?? "");
+  }, [parentThemeId, save]);
+
+  useEffect(() => {
+    if (loadedRef.current) save("theme_design", themeDesign);
+  }, [save, themeDesign]);
+
   return null;
 }
 
@@ -228,6 +250,8 @@ function RootShell() {
         tintStorageKey={null}
         borderRadiusStorageKey={null}
         customCssStorageKey={null}
+        parentThemeStorageKey={null}
+        designStorageKey={null}
       >
         <div className="w-screen h-dvh overflow-hidden">
           <Toaster
@@ -244,13 +268,7 @@ function RootShell() {
             <Storage>
               <ThemeStorageBridge />
               <LoginWrapper>
-                <LegalWrapper>
-                  <Crypto>
-                    <DesktopMediaProvider>
-                      <Outlet />
-                    </DesktopMediaProvider>
-                  </Crypto>
-                </LegalWrapper>
+                <Outlet />
               </LoginWrapper>
             </Storage>
           </TooltipProvider>
@@ -262,24 +280,29 @@ function RootShell() {
 
 function AppShell() {
   return (
-    <MTPProvider>
-      <CacheSync />
-      <Session>
-        <UserProvider>
-          <CallInit />
-          <CallPopout />
-          <TAuthWrapper>
-            <AppLayout>
-              <ChatContext>
-                <NotificationsProvider>
-                  <Outlet />
-                </NotificationsProvider>
-              </ChatContext>
-            </AppLayout>
-          </TAuthWrapper>
-        </UserProvider>
-      </Session>
-    </MTPProvider>
+    <OnboardingGate>
+      <Crypto>
+        <DesktopMediaProvider>
+          <MTPProvider>
+            <CacheSync />
+            <Session>
+              <UserProvider>
+                <CallInit />
+                <TAuthWrapper>
+                  <AppLayout>
+                    <ChatContext>
+                      <NotificationsProvider>
+                        <Outlet />
+                      </NotificationsProvider>
+                    </ChatContext>
+                  </AppLayout>
+                </TAuthWrapper>
+              </UserProvider>
+            </Session>
+          </MTPProvider>
+        </DesktopMediaProvider>
+      </Crypto>
+    </OnboardingGate>
   );
 }
 
@@ -307,7 +330,7 @@ function createCallTrayIcon(color: string, speaking: boolean) {
 }
 
 function CallInit() {
-  useInitializeCall();
+  const callInvitePopup = useInitializeCall();
 
   const { load } = useStorage();
   const {
@@ -370,7 +393,7 @@ function CallInit() {
       });
   }, [inCall, primaryColor, speaking]);
 
-  return null;
+  return callInvitePopup;
 }
 
 const rootRoute = createRootRoute({

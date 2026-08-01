@@ -1,12 +1,14 @@
 import { RoomEvent } from "livekit-client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useCall, getRoom } from "../../store";
+import { getRoom, setUsersInFocusedViewHidden, useCall } from "../../store";
 import Base from "../../components/modals/base";
+import { useIsMobile } from "@methanium/ui";
 
 const SECONDARY_ROW_HEIGHT_PX = 180;
 const STACK_GAP_PX = 12;
 
 export default function View() {
+  const isMobile = useIsMobile();
   const room = getRoom();
   const layoutVersion = useCall((state) => state.layoutVersion);
 
@@ -26,6 +28,10 @@ export default function View() {
   const focusedTileRef = useRef<HTMLDivElement | null>(null);
   const [isFocusedTileFlush, setIsFocusedTileFlush] = useState(false);
   const [participantVersion, setParticipantVersion] = useState(0);
+
+  useEffect(() => {
+    if (isMobile) setUsersInFocusedViewHidden(true);
+  }, [isMobile]);
 
   useEffect(() => {
     const syncParticipants = () => {

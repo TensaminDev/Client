@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { mtp } from "@tensamin/shared/data";
+import { playSound, stopSound } from "@tensamin/shared/sounds";
 import { bytesToBase64 } from "mtp";
 import {
   deriveCallSecretId,
@@ -25,16 +26,16 @@ import {
   Room,
   RoomEvent,
   type RemoteTrack,
-  type ScreenShareCaptureOptions,
   Track,
   setLogExtension,
   getLogger,
 } from "livekit-client";
 import z from "zod";
 import {
-  createScreenShareController,
-  type ScreenShareSession,
-} from "./screenshare";
+  createMediaShareController,
+  type LocalMediaShareSession,
+} from "./mediaShare/controller";
+import type { MediaShareRequest } from "./mediaShare";
 import {
   getSpeakingDetector,
   disposeSpeakingDetector,
@@ -100,8 +101,11 @@ type CallStore = {
   currentCallData: CurrentCallData;
   deaf: boolean;
   micEnabled: boolean;
+  cameraEnabled: boolean;
   screenShareEnabled: boolean;
-  screenShareSession: ScreenShareSession | null;
+  screenShareSession: LocalMediaShareSession | null;
+  cameraSession: LocalMediaShareSession | null;
+  disabledCameraParticipantIds: number[];
   focusedParticipantId: number | null;
   focusedParticipantType: "user" | "stream" | null;
   usersInFocusedViewHidden: boolean;
@@ -154,12 +158,39 @@ export function getRoom(): Room {
 }
 
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
+let callJingle: HTMLAudioElement | null = null;
+let callJingleGeneration = 0;
 
 const CALL_SECRET_VERSION = 1;
 const SCREEN_SHARE_PREVIEW_MAX_WIDTH = 320;
 const SCREEN_SHARE_PREVIEW_MAX_HEIGHT = 180;
 const SCREEN_SHARE_PREVIEW_QUALITY = 0.7;
 const SCREEN_SHARE_PREVIEW_TIMEOUT_MS = 5000;
+
+async function startCallJingle(shouldPlay: () => boolean) {
+  const generation = ++callJingleGeneration;
+  stopSound(callJingle);
+  callJingle = null;
+
+  const jingle = await requireRuntime(useCall.getState().runtime).load(
+    "settings.call_jingle",
+  );
+
+  if (generation !== callJingleGeneration || !shouldPlay()) {
+    return;
+  }
+
+  callJingle = playSound(
+    jingle === "jingle_2" ? "call_jingle_2" : "call_jingle_1",
+    true,
+  );
+}
+
+function stopCallJingle() {
+  callJingleGeneration += 1;
+  stopSound(callJingle);
+  callJingle = null;
+}
 
 function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return new Uint8Array(bytes);
@@ -273,11 +304,21 @@ function matchesRemoteTrackSelector(
 }
 
 function syncRemoteParticipantTrackSubscriptions(participantId: number) {
+  const state = useCall.getState();
+  const watchesScreen =
+    state.watchedStreamParticipantIds.includes(participantId);
+  const cameraDisabled =
+    state.disabledCameraParticipantIds.includes(participantId);
+
   for (const publication of getRemoteTrackPublications(participantId)) {
-    publication.setSubscribed(
-      publication.kind === Track.Kind.Audio &&
-        publication.source !== Track.Source.ScreenShareAudio,
-    );
+    const subscribed =
+      publication.source === Track.Source.Camera
+        ? !cameraDisabled
+        : publication.source === Track.Source.ScreenShare ||
+            publication.source === Track.Source.ScreenShareAudio
+          ? watchesScreen
+          : publication.kind === Track.Kind.Audio;
+    publication.setSubscribed(subscribed);
   }
 }
 
@@ -567,11 +608,13 @@ export function getRoomMetadata() {
 
 // Sync local participant flags and screen-share derived state for the active call UI.
 export function syncParticipantState() {
-  const { screenShareSession } = useCall.getState();
+  const { cameraSession, screenShareSession } = useCall.getState();
   const room = getRoom();
 
   useCall.setState({
     micEnabled: room.localParticipant.isMicrophoneEnabled,
+    cameraEnabled:
+      cameraSession != null || room.localParticipant.isCameraEnabled,
     screenShareEnabled:
       screenShareSession != null || room.localParticipant.isScreenShareEnabled,
     isEncrypted:
@@ -695,6 +738,16 @@ export async function sendCallInvite(userId: number) {
 // Start tracking a participant's shared screen in the call UI.
 export function startWatchingStream(participantId: number) {
   const trackReady = getScreenShareTrackForParticipant(participantId) != null;
+  const alreadyWatching = useCall
+    .getState()
+    .watchedStreamParticipantIds.includes(participantId);
+  const localParticipantId = getParticipantId(
+    getRoom().localParticipant.identity,
+  );
+
+  if (!alreadyWatching && participantId !== localParticipantId) {
+    playSound("stream_watch_start");
+  }
 
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare);
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShareAudio);
@@ -730,6 +783,20 @@ export function setParticipantTrackSubscribed(
   syncParticipantState();
 }
 
+export function setParticipantCameraDisabled(
+  participantId: number,
+  disabled: boolean,
+) {
+  useCall.setState((state) => ({
+    disabledCameraParticipantIds: disabled
+      ? state.disabledCameraParticipantIds.includes(participantId)
+        ? state.disabledCameraParticipantIds
+        : [...state.disabledCameraParticipantIds, participantId]
+      : state.disabledCameraParticipantIds.filter((id) => id !== participantId),
+  }));
+  setParticipantTrackSubscribed(participantId, Track.Source.Camera, !disabled);
+}
+
 // Focus a participant in the main call view even when they are not sharing a screen.
 export function focusParticipant(
   participantId: number,
@@ -745,6 +812,17 @@ export function focusParticipant(
 
 // Stop tracking a participant's shared screen and clean up related UI state.
 export function stopWatchingStream(participantId: number) {
+  const wasWatching = useCall
+    .getState()
+    .watchedStreamParticipantIds.includes(participantId);
+  const localParticipantId = getParticipantId(
+    getRoom().localParticipant.identity,
+  );
+
+  if (wasWatching && participantId !== localParticipantId) {
+    playSound("stream_watch_end");
+  }
+
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare, false);
   setParticipantTrackSubscribed(
     participantId,
@@ -785,9 +863,8 @@ export function stopWatchingFocusedStream() {
   stopWatchingStream(focusedParticipantId);
 }
 
-let screenShareController: ReturnType<
-  typeof createScreenShareController
-> | null = null;
+let mediaShareController: ReturnType<typeof createMediaShareController> | null =
+  null;
 
 function getNoiseFilterAssetBaseUrl() {
   if (window.location.protocol === "file:") {
@@ -797,17 +874,21 @@ function getNoiseFilterAssetBaseUrl() {
   return "/assets";
 }
 
-function getScreenShareController() {
-  if (!screenShareController) {
-    screenShareController = createScreenShareController({
+function getMediaShareController() {
+  if (!mediaShareController) {
+    mediaShareController = createMediaShareController({
       room: getRoom(),
       getState: () => ({
         screenShareSession: useCall.getState().screenShareSession,
+        cameraSession: useCall.getState().cameraSession,
       }),
       setState: (updater) => {
         useCall.setState((state) =>
           typeof updater === "function"
-            ? updater({ screenShareSession: state.screenShareSession })
+            ? updater({
+                screenShareSession: state.screenShareSession,
+                cameraSession: state.cameraSession,
+              })
             : updater,
         );
       },
@@ -819,7 +900,7 @@ function getScreenShareController() {
     });
   }
 
-  return screenShareController;
+  return mediaShareController;
 }
 
 // Connect to LiveKit, enable the microphone, and move the UI into the live call.
@@ -866,11 +947,12 @@ export async function connect(callId: string) {
 
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
+  stopCallJingle();
   disposeSpeakingDetector();
   await clearScreenSharePreview();
 
   try {
-    await getScreenShareController().clearPublishedScreenShare();
+    await getMediaShareController().clearAll();
   } catch (error) {
     log(
       1,
@@ -892,6 +974,9 @@ export async function disconnect() {
     deaf: false,
     view: "preview",
     screenShareSession: null,
+    cameraSession: null,
+    cameraEnabled: false,
+    disabledCameraParticipantIds: [],
     focusedParticipantId: null,
     focusedParticipantType: null,
     usersInFocusedViewHidden: false,
@@ -938,6 +1023,10 @@ export async function joinCall(
     invitedUserId: sendInvite && !existingCallId ? userId : null,
     ownCallSecretInvitePending: isNewCall,
   });
+
+  if (sendInvite && !existingCallId) {
+    void startCallJingle(() => useCall.getState().invitedUserId != null);
+  }
 
   if (callSecret) {
     try {
@@ -1015,37 +1104,37 @@ export async function toggleMute() {
   syncParticipantState();
 }
 
-// Start browser-native screen sharing for the current participant.
-export async function startScreenShare(options?: ScreenShareCaptureOptions) {
-  await getScreenShareController().startScreenShare(options);
+export async function startScreenShare(
+  request: Omit<MediaShareRequest, "kind"> = {},
+) {
+  await getMediaShareController().start({ ...request, kind: "screen" });
   await publishScreenSharePreview();
 }
 
-// Start the Linux desktop capture path that renders frames through Tauri.
-export async function startLinuxDesktopScreenShare(sourceId: string) {
-  await getScreenShareController().startLinuxDesktopScreenShare(sourceId);
-  await publishScreenSharePreview();
+export async function startCameraShare(sourceId?: string) {
+  await getMediaShareController().start({ kind: "camera", sourceId });
 }
 
 // Stop the local participant's active screen share and related previews.
 export async function stopScreenShare() {
-  await getScreenShareController().stopScreenShare();
+  await getMediaShareController().stop("screen");
   await clearScreenSharePreview();
+}
+
+export async function stopCameraShare() {
+  await getMediaShareController().stop("camera");
 }
 
 // Toggle screen sharing on or off from UI controls.
 export async function setScreenShareEnabled(
   enabled: boolean,
-  options?: ScreenShareCaptureOptions,
+  request: Omit<MediaShareRequest, "kind"> = {},
 ) {
-  await getScreenShareController().setScreenShareEnabled(enabled, options);
-
   if (enabled) {
-    await publishScreenSharePreview();
+    await startScreenShare(request);
     return;
   }
-
-  await clearScreenSharePreview();
+  await stopScreenShare();
 }
 
 // Reset the in-memory call store when leaving the call experience entirely.
@@ -1060,7 +1149,10 @@ export function resetCallState() {
     livekitToken: null,
     currentCallData: null,
     deaf: false,
+    cameraEnabled: false,
     screenShareSession: null,
+    cameraSession: null,
+    disabledCameraParticipantIds: [],
     focusedParticipantId: null,
     focusedParticipantType: null,
     usersInFocusedViewHidden: false,
@@ -1114,8 +1206,11 @@ export const useCall = create<CallStore>(() => ({
   currentCallData: null,
   deaf: false,
   micEnabled: false,
+  cameraEnabled: false,
   screenShareEnabled: false,
   screenShareSession: null,
+  cameraSession: null,
+  disabledCameraParticipantIds: [],
   focusedParticipantId: null,
   focusedParticipantType: null,
   usersInFocusedViewHidden: false,
@@ -1174,12 +1269,14 @@ export function useInitializeCall() {
       useCall.setState({
         incomingCallInvite: { callId, callSecret, senderId },
       });
+      void startCallJingle(() => useCall.getState().incomingCallInvite != null);
     },
     [],
   );
 
   const setInvitePopupOpen = useCallback((open: boolean) => {
     if (!open) {
+      stopCallJingle();
       useCall.setState({ incomingCallInvite: null });
     }
   }, []);
@@ -1188,6 +1285,7 @@ export function useInitializeCall() {
     (accepted: boolean) => {
       const invite = useCall.getState().incomingCallInvite;
 
+      stopCallJingle();
       useCall.setState({ incomingCallInvite: null });
 
       if (!invite) {
@@ -1232,6 +1330,11 @@ export function useInitializeCall() {
       };
 
       if (SenderId === Number(await load("user_id"))) {
+        return;
+      }
+
+      const currentCall = useCall.getState();
+      if (currentCall.callId === CallId && currentCall.state !== "closed") {
         return;
       }
 
@@ -1303,6 +1406,7 @@ export function useInitializeCall() {
 
     const onConnected = async () => {
       useCall.setState({ state: "open" });
+      playSound("call_join");
       syncParticipantState();
 
       const detector = getSpeakingDetector();
@@ -1376,6 +1480,8 @@ export function useInitializeCall() {
     };
 
     const onDisconnected = () => {
+      stopCallJingle();
+      playSound("call_leave");
       useCall.setState({ state: "closed" });
       syncParticipantState();
       log(2, "call", "purple", "Disconnected from call", {
@@ -1385,11 +1491,14 @@ export function useInitializeCall() {
     };
 
     const onParticipantConnected = () => {
+      stopCallJingle();
+      playSound("call_join");
       syncAllRemoteTrackSubscriptions();
       syncParticipantState();
     };
 
     const onParticipantDisconnected = (participant: Participant) => {
+      playSound("call_leave");
       const participantId = getParticipantId(participant.identity);
 
       if (participantId != null) {
@@ -1416,6 +1525,10 @@ export function useInitializeCall() {
     };
 
     const onLocalTrackPublished = (publication: LocalTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_start_self");
+      }
+
       if (
         publication.kind === Track.Kind.Audio &&
         publication.source === Track.Source.Microphone &&
@@ -1437,6 +1550,10 @@ export function useInitializeCall() {
     };
 
     const onLocalTrackUnpublished = (publication: LocalTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_end_self");
+      }
+
       if (
         publication.kind === Track.Kind.Audio &&
         publication.source === Track.Source.Microphone
@@ -1453,17 +1570,22 @@ export function useInitializeCall() {
       publication: RemoteTrackPublication,
       participant: RemoteParticipant,
     ) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_start_other");
+      }
+
       const participantId = getParticipantId(participant.identity);
 
       if (participantId != null) {
-        if (
-          publication.kind === Track.Kind.Audio &&
-          publication.source !== Track.Source.ScreenShareAudio
-        ) {
-          publication.setSubscribed(true);
-        } else {
-          publication.setSubscribed(false);
-        }
+        syncRemoteParticipantTrackSubscriptions(participantId);
+      }
+
+      onParticipantStateChange();
+    };
+
+    const onTrackUnpublished = (publication: RemoteTrackPublication) => {
+      if (publication.source === Track.Source.ScreenShare) {
+        playSound("stream_end_other");
       }
 
       onParticipantStateChange();
@@ -1526,7 +1648,7 @@ export function useInitializeCall() {
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
     room.on(RoomEvent.TrackPublished, onTrackPublished);
-    room.on(RoomEvent.TrackUnpublished, onParticipantStateChange);
+    room.on(RoomEvent.TrackUnpublished, onTrackUnpublished);
     room.on(RoomEvent.ParticipantConnected, onParticipantConnected);
     room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
     room.on(RoomEvent.TrackMuted, onParticipantStateChange);
@@ -1547,7 +1669,7 @@ export function useInitializeCall() {
       room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
       room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
       room.off(RoomEvent.TrackPublished, onTrackPublished);
-      room.off(RoomEvent.TrackUnpublished, onParticipantStateChange);
+      room.off(RoomEvent.TrackUnpublished, onTrackUnpublished);
       room.off(RoomEvent.ParticipantConnected, onParticipantConnected);
       room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
       room.off(RoomEvent.TrackMuted, onParticipantStateChange);
@@ -1585,7 +1707,7 @@ export function useInitializeCall() {
         }
 
         setCurrentCallData({
-          ...(data.data as z.infer<typeof mtp.CallData.response>),
+          ...mtp.CallData.response.parse(data.data),
           exists: true,
         });
       })

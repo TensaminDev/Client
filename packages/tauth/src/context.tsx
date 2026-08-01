@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import { useMTP } from "@tensamin/mtp";

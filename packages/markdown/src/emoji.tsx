@@ -1,5 +1,5 @@
 import twemoji from "@twemoji/api";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@methanium/ui";
 import { resolveEmoji } from "./emojiData";
 
 export {

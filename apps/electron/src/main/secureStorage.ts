@@ -34,10 +34,6 @@ function validateValue(value: unknown): asserts value is string {
 }
 
 export function getSecureStorageStatus(): DesktopSecureStorageStatus {
-  if (!safeStorage.isEncryptionAvailable()) {
-    return { available: false, backend: null };
-  }
-
   const backend =
     process.platform === "linux"
       ? safeStorage.getSelectedStorageBackend()
@@ -48,7 +44,9 @@ export function getSecureStorageStatus(): DesktopSecureStorageStatus {
           : null;
 
   return {
-    available: process.platform !== "linux" || backend !== "basic_text",
+    available:
+      safeStorage.isEncryptionAvailable() &&
+      (process.platform !== "linux" || backend !== "basic_text"),
     backend,
   };
 }

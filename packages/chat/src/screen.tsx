@@ -1,4 +1,11 @@
-import * as React from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -13,7 +20,6 @@ import {
   type RawMessage,
 } from "./values";
 import Wrapper from "@tensamin/user/wrapper";
-import { Skeleton } from "@tensamin/ui";
 
 type MessageChunk = {
   key: string;
@@ -82,21 +88,21 @@ export default function Screen() {
     error,
     errorDescription,
   } = useChat();
-  const scrollRef = React.useRef<HTMLDivElement | null>(null);
-  const topSentinelRef = React.useRef<HTMLDivElement | null>(null);
-  const didInitialScrollRef = React.useRef(false);
-  const userScrolledUpRef = React.useRef(false);
-  const isAtBottomRef = React.useRef(true);
-  const smoothScrollFrameRef = React.useRef<number | null>(null);
-  const smoothScrollTargetRef = React.useRef(0);
-  const hasNextPageRef = React.useRef(false);
-  const isFetchingNextPageRef = React.useRef(false);
-  const fetchNextPageRef = React.useRef<(() => void) | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const topSentinelRef = useRef<HTMLDivElement | null>(null);
+  const didInitialScrollRef = useRef(false);
+  const userScrolledUpRef = useRef(false);
+  const isAtBottomRef = useRef(true);
+  const smoothScrollFrameRef = useRef<number | null>(null);
+  const smoothScrollTargetRef = useRef(0);
+  const hasNextPageRef = useRef(false);
+  const isFetchingNextPageRef = useRef(false);
+  const fetchNextPageRef = useRef<(() => void) | null>(null);
 
-  const [lastLiveMessageCount, setLastLiveMessageCount] = React.useState(0);
-  const [didInitialScroll, setDidInitialScroll] = React.useState(false);
-  const [viewportHeight, setViewportHeight] = React.useState(0);
-  const [value, setValue] = React.useState("");
+  const [lastLiveMessageCount, setLastLiveMessageCount] = useState(0);
+  const [didInitialScroll, setDidInitialScroll] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [value, setValue] = useState("");
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasChatSecret = chatSecret !== null;
@@ -120,7 +126,7 @@ export default function Screen() {
     isFetchingNextPage: isFetchingMessagesNextPage,
   } = messagesQuery;
 
-  React.useEffect(() => {
+  useEffect(() => {
     hasNextPageRef.current = hasMessagesNextPage;
     isFetchingNextPageRef.current = isFetchingMessagesNextPage;
     fetchNextPageRef.current = () => {
@@ -128,7 +134,7 @@ export default function Screen() {
     };
   }, [fetchMessagesNextPage, hasMessagesNextPage, isFetchingMessagesNextPage]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     clearLiveMessages();
     didInitialScrollRef.current = false;
     userScrolledUpRef.current = false;
@@ -137,7 +143,7 @@ export default function Screen() {
     setLastLiveMessageCount(0);
   }, [clearLiveMessages, userId]);
 
-  const historicalMessages = React.useMemo(() => {
+  const historicalMessages = useMemo(() => {
     const pages = messagesQuery.data?.pages ?? [];
     const seenSendTimes = new Set<number>();
     const dedupedMessages: RawMessage[] = [];
@@ -156,7 +162,7 @@ export default function Screen() {
 
   const liveMessagesSnapshot = liveMessages();
 
-  const liveWithoutDuplicates = React.useMemo(() => {
+  const liveWithoutDuplicates = useMemo(() => {
     const historicalSendTimes = new Set(
       historicalMessages.map((message) => message.SendTime),
     );
@@ -166,15 +172,15 @@ export default function Screen() {
     );
   }, [historicalMessages, liveMessagesSnapshot]);
 
-  const messages = React.useMemo(() => {
+  const messages = useMemo(() => {
     return [...historicalMessages, ...liveWithoutDuplicates];
   }, [historicalMessages, liveWithoutDuplicates]);
 
-  const historicalMessageChunks = React.useMemo(() => {
+  const historicalMessageChunks = useMemo(() => {
     return buildMessageChunks(historicalMessages, "history");
   }, [historicalMessages]);
 
-  const liveMessageChunks = React.useMemo(() => {
+  const liveMessageChunks = useMemo(() => {
     return buildMessageChunks(
       liveWithoutDuplicates,
       "live",
@@ -182,18 +188,18 @@ export default function Screen() {
     );
   }, [historicalMessages.length, liveWithoutDuplicates]);
 
-  const messageChunks = React.useMemo(() => {
+  const messageChunks = useMemo(() => {
     return [...liveMessageChunks, ...historicalMessageChunks];
   }, [historicalMessageChunks, liveMessageChunks]);
 
   const virtualRowCount = messageChunks.length;
 
-  const getItemKey = React.useCallback(
+  const getItemKey = useCallback(
     (index: number) => messageChunks[index]?.key ?? index,
     [messageChunks],
   );
 
-  const estimateSize = React.useCallback(() => FALLBACK_MESSAGE_HEIGHT, []);
+  const estimateSize = useCallback(() => FALLBACK_MESSAGE_HEIGHT, []);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
@@ -207,7 +213,7 @@ export default function Screen() {
   const contentHeight = Math.max(totalSize, viewportHeight);
   const verticalOffset = Math.max(0, viewportHeight - totalSize);
 
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element || typeof ResizeObserver === "undefined") {
       return;
@@ -227,7 +233,7 @@ export default function Screen() {
     };
   }, []);
 
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     if (didInitialScrollRef.current || virtualRowCount === 0) {
       return;
     }
@@ -244,7 +250,7 @@ export default function Screen() {
     });
   }, [virtualizer, virtualRowCount]);
 
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     const count = liveMessagesSnapshot.length;
 
     if (count > lastLiveMessageCount && isAtBottomRef.current) {
@@ -263,7 +269,7 @@ export default function Screen() {
     virtualizer,
   ]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (
       viewportHeight === 0 ||
       totalSize > viewportHeight ||
@@ -276,7 +282,7 @@ export default function Screen() {
     void messagesQuery.fetchNextPage();
   }, [didInitialScroll, messagesQuery, totalSize, viewportHeight]);
 
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     if (
       !didInitialScroll ||
       userScrolledUpRef.current ||
@@ -292,7 +298,7 @@ export default function Screen() {
     });
   }, [didInitialScroll, virtualRowCount]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const root = scrollRef.current;
     const sentinel = topSentinelRef.current;
 
@@ -324,7 +330,7 @@ export default function Screen() {
     };
   }, [didInitialScroll, messagesQuery, virtualRowCount]);
 
-  const handleContainerScroll = React.useCallback(() => {
+  const handleContainerScroll = useCallback(() => {
     if (!scrollRef.current) {
       return;
     }
@@ -336,7 +342,7 @@ export default function Screen() {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const element = scrollRef.current;
     if (!element) {
       return;
@@ -471,6 +477,7 @@ export default function Screen() {
                         const lastMessage = messages[messageIndex - 1];
                         const isGrouped =
                           lastMessage &&
+                          !message.ReplyId &&
                           lastMessage.SenderId === message.SenderId &&
                           Math.round(lastMessage.SendTime / 10000) ===
                             Math.round(message.SendTime / 10000);
@@ -479,7 +486,7 @@ export default function Screen() {
                           <Wrapper
                             key={getMessageRenderKey(message)}
                             userId={message.SenderId}
-                            loading={<Skeleton className="w-30 h-5" />}
+                            loading={null}
                             component={(user) => (
                               <Message
                                 grouped={isGrouped}

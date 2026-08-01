@@ -175,12 +175,7 @@ export function createCache(accountId: string, options: CacheOptions = {}) {
             const userId = Number(key);
             return retained.has(userId)
               ? []
-              : [
-                  deleteDatabaseEntry(
-                    "cache",
-                    storedKey("conversations", key),
-                  ),
-                ];
+              : [deleteDatabaseEntry("cache", storedKey("conversations", key))];
           }),
         );
       },
@@ -210,12 +205,7 @@ export function createCache(accountId: string, options: CacheOptions = {}) {
             const userId = Number(key);
             return retained.has(userId)
               ? []
-              : [
-                  deleteDatabaseEntry(
-                    "cache",
-                    storedKey("conversations", key),
-                  ),
-                ];
+              : [deleteDatabaseEntry("cache", storedKey("conversations", key))];
           }),
         );
       },
@@ -241,12 +231,7 @@ export function createCache(accountId: string, options: CacheOptions = {}) {
           storedEntries.flatMap(([key]) =>
             retained.has(Number(key))
               ? []
-              : [
-                  deleteDatabaseEntry(
-                    "cache",
-                    storedKey("conversations", key),
-                  ),
-                ],
+              : [deleteDatabaseEntry("cache", storedKey("conversations", key))],
           ),
         );
       },

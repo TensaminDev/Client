@@ -1,5 +1,6 @@
-import { type ReactElement } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@tensamin/ui";
+import { cloneElement } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactElement, Ref } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@methanium/ui";
 
 export type CallButtonProps = {
   className?: string;
@@ -12,20 +13,31 @@ export function iconScale(iconSize?: number) {
   return { scale: (iconSize ? iconSize + 100 : 100) + "%" };
 }
 
-export function withTooltip(
-  button: ReactElement,
-  tooltip?: string,
+export function withButtonTooltip(
+  trigger: ReactElement<{
+    onClick?: (event: ReactMouseEvent<HTMLElement>) => void;
+    ref?: Ref<HTMLElement>;
+  }>,
+  content?: string,
   portalContainer?: HTMLElement,
 ) {
-  if (!tooltip) {
-    return button;
-  }
+  if (!content) return trigger;
 
   return (
     <Tooltip>
-      <TooltipTrigger render={button} />
+      <TooltipTrigger
+        render={({ ref, onClick }) =>
+          cloneElement(trigger, {
+            ref,
+            onClick: (event) => {
+              onClick?.(event);
+              trigger.props.onClick?.(event);
+            },
+          })
+        }
+      />
       <TooltipContent portalProps={{ container: portalContainer }}>
-        {tooltip}
+        {content}
       </TooltipContent>
     </Tooltip>
   );

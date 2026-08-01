@@ -30,10 +30,20 @@ const verbose = process.argv.includes("--verbose");
 let mainWindow: BrowserWindow | null = null;
 let selectedScreenShareSourceId: string | null = null;
 
+app.setName("tensamin");
+app.setPath("userData", join(app.getPath("appData"), "tensamin", "electron"));
+
 if (verbose) {
   app.commandLine.appendSwitch("enable-logging", "stderr");
   app.commandLine.appendSwitch("v", "1");
   app.commandLine.appendSwitch("log-level", "0");
+}
+
+if (
+  process.platform === "linux" &&
+  !app.commandLine.hasSwitch("password-store")
+) {
+  app.commandLine.appendSwitch("password-store", "gnome-libsecret");
 }
 
 if (
@@ -166,6 +176,29 @@ function registerDisplayMediaHandler() {
       }
 
       callback({ video });
+    },
+  );
+}
+
+function registerMediaPermissionHandler() {
+  const isTrustedRenderer = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "file:";
+    } catch {
+      return false;
+    }
+  };
+
+  session.defaultSession.setPermissionCheckHandler(
+    (_webContents, permission, requestingOrigin) =>
+      permission === "media" && isTrustedRenderer(requestingOrigin),
+  );
+  session.defaultSession.setPermissionRequestHandler(
+    (_webContents, permission, callback, details) => {
+      callback(
+        permission === "media" && isTrustedRenderer(details.requestingUrl),
+      );
     },
   );
 }
@@ -350,6 +383,7 @@ async function start() {
   verboseLog("app ready");
   registerIpc();
   registerDisplayMediaHandler();
+  registerMediaPermissionHandler();
   initTray(() => mainWindow);
   await createWindow();
 }

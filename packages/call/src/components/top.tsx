@@ -9,7 +9,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 
 export default function TopBar() {
   const { get } = useUser();

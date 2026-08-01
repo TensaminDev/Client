@@ -1,32 +1,27 @@
 import Input from "@tensamin/markdown/input";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
   Card,
   CardHeader,
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Skeleton,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import React, { useEffect, useState, useRef } from "react";
-import { Button } from "@tensamin/ui";
+import { Button } from "@methanium/ui";
 
-import { Plus, Laugh, FileVideo, Forward, X } from "lucide-react";
+import { Plus, Laugh, FileVideo } from "lucide-react";
 import { useChat, useReplyMessage } from "../context";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
-import { cn, useIsMobile } from "@tensamin/ui";
+import { cn, useIsMobile } from "@methanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/storage/session";
 import GifPicker from "./gifPicker";
 import EmojiPicker from "./emojiPicker";
 import { useEmojiRanks, useRecordEmojiUse } from "./emojiRanks";
-import Wrapper from "@tensamin/user/wrapper";
-import Text from "@tensamin/markdown/text";
+import ReplyBox from "./replyBox";
 
 export default function InputComponent({
   value,
@@ -117,6 +112,7 @@ export default function InputComponent({
       Content: encryptedContent,
       ReceiverId: userId,
       SendTime: time,
+      ...(replyTo && { ReplyId: replyTo }),
     }).catch((e) => {
       log(0, "Chat", "red", "Failed to send message", e, {
         ReceiverId: userId,
@@ -196,54 +192,15 @@ export default function InputComponent({
 
   return (
     <div className="flex flex-col">
+      {/* reply */}
       {replyTo !== undefined && (
-        <div className="self-center rounded-t-lg bg-background border-t border-x flex items-center justify-start w-[90%] p-1">
-          <div className="flex gap-1 w-full items-center">
-            <Forward
-              color="var(--muted-foreground)"
-              className="opacity-60"
-              size={18}
-            />
-            {replyMessage ? (
-              <>
-                <Wrapper
-                  userId={replyUserId ?? ownId}
-                  loading={<Skeleton className="rounded-full" />}
-                  component={(user) => (
-                    <Avatar>
-                      <AvatarImage src={user.Avatar} />
-                      <AvatarFallback>
-                        {user.Display.slice(2, 0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                />
-                <div className="max-w-full max-h-5 h-5 text-xs truncate">
-                  <Text value={replyMessage.Content} />
-                </div>
-              </>
-            ) : (
-              <>
-                <Skeleton className="w-5 h-5 aspect-square rounded-full" />
-                <Skeleton className="w-full h-5" />
-              </>
-            )}
-            <Button
-              onClick={() => {
-                setReplyTo(undefined);
-              }}
-              className="w-5 h-5 rounded-md! p-0!"
-              size="xs"
-              variant="ghost"
-            >
-              <X
-                color="var(--muted-foreground)"
-                className="opacity-60"
-                size={18}
-              />
-            </Button>
-          </div>
-        </div>
+        <ReplyBox
+          content={replyMessage?.Content}
+          loading={!replyMessage}
+          onDismiss={() => setReplyTo(undefined)}
+          userId={replyUserId ?? ownId}
+          variant="composer"
+        />
       )}
       <Card
         ref={inputBoxRef}
@@ -267,7 +224,7 @@ export default function InputComponent({
           />
           <div className="w-full flex justify-between gap-1 p-1 pt-0">
             <div className="flex gap-1">
-              <Button className="w-9 h-9 p-0" variant="ghost">
+              <Button className="w-9 h-9! p-0" variant="ghost">
                 <Plus size={20} />
               </Button>
               <div className="w-auto flex text-red-500">
@@ -280,15 +237,16 @@ export default function InputComponent({
                 onOpenChange={setEmojiPopoverOpen}
               >
                 <PopoverTrigger
-                  render={
+                  render={({ onClick }) => (
                     <Button
+                      onClick={onClick}
                       aria-label="Open emoji picker"
-                      className="w-9 h-9 p-0"
+                      className="w-9 h-9! p-0"
                       variant="ghost"
                     >
                       <Laugh size={20} />
                     </Button>
-                  }
+                  )}
                 />
                 <PopoverContent className="w-auto p-0">
                   <EmojiPicker
@@ -302,11 +260,15 @@ export default function InputComponent({
               </Popover>
               <Popover open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
                 <PopoverTrigger
-                  render={
-                    <Button className="w-9 h-9 p-0" variant="ghost">
+                  render={({ onClick }) => (
+                    <Button
+                      onClick={onClick}
+                      className="w-9 h-9! p-0"
+                      variant="ghost"
+                    >
                       <FileVideo size={20} />
                     </Button>
-                  }
+                  )}
                 />
                 <PopoverContent
                   ref={gifPopoverRef}

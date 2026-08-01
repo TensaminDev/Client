@@ -8,14 +8,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function getTrayIconPath(filename: string) {
-  if (app.isPackaged) return path.join(process.resourcesPath, "icons", filename);
+  if (app.isPackaged)
+    return path.join(process.resourcesPath, "icons", filename);
   return path.resolve(__dirname, "../../build/icons", filename);
 }
 
-export function setTrayCallStatus(
-  inCall: boolean,
-  iconDataUrl?: string,
-) {
+export function setTrayCallStatus(inCall: boolean, iconDataUrl?: string) {
   if (!tray) return;
 
   if (inCall && iconDataUrl) {

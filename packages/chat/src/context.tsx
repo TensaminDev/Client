@@ -102,6 +102,34 @@ function updateMessagesBySendTime<T extends EditableMessage>(
   };
 }
 
+function updateMessageReaction<T extends EditableMessage>(
+  message: T,
+  reaction: string,
+  senderId: number,
+  accepted: boolean,
+): T {
+  const current = message.Reactions ?? [];
+  const withoutReaction = current.filter(
+    (item) => item.Reaction !== reaction || item.SenderId !== senderId,
+  );
+  const next = accepted
+    ? [...withoutReaction, { Reaction: reaction, SenderId: senderId }]
+    : withoutReaction;
+
+  if (
+    next.length === current.length &&
+    next.every(
+      (item, index) =>
+        item.Reaction === current[index]?.Reaction &&
+        item.SenderId === current[index]?.SenderId,
+    )
+  ) {
+    return message;
+  }
+
+  return { ...message, Reactions: next };
+}
+
 function assertProtocolSuccess(type: string, response: { type: string }) {
   if (response.type.startsWith("Error")) {
     throw new Error(`${type} failed: ${response.type}`);
@@ -119,8 +147,45 @@ type SendMessageGet = (
 
 type GetChatSecret = (userId: number) => Promise<Uint8Array | null>;
 
+export async function getMessage({
+  sendTime,
+  ownId,
+  chatPartnerId,
+  send,
+}: {
+  sendTime: number;
+  ownId: number;
+  chatPartnerId: number;
+  send: SendMessageGet;
+}): Promise<RawMessage> {
+  const cache = createCache(String(ownId), {
+    codec: secureValueCodec,
+  });
+  const window = await cache.conversations.get(chatPartnerId);
+  const cachedMessage = window?.Messages.find(
+    (message) => message.SendTime === sendTime,
+  );
+  const message =
+    cachedMessage ??
+    (
+      await send("MessageGet", {
+        SendTime: sendTime,
+      })
+    ).data;
+  const messageChatPartnerId =
+    message.SenderId === ownId ? chatPartnerId : message.SenderId;
+
+  if (messageChatPartnerId !== chatPartnerId) {
+    throw new Error("Reply message does not belong to this chat");
+  }
+
+  return message;
+}
+
 export async function fetchReplyMessage({
   replyTo,
+  ownId,
+  chatUserId,
   send,
   getChatSecret,
 }: {
@@ -130,22 +195,22 @@ export async function fetchReplyMessage({
   send: SendMessageGet;
   getChatSecret: GetChatSecret;
 }) {
-  const value = await send("MessageGet", {
-    SendTime: replyTo,
+  const message = await getMessage({
+    sendTime: replyTo,
+    ownId,
+    chatPartnerId: chatUserId,
+    send,
   });
-  const chatSecret = await getChatSecret(value.data.SenderId);
+  const chatSecret = await getChatSecret(chatUserId);
 
   if (!chatSecret) {
     throw new Error("Missing chat secret");
   }
 
-  const decryptedContent = await decryptChatText(
-    chatSecret,
-    value.data.Content,
-  );
+  const decryptedContent = await decryptChatText(chatSecret, message.Content);
 
   return {
-    ...value.data,
+    ...message,
     Content: decryptedContent,
   };
 }
@@ -516,6 +581,51 @@ export default function Provider({ children }: { children: ReactNode }) {
     [currentChatSecret, userIdValue],
   );
 
+  const applyLiveReaction = useCallback(
+    (
+      sendTime: number,
+      reaction: string,
+      senderId: number,
+      accepted: boolean,
+    ) => {
+      setLiveMessagesState((current) =>
+        current.map((message) =>
+          message.SendTime === sendTime
+            ? updateMessageReaction(message, reaction, senderId, accepted)
+            : message,
+        ),
+      );
+
+      const queryKey = [
+        "chat-messages",
+        String(userIdValue),
+        currentChatSecret !== null,
+      ] as const;
+      queryClient.setQueryData<InfiniteData<RawMessages>>(
+        queryKey,
+        (current) =>
+          current
+            ? {
+                ...current,
+                pages: current.pages.map((page) =>
+                  page.map((message) =>
+                    message.SendTime === sendTime
+                      ? updateMessageReaction(
+                          message,
+                          reaction,
+                          senderId,
+                          accepted,
+                        )
+                      : message,
+                  ),
+                ),
+              }
+            : current,
+      );
+    },
+    [currentChatSecret, userIdValue],
+  );
+
   const deleteMessage = useCallback(
     async (sendTime: number) => {
       try {
@@ -706,20 +816,28 @@ export default function Provider({ children }: { children: ReactNode }) {
         const rawData = message.data as {
           ChatPartnerId: unknown;
           SendTime: unknown;
+          Reaction: string;
+          SenderId: unknown;
+          Accepted: boolean;
         };
         const chatPartnerId = Number(rawData.ChatPartnerId);
         const sendTime = Number(rawData.SendTime);
+        const senderId = Number(rawData.SenderId);
 
-        if (chatPartnerId !== userIdValue || !Number.isFinite(sendTime)) return;
+        if (
+          chatPartnerId !== userIdValue ||
+          !Number.isFinite(sendTime) ||
+          !Number.isFinite(senderId)
+        ) {
+          return;
+        }
 
-        void send("MessageGet", { SendTime: sendTime })
-          .then((response) => {
-            assertProtocolSuccess("MessageGet", response);
-            editMessage(sendTime, { Reactions: response.data.Reactions ?? [] });
-          })
-          .catch((err) => {
-            log(1, "chat", "red", "Failed to refresh message reactions", err);
-          });
+        applyLiveReaction(
+          sendTime,
+          rawData.Reaction,
+          senderId,
+          rawData.Accepted,
+        );
         return;
       }
 
@@ -782,15 +900,18 @@ export default function Provider({ children }: { children: ReactNode }) {
     });
   }, [
     currentChatSecret,
+    applyLiveReaction,
     editMessage,
     removeMessage,
-    send,
     subscribePush,
     userIdValue,
   ]);
 
   // Replys
   const [replyTo, setReplyTo] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    setReplyTo(undefined);
+  }, [userIdValue]);
 
   return (
     <QueryClientProvider client={queryClient}>

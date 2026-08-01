@@ -2,3 +2,5 @@ node_modules
 releases
 .fallow
 .direnv
+keystore.jks
+keystore.properties

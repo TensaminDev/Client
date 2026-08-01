@@ -1,4 +1,4 @@
-import * as React from "react";
+import { Fragment, type ReactElement, type ReactNode } from "react";
 import Emoji from "./emoji";
 import { findEmojiShortcodes } from "./emojiData";
 
@@ -392,7 +392,7 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
  * @param nodes Parameter nodes.
  * @returns React.ReactNode[].
  */
-function renderInline(nodes: InlineNode[]): React.ReactNode[] {
+function renderInline(nodes: InlineNode[]): ReactNode[] {
   return nodes.map((node, index) => {
     if (node.type === "text") {
       return node.value;
@@ -468,7 +468,7 @@ function renderInline(nodes: InlineNode[]): React.ReactNode[] {
  * @param blocks Parameter blocks.
  * @returns React.ReactElement.
  */
-export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
+export function renderBlocks(blocks: MarkdownBlock[]): ReactElement {
   return (
     <>
       {blocks.map((block, blockIndex) => {
@@ -591,10 +591,10 @@ export function renderBlocks(blocks: MarkdownBlock[]): React.ReactElement {
         return (
           <p key={blockIndex}>
             {block.text.split("\n").map((line, lineIndex) => (
-              <React.Fragment key={lineIndex}>
+              <Fragment key={lineIndex}>
                 {lineIndex > 0 ? <br /> : null}
                 {renderInline(parseInlineNodes(line))}
-              </React.Fragment>
+              </Fragment>
             ))}
           </p>
         );

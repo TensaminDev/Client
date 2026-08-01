@@ -3,7 +3,7 @@ import {
   Format,
   requestPermissions,
 } from "@tauri-apps/plugin-barcode-scanner";
-import { Button } from "@tensamin/ui";
+import { Button } from "@methanium/ui";
 
 import { toast } from "@tensamin/shared/log";
 

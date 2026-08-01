@@ -14,7 +14,7 @@ import { MTPClient } from "mtp";
 import { type z } from "zod";
 import { ConnectionState } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
-import { toast as sonnerToast } from "@tensamin/ui";
+import { toast as sonnerToast } from "@methanium/ui";
 
 import {
   type Calls,
@@ -26,12 +26,7 @@ import {
 import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 
-import {
-  PING_INTERVAL,
-  RECONNECT_RESET,
-  RECONNECT_TRIES,
-  RETRY_INTERVAL,
-} from "./values";
+import { RECONNECT_RESET, RECONNECT_TRIES, RETRY_INTERVAL } from "./values";
 
 function base64ToUint8Array(b64: string) {
   const bin = atob(b64);
@@ -58,7 +53,17 @@ export type BoundSendFn = <T extends keyof Schemas & string>(
   options?: { id?: number },
 ) => Promise<ProtocolMessage<T>>;
 
-export type PushHandler = (message: ProtocolMessage) => void;
+export type PushHandler = (message: ProtocolMessage) => void | Promise<void>;
+
+const PUSH_TYPES = [
+  "MessageLive",
+  "MessageEditLive",
+  "MessageReactionLive",
+  "MessageDeleteLive",
+  "MessageState",
+  "CallInvite",
+  "ErrorNoIota",
+] as const;
 
 export type MTPExchange = {
   type: keyof Schemas & string;
@@ -77,8 +82,6 @@ type ContextType = {
   subscribePush: (handler: PushHandler) => () => void;
   addInterceptor: (interceptor: MTPInterceptor) => () => void;
   readyState: number;
-  ownPing: number;
-  iotaPing: number;
   identified: boolean;
   freshContacts: Contacts;
   freshCommunities: Communities;
@@ -152,9 +155,6 @@ export function Provider(props: {
   const [identified, setIdentified] = useState<boolean>(false);
   const [identifying, setIdentifying] = useState<boolean>(false);
 
-  const [ownPing, setOwnPing] = useState<number>(0);
-  const [iotaPing, setIotaPing] = useState<number>(0);
-
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
@@ -163,6 +163,7 @@ export function Provider(props: {
     null,
   );
   const interceptorsRef = useRef(new Set<MTPInterceptor>());
+  const pushHandlersRef = useRef(new Set<PushHandler>());
 
   const connected = readyState === ConnectionState.Connected;
 
@@ -203,60 +204,14 @@ export function Provider(props: {
   }, []);
 
   const subscribePush = useCallback((handler: PushHandler) => {
-    const client = clientRef.current;
-    if (!client) {
-      return () => {};
-    }
-
-    const unsubscribers = [
-      "MessageLive",
-      "MessageEditLive",
-      "MessageReactionLive",
-      "MessageDeleteLive",
-      "MessageState",
-      "CallInvite",
-      "ErrorNoIota",
-    ].map((type) =>
-      client.subscribe(type, (message) => {
-        handler(validateResponse(type as keyof Schemas & string, message));
-      }),
-    );
-
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
+    pushHandlersRef.current.add(handler);
+    return () => pushHandlersRef.current.delete(handler);
   }, []);
 
   const addInterceptor = useCallback((interceptor: MTPInterceptor) => {
     interceptorsRef.current.add(interceptor);
     return () => interceptorsRef.current.delete(interceptor);
   }, []);
-
-  // Custom Pings
-  useEffect(() => {
-    if (!connected || !identified) {
-      return;
-    }
-
-    const interval = setInterval(async () => {
-      try {
-        const originalNow = Date.now();
-        const data = await send("Ping", { LastPing: originalNow });
-        setOwnPing(Date.now() - originalNow);
-
-        const remotePing = data.data.PingIota;
-        if (typeof remotePing === "number") {
-          setIotaPing(remotePing);
-        }
-      } catch (intervalError) {
-        log(1, "mtp", "yellow", "Ping failed", intervalError);
-      }
-    }, PING_INTERVAL);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [connected, identified, send]);
 
   // Reconnect stuff
   const resolveConnectionRef = useRef(() => {});
@@ -269,6 +224,7 @@ export function Provider(props: {
     let reconnectScheduled = false;
     let disposed = false;
     let resumeListenerRegistered = false;
+    let connectionGeneration = 0;
 
     const clearReconnectTimer = () => {
       if (!reconnectTimer) return;
@@ -283,16 +239,54 @@ export function Provider(props: {
       reconnectResetTimer = null;
     };
 
+    const scheduleReconnect = (error: unknown) => {
+      if (disposed || reconnectScheduled) return;
+      if (attempts >= RECONNECT_TRIES) {
+        log(0, "mtp", "red", "Reconnection attempts exhausted", error);
+        sonnerToast.error("Connection failed", {
+          id: "mtp-connection-toast",
+          description:
+            error instanceof Error
+              ? error.message.split(":")[0]
+              : "Connection lost",
+          icon: null,
+          duration: Infinity,
+          closeButton: true,
+          promise: null,
+        } as unknown as Parameters<typeof sonnerToast.error>[1]);
+        return;
+      }
+
+      attempts += 1;
+      sonnerToast.loading(
+        `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
+        { id: "mtp-connection-toast" },
+      );
+      reconnectScheduled = true;
+      reconnectTimer = setTimeout(() => {
+        reconnectScheduled = false;
+        reconnectTimer = null;
+        void connect();
+      }, RETRY_INTERVAL);
+    };
+
     async function connect() {
       if (disposed || props.blockConnection) return;
 
+      const generation = ++connectionGeneration;
+      let client: Awaited<ReturnType<typeof MTPClient.create>> | null = null;
+      let failed = false;
       const cleanup = () => {
-        clientRef.current?.disconnect();
-        clientRef.current = null;
+        client?.disconnect();
+        if (clientRef.current === client) {
+          clientRef.current = null;
+        }
         clearReconnectResetTimer();
-        setReadyState(ConnectionState.Disconnected);
-        setIdentified(false);
-        setIdentifying(false);
+        if (generation === connectionGeneration) {
+          setReadyState(ConnectionState.Disconnected);
+          setIdentified(false);
+          setIdentifying(false);
+        }
       };
       try {
         setIdentified(false);
@@ -356,7 +350,7 @@ export function Provider(props: {
 
         log(2, "mtp", "green", "Connecting to: " + url);
 
-        const client = await MTPClient.create({
+        client = await MTPClient.create({
           url,
           credentials: {
             clientId: userId,
@@ -367,9 +361,20 @@ export function Provider(props: {
           pings: true,
           logger: (event) => {
             if (event.type === "state") {
-              setReadyState(
-                clientRef.current?.state ?? ConnectionState.Disconnected,
-              );
+              if (generation !== connectionGeneration) return;
+              const state = client?.state ?? ConnectionState.Disconnected;
+              setReadyState(state);
+              if (
+                state === ConnectionState.Disconnected &&
+                clientRef.current === client &&
+                !failed
+              ) {
+                failed = true;
+                clientRef.current = null;
+                setIdentified(false);
+                setIdentifying(false);
+                scheduleReconnect(new Error("MTP connection lost"));
+              }
             }
 
             if (event.type !== "Pong" && event.type !== "Ping") {
@@ -396,40 +401,36 @@ export function Provider(props: {
           },
         });
 
-        if (disposed) {
+        if (disposed || generation !== connectionGeneration) {
           client.disconnect();
           return;
         }
+        const activeClient = client;
 
-        clientRef.current = client;
-        setReadyState(client.state);
-        await client.connect();
+        clientRef.current = activeClient;
+        for (const type of PUSH_TYPES) {
+          activeClient.subscribe(type, (message) => {
+            let validated: ProtocolMessage;
+            try {
+              validated = validateResponse(type, message);
+            } catch (error) {
+              log(1, "mtp", "red", "Failed to validate push message", error, {
+                type,
+                data: message.data,
+              });
+              return;
+            }
 
-        if (disposed) {
-          client.disconnect();
-          return;
+            for (const handler of [...pushHandlersRef.current]) {
+              void Promise.resolve()
+                .then(() => handler(validated))
+                .catch((error) => {
+                  log(1, "mtp", "red", "Push handler failed", error, { type });
+                });
+            }
+          });
         }
-
-        const authPayload = new Promise<
-          ProtocolMessage<"IdentificationResponse">
-        >((resolve, reject) => {
-          const unsubscribe = client.subscribe(
-            "IdentificationResponse",
-            (message) => {
-              try {
-                unsubscribe();
-                if (message.type.startsWith("Error")) {
-                  reject(new Error(`Authentication failed: ${message.type}`));
-                  return;
-                }
-                resolve(validateResponse("IdentificationResponse", message));
-              } catch (authPayloadError) {
-                unsubscribe();
-                reject(authPayloadError);
-              }
-            },
-          );
-        });
+        setReadyState(activeClient.state);
 
         clearReconnectTimer();
 
@@ -440,13 +441,61 @@ export function Provider(props: {
           reconnectResetTimer = null;
         }, RECONNECT_RESET * 1_000);
 
-        setReadyState(client.state);
+        setReadyState(activeClient.state);
         setIdentifying(true);
 
-        await client.auth();
-        const finalResponse = await authPayload;
+        const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
+          (resolve, reject) => {
+            let unsubscribeStateSync = () => {};
+            let unsubscribeNoIota = () => {};
+            const cleanupStateSync = () => {
+              clearTimeout(timeout);
+              unsubscribeStateSync();
+              unsubscribeNoIota();
+            };
+            const timeout = setTimeout(() => {
+              cleanupStateSync();
+              reject(new Error("Initial state synchronization timed out"));
+            }, 120_000);
+            unsubscribeStateSync = activeClient.subscribe(
+              "ClientStateSync",
+              (message) => {
+                cleanupStateSync();
+                try {
+                  resolve(validateResponse("ClientStateSync", message));
+                } catch (error) {
+                  reject(error);
+                }
+              },
+            );
+            unsubscribeNoIota = activeClient.subscribe("ErrorNoIota", () => {
+              cleanupStateSync();
+              reject(new Error("No Iota is currently connected"));
+            });
+          },
+        );
+        const [, finalResponse] = await Promise.all([
+          activeClient.auth(),
+          stateSync,
+        ]);
 
-        if (disposed || clientRef.current !== client) return;
+        if (finalResponse.type.startsWith("Error")) {
+          throw new Error(
+            `State synchronization failed: ${finalResponse.type}`,
+          );
+        }
+
+        const acknowledgement = await activeClient.request("ClientStateAck", {
+          SessionId: finalResponse.data.SessionId,
+          VersionNumber: finalResponse.data.VersionNumber,
+        });
+        if (acknowledgement.type.startsWith("Error")) {
+          throw new Error(
+            `State acknowledgement failed: ${acknowledgement.type}`,
+          );
+        }
+
+        if (disposed || clientRef.current !== activeClient) return;
 
         setFreshContacts(finalResponse.data.Contacts);
         setFreshCommunities(finalResponse.data.Communities);
@@ -455,54 +504,32 @@ export function Provider(props: {
         setIdentified(true);
         resolveConnectionRef.current?.();
       } catch (connectError) {
-        if (disposed) return;
+        if (disposed || generation !== connectionGeneration) {
+          client?.disconnect();
+          return;
+        }
+        failed = true;
         cleanup();
+        const connectErrorMessage =
+          connectError instanceof Error
+            ? connectError.message
+            : String(connectError ?? "Unknown error");
         log(
           0,
           "mtp",
           "red",
-          "Connection/authentication attempt failed",
+          `Connection/authentication attempt failed: ${connectErrorMessage}`,
           getProtocolErrorDetails(connectError) ?? connectError,
         );
 
-        // Schedule reconnect
-        if (disposed || reconnectScheduled) return;
-        if (attempts >= RECONNECT_TRIES) {
-          log(0, "mtp", "red", "Reconnection attempts exhausted", connectError);
-          sonnerToast.error("Connection failed", {
-            id: "mtp-connection-toast",
-            description:
-              connectError instanceof Error
-                ? connectError.message.split(":")[0]
-                : String(connectError ?? "Unknown error"),
-            icon: null,
-            duration: Infinity,
-            closeButton: true,
-            promise: null,
-          } as unknown as Parameters<typeof sonnerToast.error>[1]);
-          return;
-        }
-
-        attempts += 1;
-
-        // Show loading toast
-        sonnerToast.loading(
-          `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
-          { id: "mtp-connection-toast" },
-        );
-
-        reconnectScheduled = true;
-        reconnectTimer = setTimeout(() => {
-          reconnectScheduled = false;
-          reconnectTimer = null;
-          void connect();
-        }, RETRY_INTERVAL);
+        scheduleReconnect(connectError);
       }
     }
 
     async function reconnectAfterResume() {
       if (disposed) return;
 
+      connectionGeneration += 1;
       clientRef.current?.disconnect();
       clientRef.current = null;
       clearReconnectTimer();
@@ -610,8 +637,6 @@ export function Provider(props: {
         subscribePush,
         addInterceptor,
         readyState,
-        ownPing,
-        iotaPing,
         identified,
         freshContacts,
         freshCommunities,

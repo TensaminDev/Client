@@ -24,6 +24,3 @@ dist-ssr
 *.sw?
 
 .android
-
-/src-tauri/gen/android/keystore.properties
-/src-tauri/gen/android/keystore.jks

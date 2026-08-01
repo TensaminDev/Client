@@ -1,7 +1,9 @@
-import { useIsMobile } from "@tensamin/ui";
 import { SettingsSidebar } from "../layout";
 
 export default function Page() {
-  const isMobile = useIsMobile();
-  return isMobile && <SettingsSidebar />;
+  return (
+    <div className="h-full md:hidden">
+      <SettingsSidebar mobile />
+    </div>
+  );
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
-vi.mock("@tensamin/ui", () => ({
+vi.mock("@methanium/ui", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => children,
   TooltipContent: ({ children }: { children: ReactNode }) => children,
   TooltipTrigger: ({ render }: { render: ReactNode }) => render,

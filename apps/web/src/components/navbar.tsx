@@ -4,17 +4,29 @@ import {
   PopoverContent,
   PopoverTrigger,
   useIsMobile,
-} from "@tensamin/ui";
-import { ArrowLeft, House, Phone, Settings, User } from "lucide-react";
+} from "@methanium/ui";
+import {
+  ArrowLeft,
+  EllipsisVertical,
+  House,
+  Phone,
+  Settings,
+  User,
+} from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
 import Wrapper from "@tensamin/user/wrapper";
-import { Skeleton } from "@tensamin/ui";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@tensamin/ui";
+import { Skeleton } from "@methanium/ui";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@methanium/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
-import { SidebarTrigger, useSidebar } from "@tensamin/ui";
-import { WindowControls as Controls } from "@tensamin/ui";
+import { SidebarTrigger, useSidebar } from "@methanium/ui";
+import { WindowControls as Controls } from "@methanium/ui";
 import { useSession } from "@tensamin/storage/session";
 import Profile from "./modals/profile";
 
@@ -35,36 +47,46 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
 
   const [userInfoOpen, setUserInfoOpen] = useState(false);
 
+  const { callId } = useCall();
+
   return (
     <div
       data-tauri-drag-region
-      className={`${forMobile && "border-b"} w-full shrink-0 gap-2 h-13.5 flex items-center justify-between`}
+      className={`${forMobile && "border-b"} pl-px w-full shrink-0 gap-2 h-13.5 flex items-center justify-between`}
     >
       <div className="flex items-center justify-center gap-2">
         {forMobile ? (
           <SidebarTrigger
-            className="w-9 h-9 aspect-square rounded-lg ml-2"
-            variant="outline"
-          >
-            <ArrowLeft className="size-4.5" />
-          </SidebarTrigger>
+            render={({ onClick }) => (
+              <Button
+                onClick={onClick}
+                className="w-9 h-9! ml-2"
+                variant="ghost"
+              >
+                <ArrowLeft className="size-4.5" />
+              </Button>
+            )}
+          />
         ) : (
           <>
             <Button
               onClick={() => navigate({ to: "/" })}
-              className="w-9 h-9 aspect-square rounded-lg"
+              className="w-9 h-9! aspect-square rounded-lg"
               variant="outline"
             >
               <House className="size-4.5" />
             </Button>
             <Button
               onClick={() => navigate({ to: "/settings" })}
-              className="w-9 h-9 aspect-square rounded-lg"
+              className="w-9 h-9! aspect-square rounded-lg"
               variant="outline"
             >
               <Settings className="size-4.5" />
             </Button>
           </>
+        )}
+        {isMobile && pathname === "/call" && callId && (
+          <p className="font-medium text-[1.07rem]">{displayCallId(callId)}</p>
         )}
         {pathname === "/chat" && id && (
           <Wrapper
@@ -75,10 +97,11 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               ) : (
                 <Popover open={userInfoOpen} onOpenChange={setUserInfoOpen}>
                   <PopoverTrigger
-                    render={
+                    render={({ onClick }) => (
                       <Button
+                        onClick={onClick}
                         variant="link"
-                        className="px-0! text-foreground"
+                        className="text-foreground px-0! border-0! bg-none! bg-transparent!"
                         style={{
                           textDecorationLine: "none",
                         }}
@@ -87,7 +110,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                           {user?.Display}
                         </p>
                       </Button>
-                    }
+                    )}
                   />
                   <PopoverContent side="bottom">
                     <Profile user={user} />
@@ -109,7 +132,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 onClick={() => {
                   void joinCall(id);
                 }}
-                className="w-9 h-9 aspect-square rounded-lg"
+                className="w-9 h-9! aspect-square rounded-lg"
                 variant="outline"
               >
                 <Phone />
@@ -124,7 +147,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                     currentCalls[0].CallId,
                   );
                 }}
-                className="w-9 h-9 aspect-square rounded-lg"
+                className="w-9 h-9! aspect-square rounded-lg"
               >
                 <Phone />
               </Button>
@@ -161,6 +184,11 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             )}
           </>
         )}
+        {isMobile && pathname === "/call" && callId && (
+          <Button variant="ghost">
+            <EllipsisVertical />
+          </Button>
+        )}
         <Controls className="mr-2" />
       </div>
     </div>
@@ -175,7 +203,7 @@ export function MobileNavbar() {
     <div className="z-51 w-full shrink-0 pb-[env(safe-area-inset-bottom)] bg-card border-t">
       <div className="z-51 w-full h-15 grid grid-cols-3 items-center place-items-center px-5">
         <SidebarTrigger
-          className="text-foreground w-12! h-12! aspect-square rounded-xl flex flex-col gap-1"
+          className="text-foreground w-12! h-12! aspect-square rounded-xl flex flex-col gap-1 border-0!"
           variant="link"
         >
           <User className="size-4.5" />
@@ -186,7 +214,7 @@ export function MobileNavbar() {
             navigate({ to: "/" });
             setOpenMobile(false);
           }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1"
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! bg-none! bg-transparent!"
           variant="link"
         >
           <House className="size-4.5" />
@@ -197,7 +225,7 @@ export function MobileNavbar() {
             navigate({ to: "/settings" });
             setOpenMobile(false);
           }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1"
+          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! bg-none! bg-transparent!"
           variant="link"
         >
           <Settings className="size-4.5" />

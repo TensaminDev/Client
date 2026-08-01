@@ -1,8 +1,7 @@
-import * as React from "react";
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
-import { AlertTriangle, Check, Ellipse, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
+import { memo, useCallback, useEffect, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
 import {
@@ -12,17 +11,19 @@ import {
   Button,
   cn,
   Skeleton,
-} from "@tensamin/ui";
+} from "@methanium/ui";
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
 import Input from "@tensamin/markdown/input";
-import { useChat } from "../context";
-import { encryptChatText } from "@tensamin/crypto/chatSecret";
+import { getMessage, useChat } from "../context";
+import { decryptChatText, encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
 import Emoji, { normalizeShortcode } from "@tensamin/markdown/emoji";
 import { useRecordEmojiUse } from "./emojiRanks";
+import { useUser } from "@tensamin/user/context";
+import ReplyBox from "./replyBox";
 
 function MessageComponent({
   grouped,
@@ -142,7 +143,45 @@ function MessageComponent({
     userId,
     deleteMessage,
     removeReaction,
+    replyTo,
   } = useChat();
+  const { get: getUser } = useUser();
+  const [replyMessage, setReplyMessage] = useState<RawMessage | null>(null);
+  const [replyUser, setReplyUser] = useState<User | null>(null);
+  useEffect(() => {
+    if (!message.ReplyId || !ownId || !chatSecret) {
+      setReplyMessage(null);
+      setReplyUser(null);
+      return;
+    }
+
+    let active = true;
+    void getMessage({
+      sendTime: message.ReplyId,
+      ownId,
+      chatPartnerId: userId,
+      send,
+    })
+      .then(async (reply) => {
+        const [Content, author] = await Promise.all([
+          decryptChatText(chatSecret, reply.Content),
+          getUser(reply.SenderId),
+        ]);
+        if (!active) return;
+        setReplyMessage({ ...reply, Content });
+        setReplyUser(author);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setReplyMessage(null);
+        setReplyUser(null);
+        log(1, "chat", "red", "Failed to get replied-to message", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [chatSecret, getUser, message.ReplyId, ownId, send, userId]);
   const recordUse = useRecordEmojiUse();
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(message.Content);
@@ -233,8 +272,16 @@ function MessageComponent({
   return (
     <div
       // pt-3 is to get a gap between messages
-      className={`${grouped ? "" : "pt-3"} w-full flex justify-start transition-opacity duration-150 ${opacityClass}`}
+      className={`${grouped ? "" : "pt-3"} w-full flex flex-col gap-1 justify-start items-start transition-opacity duration-150 ${opacityClass}`}
     >
+      {/* reply */}
+      {replyMessage && replyUser && (
+        <ReplyBox
+          content={replyMessage.Content}
+          user={replyUser}
+          variant="message"
+        />
+      )}
       {user && message.Content ? (
         <MessageContextMenu
           content={message.Content}
@@ -244,138 +291,149 @@ function MessageComponent({
           onReact={toggleReaction}
           onSetEditing={setEditing}
         >
-          <div
-            className={cn(
-              "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all",
-              {
-                "bg-(--destructive)/10 text-destructive-foreground hover:bg-(--destructive)/15":
-                  actuallyFailed,
-              },
-            )}
-          >
-            <>
-              {grouped ? (
-                <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
-                  {new Date(message.SendTime).toLocaleString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              ) : (
-                <Avatar className="mr-1 mb-auto mt-1 w-10">
-                  <AvatarImage src={user.Avatar} />
-                  <AvatarFallback>
-                    {user.Display.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+          <>
+            <div
+              className={cn(
+                "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all transition-colors duration-200 ease-in-out",
+                {
+                  "bg-(--destructive)/10 text-destructive-foreground hover:bg-(--destructive)/15":
+                    actuallyFailed,
+                  "bg-(--primary-foreground-alt)/15 hover:bg-(--primary-foreground-alt)/20":
+                    replyTo === message.SendTime && !actuallyFailed,
+                },
               )}
-              <div
-                className={cn("flex flex-col group", {
-                  "min-w-0 flex-1": editing,
-                })}
-              >
-                {!grouped && (
-                  <div className="flex items-center gap-1">
-                    <p className="font-medium">{user.Display}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(message.SendTime).toLocaleString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    <div className="flex items-center justify-start gap-1">
-                      {message.MessageState === "read" ? (
-                        <Check
-                          size={12}
-                          color="var(--primary-foreground-alt)"
-                        />
-                      ) : message.MessageState === "received" ? (
-                        <Check size={12} color="var(--muted-foreground)" />
-                      ) : message.MessageState === "sent" ? (
-                        <RefreshCw size={12} color="var(--muted-foreground)" />
-                      ) : message.MessageState === "sending" ? (
-                        <Ellipse size={12} color="var(--muted-foreground)" />
-                      ) : null}
-                      {actuallyFailed && (
-                        <AlertTriangle color="var(--destructive)" size={12} />
+            >
+              <>
+                {grouped ? (
+                  <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
+                    {new Date(message.SendTime).toLocaleString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                ) : (
+                  <Avatar className="mr-1 mb-auto mt-1 w-10">
+                    <AvatarImage src={user.Avatar} />
+                    <AvatarFallback>
+                      {user.Display.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={cn("flex flex-col group", {
+                    "min-w-0 flex-1": editing,
+                  })}
+                >
+                  {!grouped && (
+                    <div className="flex items-center gap-1">
+                      <p className="font-semibold">{user.Display}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(message.SendTime).toLocaleString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <div className="flex items-center justify-start gap-1">
+                        {message.SenderId !==
+                        ownId ? null : message.MessageState === "read" ? (
+                          <Check
+                            size={12}
+                            color="var(--primary-foreground-alt)"
+                          />
+                        ) : message.MessageState === "received" ? (
+                          <CheckLine
+                            size={12}
+                            color="var(--muted-foreground)"
+                          />
+                        ) : message.MessageState === "sent" ? (
+                          <Check size={12} color="var(--muted-foreground)" />
+                        ) : message.MessageState === "sending" ? (
+                          <RefreshCw
+                            size={12}
+                            color="var(--muted-foreground)"
+                          />
+                        ) : null}
+                        {actuallyFailed && (
+                          <AlertTriangle color="var(--destructive)" size={12} />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {editing ? (
+                    <div className="flex w-full flex-col gap-1">
+                      <Input
+                        className="w-full"
+                        styled
+                        setValue={setEditDraft}
+                        value={editDraft}
+                        onSubmit={() => {
+                          submitEditMessage(editDraft);
+                          setEditing(false);
+                        }}
+                      />
+                      <div className="flex gap-1">
+                        <Button
+                          size="xs"
+                          variant="link"
+                          className="text-primary-foreground-alt"
+                          onClick={() => {
+                            if (editDraft === message.Content) {
+                              deleteMessage(message.SendTime);
+                            } else {
+                              submitEditMessage(editDraft);
+                            }
+                            setEditDraft(message.Content);
+                            setEditing(false);
+                          }}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="link"
+                          className="text-muted-foreground"
+                          onClick={() => {
+                            setEditDraft(message.Content);
+                            setEditing(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : isValidURL ? (
+                    <Media link={message.Content} />
+                  ) : (
+                    <Text value={message.Content} />
+                  )}
+                  {groupedReactions.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1 pb-1">
+                      {groupedReactions.map(
+                        ([reaction, { count, reactedByMe }]) => (
+                          <Button
+                            key={reaction}
+                            aria-label={`${reactedByMe ? "Remove" : "Add"} ${reaction} reaction`}
+                            className={cn(
+                              "h-7 gap-2 rounded-lg py-3.5 px-1.5! border",
+                              reactedByMe
+                                ? "border-(--primary-foreground-alt)/40!"
+                                : "",
+                            )}
+                            onClick={() => void toggleReaction(reaction)}
+                            size="xs"
+                            variant={reactedByMe ? "subtleDefault" : "outline"}
+                          >
+                            <Emoji className="h-5 w-5" shortcode={reaction} />
+                            <span className="text-sm">{count}</span>
+                          </Button>
+                        ),
                       )}
                     </div>
-                  </div>
-                )}
-                {editing ? (
-                  <div className="flex w-full flex-col">
-                    <Input
-                      className="w-full"
-                      styled
-                      setValue={setEditDraft}
-                      value={editDraft}
-                      onSubmit={() => {
-                        submitEditMessage(editDraft);
-                        setEditing(false);
-                      }}
-                    />
-                    <div className="flex">
-                      <Button
-                        size="xs"
-                        variant="link"
-                        className="text-primary-foreground-alt"
-                        onClick={() => {
-                          if (editDraft === message.Content) {
-                            deleteMessage(message.SendTime);
-                          } else {
-                            submitEditMessage(editDraft);
-                          }
-                          setEditDraft(message.Content);
-                          setEditing(false);
-                        }}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="link"
-                        className="text-muted-foreground"
-                        onClick={() => {
-                          setEditDraft(message.Content);
-                          setEditing(false);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : isValidURL ? (
-                  <Media link={message.Content} />
-                ) : (
-                  <Text value={message.Content} />
-                )}
-                {groupedReactions.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1 pb-1">
-                    {groupedReactions.map(
-                      ([reaction, { count, reactedByMe }]) => (
-                        <Button
-                          key={reaction}
-                          aria-label={`${reactedByMe ? "Remove" : "Add"} ${reaction} reaction`}
-                          className={cn(
-                            "h-7 gap-2 rounded-lg py-3.5 px-1.5! border",
-                            reactedByMe
-                              ? "border-(--primary-foreground-alt)/40!"
-                              : "",
-                          )}
-                          onClick={() => void toggleReaction(reaction)}
-                          size="xs"
-                          variant={reactedByMe ? "subtleDefault" : "outline"}
-                        >
-                          <Emoji className="h-5 w-5" shortcode={reaction} />
-                          <span className="text-sm">{count}</span>
-                        </Button>
-                      ),
-                    )}
-                  </div>
-                )}
-              </div>
-            </>
-          </div>
+                  )}
+                </div>
+              </>
+            </div>
+          </>
         </MessageContextMenu>
       ) : (
         <Skeleton className="h-10 w-30" />
@@ -384,11 +442,12 @@ function MessageComponent({
   );
 }
 
-export default React.memo(MessageComponent, (prev, next) => {
+export default memo(MessageComponent, (prev, next) => {
   return (
     prev.message.SendTime === next.message.SendTime &&
     prev.message.Content === next.message.Content &&
     prev.message.SenderId === next.message.SenderId &&
+    prev.message.ReplyId === next.message.ReplyId &&
     prev.message.MessageState === next.message.MessageState &&
     prev.message.failed === next.message.failed &&
     prev.message.decryptionFailed === next.message.decryptionFailed &&

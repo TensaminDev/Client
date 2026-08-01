@@ -2,11 +2,13 @@ import { create } from "zustand";
 
 type SpeakingState = {
   speakingParticipantIds: Set<number>;
+  lastSpeakingParticipantId: number | null;
   micGated: boolean;
 };
 
 const useSpeakingState = create<SpeakingState>(() => ({
   speakingParticipantIds: new Set(),
+  lastSpeakingParticipantId: null,
   micGated: false,
 }));
 
@@ -20,10 +22,19 @@ export function clearSpeakingParticipants() {
 
 export function removeSpeakingParticipant(participantId: number) {
   useSpeakingState.setState((state) => {
-    if (!state.speakingParticipantIds.has(participantId)) return state;
+    const wasSpeaking = state.speakingParticipantIds.has(participantId);
+    const wasLastSpeaking = state.lastSpeakingParticipantId === participantId;
+
+    if (!wasSpeaking && !wasLastSpeaking) return state;
+
     const next = new Set(state.speakingParticipantIds);
     next.delete(participantId);
-    return { speakingParticipantIds: next };
+    return {
+      speakingParticipantIds: next,
+      lastSpeakingParticipantId: wasLastSpeaking
+        ? null
+        : state.lastSpeakingParticipantId,
+    };
   });
 }
 
@@ -31,11 +42,13 @@ export function updateSpeakingParticipants(changed: Map<number, boolean>) {
   useSpeakingState.setState((state) => {
     let hasDiff = false;
     const next = new Set(state.speakingParticipantIds);
+    let lastSpeakingParticipantId = state.lastSpeakingParticipantId;
 
     for (const [id, speaking] of changed) {
       if (speaking) {
         if (!next.has(id)) {
           next.add(id);
+          lastSpeakingParticipantId = id;
           hasDiff = true;
         }
       } else if (next.has(id)) {
@@ -44,8 +57,14 @@ export function updateSpeakingParticipants(changed: Map<number, boolean>) {
       }
     }
 
-    return hasDiff ? { speakingParticipantIds: next } : state;
+    return hasDiff
+      ? { speakingParticipantIds: next, lastSpeakingParticipantId }
+      : state;
   });
+}
+
+export function useLastSpeakingParticipantId(): number | null {
+  return useSpeakingState((state) => state.lastSpeakingParticipantId);
 }
 
 export function useIsSpeaking(participantId: number): boolean {

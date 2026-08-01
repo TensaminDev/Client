@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import Switch from "./switch";
@@ -8,14 +8,14 @@ import { Loader2 } from "lucide-react";
 import { useSession } from "@tensamin/storage/session";
 
 export default function List() {
-  const [category, setCategory] = React.useState<
-    "conversations" | "communities"
-  >("conversations");
+  const [category, setCategory] = useState<"conversations" | "communities">(
+    "conversations",
+  );
 
   const { contacts, communities } = useSession();
   const items = category === "conversations" ? contacts : communities;
 
-  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // TanStack Virtual is intentionally used here; React Compiler memoization is skipped.
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -31,7 +31,7 @@ export default function List() {
       <div
         ref={scrollRef}
         id="conversation-list"
-        className="overflow-y-auto flex-1 h-full"
+        className="overflow-y-auto flex-1 h-full p-px"
       >
         {items === null ? (
           <div className="flex items-center justify-center pt-5">

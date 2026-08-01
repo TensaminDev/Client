@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ThemeDesign } from "@methanium/ui";
 
 import { legalDocsSchema } from "./features/legal/schema";
 import {
@@ -105,7 +106,7 @@ const authPayload = z.object({
   Contacts: z
     .array(
       z.object({
-        LastMessageAt: z.number(),
+        LastMessageAt: z.number().default(0),
         UserId: z.number(),
         LastMessage: z
           .object({
@@ -113,7 +114,7 @@ const authPayload = z.object({
             SenderId: z.number(),
           })
           .optional(),
-        Messages: z.array(Message),
+        Messages: z.array(Message).default([]),
       }),
     )
     .default([]),
@@ -126,6 +127,16 @@ const authPayload = z.object({
       }),
     )
     .default([]),
+});
+
+const clientStateSync = authPayload.extend({
+  SessionId: z.number().int().positive(),
+  VersionNumber: z.number().int().nonnegative(),
+  CacheSchemaVersion: z.number().int().nonnegative(),
+  SyncMode: z.enum(["full", "delta"]),
+  Messages: z.array(Message).default([]),
+  DeletedMessageIds: z.array(z.number()).default([]),
+  DeletedContactIds: z.array(z.number()).default([]),
 });
 
 export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
@@ -183,6 +194,26 @@ export const mtp = {
     request: z.object({}).optional(),
     response: authPayload,
   },
+  ClientConnected: {
+    request: z.object({
+      SessionId: z.number().int().positive(),
+      VersionNumber: z.number().int().nonnegative(),
+      CacheValid: z.boolean(),
+      CacheSchemaVersion: z.number().int().nonnegative(),
+    }),
+    response: clientStateSync,
+  },
+  ClientStateSync: {
+    request: z.object({}).optional(),
+    response: clientStateSync,
+  },
+  ClientStateAck: {
+    request: z.object({
+      SessionId: z.number().int().positive(),
+      VersionNumber: z.number().int().nonnegative(),
+    }),
+    response: z.object({}),
+  },
   GetUserData: {
     request: z.object({
       UserId: z.number().optional(),
@@ -193,14 +224,6 @@ export const mtp = {
   ChangeUserData: {
     request: user.partial(),
     response: z.object({}),
-  },
-  Ping: {
-    request: z.object({
-      LastPing: z.number(),
-    }),
-    response: z.object({
-      PingIota: z.number(),
-    }),
   },
   MessageDelete: {
     request: z.object({
@@ -254,14 +277,21 @@ export const mtp = {
       Reaction: z.string(),
       SendTime: z.number(),
       ChatPartnerId: z.number(),
+      SenderId: z.number(),
+      Accepted: z.boolean(),
     }),
   },
   MessageLive: {
     request: z.object({}).optional(),
-    response: z.object({
-      SenderId: z.number(),
-      Message,
-    }),
+    response: z
+      .object({
+        SenderId: z.number(),
+        Message: Message.extend({ SenderId: z.number().optional() }),
+      })
+      .transform(({ SenderId, Message }) => ({
+        SenderId,
+        Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
+      })),
   },
   MessageGet: {
     request: z.object({
@@ -284,6 +314,7 @@ export const mtp = {
       Content: z.base64(),
       ReceiverId: z.number(),
       SendTime: z.number(),
+      ReplyId: z.number().optional(),
       Files: z.array(fileFromMessage).optional(),
     }),
     response: z.object({}),
@@ -421,6 +452,8 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
+  onboarding_done: boolean;
+  onboarding_started: boolean;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -444,6 +477,8 @@ export interface Storage extends SettingsStorageDefaults {
   theme_tint: "soft" | "hard" | "extreme";
   theme_border_radius: number;
   theme_custom_css: string;
+  theme_parent: string;
+  theme_design: ThemeDesign;
   chat_trusted_domains: string[];
   chat_picker_saved_media: string[];
   chat_picker_last_tab: "gif" | "meme" | "saved";
@@ -458,6 +493,8 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
+  onboarding_done: false,
+  onboarding_started: false,
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,
@@ -496,8 +533,18 @@ export const storageDefaults: Storage = {
   theme_primary_color: "",
   theme_polarity: "system",
   theme_tint: "soft",
-  theme_border_radius: 0.55,
+  theme_border_radius: 0.5,
   theme_custom_css: "",
+  theme_parent: "tensamin",
+  theme_design: {
+    density: 1,
+    borderWidth: 1,
+    shadowStrength: 0,
+    fontScale: 1,
+    headingWeight: 600,
+    motion: 1,
+    fontFamily: "public-sans",
+  },
   chat_trusted_domains: [
     // Other platforms
     "cdn.discordapp.com",

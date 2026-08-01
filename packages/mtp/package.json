@@ -16,7 +16,7 @@
     "@tensamin/crypto": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/ui": "*",
+    "@methanium/ui": "*",
     "lucide-react": "^1.14.0",
     "mtp": "*",
     "react": "^19.2.0",

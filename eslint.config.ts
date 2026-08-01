@@ -5,6 +5,10 @@ import reactHooks from "eslint-plugin-react-hooks";
 import * as tsParser from "@typescript-eslint/parser";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  noReactNamespaceImport,
+  noWindowLocationReload,
+} from "./utils/eslint-rules/index.js";
 
 const tsconfigRootDir = dirname(fileURLToPath(import.meta.url));
 
@@ -28,10 +32,18 @@ export default [
     },
     plugins: {
       "react-hooks": reactHooks,
+      tensamin: {
+        rules: {
+          "no-react-namespace-import": noReactNamespaceImport,
+          "no-window-location-reload": noWindowLocationReload,
+        },
+      },
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-hooks/set-state-in-effect": "off",
+      "tensamin/no-react-namespace-import": "error",
+      "tensamin/no-window-location-reload": "error",
     },
   },
 ];

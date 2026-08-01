@@ -1,20 +1,66 @@
 package net.tensamin.client
 
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
 import android.graphics.Rect
+import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.WindowManager
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
 import android.widget.FrameLayout
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import org.json.JSONObject
 
 class MainActivity : TauriActivity() {
   private var contentRoot: FrameLayout? = null
   private var contentChild: android.view.View? = null
   private var previousUsableHeight = 0
   private var attachLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+  private var mediaWebView: WebView? = null
+  private var pendingScreenAudio: Boolean? = null
+
+  private val screenCaptureLauncher = registerForActivityResult(
+    ActivityResultContracts.StartActivityForResult(),
+  ) { result ->
+    val includeAudio = pendingScreenAudio
+    pendingScreenAudio = null
+
+    if (includeAudio == null) return@registerForActivityResult
+    val data = result.data
+    if (result.resultCode != Activity.RESULT_OK || data == null) {
+      MobileMediaEvents.emitError("Screen capture permission was denied")
+      return@registerForActivityResult
+    }
+
+    MediaProjectionService.start(this, result.resultCode, data, includeAudio)
+  }
+
+  private val cameraPermissionLauncher = registerForActivityResult(
+    ActivityResultContracts.RequestMultiplePermissions(),
+  ) {
+    emitCameraPermission()
+  }
+
+  private val screenAudioPermissionLauncher = registerForActivityResult(
+    ActivityResultContracts.RequestPermission(),
+  ) {
+    launchScreenCaptureIntent()
+  }
+
+  override fun onWebViewCreate(webView: WebView) {
+    webView.setInitialScale(300)
+    mediaWebView = webView
+    MobileMediaEvents.attach(webView)
+    webView.addJavascriptInterface(MobileMediaJavascriptInterface(), "tensaminMobileMedia")
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     WindowCompat.setDecorFitsSystemWindows(window, true)
@@ -30,7 +76,82 @@ class MainActivity : TauriActivity() {
     attachLayoutListener = null
     contentRoot = null
     contentChild = null
+    mediaWebView?.removeJavascriptInterface("tensaminMobileMedia")
+    mediaWebView = null
+    MobileMediaEvents.detach()
     super.onDestroy()
+  }
+
+  private fun startScreenShare(includeAudio: Boolean) {
+    runOnUiThread {
+      if (pendingScreenAudio != null) {
+        MobileMediaEvents.emitError("Screen capture permission is already pending")
+        return@runOnUiThread
+      }
+
+      pendingScreenAudio = includeAudio
+      if (
+        includeAudio &&
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+          PackageManager.PERMISSION_GRANTED
+      ) {
+        screenAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+      } else {
+        launchScreenCaptureIntent()
+      }
+    }
+  }
+
+  private fun launchScreenCaptureIntent() {
+    val manager = getSystemService(MediaProjectionManager::class.java)
+    screenCaptureLauncher.launch(manager.createScreenCaptureIntent())
+  }
+
+  private fun stopScreenShare() {
+    runOnUiThread {
+      pendingScreenAudio = null
+      MediaProjectionService.stop(this)
+    }
+  }
+
+  private fun requestCameraPermission() {
+    runOnUiThread {
+      cameraPermissionLauncher.launch(
+        arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO),
+      )
+    }
+  }
+
+  private fun emitCameraPermission() {
+    val detail = JSONObject()
+      .put(
+        "camera",
+        ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
+          PackageManager.PERMISSION_GRANTED,
+      )
+      .put(
+        "microphone",
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+          PackageManager.PERMISSION_GRANTED,
+      )
+    MobileMediaEvents.emit("tensamin-mobile-camera-permission", detail)
+  }
+
+  private inner class MobileMediaJavascriptInterface {
+    @JavascriptInterface
+    fun startScreenShare(includeAudio: Boolean) {
+      this@MainActivity.startScreenShare(includeAudio)
+    }
+
+    @JavascriptInterface
+    fun stopScreenShare() {
+      this@MainActivity.stopScreenShare()
+    }
+
+    @JavascriptInterface
+    fun requestCameraPermission() {
+      this@MainActivity.requestCameraPermission()
+    }
   }
 
   private fun installKeyboardResizeWorkaround() {

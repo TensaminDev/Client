@@ -1,6 +1,6 @@
 import { storageDefaults } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
-import { Button, Kbd } from "@tensamin/ui";
+import { Button, Kbd } from "@methanium/ui";
 import { List, Switch } from "../components";
 
 export default function Page() {

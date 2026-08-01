@@ -1,4 +1,13 @@
-import * as React from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type Storage as StorageSchema,
   storageDefaults as defaults,
@@ -8,7 +17,7 @@ import {
   getDatabaseEntry,
   setDatabaseEntry,
 } from "@tensamin/shared/indexedDb";
-import { ErrorScreen } from "@tensamin/ui";
+import { ErrorScreen } from "@methanium/ui";
 import { log } from "@tensamin/shared/log";
 import {
   decodeSecureValue,
@@ -31,7 +40,7 @@ interface StorageContextValue {
   secureStorage: SecureStorageStatus | null;
 }
 
-const StorageContext = React.createContext<StorageContextValue | undefined>(
+const StorageContext = createContext<StorageContextValue | undefined>(
   undefined,
 );
 
@@ -42,29 +51,29 @@ const isIndexedDBSupported = typeof indexedDB !== "undefined";
  * @param props Parameter props.
  * @returns unknown.
  */
-export default function StorageProvider(props: { children: React.ReactNode }) {
-  const [storage, setStorage] = React.useState<StorageSchema>(defaults);
-  const storageRef = React.useRef(storage);
-  const loadedKeys = React.useRef(new Set<keyof StorageSchema>());
-  const loadPromises = React.useRef(
+export default function StorageProvider(props: { children: ReactNode }) {
+  const [storage, setStorage] = useState<StorageSchema>(defaults);
+  const storageRef = useRef(storage);
+  const loadedKeys = useRef(new Set<keyof StorageSchema>());
+  const loadPromises = useRef(
     new Map<keyof StorageSchema, Promise<StorageSchema[keyof StorageSchema]>>(),
   );
-  const generations = React.useRef(new Map<keyof StorageSchema, number>());
+  const generations = useRef(new Map<keyof StorageSchema, number>());
   const [secureStorage, setSecureStorage] =
-    React.useState<SecureStorageStatus | null>(null);
-  const secureStorageRef = React.useRef<SecureStorageStatus | null>(null);
+    useState<SecureStorageStatus | null>(null);
+  const secureStorageRef = useRef<SecureStorageStatus | null>(null);
 
-  const [error, setError] = React.useState("");
-  const [errorDescription, setErrorDescription] = React.useState("");
+  const [error, setError] = useState("");
+  const [errorDescription, setErrorDescription] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     void getSecureStorageStatus().then((status) => {
       secureStorageRef.current = status;
       setSecureStorage(status);
     });
   }, []);
 
-  const commit = React.useCallback(
+  const commit = useCallback(
     <K extends keyof StorageSchema>(key: K, nextValue: StorageSchema[K]) => {
       const next = { ...storageRef.current, [key]: nextValue };
       storageRef.current = next;
@@ -74,7 +83,7 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
     [],
   );
 
-  const load = React.useCallback(
+  const load = useCallback(
     async <K extends keyof StorageSchema>(
       key: K,
     ): Promise<StorageSchema[K]> => {
@@ -127,7 +136,7 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
     [commit],
   );
 
-  const save = React.useCallback(
+  const save = useCallback(
     async <K extends keyof StorageSchema>(
       key: K,
       value: StorageSchema[K],
@@ -163,14 +172,12 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
     [commit],
   );
 
-  const clear = React.useCallback(async () => {
+  const clear = useCallback(async () => {
     const keys = Object.keys(defaults) as (keyof StorageSchema)[];
     for (const key of keys) {
       generations.current.set(key, (generations.current.get(key) ?? 0) + 1);
     }
-    await Promise.all(
-      keys.map((key) => deleteDatabaseEntry("storage", key)),
-    );
+    await Promise.all(keys.map((key) => deleteDatabaseEntry("storage", key)));
     await window.tensaminDesktop?.secureStorage
       ?.clear?.()
       .catch(() => undefined);
@@ -180,7 +187,7 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
     setStorage(defaults);
   }, []);
 
-  const value = React.useMemo<StorageContextValue>(
+  const value = useMemo<StorageContextValue>(
     () => ({
       load,
       save,
@@ -216,7 +223,7 @@ export default function StorageProvider(props: { children: React.ReactNode }) {
  * @returns StorageContextValue.
  */
 export function useStorage(): StorageContextValue {
-  const context = React.useContext(StorageContext);
+  const context = useContext(StorageContext);
   if (!context) {
     throw new Error("useStorage must be used within a StorageProvider");
   }

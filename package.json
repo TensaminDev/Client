@@ -10,15 +10,15 @@
   "type": "module",
   "scripts": {
     "format": "pnpm exec prettier --write .",
-    "lint": "node scripts/lint-packages.ts",
+    "lint": "node utils/scripts/lint-packages.ts",
     "check": "fallow && pnpm run lint",
-    "copy-licenses": "node scripts/copy-licenses.ts",
-    "copy-releases": "node scripts/copy-releases.ts",
+    "copy-licenses": "node utils/scripts/copy-licenses.ts",
+    "copy-releases": "node utils/scripts/copy-releases.ts",
     "pre-build": "pnpm run lint && pnpm run build:packages",
     "build:apps": "pnpm run copy-licenses && pnpm run pre-build && pnpm run build:mobile && pnpm run build:desktop && pnpm run copy-releases",
-    "build:packages": "node scripts/build-packages.ts",
-    "update:packages": "node scripts/update-packages.ts",
-    "dev:web": "cd apps/web && pnpm dev",
+    "build:packages": "node utils/scripts/build-packages.ts",
+    "update:packages": "node utils/scripts/update-packages.ts",
+    "dev": "cd apps/web && pnpm dev",
     "build:web": "cd apps/web && pnpm run build",
     "preview:web": "cd apps/web && pnpm run preview",
     "dev:mobile": "cd apps/tauri && pnpm dev:mobile",
@@ -26,7 +26,7 @@
     "start-adb:mobile": "cd apps/tauri && pnpm run start-adb:mobile",
     "dev:desktop": "cd apps/electron && pnpm run dev",
     "build:desktop": "cd apps/electron && pnpm run package",
-    "delete:mobile": "cd apps/tauri && nix develop ../..#tauri --command adb uninstall net.tensamin.client"
+    "delete:mobile": "cd apps/tauri && nix develop ../..#tauri --command adb uninstall net.tensamin.client.dev"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -46,7 +46,7 @@
     "yaml": "^2.8.2"
   },
   "dependencies": {
-    "@tensamin/ui": "*",
+    "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.2/methanium-ui.tgz",
     "mtp": "*",
     "sonner": "^2.0.7"
   }

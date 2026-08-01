@@ -7,7 +7,7 @@ import { dirname } from "node:path";
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 
-const rootDir = join(_dirname, "..");
+const rootDir = join(_dirname, "..", "..");
 const targetDirs = [join(rootDir, "packages"), join(rootDir, "apps")];
 
 function getPackageDirs(dir: string): string[] {

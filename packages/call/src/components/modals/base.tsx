@@ -5,7 +5,8 @@ import {
   Button,
   ContextMenu as UIContextMenu,
   ContextMenuTrigger,
-} from "@tensamin/ui";
+  cn,
+} from "@methanium/ui";
 import {
   focusParticipant,
   getRoomMetadata,
@@ -43,7 +44,7 @@ function TransparentButton({ children }: { children: React.ReactNode }) {
   );
 }
 
-function getAverageImageColor(src: string) {
+export function getAverageImageColor(src: string) {
   return new Promise<string | undefined>((resolve) => {
     const image = new Image();
 
@@ -177,6 +178,13 @@ export default function Base({
     Track.Source.ScreenShare,
   );
   const screenSharePreview = participant?.attributes["screenSharePreview"];
+  const cameraPublication = getTrackPublicationBySource(
+    participant,
+    Track.Source.Camera,
+  );
+  const cameraDisabled = useCall((state) =>
+    user ? state.disabledCameraParticipantIds.includes(user.UserId) : false,
+  );
 
   const [ownId, setOwnId] = useState(0);
   useEffect(() => {
@@ -264,9 +272,14 @@ export default function Base({
         render={
           <div
             onClick={onClick}
-            className={`relative w-full ${fill ? "h-full border-0" : "aspect-video border-2"} ${
-              flush || fill ? "rounded-none" : "rounded-md"
-            } ${flush && !fill ? "border-x-0" : ""}`}
+            className={cn(
+              "relative w-full",
+              fill ? "h-full" : "aspect-video",
+              flush && !fill && "border-x-0!",
+              type === "user" &&
+                isSpeaking &&
+                "border-4 border-(--primary-foreground-alt)/75! rounded-lg",
+            )}
           >
             <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
               <>
@@ -303,8 +316,8 @@ export default function Base({
             <div
               ref={currentCard}
               className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center ${
-                flush ? "rounded-none" : "rounded-sm"
-              } ${type === "user" && isSpeaking ? "border-4 border-(--primary-foreground-alt)/75" : "border-0"}`}
+                flush ? "rounded-none" : "rounded-lg"
+              }`}
               style={{
                 backgroundColor: avatarBackgroundColor,
                 containerType: "size",
@@ -335,23 +348,31 @@ export default function Base({
                   </div>
                 ) : null)}
 
-              {type === "user" && (
-                <Avatar
-                  style={{
-                    width: "32cqh",
-                    height: "32cqh",
-                  }}
-                >
-                  <AvatarImage src={user.Avatar} />
-                  <AvatarFallback
+              {type === "user" &&
+                (cameraPublication?.track && !cameraDisabled ? (
+                  <VideoViewer
+                    fill={fill}
+                    flush={flush}
+                    participantId={participant.identity}
+                    publication={cameraPublication}
+                  />
+                ) : (
+                  <Avatar
                     style={{
-                      fontSize: "11cqh",
+                      width: "32cqh",
+                      height: "32cqh",
                     }}
                   >
-                    {user.Display.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              )}
+                    <AvatarImage src={user.Avatar} />
+                    <AvatarFallback
+                      style={{
+                        fontSize: "11cqh",
+                      }}
+                    >
+                      {user.Display.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
             </div>
           </div>
         }

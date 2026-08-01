@@ -9,8 +9,8 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@tensamin/ui";
-import ScreenshareButton from "./buttons/screenshare";
+} from "@methanium/ui";
+import MediaShareButton from "./buttons/mediaShare";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";
 import { Room, Track } from "livekit-client";
@@ -18,25 +18,36 @@ import { useEffect, useState } from "react";
 import { AreaChart, Area } from "recharts";
 import LeaveButton from "./buttons/leave";
 
-export default function SidebarBox() {
-  const state = useCall((store) => store.state);
-  const isMobile = useIsMobile();
+async function getPing(room: Room): Promise<number | undefined> {
+  const report = await room.localParticipant
+    .getTrackPublication(Track.Source.Microphone)
+    ?.track?.getRTCStatsReport();
 
-  return state === "closed" ? null : (
-    <Card className="p-1.5 gap-2" hidden={isMobile}>
-      <CardHeader className="p-0! pb-2! border-b-2">
-        <ConnectionBar />
-      </CardHeader>
-      <CardContent className="p-0! flex flex-col gap-1">
-        <div className="flex justify-start gap-1">
-          <MuteButton className="w-9 h-9" />
-          <DeafButton className="w-9 h-9" />
-          <ScreenshareButton className="w-9 h-9" defaultPortal />
-          <LeaveButton className="w-9 h-9" />
-        </div>
-      </CardContent>
-    </Card>
-  );
+  if (!report) return;
+
+  let bestRtt: number | undefined;
+
+  report.forEach((stat) => {
+    if (
+      stat.type === "candidate-pair" &&
+      stat.state === "succeeded" &&
+      stat.currentRoundTripTime != null
+    ) {
+      bestRtt = stat.currentRoundTripTime * 1000;
+    }
+
+    if (stat.type === "remote-inbound-rtp" && stat.roundTripTime != null) {
+      bestRtt = stat.roundTripTime * 1000;
+    }
+  });
+
+  if (bestRtt == null || bestRtt <= 0) return;
+
+  const roundedRtt = Math.round(bestRtt);
+
+  if (roundedRtt <= 0) return;
+
+  return roundedRtt;
 }
 
 function ConnectionBar() {
@@ -47,14 +58,18 @@ function ConnectionBar() {
   return (
     <Tooltip>
       <TooltipTrigger
-        render={
+        render={({ ref, onClick }) => (
           <Button
-            onClick={() => openCallPage(callId || "")}
+            ref={ref as React.Ref<HTMLButtonElement>}
+            onClick={(event) => {
+              onClick?.(event);
+              openCallPage(callId || "");
+            }}
             size="lg"
             variant={
               state === "open" && isEncrypted ? "subtleDefault" : "destructive"
             }
-            className="flex justify-between items-center"
+            className="flex items-center justify-between px-2!"
           >
             {state === "encrypting" && "Encrypting..."}
             {state === "connecting" && "Connecting..."}
@@ -70,7 +85,7 @@ function ConnectionBar() {
               <LockOpen color="var(--destructive)" />
             )}
           </Button>
-        }
+        )}
       />
       <TooltipContent>Click to open call page</TooltipContent>
     </Tooltip>
@@ -171,34 +186,23 @@ export function TinyPingGraph() {
   );
 }
 
-async function getPing(room: Room): Promise<number | undefined> {
-  const report = await room.localParticipant
-    .getTrackPublication(Track.Source.Microphone)
-    ?.track?.getRTCStatsReport();
+export default function SidebarBox() {
+  const state = useCall((store) => store.state);
+  const isMobile = useIsMobile();
 
-  if (!report) return;
-
-  let bestRtt: number | undefined;
-
-  report.forEach((stat) => {
-    if (
-      stat.type === "candidate-pair" &&
-      stat.state === "succeeded" &&
-      stat.currentRoundTripTime != null
-    ) {
-      bestRtt = stat.currentRoundTripTime * 1000;
-    }
-
-    if (stat.type === "remote-inbound-rtp" && stat.roundTripTime != null) {
-      bestRtt = stat.roundTripTime * 1000;
-    }
-  });
-
-  if (bestRtt == null || bestRtt <= 0) return;
-
-  const roundedRtt = Math.round(bestRtt);
-
-  if (roundedRtt <= 0) return;
-
-  return roundedRtt;
+  return state === "closed" ? null : (
+    <Card className="p-1.5 gap-2" hidden={isMobile}>
+      <CardHeader className="p-0! pb-2! border-b-2">
+        <ConnectionBar />
+      </CardHeader>
+      <CardContent className="p-0! flex flex-col gap-1">
+        <div className="flex justify-center gap-1">
+          <MuteButton className="h-9! w-[24%]" />
+          <DeafButton className="h-9! w-[24%]" />
+          <MediaShareButton className="h-9! w-[24%]!" defaultPortal />
+          <LeaveButton className="h-9! w-[24%]" />
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

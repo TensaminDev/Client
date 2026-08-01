@@ -1,4 +1,0 @@
-- Move legal to extra onboarding package
-- Add a bunch of tests
-- Add packages/hotkeys/
-- Full accessability

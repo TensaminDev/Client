@@ -19,7 +19,7 @@
     "@tensamin/storage": "workspace:*",
     "@tensamin/tauri": "workspace:*",
     "@tensamin/mtp": "workspace:*",
-    "@tensamin/ui": "*",
+    "@methanium/ui": "*",
     "@tensamin/user": "workspace:*",
     "lucide-react": "^1.8.0",
     "react": "^19.2.0",
