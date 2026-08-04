@@ -146,6 +146,7 @@ export default function Screen() {
     setComposerValue,
   } = useChat();
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const didInitialScrollRef = useRef(false);
   const userScrolledUpRef = useRef(false);
@@ -159,6 +160,7 @@ export default function Screen() {
   const [lastLiveMessageCount, setLastLiveMessageCount] = useState(0);
   const [didInitialScroll, setDidInitialScroll] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const [composerHeight, setComposerHeight] = useState(0);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const previousEditingMessageIdRef = useRef<number | null>(null);
 
@@ -280,6 +282,7 @@ export default function Screen() {
     getItemKey,
     estimateSize,
     overscan: 2,
+    paddingStart: composerHeight + 8,
   });
   const totalSize = virtualizer.getTotalSize();
   const contentHeight = Math.max(totalSize, viewportHeight);
@@ -326,6 +329,26 @@ export default function Screen() {
     updateViewportHeight();
 
     const observer = new ResizeObserver(updateViewportHeight);
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const element = composerRef.current;
+    if (!element || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const updateComposerHeight = () => {
+      setComposerHeight(element.getBoundingClientRect().height);
+    };
+
+    updateComposerHeight();
+
+    const observer = new ResizeObserver(updateComposerHeight);
     observer.observe(element);
 
     return () => {
@@ -381,22 +404,6 @@ export default function Screen() {
 
     void messagesQuery.fetchNextPage();
   }, [didInitialScroll, messagesQuery, totalSize, viewportHeight]);
-
-  useLayoutEffect(() => {
-    if (
-      !didInitialScroll ||
-      userScrolledUpRef.current ||
-      virtualRowCount === 0
-    ) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = 0;
-      }
-    });
-  }, [didInitialScroll, virtualRowCount]);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -623,7 +630,7 @@ export default function Screen() {
               })}
             </div>
           </div>
-          <div className="z-10 shrink-0">
+          <div ref={composerRef} className="absolute inset-x-0 bottom-0 z-10">
             <InputComponent
               onEditLastMessage={editLastMessage}
               setValue={setComposerValue}
