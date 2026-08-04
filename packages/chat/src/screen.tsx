@@ -50,6 +50,59 @@ function getMessageRenderKey(message: RawMessage | LiveMessage) {
   return "localId" in message ? message.localId : String(message.SendTime);
 }
 
+function isSameDay(first: number | Date, second: number | Date) {
+  const firstDate = new Date(first);
+  const secondDate = new Date(second);
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function formatMessageDate(sendTime: number) {
+  const date = new Date(sendTime);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (isSameDay(date, today)) {
+    return "Today";
+  }
+
+  if (isSameDay(date, yesterday)) {
+    return "Yesterday";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = date.toLocaleString([], { month: "long" });
+  return `${day} ${month} ${date.getFullYear()}`;
+}
+
+function DateSeparator({ label }: { label: string }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setVisible(true), 100);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  return (
+    <div
+      aria-label={label}
+      className={`my-3 flex w-full items-center gap-3 px-3 transition-opacity duration-150 ${visible ? "opacity-100" : "opacity-0"}`}
+      role="separator"
+    >
+      <div className="h-px flex-1 bg-border" />
+      <span className="shrink-0 text-xs font-medium text-muted-foreground">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
 function buildMessageChunks(
   messages: Array<RawMessage | LiveMessage>,
   keyPrefix: string,
@@ -483,7 +536,7 @@ export default function Screen() {
             className="min-h-0 flex-1 overflow-y-auto"
             style={{
               overflowAnchor: "none",
-              paddingTop: "22px",
+              //paddingTop: "22px",
               transform: "scaleY(-1)",
             }}
             onScroll={handleContainerScroll}
@@ -522,8 +575,15 @@ export default function Screen() {
                         const messageIndex =
                           chunk.startIndex + chunkMessageIndex;
                         const lastMessage = messages[messageIndex - 1];
+                        const startsNewDay =
+                          !lastMessage ||
+                          !isSameDay(lastMessage.SendTime, message.SendTime);
+                        const dateLabel = startsNewDay
+                          ? formatMessageDate(message.SendTime)
+                          : null;
                         const isGrouped =
                           lastMessage &&
+                          !startsNewDay &&
                           !message.ReplyId &&
                           lastMessage.SenderId === message.SenderId &&
                           Math.round(lastMessage.SendTime / 10000) ===
@@ -535,17 +595,24 @@ export default function Screen() {
                             userId={message.SenderId}
                             loading={null}
                             component={(user) => (
-                              <Message
-                                editing={editingMessageId === message.SendTime}
-                                grouped={isGrouped}
-                                message={message}
-                                onSetEditing={(editing) =>
-                                  setEditingMessageId(
-                                    editing ? message.SendTime : null,
-                                  )
-                                }
-                                user={user}
-                              />
+                              <>
+                                {dateLabel && (
+                                  <DateSeparator label={dateLabel} />
+                                )}
+                                <Message
+                                  editing={
+                                    editingMessageId === message.SendTime
+                                  }
+                                  grouped={isGrouped}
+                                  message={message}
+                                  onSetEditing={(editing) =>
+                                    setEditingMessageId(
+                                      editing ? message.SendTime : null,
+                                    )
+                                  }
+                                  user={user}
+                                />
+                              </>
                             )}
                           />
                         );
