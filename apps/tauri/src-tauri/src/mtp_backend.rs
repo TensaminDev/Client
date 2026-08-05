@@ -8,12 +8,11 @@ use base64::{
     engine::general_purpose::{STANDARD, STANDARD_NO_PAD},
     Engine as _,
 };
-use mtp::client::{ClientConfig, MTPClient, MTPConnection};
+use mtp::client::{ClientConfig, MTPClient, MTPConnection, Policy, SendMode};
 use mtp::codec::{CommunicationType, CommunicationValue, DataType, DataValue, TypeMap};
 use mtp::crypto::{
     derive_encryption_key, AeadDecrypt, ChaCha20Poly1305, HybridKem, Keyring, PublicKeyBundle,
 };
-use mtp_transport::{Policy, SendMode};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tauri::{AppHandle, Emitter};
