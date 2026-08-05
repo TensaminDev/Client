@@ -10,7 +10,7 @@ import { useStorage } from "@tensamin/storage/context";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Button } from "@methanium/ui";
 
-import { Plus, Laugh, FileVideo } from "lucide-react";
+import { Plus, Laugh, FileVideo, SendHorizonal } from "lucide-react";
 import { useChat, useReplyMessage } from "../context";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
@@ -267,19 +267,27 @@ export default function InputComponent({
         )}
       >
         <CardHeader className="relative p-0 flex flex-col">
-          <Input
-            className="w-full"
-            onControllerChange={setComposer}
-            paddingY="13px"
-            paddingX="13px"
-            placeholder="Send a message..."
-            value={value}
-            setValue={setValue}
-            onSubmit={handleSubmit}
-            invertEnterBehavior={invertEnterBehavior}
-            emojiFrequencies={emojiFrequencies}
-            onEmojiSelect={recordUse}
-          />
+          <div className="w-full flex items-center">
+            <Input
+              className="w-full"
+              onControllerChange={setComposer}
+              paddingY="13px"
+              paddingX="13px"
+              placeholder="Send a message..."
+              value={value}
+              setValue={setValue}
+              onSubmit={handleSubmit}
+              invertEnterBehavior={invertEnterBehavior}
+              emojiFrequencies={emojiFrequencies}
+              onEmojiSelect={recordUse}
+            />
+            <Button
+              onClick={() => handleSubmit(value)}
+              className={cn("w-9! h-9!", isMobile ? "" : "hidden")}
+            >
+              <SendHorizonal />
+            </Button>
+          </div>
           <div className="w-full flex justify-between gap-1 p-1 pt-0">
             <div className="flex gap-1">
               <Button className="w-9 h-9! p-0" variant="ghost">

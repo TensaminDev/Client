@@ -15,6 +15,7 @@ export function log(
     | "red"
     | "green"
     | "yellow"
+    | "orange"
     | "purple"
     | "blue"
     | "cyan"
@@ -32,6 +33,7 @@ export function log(
     red: "\x1b[31m",
     green: "\x1b[32m",
     yellow: "\x1b[33m",
+    orange: "\x1b[38;5;208m",
     purple: "\x1b[35m",
     blue: "\x1b[34m",
     cyan: "\x1b[36m",

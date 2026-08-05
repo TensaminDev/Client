@@ -1,7 +1,13 @@
+mod mtp_backend;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().level(tauri_plugin_log::log::LevelFilter::Info).build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(tauri_plugin_log::log::LevelFilter::Info)
+                .build(),
+        )
         .plugin(tauri_plugin_notification::init());
 
     let builder = builder
@@ -11,11 +17,20 @@ pub fn run() {
     #[cfg(any(target_os = "ios", target_os = "android"))]
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
 
-    #[cfg(any(target_os = "ios", target_os = "android"))]
-    let builder = builder.plugin(tauri_plugin_app_events::init());
-
     if let Err(error) = builder
+        .invoke_handler(tauri::generate_handler![
+            mtp_backend::mtp_request,
+            mtp_backend::mtp_status,
+            mtp_backend::mtp_store_credentials,
+            mtp_backend::mtp_has_credentials,
+            mtp_backend::mtp_load_keyring,
+            mtp_backend::mtp_set_enabled,
+            mtp_backend::mtp_set_ui_visible,
+            mtp_backend::mtp_is_ignoring_battery_optimizations,
+            mtp_backend::mtp_request_battery_exemption,
+        ])
         .setup(|_app| {
+            mtp_backend::manager().attach_app(_app.handle().clone());
             #[cfg(any(target_os = "linux", windows))]
             {
                 use tauri_plugin_deep_link::DeepLinkExt;

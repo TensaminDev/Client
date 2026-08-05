@@ -32,7 +32,7 @@ export default function LegalPage({
   });
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-17rem)] w-full max-w-5xl flex-col gap-10 p-10 py-20 md:min-h-[calc(100dvh-20.5rem)] md:p-24">
+    <div className="mx-auto flex min-h-[calc(100dvh-17rem)] w-full max-w-5xl flex-col gap-10 p-2 py-20 md:min-h-[calc(100dvh-20.5rem)] md:p-24">
       <div className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-start gap-2">
           <BigCheckbox

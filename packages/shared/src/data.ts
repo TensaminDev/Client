@@ -454,6 +454,7 @@ export interface Storage extends SettingsStorageDefaults {
   mtp_keyring: string;
   onboarding_done: boolean;
   onboarding_started: boolean;
+  tauri_permissions_done: boolean;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -496,6 +497,7 @@ export const storageDefaults: Storage = {
   mtp_keyring: "",
   onboarding_done: false,
   onboarding_started: false,
+  tauri_permissions_done: false,
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,

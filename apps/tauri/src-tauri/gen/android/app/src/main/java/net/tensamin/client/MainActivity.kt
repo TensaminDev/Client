@@ -56,7 +56,7 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onWebViewCreate(webView: WebView) {
-    webView.setInitialScale(300)
+    webView.setInitialScale(290)
     mediaWebView = webView
     MobileMediaEvents.attach(webView)
     webView.addJavascriptInterface(MobileMediaJavascriptInterface(), "tensaminMobileMedia")
@@ -66,7 +66,21 @@ class MainActivity : TauriActivity() {
     WindowCompat.setDecorFitsSystemWindows(window, true)
     window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
     super.onCreate(savedInstanceState)
+    NativeMtpBridge.nativeAttach(applicationContext)
+    if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
+      NativeMtpBridge.startService(this)
+    }
     installKeyboardResizeWorkaround()
+  }
+
+  override fun onResume() {
+    super.onResume()
+    NativeMtpBridge.nativeSetUiState(true)
+  }
+
+  override fun onPause() {
+    NativeMtpBridge.nativeSetUiState(false)
+    super.onPause()
   }
 
   override fun onDestroy() {

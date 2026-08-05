@@ -19,6 +19,7 @@ import {
 } from "@tensamin/shared/indexedDb";
 import { ErrorScreen } from "@methanium/ui";
 import { log } from "@tensamin/shared/log";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
   decodeSecureValue,
   encodeSecureValue,
@@ -94,6 +95,14 @@ export default function StorageProvider(props: { children: ReactNode }) {
       const generation = generations.current.get(key) ?? 0;
       const request = (async () => {
         try {
+          if (key === "mtp_keyring" && isTauri()) {
+            const nativeValue = await invoke<string | null>("mtp_load_keyring");
+            const value = (nativeValue ?? defaults[key]) as StorageSchema[K];
+            if ((generations.current.get(key) ?? 0) === generation) {
+              commit(key, value);
+            }
+            return value;
+          }
           const desktopStorage = window.tensaminDesktop?.secureStorage;
           const desktopStatus = desktopStorage?.getStatus
             ? await desktopStorage.getStatus()
@@ -143,6 +152,10 @@ export default function StorageProvider(props: { children: ReactNode }) {
       options: SaveOptions = {},
     ): Promise<void> => {
       generations.current.set(key, (generations.current.get(key) ?? 0) + 1);
+      if (key === "mtp_keyring" && isTauri()) {
+        commit(key, value);
+        return;
+      }
       const desktopStorage = window.tensaminDesktop?.secureStorage;
       if (JSON.stringify(value) === JSON.stringify(defaults[key])) {
         if (desktopStorage?.delete)

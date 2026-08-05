@@ -9,7 +9,6 @@
   ],
   "permissions": [
     "deep-link:default",
-    "app-events:default",
     "barcode-scanner:default",
     "barcode-scanner:allow-scan",
     "barcode-scanner:allow-cancel",

@@ -102,6 +102,7 @@ export default function Provider(props: { children: React.ReactNode }) {
             const user = await get(data.SenderId);
 
             if (isTauri()) {
+              if (!appFocused) return;
               const permissionGranted =
                 (await isTauriNotificationPermissionGranted()) ||
                 (await requestTauriNotificationPermission()) === "granted";
