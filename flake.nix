@@ -17,7 +17,7 @@
       systems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
       version = "0.0.10";
-      x86_64DebHash = "sha256-3CbaZnUT+hS6ClG5US6ZS7iy6kA82YlX/sJI3qFA81U=";
+      x86_64DebHash = "sha256-R7ufXBPL2+jsgtbcIjPg55RU6m39odaC5IeLI1nYU48=";
       forgejoBaseUrl = "https://git.methanium.net/tensamin/client/releases/download/${version}";
     in
     {
