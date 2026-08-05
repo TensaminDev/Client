@@ -15,7 +15,7 @@ name = "mobile_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { git = "https://github.com/tauri-apps/tauri", rev = "20f3f2515c65ca1e115991c3ef3625e2c29c1bbb", features = [] }
+tauri-build = { git = "https://github.com/tauri-apps/tauri", rev = "4af26a3f7f8b692d62cca549bbacd93f5ce90b41", features = [] }
 
 [dependencies]
 tauri-plugin-opener = "2"
@@ -43,4 +43,4 @@ tauri-plugin-barcode-scanner = "2"
 
 [patch.crates-io.tauri]
 git = "https://github.com/tauri-apps/tauri"
-rev = "20f3f2515c65ca1e115991c3ef3625e2c29c1bbb"
+rev = "4af26a3f7f8b692d62cca549bbacd93f5ce90b41"

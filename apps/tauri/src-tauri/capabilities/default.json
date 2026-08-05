@@ -6,10 +6,7 @@
     "main"
   ],
   "permissions": [
-    "core:default",
     "opener:default",
-    "core:window:default",
-    "core:event:default",
     "deep-link:default",
     "notification:default",
     "log:default"
