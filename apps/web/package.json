@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
-    "@base-ui/utils": "0.3.1",
+    "@base-ui/utils": "0.3.2",
     "@babel/runtime": "^7.29.2",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/public-sans": "^5.2.7",
