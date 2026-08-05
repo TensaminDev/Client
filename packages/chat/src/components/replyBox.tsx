@@ -28,6 +28,7 @@ function ReplyUser({ user }: { user: User }) {
 }
 
 export default function ReplyBox({
+  edited,
   content,
   loading = false,
   onDismiss,
@@ -35,6 +36,7 @@ export default function ReplyBox({
   userId,
   variant,
 }: {
+  edited?: boolean;
   content?: string;
   loading?: boolean;
   onDismiss?: () => void;
@@ -74,8 +76,13 @@ export default function ReplyBox({
               />
             ) : null}
             {content !== undefined && (
-              <div className="h-5.5 min-w-0 flex-1 truncate">
+              <div className="h-5.5 min-w-0 flex-1 truncate flex gap-1">
                 <Text fontSize="0.88rem" value={content} />
+                {edited && (
+                  <p className="text-xs text-muted-foreground self-center">
+                    (edited)
+                  </p>
+                )}
               </div>
             )}
           </>

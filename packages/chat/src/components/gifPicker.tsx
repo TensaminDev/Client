@@ -34,33 +34,23 @@ function getColumnCount(width: number, itemCount: number) {
 
 type KlipyKind = "gif" | "meme";
 
-type KlipyMediaFile = {
-  url?: string;
-  width?: number;
-  height?: number;
-};
-
-type KlipyMediaFormats = Record<string, KlipyMediaFile | undefined>;
-
 type KlipyItem = {
   id: number | string;
   title?: string;
-  file?: Record<string, KlipyMediaFormats | undefined>;
+  file?: Record<
+    string,
+    | Record<
+        string,
+        | {
+            url?: string;
+            width?: number;
+            height?: number;
+          }
+        | undefined
+      >
+    | undefined
+  >;
   blur_preview?: string;
-};
-
-type KlipyPage = {
-  items: KlipyItem[];
-  currentPage: number;
-  hasNext: boolean;
-};
-
-type KlipyResponse = {
-  data?: {
-    data?: KlipyItem[];
-    current_page?: number;
-    has_next?: boolean;
-  };
 };
 
 type PickerMedia = {
@@ -105,7 +95,11 @@ async function fetchKlipyPage({
   kind: KlipyKind;
   page: number;
   search: string;
-}): Promise<KlipyPage> {
+}): Promise<{
+  items: KlipyItem[];
+  currentPage: number;
+  hasNext: boolean;
+}> {
   const params = new URLSearchParams({
     page: String(page),
     per_page: String(pageSize),
@@ -128,7 +122,13 @@ async function fetchKlipyPage({
     throw new Error(`Klipy request failed with status ${response.status}`);
   }
 
-  const body = (await response.json()) as KlipyResponse;
+  const body = (await response.json()) as {
+    data?: {
+      data?: KlipyItem[];
+      current_page?: number;
+      has_next?: boolean;
+    };
+  };
   const data = body.data;
 
   return {

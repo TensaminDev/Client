@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import {
   ipcChannels,
   type DesktopCallStatus,
+  type DesktopGlobalHotkeyBinding,
   type DesktopScreenShareSource,
   secureStorageLimits,
 } from "../shared/ipc.js";
@@ -53,6 +54,23 @@ const desktopApi = {
       }
 
       return ipcRenderer.invoke(ipcChannels.setCallStatus, status);
+    },
+  },
+  hotkeys: {
+    setBindings: (bindings: DesktopGlobalHotkeyBinding[]) =>
+      ipcRenderer.invoke(ipcChannels.setGlobalHotkeyBindings, bindings),
+    setSuspended: (suspended: boolean) =>
+      typeof suspended === "boolean"
+        ? ipcRenderer.invoke(ipcChannels.setGlobalHotkeysSuspended, suspended)
+        : Promise.reject(new Error("Invalid hotkey suspension state.")),
+    onTriggered: (callback: (id: string) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, id: unknown) => {
+        if (typeof id === "string") callback(id);
+      };
+      ipcRenderer.on(ipcChannels.globalHotkeyTriggered, listener);
+      return () => {
+        ipcRenderer.removeListener(ipcChannels.globalHotkeyTriggered, listener);
+      };
     },
   },
   secureStorage: {

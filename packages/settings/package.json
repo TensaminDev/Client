@@ -14,6 +14,7 @@
   "dependencies": {
     "@tanstack/react-router": "^1.169.1",
     "@tensamin/cache": "workspace:*",
+    "@tensamin/hotkeys": "workspace:*",
     "@tensamin/markdown": "workspace:*",
     "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",

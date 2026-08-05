@@ -22,7 +22,11 @@ export type DesktopScreenShareCapabilities = {
   hasReliableSystemAudio: boolean;
 };
 
-type ElectronDesktopApi = {
+
+
+declare global {
+  interface Window {
+    tensaminDesktop?: {
   media?: {
     getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
     listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
@@ -38,6 +42,13 @@ type ElectronDesktopApi = {
       iconDataUrl?: string;
     }) => Promise<void>;
   };
+  hotkeys?: {
+    setBindings?: (
+      bindings: Array<{ id: string; accelerator: string }>,
+    ) => Promise<Record<string, boolean>>;
+    setSuspended?: (suspended: boolean) => Promise<Record<string, boolean>>;
+    onTriggered?: (callback: (id: string) => void) => () => void;
+  };
   secureStorage?: {
     getStatus?: () => Promise<{ available: boolean; backend: string | null }>;
     load?: (key: string) => Promise<string | null>;
@@ -46,10 +57,6 @@ type ElectronDesktopApi = {
     clear?: () => Promise<void>;
   };
 };
-
-declare global {
-  interface Window {
-    tensaminDesktop?: ElectronDesktopApi;
   }
 }
 

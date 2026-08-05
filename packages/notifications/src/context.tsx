@@ -5,7 +5,7 @@ import { useMTP } from "@tensamin/mtp";
 import { createContext, useEffect, useContext } from "react";
 import { toast as sonnerToast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@methanium/ui";
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
   isPermissionGranted as isTauriNotificationPermissionGranted,
   requestPermission as requestTauriNotificationPermission,
@@ -102,12 +102,36 @@ export default function Provider(props: { children: React.ReactNode }) {
             const user = await get(data.SenderId);
 
             if (isTauri()) {
+              if (!appFocused) return;
               const permissionGranted =
                 (await isTauriNotificationPermissionGranted()) ||
                 (await requestTauriNotificationPermission()) === "granted";
 
               if (permissionGranted) {
-                sendTauriNotification({ title: user.Display, body: content });
+                let handledNatively = false;
+                try {
+                  handledNatively = await invoke<boolean>(
+                    "mtp_post_message_notification",
+                    {
+                      senderId: user.UserId,
+                      sender: user.Display,
+                      body: content,
+                      avatar: user.Avatar,
+                    },
+                  );
+                } catch (error) {
+                  log(
+                    1,
+                    "notifications",
+                    "red",
+                    "Failed to create native message notification",
+                    error,
+                  );
+                }
+
+                if (!handledNatively) {
+                  sendTauriNotification({ title: user.Display, body: content });
+                }
               }
             } else {
               const hasPermissions = await requestNotificationPermission();

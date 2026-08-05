@@ -1,4 +1,4 @@
-import Input from "@tensamin/markdown/input";
+import Input, { type InputController } from "@tensamin/markdown/input";
 import {
   Card,
   CardHeader,
@@ -7,10 +7,10 @@ import {
   PopoverTrigger,
 } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Button } from "@methanium/ui";
 
-import { Plus, Laugh, FileVideo } from "lucide-react";
+import { Plus, Laugh, FileVideo, SendHorizonal } from "lucide-react";
 import { useChat, useReplyMessage } from "../context";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
@@ -22,13 +22,17 @@ import GifPicker from "./gifPicker";
 import EmojiPicker from "./emojiPicker";
 import { useEmojiRanks, useRecordEmojiUse } from "./emojiRanks";
 import ReplyBox from "./replyBox";
+import { useHotkey } from "@tensamin/hotkeys";
+import { editLastMessageHotkey } from "../hotkeys";
 
 export default function InputComponent({
   value,
   setValue,
+  onEditLastMessage,
 }: {
   value: string;
   setValue: (value: string) => void;
+  onEditLastMessage: () => void;
 }) {
   const [invertEnterBehavior, setInvertEnterBehavior] = useState(false);
 
@@ -52,6 +56,65 @@ export default function InputComponent({
     width: number;
     height: number;
   }>();
+  const composerRef = useRef<InputController | null>(null);
+  const setComposer = useCallback((controller: InputController | null) => {
+    composerRef.current = controller;
+  }, []);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => composerRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [userId]);
+
+  useEffect(() => {
+    if (replyTo === undefined) return;
+
+    const frame = requestAnimationFrame(() => composerRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [replyTo]);
+
+  useEffect(() => {
+    const focusComposerOnType = (event: KeyboardEvent) => {
+      const composer = composerRef.current;
+      const target = event.target;
+      if (
+        !composer ||
+        composer.hasFocus() ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.key.length !== 1
+      ) {
+        return;
+      }
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest(
+            'button, a[href], input, textarea, select, summary, [contenteditable], [role], [tabindex]:not([tabindex="-1"])',
+          ))
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      composer.focus();
+      composer.insertText(event.key);
+    };
+
+    window.addEventListener("keydown", focusComposerOnType, true);
+    return () =>
+      window.removeEventListener("keydown", focusComposerOnType, true);
+  }, []);
+
+  useHotkey(editLastMessageHotkey, onEditLastMessage, {
+    enabled: value.length === 0,
+    ignoreInputs: false,
+    target: inputBoxRef,
+  });
 
   useEffect(() => {
     void load("settings.reverse_enter_behavior").then((shouldInvert) => {
@@ -195,6 +258,7 @@ export default function InputComponent({
       {/* reply */}
       {replyTo !== undefined && (
         <ReplyBox
+          edited={replyMessage?.Edited}
           content={replyMessage?.Content}
           loading={!replyMessage}
           onDismiss={() => setReplyTo(undefined)}
@@ -210,18 +274,27 @@ export default function InputComponent({
         )}
       >
         <CardHeader className="relative p-0 flex flex-col">
-          <Input
-            className="w-full"
-            paddingY="13px"
-            paddingX="13px"
-            placeholder="Send a message..."
-            value={value}
-            setValue={setValue}
-            onSubmit={handleSubmit}
-            invertEnterBehavior={invertEnterBehavior}
-            emojiFrequencies={emojiFrequencies}
-            onEmojiSelect={recordUse}
-          />
+          <div className="w-full flex items-center">
+            <Input
+              className="w-full"
+              onControllerChange={setComposer}
+              paddingY="13px"
+              paddingX="13px"
+              placeholder="Send a message..."
+              value={value}
+              setValue={setValue}
+              onSubmit={handleSubmit}
+              invertEnterBehavior={invertEnterBehavior}
+              emojiFrequencies={emojiFrequencies}
+              onEmojiSelect={recordUse}
+            />
+            <Button
+              onClick={() => handleSubmit(value)}
+              className={cn("w-9! h-9!", isMobile ? "" : "hidden")}
+            >
+              <SendHorizonal />
+            </Button>
+          </div>
           <div className="w-full flex justify-between gap-1 p-1 pt-0">
             <div className="flex gap-1">
               <Button className="w-9 h-9! p-0" variant="ghost">

@@ -5,7 +5,7 @@ import type { z } from "zod";
 
 import { useOnboardingStep } from "@methanium/ui";
 
-type LegalDocs = z.infer<typeof legalDocsSchema>;
+
 
 export default function LegalPage({
   docs,
@@ -13,7 +13,7 @@ export default function LegalPage({
   initiallyAcceptedTOS,
   onAccept,
 }: {
-  docs: LegalDocs;
+  docs: z.infer<typeof legalDocsSchema>;
   initiallyAcceptedPP: boolean;
   initiallyAcceptedTOS: boolean;
   onAccept: () => Promise<void>;
@@ -32,7 +32,7 @@ export default function LegalPage({
   });
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-17rem)] w-full max-w-5xl flex-col gap-10 p-10 py-20 md:min-h-[calc(100dvh-20.5rem)] md:p-24">
+    <div className="mx-auto flex min-h-[calc(100dvh-17rem)] w-full max-w-5xl flex-col gap-10 p-2 py-20 md:min-h-[calc(100dvh-20.5rem)] md:p-24">
       <div className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-start gap-2">
           <BigCheckbox

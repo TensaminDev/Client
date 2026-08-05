@@ -1,5 +1,4 @@
 - Add a bunch of tests
-- Add packages/hotkeys/
 - Full accessability
 - Add settings saving & update onboarding to use it
 - Add onboarding page to load one profile during onboarding

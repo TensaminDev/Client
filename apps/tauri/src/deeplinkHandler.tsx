@@ -9,11 +9,11 @@ import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { isTauri } from "@tauri-apps/api/core";
 import { useIsMobile } from "@methanium/ui";
 
-type DeeplinkContextValue = {
-  deeplinks: readonly string[];
-};
 
-export const deeplinkContext = createContext<DeeplinkContextValue | undefined>(
+
+export const deeplinkContext = createContext<{
+  deeplinks: readonly string[];
+} | undefined>(
   undefined,
 );
 

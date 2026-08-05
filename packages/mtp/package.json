@@ -21,7 +21,6 @@
     "mtp": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tauri-plugin-app-events-api": "^0.2.0",
     "zod": "^4.4.2"
   },
   "devDependencies": {

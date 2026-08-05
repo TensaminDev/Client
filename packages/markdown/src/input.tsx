@@ -52,6 +52,12 @@ import Emoji, {
 
 export const MAX_RENDERED_EMOJI_OPTIONS = 100;
 
+export type InputController = {
+  focus: () => void;
+  hasFocus: () => boolean;
+  insertText: (text: string) => void;
+};
+
 export type InputProps = {
   ref?: HTMLDivElement;
   placeholder?: string;
@@ -66,10 +72,8 @@ export type InputProps = {
   className?: string;
   emojiFrequencies?: Readonly<Record<string, number>>;
   onEmojiSelect?: (shortcode: string) => void;
-};
-
-type InputStyle = CSSProperties & {
-  "--tm-md-content-padding"?: string;
+  autoFocus?: boolean;
+  onControllerChange?: (controller: InputController | null) => void;
 };
 
 function toCssLength(value: CSSProperties["padding"]): string | undefined {
@@ -90,11 +94,6 @@ function toCssPadding(
 
   return `${toCssLength(vertical) ?? defaultVertical} ${toCssLength(horizontal) ?? defaultHorizontal}`;
 }
-
-type TokenRange = {
-  from: number;
-  to: number;
-};
 
 const hiddenTokenDecoration = Decoration.mark({ class: "tm-md-hidden-token" });
 const strongDecoration = Decoration.mark({ class: "tm-md-strong" });
@@ -316,6 +315,7 @@ export default function Input(props: InputProps) {
 
   const elementRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | undefined>(undefined);
+  const setValueRef = useRef(props.setValue);
   const onSubmitRef = useRef<InputProps["onSubmit"]>(props.onSubmit);
   const onEmojiSelectRef = useRef<InputProps["onEmojiSelect"]>(
     props.onEmojiSelect,
@@ -326,10 +326,16 @@ export default function Input(props: InputProps) {
   const completionCompartment = completionCompartmentRef.current;
 
   useEffect(() => {
+    setValueRef.current = props.setValue;
     onSubmitRef.current = props.onSubmit;
     onEmojiSelectRef.current = props.onEmojiSelect;
     invertEnterBehaviorRef.current = Boolean(props.invertEnterBehavior);
-  }, [props.onEmojiSelect, props.onSubmit, props.invertEnterBehavior]);
+  }, [
+    props.onEmojiSelect,
+    props.onSubmit,
+    props.invertEnterBehavior,
+    props.setValue,
+  ]);
 
   useEffect(() => {
     if (!elementRef.current) return;
@@ -338,7 +344,7 @@ export default function Input(props: InputProps) {
       doc: props.value,
       extensions: createEditorExtensions(
         (value) => {
-          props.setValue(value);
+          setValueRef.current(value);
         },
         () => props.placeholder,
         () => invertEnterBehaviorRef.current,
@@ -353,8 +359,23 @@ export default function Input(props: InputProps) {
       state,
       parent: elementRef.current,
     });
+    props.onControllerChange?.({
+      focus: () => viewRef.current?.contentDOM.focus({ preventScroll: true }),
+      hasFocus: () => viewRef.current?.hasFocus ?? false,
+      insertText: (text) => {
+        const editor = viewRef.current;
+        if (!editor) return;
+        editor.dispatch({
+          ...editor.state.replaceSelection(text),
+          annotations: Transaction.userEvent.of("input.type"),
+          scrollIntoView: true,
+        });
+      },
+    });
+    if (props.autoFocus) viewRef.current.focus();
 
     return () => {
+      props.onControllerChange?.(null);
       viewRef.current?.destroy();
       viewRef.current = undefined;
     };
@@ -413,7 +434,9 @@ export default function Input(props: InputProps) {
             props.paddingX,
             Boolean(props.styled),
           ),
-        } as InputStyle
+        } as CSSProperties & {
+          "--tm-md-content-padding"?: string;
+        }
       }
     />
   );
@@ -804,7 +827,10 @@ function buildDecorations(view: EditorView): DecorationSet {
 function addHiddenToken(
   builder: Range<Decoration>[],
   selections: ReadonlyArray<{ from: number; to: number }>,
-  token: TokenRange,
+  token: {
+    from: number;
+    to: number;
+  },
 ): void {
   if (token.from >= token.to) return;
 

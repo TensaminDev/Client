@@ -1,6 +1,6 @@
 {
   "name": "tensamin",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "private": true,
   "packageManager": "pnpm@11.8.0",
   "workspaces": [
@@ -21,12 +21,12 @@
     "dev": "cd apps/web && pnpm dev",
     "build:web": "cd apps/web && pnpm run build",
     "preview:web": "cd apps/web && pnpm run preview",
-    "dev:mobile": "cd apps/tauri && pnpm dev:mobile",
+    "dev:mobile": "pnpm run delete:mobile || true && cd apps/tauri && pnpm dev:mobile && pnpm run delete:mobile",
     "build:mobile": "cd apps/tauri && pnpm run build:mobile",
     "start-adb:mobile": "cd apps/tauri && pnpm run start-adb:mobile",
     "dev:desktop": "cd apps/electron && pnpm run dev",
     "build:desktop": "cd apps/electron && pnpm run package",
-    "delete:mobile": "cd apps/tauri && nix develop ../..#tauri --command adb uninstall net.tensamin.client.dev"
+    "delete:mobile": "nix develop .#tauri --command node apps/tauri/scripts/delete-mobile.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

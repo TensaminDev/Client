@@ -143,25 +143,7 @@ export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
 export type Communities = z.infer<typeof authPayload.shape.Communities>;
 export type Calls = z.infer<typeof authPayload.shape.Calls>;
 
-type Base16Palette = Record<
-  | "base00"
-  | "base01"
-  | "base02"
-  | "base03"
-  | "base04"
-  | "base05"
-  | "base06"
-  | "base07"
-  | "base08"
-  | "base09"
-  | "base0A"
-  | "base0B"
-  | "base0C"
-  | "base0D"
-  | "base0E"
-  | "base0F",
-  string
->;
+
 
 // MTP
 const user = z.object({
@@ -454,6 +436,7 @@ export interface Storage extends SettingsStorageDefaults {
   mtp_keyring: string;
   onboarding_done: boolean;
   onboarding_started: boolean;
+  tauri_permissions_done: boolean;
   ppandtos_done: boolean;
   accepted_terms_of_service: boolean;
   accepted_privacy_policy: boolean;
@@ -471,7 +454,25 @@ export interface Storage extends SettingsStorageDefaults {
   call_mute_range_start: number;
   call_mute_range_end: number;
   theme_color: string;
-  theme_palette: Base16Palette | null;
+  theme_palette: Record<
+  | "base00"
+  | "base01"
+  | "base02"
+  | "base03"
+  | "base04"
+  | "base05"
+  | "base06"
+  | "base07"
+  | "base08"
+  | "base09"
+  | "base0A"
+  | "base0B"
+  | "base0C"
+  | "base0D"
+  | "base0E"
+  | "base0F",
+  string
+> | null;
   theme_primary_color: string;
   theme_polarity: "dark" | "light" | "system";
   theme_tint: "soft" | "hard" | "extreme";
@@ -487,6 +488,7 @@ export interface Storage extends SettingsStorageDefaults {
     height: number;
   } | null;
   reactions: Record<string, number>;
+  hotkey_overrides: Record<string, string | null>;
 }
 
 export const storageDefaults: Storage = {
@@ -495,6 +497,7 @@ export const storageDefaults: Storage = {
   mtp_keyring: "",
   onboarding_done: false,
   onboarding_started: false,
+  tauri_permissions_done: false,
   ppandtos_done: false,
   accepted_terms_of_service: false,
   accepted_privacy_policy: false,
@@ -577,6 +580,7 @@ export const storageDefaults: Storage = {
     ":fire:": 2,
     ":white_check_mark:": 1,
   },
+  hotkey_overrides: {},
 };
 
 // User Status

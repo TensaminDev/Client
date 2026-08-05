@@ -376,6 +376,8 @@
                   printf '\nandroid.aapt2FromMavenOverride=%s\n' "$aapt2Path" >> "$gradleProperties"
                 fi
               fi
+
+              adb devices
             '';
           };
         }

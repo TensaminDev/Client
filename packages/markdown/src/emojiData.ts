@@ -1,7 +1,5 @@
 import shortcodeData from "emojibase-data/en/shortcodes/joypixels.json";
 
-type ShortcodeValue = string | string[];
-
 export type EmojiDefinition = {
   aliases: readonly string[];
   hexcode: string;
@@ -17,7 +15,7 @@ function normalizeName(value: string) {
 }
 
 export const emojis: readonly EmojiDefinition[] = Object.entries(
-  shortcodeData as Record<string, ShortcodeValue>,
+  shortcodeData as Record<string, string | string[]>,
 ).map(([hexcode, value]) => {
   const aliases = Array.isArray(value) ? value : [value];
   const name = aliases[0];

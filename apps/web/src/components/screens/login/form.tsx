@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 import { z } from "zod";
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import QrCodeScanner from "@tensamin/tauri/qrCodeScanner";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -64,7 +64,8 @@ function parseTuFileContent(rawFileContent: string): {
     throw new Error("Invalid file");
   }
 
-  const [userIdString, privateKey] = rawFileContent.split("::");
+  const [userIdString, privateKeyValue] = rawFileContent.split("::");
+  const privateKey = privateKeyValue.trim();
   const userId = isNaN(Number(userIdString))
     ? Number(userIdString.split("@")[0])
     : Number(userIdString);
@@ -87,7 +88,7 @@ export default function Form() {
   const isMobile = useIsMobile();
   const uploadRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const { save } = useStorage();
+  const { load, save } = useStorage();
   const navigate = useNavigate();
   const loginPendingRef = useRef(false);
 
@@ -97,6 +98,23 @@ export default function Form() {
       loginPendingRef.current = true;
       try {
         if (domain) await save("omega_url", `https://${domain}/`);
+        if (isTauri()) {
+          const [omegaUrl, forcedOmikronUrl, forcedOmikronPublicKey] =
+            await Promise.all([
+              domain ? `https://${domain}/` : load("omega_url"),
+              load("forced_omikron_url"),
+              load("forced_omikron_public_key"),
+            ]);
+          await invoke("mtp_store_credentials", {
+            config: {
+              userId,
+              keyring: privateKey,
+              omegaUrl,
+              forcedOmikronUrl,
+              forcedOmikronPublicKey,
+            },
+          });
+        }
         await save("mtp_keyring", privateKey, { secure: true });
         await save("session_id", Date.now());
         await save("user_id", userId);
@@ -106,7 +124,7 @@ export default function Form() {
         loginPendingRef.current = false;
       }
     },
-    [navigate, save],
+    [load, navigate, save],
   );
 
   // Process dropped files

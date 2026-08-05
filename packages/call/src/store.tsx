@@ -51,7 +51,6 @@ setLogExtension(
   getLogger("tensamin"),
 );
 
-type CallState = "closed" | "closing" | "connecting" | "open" | "encrypting";
 type CallView = "preview" | "focused" | "grid";
 type ProtocolCallSecret = NonNullable<
   z.infer<typeof mtp.CallInvite.response>["CallSecret"]
@@ -63,18 +62,9 @@ type WrappedCallSecret = {
   kemCiphertext: Uint8Array;
   wrappingScheme: string;
 };
-type IncomingCallInvite = {
-  callId: string;
-  callSecret: WrappedCallSecret;
-  senderId: number;
-};
 type CurrentCallData =
   (z.infer<typeof mtp.CallData.response> & { exists: boolean }) | null;
 
-type NavigateFn = (options: {
-  to: string;
-  search?: Record<string, unknown>;
-}) => Promise<void>;
 type SendFn = (
   type: string,
   data: Record<string, unknown>,
@@ -84,42 +74,13 @@ type GetUserFn = (userId: number) => Promise<{ PublicKey: string }>;
 type RemoteVideoTrackSelector = Track.Kind | Track.Source;
 
 type Runtime = {
-  navigate: NavigateFn;
+  navigate: (options: {
+    to: string;
+    search?: Record<string, unknown>;
+  }) => Promise<void>;
   send: SendFn;
   load: LoadFn;
   getUser: GetUserFn;
-};
-
-type CallStore = {
-  state: CallState;
-  view: CallView;
-  invitedUserId: number | null;
-  callId: string | null;
-  incomingCallInvite: IncomingCallInvite | null;
-  callSecret: string | null;
-  livekitToken: string | null;
-  currentCallData: CurrentCallData;
-  deaf: boolean;
-  micEnabled: boolean;
-  cameraEnabled: boolean;
-  screenShareEnabled: boolean;
-  screenShareSession: LocalMediaShareSession | null;
-  cameraSession: LocalMediaShareSession | null;
-  disabledCameraParticipantIds: number[];
-  focusedParticipantId: number | null;
-  focusedParticipantType: "user" | "stream" | null;
-  usersInFocusedViewHidden: boolean;
-  watchedStreamParticipantIds: number[];
-  pendingWatchedParticipantIds: number[];
-  activeScreenShareParticipantIds: number[];
-  isEncrypted: boolean;
-  ownCallSecretInvitePending: boolean;
-  callIsFullscreen: boolean;
-  callIsPopout: boolean;
-  layoutVersion: number;
-  screenRef: React.RefObject<HTMLDivElement | null> | null;
-  runtime: Runtime | null;
-  lastFocusedParticipantId: number | null;
 };
 
 let _keyProvider: ExternalE2EEKeyProvider | null = null;
@@ -1195,7 +1156,41 @@ async function ensureNoiseFilter(
   }
 }
 
-export const useCall = create<CallStore>(() => ({
+export const useCall = create<{
+  state: "closed" | "closing" | "connecting" | "open" | "encrypting";
+  view: CallView;
+  invitedUserId: number | null;
+  callId: string | null;
+  incomingCallInvite: {
+    callId: string;
+    callSecret: WrappedCallSecret;
+    senderId: number;
+  } | null;
+  callSecret: string | null;
+  livekitToken: string | null;
+  currentCallData: CurrentCallData;
+  deaf: boolean;
+  micEnabled: boolean;
+  cameraEnabled: boolean;
+  screenShareEnabled: boolean;
+  screenShareSession: LocalMediaShareSession | null;
+  cameraSession: LocalMediaShareSession | null;
+  disabledCameraParticipantIds: number[];
+  focusedParticipantId: number | null;
+  focusedParticipantType: "user" | "stream" | null;
+  usersInFocusedViewHidden: boolean;
+  watchedStreamParticipantIds: number[];
+  pendingWatchedParticipantIds: number[];
+  activeScreenShareParticipantIds: number[];
+  isEncrypted: boolean;
+  ownCallSecretInvitePending: boolean;
+  callIsFullscreen: boolean;
+  callIsPopout: boolean;
+  layoutVersion: number;
+  screenRef: React.RefObject<HTMLDivElement | null> | null;
+  runtime: Runtime | null;
+  lastFocusedParticipantId: number | null;
+}>(() => ({
   state: "closed",
   view: "preview",
   invitedUserId: null,

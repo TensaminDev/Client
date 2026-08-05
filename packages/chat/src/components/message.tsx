@@ -1,7 +1,7 @@
 import type { RawMessage } from "../values";
 import Text from "@tensamin/markdown/text";
 import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@tensamin/user/context";
 
 import {
@@ -24,17 +24,23 @@ import Emoji, { normalizeShortcode } from "@tensamin/markdown/emoji";
 import { useRecordEmojiUse } from "./emojiRanks";
 import { useUser } from "@tensamin/user/context";
 import ReplyBox from "./replyBox";
+import { useHotkey } from "@tensamin/hotkeys";
+import { cancelMessageEditHotkey } from "../hotkeys";
 
 function MessageComponent({
+  editing,
   grouped,
   message,
+  onSetEditing,
   user,
 }: {
+  editing: boolean;
   grouped: boolean;
   message: RawMessage & {
     failed?: boolean;
     decryptionFailed?: boolean;
   };
+  onSetEditing: (editing: boolean) => void;
   user: User | null;
 }) {
   const actuallyFailed =
@@ -48,6 +54,7 @@ function MessageComponent({
     : message.MessageState === "awaiting"
       ? "opacity-50"
       : "opacity-100";
+  const messageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setHasFadedIn(true);
@@ -141,7 +148,6 @@ function MessageComponent({
     chatSecret,
     editMessage,
     userId,
-    deleteMessage,
     removeReaction,
     replyTo,
   } = useChat();
@@ -183,8 +189,27 @@ function MessageComponent({
     };
   }, [chatSecret, getUser, message.ReplyId, ownId, send, userId]);
   const recordUse = useRecordEmojiUse();
-  const [editing, setEditing] = useState(false);
+  const editingRef = useRef(editing);
+  const onSetEditingRef = useRef(onSetEditing);
+  useEffect(() => {
+    editingRef.current = editing;
+    onSetEditingRef.current = onSetEditing;
+  }, [editing, onSetEditing]);
+  useEffect(
+    () => () => {
+      if (editingRef.current) onSetEditingRef.current(false);
+    },
+    [],
+  );
   const [editDraft, setEditDraft] = useState(message.Content);
+  const cancelEditing = useCallback(() => {
+    setEditDraft(message.Content);
+    onSetEditing(false);
+  }, [message.Content, onSetEditing]);
+  useHotkey(cancelMessageEditHotkey, cancelEditing, {
+    enabled: editing,
+    target: messageRef,
+  });
   useEffect(() => {
     if (!editing) {
       setEditDraft(message.Content);
@@ -271,12 +296,14 @@ function MessageComponent({
 
   return (
     <div
+      ref={messageRef}
       // pt-3 is to get a gap between messages
       className={`${grouped ? "" : "pt-3"} w-full flex flex-col gap-1 justify-start items-start transition-opacity duration-150 ${opacityClass}`}
     >
       {/* reply */}
       {replyMessage && replyUser && (
         <ReplyBox
+          edited={replyMessage.Edited}
           content={replyMessage.Content}
           user={replyUser}
           variant="message"
@@ -289,7 +316,7 @@ function MessageComponent({
           isOwnMessage={message.SenderId === ownId}
           messageId={message.SendTime}
           onReact={toggleReaction}
-          onSetEditing={setEditing}
+          onSetEditing={onSetEditing}
         >
           <>
             <div
@@ -305,7 +332,7 @@ function MessageComponent({
             >
               <>
                 {grouped ? (
-                  <p className="w-9 text-xs group-hover:visible invisible text-muted-foreground">
+                  <p className="w-9 self-start pt-[5px] text-xs group-hover:visible invisible text-muted-foreground">
                     {new Date(message.SendTime).toLocaleString([], {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -362,13 +389,17 @@ function MessageComponent({
                   {editing ? (
                     <div className="flex w-full flex-col gap-1">
                       <Input
+                        autoFocus
                         className="w-full"
                         styled
                         setValue={setEditDraft}
                         value={editDraft}
                         onSubmit={() => {
-                          submitEditMessage(editDraft);
-                          setEditing(false);
+                          if (!editDraft.trim()) return;
+                          if (editDraft !== message.Content) {
+                            void submitEditMessage(editDraft);
+                          }
+                          onSetEditing(false);
                         }}
                       />
                       <div className="flex gap-1">
@@ -377,13 +408,12 @@ function MessageComponent({
                           variant="link"
                           className="text-primary-foreground-alt"
                           onClick={() => {
-                            if (editDraft === message.Content) {
-                              deleteMessage(message.SendTime);
-                            } else {
-                              submitEditMessage(editDraft);
+                            if (!editDraft.trim()) return;
+                            if (editDraft !== message.Content) {
+                              void submitEditMessage(editDraft);
                             }
                             setEditDraft(message.Content);
-                            setEditing(false);
+                            onSetEditing(false);
                           }}
                         >
                           Save
@@ -392,19 +422,25 @@ function MessageComponent({
                           size="xs"
                           variant="link"
                           className="text-muted-foreground"
-                          onClick={() => {
-                            setEditDraft(message.Content);
-                            setEditing(false);
-                          }}
+                          onClick={cancelEditing}
                         >
                           Cancel
                         </Button>
                       </div>
                     </div>
-                  ) : isValidURL ? (
-                    <Media link={message.Content} />
                   ) : (
-                    <Text value={message.Content} />
+                    <div className="flex gap-1">
+                      {isValidURL ? (
+                        <Media link={message.Content} />
+                      ) : (
+                        <Text value={message.Content} />
+                      )}
+                      {message.Edited && (
+                        <p className="text-xs text-muted-foreground self-center">
+                          (edited)
+                        </p>
+                      )}
+                    </div>
                   )}
                   {groupedReactions.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1 pb-1">
@@ -445,6 +481,7 @@ function MessageComponent({
 export default memo(MessageComponent, (prev, next) => {
   return (
     prev.message.SendTime === next.message.SendTime &&
+    prev.editing === next.editing &&
     prev.message.Content === next.message.Content &&
     prev.message.SenderId === next.message.SenderId &&
     prev.message.ReplyId === next.message.ReplyId &&

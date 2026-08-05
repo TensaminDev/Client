@@ -17,22 +17,6 @@ type MediaShareStoreState = {
   cameraSession: LocalMediaShareSession | null;
 };
 
-type MediaShareStoreSetState = (
-  updater:
-    | Partial<MediaShareStoreState>
-    | ((state: MediaShareStoreState) => Partial<MediaShareStoreState>),
-) => void;
-
-type MediaShareControllerOptions = {
-  room: Room;
-  getState: () => MediaShareStoreState;
-  setState: MediaShareStoreSetState;
-  getLocalParticipantId: () => number | null;
-  startWatching: (participantId: number) => void;
-  stopWatching: (participantId: number) => void;
-  syncParticipantState: () => void;
-};
-
 export function createMediaShareController({
   room,
   getState,
@@ -41,7 +25,19 @@ export function createMediaShareController({
   startWatching,
   stopWatching,
   syncParticipantState,
-}: MediaShareControllerOptions) {
+}: {
+  room: Room;
+  getState: () => MediaShareStoreState;
+  setState: (
+    updater:
+      | Partial<MediaShareStoreState>
+      | ((state: MediaShareStoreState) => Partial<MediaShareStoreState>),
+  ) => void;
+  getLocalParticipantId: () => number | null;
+  startWatching: (participantId: number) => void;
+  stopWatching: (participantId: number) => void;
+  syncParticipantState: () => void;
+}) {
   function getSession(kind: MediaShareKind) {
     return kind === "screen"
       ? getState().screenShareSession

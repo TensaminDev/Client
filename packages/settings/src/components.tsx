@@ -5,9 +5,7 @@ import { storageDefaults, type Storage } from "@tensamin/shared/data";
 import { settingsStorageDefaults } from "@tensamin/shared/settings";
 import { useStorage } from "@tensamin/storage/context";
 
-type BooleanStorageKey = {
-  [K in keyof Storage]: Storage[K] extends boolean ? K : never;
-}[keyof Storage];
+
 
 type ListStorageKey = {
   [K in keyof Storage]: Storage[K] extends (string | number)[] ? K : never;
@@ -21,7 +19,9 @@ export function Switch({
   id,
 }: {
   label: React.ReactNode;
-  id: keyof typeof settingsStorageDefaults & BooleanStorageKey;
+  id: keyof typeof settingsStorageDefaults & ({
+  [K in keyof Storage]: Storage[K] extends boolean ? K : never;
+}[keyof Storage]);
 }) {
   const { save, load } = useStorage();
   const [value, setValue] = useState<boolean>(settingsStorageDefaults[id]);

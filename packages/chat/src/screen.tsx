@@ -21,12 +21,6 @@ import {
 } from "./values";
 import Wrapper from "@tensamin/user/wrapper";
 
-type MessageChunk = {
-  key: string;
-  messages: Array<RawMessage | LiveMessage>;
-  startIndex: number;
-};
-
 function shouldFetchPreviousPage({
   entry,
   hasNextPage,
@@ -50,12 +44,69 @@ function getMessageRenderKey(message: RawMessage | LiveMessage) {
   return "localId" in message ? message.localId : String(message.SendTime);
 }
 
+function isSameDay(first: number | Date, second: number | Date) {
+  const firstDate = new Date(first);
+  const secondDate = new Date(second);
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function formatMessageDate(sendTime: number) {
+  const date = new Date(sendTime);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (isSameDay(date, today)) {
+    return "Today";
+  }
+
+  if (isSameDay(date, yesterday)) {
+    return "Yesterday";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = date.toLocaleString([], { month: "long" });
+  return `${day} ${month} ${date.getFullYear()}`;
+}
+
+function DateSeparator({ label }: { label: string }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setVisible(true), 100);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  return (
+    <div
+      aria-label={label}
+      className={`my-3 flex w-full items-center gap-3 px-3 transition-opacity duration-150 ${visible ? "opacity-100" : "opacity-0"}`}
+      role="separator"
+    >
+      <div className="h-px flex-1 bg-border" />
+      <span className="shrink-0 text-xs font-medium text-muted-foreground">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
 function buildMessageChunks(
   messages: Array<RawMessage | LiveMessage>,
   keyPrefix: string,
   startOffset = 0,
 ) {
-  const chunks: MessageChunk[] = [];
+  const chunks: {
+    key: string;
+    messages: Array<RawMessage | LiveMessage>;
+    startIndex: number;
+  }[] = [];
 
   for (let end = messages.length; end > 0; end -= MESSAGES_PER_VIRTUAL_ROW) {
     const start = Math.max(0, end - MESSAGES_PER_VIRTUAL_ROW);
@@ -85,10 +136,15 @@ export default function Screen() {
     clearLiveMessages,
     userId,
     chatSecret,
+    ownId,
+    inputBoxRef,
     error,
     errorDescription,
+    composerValue,
+    setComposerValue,
   } = useChat();
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const didInitialScrollRef = useRef(false);
   const userScrolledUpRef = useRef(false);
@@ -102,10 +158,25 @@ export default function Screen() {
   const [lastLiveMessageCount, setLastLiveMessageCount] = useState(0);
   const [didInitialScroll, setDidInitialScroll] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
-  const [value, setValue] = useState("");
+  const [composerHeight, setComposerHeight] = useState(0);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const previousEditingMessageIdRef = useRef<number | null>(null);
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasChatSecret = chatSecret !== null;
+
+  useEffect(() => {
+    const previousEditingMessageId = previousEditingMessageIdRef.current;
+    previousEditingMessageIdRef.current = editingMessageId;
+    if (previousEditingMessageId === null || editingMessageId !== null) return;
+
+    const frame = requestAnimationFrame(() => {
+      inputBoxRef.current
+        ?.querySelector<HTMLElement>(".cm-content")
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [editingMessageId, inputBoxRef]);
 
   const messagesQuery = useInfiniteQuery({
     queryKey: ["chat-messages", String(userId), hasChatSecret],
@@ -141,6 +212,7 @@ export default function Screen() {
     isAtBottomRef.current = true;
     setDidInitialScroll(false);
     setLastLiveMessageCount(0);
+    setEditingMessageId(null);
   }, [clearLiveMessages, userId]);
 
   const historicalMessages = useMemo(() => {
@@ -208,10 +280,39 @@ export default function Screen() {
     getItemKey,
     estimateSize,
     overscan: 2,
+    paddingStart: composerHeight + 20,
   });
   const totalSize = virtualizer.getTotalSize();
   const contentHeight = Math.max(totalSize, viewportHeight);
   const verticalOffset = Math.max(0, viewportHeight - totalSize);
+
+  const editLastMessage = useCallback(() => {
+    if (editingMessageId !== null) return;
+    const message = [...messages]
+      .reverse()
+      .find(
+        (candidate) =>
+          candidate.SenderId === ownId &&
+          candidate.Content.length > 0 &&
+          candidate.MessageState !== "awaiting" &&
+          !("failed" in candidate && candidate.failed) &&
+          !("decryptionFailed" in candidate && candidate.decryptionFailed),
+      );
+    if (!message) return;
+
+    const chunkIndex = messageChunks.findIndex((chunk) =>
+      chunk.messages.some(
+        (candidate) => candidate.SendTime === message.SendTime,
+      ),
+    );
+    const chunkIsRendered = virtualizer
+      .getVirtualItems()
+      .some(({ index }) => index === chunkIndex);
+    if (chunkIndex >= 0 && !chunkIsRendered) {
+      virtualizer.scrollToIndex(chunkIndex, { align: "center" });
+    }
+    setEditingMessageId(message.SendTime);
+  }, [editingMessageId, messageChunks, messages, ownId, virtualizer]);
 
   useLayoutEffect(() => {
     const element = scrollRef.current;
@@ -226,6 +327,26 @@ export default function Screen() {
     updateViewportHeight();
 
     const observer = new ResizeObserver(updateViewportHeight);
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const element = composerRef.current;
+    if (!element || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const updateComposerHeight = () => {
+      setComposerHeight(element.getBoundingClientRect().height);
+    };
+
+    updateComposerHeight();
+
+    const observer = new ResizeObserver(updateComposerHeight);
     observer.observe(element);
 
     return () => {
@@ -281,22 +402,6 @@ export default function Screen() {
 
     void messagesQuery.fetchNextPage();
   }, [didInitialScroll, messagesQuery, totalSize, viewportHeight]);
-
-  useLayoutEffect(() => {
-    if (
-      !didInitialScroll ||
-      userScrolledUpRef.current ||
-      virtualRowCount === 0
-    ) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = 0;
-      }
-    });
-  }, [didInitialScroll, virtualRowCount]);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -436,7 +541,7 @@ export default function Screen() {
             className="min-h-0 flex-1 overflow-y-auto"
             style={{
               overflowAnchor: "none",
-              paddingTop: "22px",
+              //paddingTop: "22px",
               transform: "scaleY(-1)",
             }}
             onScroll={handleContainerScroll}
@@ -475,8 +580,15 @@ export default function Screen() {
                         const messageIndex =
                           chunk.startIndex + chunkMessageIndex;
                         const lastMessage = messages[messageIndex - 1];
+                        const startsNewDay =
+                          !lastMessage ||
+                          !isSameDay(lastMessage.SendTime, message.SendTime);
+                        const dateLabel = startsNewDay
+                          ? formatMessageDate(message.SendTime)
+                          : null;
                         const isGrouped =
                           lastMessage &&
+                          !startsNewDay &&
                           !message.ReplyId &&
                           lastMessage.SenderId === message.SenderId &&
                           Math.round(lastMessage.SendTime / 10000) ===
@@ -488,11 +600,24 @@ export default function Screen() {
                             userId={message.SenderId}
                             loading={null}
                             component={(user) => (
-                              <Message
-                                grouped={isGrouped}
-                                message={message}
-                                user={user}
-                              />
+                              <>
+                                {dateLabel && (
+                                  <DateSeparator label={dateLabel} />
+                                )}
+                                <Message
+                                  editing={
+                                    editingMessageId === message.SendTime
+                                  }
+                                  grouped={isGrouped}
+                                  message={message}
+                                  onSetEditing={(editing) =>
+                                    setEditingMessageId(
+                                      editing ? message.SendTime : null,
+                                    )
+                                  }
+                                  user={user}
+                                />
+                              </>
                             )}
                           />
                         );
@@ -503,8 +628,12 @@ export default function Screen() {
               })}
             </div>
           </div>
-          <div className="z-10 shrink-0">
-            <InputComponent setValue={setValue} value={value} />
+          <div ref={composerRef} className="absolute inset-x-0 bottom-0 z-10">
+            <InputComponent
+              onEditLastMessage={editLastMessage}
+              setValue={setComposerValue}
+              value={composerValue}
+            />
           </div>
         </>
       )}

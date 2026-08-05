@@ -8,8 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { isTauri } from "@tauri-apps/api/core";
-import { onResume } from "tauri-plugin-app-events-api";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { MTPClient } from "mtp";
 import { type z } from "zod";
 import { ConnectionState } from "mtp";
@@ -92,10 +92,6 @@ type ContextType = {
 
 const MTPContext = createContext<ContextType | undefined>(undefined);
 
-function isTauriMobile() {
-  return isTauri() && /Android|iPhone|iPad|iPod/.test(navigator.userAgent);
-}
-
 function getProtocolErrorDetails(error: unknown) {
   if (typeof error !== "object" || error === null || !("type" in error)) {
     return null;
@@ -143,7 +139,21 @@ function validateResponse<T extends keyof Schemas & string>(
   } as ProtocolMessage<T>;
 }
 
-export function Provider(props: {
+function useMessageHandlers() {
+  const interceptorsRef = useRef(new Set<MTPInterceptor>());
+  const pushHandlersRef = useRef(new Set<PushHandler>());
+  const subscribePush = useCallback((handler: PushHandler) => {
+    pushHandlersRef.current.add(handler);
+    return () => pushHandlersRef.current.delete(handler);
+  }, []);
+  const addInterceptor = useCallback((interceptor: MTPInterceptor) => {
+    interceptorsRef.current.add(interceptor);
+    return () => interceptorsRef.current.delete(interceptor);
+  }, []);
+  return { addInterceptor, interceptorsRef, pushHandlersRef, subscribePush };
+}
+
+function BrowserProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
@@ -162,8 +172,8 @@ export function Provider(props: {
   const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
     null,
   );
-  const interceptorsRef = useRef(new Set<MTPInterceptor>());
-  const pushHandlersRef = useRef(new Set<PushHandler>());
+  const { addInterceptor, interceptorsRef, pushHandlersRef, subscribePush } =
+    useMessageHandlers();
 
   const connected = readyState === ConnectionState.Connected;
 
@@ -203,16 +213,6 @@ export function Provider(props: {
     });
   }, []);
 
-  const subscribePush = useCallback((handler: PushHandler) => {
-    pushHandlersRef.current.add(handler);
-    return () => pushHandlersRef.current.delete(handler);
-  }, []);
-
-  const addInterceptor = useCallback((interceptor: MTPInterceptor) => {
-    interceptorsRef.current.add(interceptor);
-    return () => interceptorsRef.current.delete(interceptor);
-  }, []);
-
   // Reconnect stuff
   const resolveConnectionRef = useRef(() => {});
   useEffect(() => {
@@ -223,7 +223,6 @@ export function Provider(props: {
     let reconnectResetTimer: ReturnType<typeof setTimeout> | null = null;
     let reconnectScheduled = false;
     let disposed = false;
-    let resumeListenerRegistered = false;
     let connectionGeneration = 0;
 
     const clearReconnectTimer = () => {
@@ -291,8 +290,6 @@ export function Provider(props: {
       try {
         setIdentified(false);
         setIdentifying(false);
-
-        await MTPClient.init();
 
         const [userId, keyring] = await Promise.all([
           load("user_id"),
@@ -526,36 +523,12 @@ export function Provider(props: {
       }
     }
 
-    async function reconnectAfterResume() {
-      if (disposed) return;
-
-      connectionGeneration += 1;
-      clientRef.current?.disconnect();
-      clientRef.current = null;
-      clearReconnectTimer();
-      clearReconnectResetTimer();
-      attempts = 0;
-      reconnectScheduled = false;
-      await connect();
-    }
-
     void connect();
-
-    if (!props.blockConnection && isTauriMobile()) {
-      resumeListenerRegistered = true;
-      onResume(() => {
-        void reconnectAfterResume();
-      });
-    }
 
     return () => {
       disposed = true;
       clearReconnectTimer();
       clearReconnectResetTimer();
-
-      if (resumeListenerRegistered) {
-        onResume();
-      }
 
       clientRef.current?.disconnect();
       clientRef.current = null;
@@ -564,7 +537,7 @@ export function Provider(props: {
       setIdentifying(false);
       sonnerToast.dismiss("mtp-connection-toast");
     };
-  }, [mtpUrl, props.blockConnection, load]);
+  }, [mtpUrl, props.blockConnection, load, pushHandlersRef]);
 
   // No Iota check
   useEffect(() => {
@@ -626,7 +599,7 @@ export function Provider(props: {
       }
       return response;
     },
-    [mtpRef],
+    [interceptorsRef, mtpRef],
   );
 
   return (
@@ -647,6 +620,234 @@ export function Provider(props: {
     >
       {props.children}
     </MTPContext.Provider>
+  );
+}
+
+type NativeSnapshot = {
+  generation: number;
+  readyState: number;
+  identified: boolean;
+  state?: unknown;
+  error?: string;
+};
+
+function TauriProvider(props: {
+  children: ReactNode;
+  blockConnection?: boolean;
+}) {
+  const [snapshot, setSnapshot] = useState<NativeSnapshot>({
+    generation: 0,
+    readyState: ConnectionState.Disconnected,
+    identified: false,
+  });
+  const [freshContacts, setFreshContacts] = useState<Contacts>([]);
+  const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
+  const [freshCalls, setFreshCalls] = useState<Calls>([]);
+  const generationRef = useRef(0);
+  const { addInterceptor, interceptorsRef, pushHandlersRef, subscribePush } =
+    useMessageHandlers();
+  const subscriptionsRef = useRef(
+    new Map<string, Set<(message: ProtocolMessage) => void>>(),
+  );
+
+  const applySnapshot = useCallback((next: NativeSnapshot) => {
+    if (next.generation < generationRef.current) return;
+    generationRef.current = next.generation;
+    if (next.error) {
+      log(0, "android", "orange", "MTP connection failed", next.error);
+    }
+    setSnapshot(next);
+    if (!next.identified || next.state === undefined) return;
+    const parsed = schemas.ClientStateSync.response.safeParse(next.state);
+    if (!parsed.success) {
+      log(0, "mtp", "red", "Invalid native MTP state", parsed.error);
+      return;
+    }
+    setFreshContacts(parsed.data.Contacts);
+    setFreshCommunities(parsed.data.Communities);
+    setFreshCalls(parsed.data.Calls);
+  }, []);
+
+  const dispatchMessage = useCallback(
+    (raw: unknown) => {
+      if (!raw || typeof raw !== "object" || !("type" in raw)) return;
+      const message = raw as { id?: number; type: string; data: unknown };
+      let validated: ProtocolMessage;
+      try {
+        validated = validateResponse(
+          message.type as keyof Schemas & string,
+          message,
+        );
+      } catch (error) {
+        log(1, "mtp", "red", "Failed to validate native MTP message", error);
+        return;
+      }
+      for (const handler of subscriptionsRef.current.get(validated.type) ??
+        []) {
+        handler(validated);
+      }
+      if (!(PUSH_TYPES as readonly string[]).includes(validated.type)) return;
+      for (const handler of [...pushHandlersRef.current]) {
+        void Promise.resolve(handler(validated)).catch((error) => {
+          log(1, "mtp", "red", "Native MTP push handler failed", error, {
+            type: validated.type,
+          });
+        });
+      }
+    },
+    [pushHandlersRef],
+  );
+
+  useEffect(() => {
+    if (props.blockConnection) return;
+    let disposed = false;
+    let unlisten: UnlistenFn | undefined;
+    void (async () => {
+      unlisten = await listen<
+        | { kind: "state"; snapshot: NativeSnapshot }
+        | { kind: "message"; generation: number; message: unknown }
+        | {
+            kind: "log";
+            level: number;
+            message: string;
+            details?: unknown;
+          }
+      >("mtp://event", ({ payload }) => {
+        if (disposed) return;
+        if (payload.kind === "state") {
+          applySnapshot(payload.snapshot);
+          return;
+        }
+        if (payload.kind === "message") {
+          if (payload.generation === generationRef.current) {
+            dispatchMessage(payload.message);
+          }
+          return;
+        }
+        log(
+          payload.level,
+          "android",
+          "orange",
+          payload.message,
+          payload.details,
+        );
+      });
+      const current = await invoke<NativeSnapshot>("mtp_status");
+      if (!disposed) applySnapshot(current);
+    })().catch((error) => {
+      log(0, "mtp", "red", "Failed to initialize native MTP bridge", error);
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [applySnapshot, dispatchMessage, props.blockConnection]);
+
+  useEffect(() => {
+    if (props.blockConnection) return;
+    const updateVisibility = () => {
+      void invoke("mtp_set_ui_visible", {
+        visible: document.visibilityState === "visible" && document.hasFocus(),
+      });
+    };
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    window.addEventListener("focus", updateVisibility);
+    window.addEventListener("blur", updateVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+      window.removeEventListener("focus", updateVisibility);
+      window.removeEventListener("blur", updateVisibility);
+      void invoke("mtp_set_ui_visible", { visible: false });
+    };
+  }, [props.blockConnection]);
+
+  const send = useCallback<BoundSendFn>(
+    async (type, data, options) => {
+      const response = await invoke<ProtocolMessage>("mtp_request", {
+        typeName: type,
+        data: data ?? {},
+        id: options?.id,
+      });
+      const validated = validateResponse(type, response);
+      for (const interceptor of interceptorsRef.current) {
+        void Promise.resolve(
+          interceptor({ type, data, response: validated as ProtocolMessage }),
+        ).catch((error) => {
+          log(1, "mtp", "yellow", "MTP interceptor failed", error, { type });
+        });
+      }
+      return validated;
+    },
+    [interceptorsRef],
+  );
+
+  const subscribe = useCallback<ContextType["subscribe"]>((type, handler) => {
+    const handlers =
+      subscriptionsRef.current.get(type) ??
+      new Set<(message: ProtocolMessage) => void>();
+    handlers.add(handler as (message: ProtocolMessage) => void);
+    subscriptionsRef.current.set(type, handlers);
+    return () => {
+      handlers.delete(handler as (message: ProtocolMessage) => void);
+      if (handlers.size === 0) subscriptionsRef.current.delete(type);
+    };
+  }, []);
+  const connected = snapshot.readyState === ConnectionState.Connected;
+  const contextReady = connected && snapshot.identified;
+
+  return (
+    <MTPContext.Provider
+      value={{
+        send,
+        subscribe,
+        subscribePush,
+        addInterceptor,
+        readyState: snapshot.readyState,
+        identified: snapshot.identified,
+        freshContacts,
+        freshCommunities,
+        freshCalls,
+        contextReady,
+        loadingDescription: connected
+          ? "Waiting for authenticated session"
+          : "Establishing native transport channel",
+      }}
+    >
+      {props.children}
+    </MTPContext.Provider>
+  );
+}
+
+export function Provider(props: {
+  children: ReactNode;
+  blockConnection?: boolean;
+}) {
+  const [wasmReady, setWasmReady] = useState(false);
+  const [wasmError, setWasmError] = useState<unknown>();
+
+  useEffect(() => {
+    let active = true;
+    void MTPClient.init().then(
+      () => {
+        if (active) setWasmReady(true);
+      },
+      (error: unknown) => {
+        if (active) setWasmError(() => error);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (wasmError) throw wasmError;
+  if (!wasmReady) return null;
+
+  return isTauri() ? (
+    <TauriProvider {...props} />
+  ) : (
+    <BrowserProvider {...props} />
   );
 }
 

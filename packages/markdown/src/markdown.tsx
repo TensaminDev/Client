@@ -1,4 +1,11 @@
-import { Fragment, type ReactElement, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import Emoji from "./emoji";
 import { findEmojiShortcodes } from "./emojiData";
 
@@ -23,41 +30,9 @@ type InlineTokenRange = {
   to: number;
 };
 
-type ParagraphBlock = {
-  type: "paragraph";
-  text: string;
-};
-
-type HeadingBlock = {
-  type: "heading";
-  level: number;
-  text: string;
-};
-
-type HrBlock = {
-  type: "hr";
-};
-
-type BlockQuoteBlock = {
-  type: "blockquote";
-  text: string;
-};
-
-type CodeBlock = {
-  type: "code";
-  language: string;
-  code: string;
-};
-
 type ListItem = {
   text: string;
   checked: boolean | null;
-};
-
-type ListBlock = {
-  type: "list";
-  ordered: boolean;
-  items: ListItem[];
 };
 
 type TableBlock = {
@@ -67,16 +42,139 @@ type TableBlock = {
 };
 
 type MarkdownBlock =
-  | ParagraphBlock
-  | HeadingBlock
-  | HrBlock
-  | BlockQuoteBlock
-  | CodeBlock
-  | ListBlock
+  | {
+      type: "paragraph";
+      text: string;
+    }
+  | {
+      type: "heading";
+      level: number;
+      text: string;
+    }
+  | {
+      type: "hr";
+    }
+  | {
+      type: "blockquote";
+      text: string;
+    }
+  | {
+      type: "code";
+      language: string;
+      code: string;
+    }
+  | {
+      type: "list";
+      ordered: boolean;
+      items: ListItem[];
+    }
   | TableBlock;
 
 const INLINE_TOKEN_REGEX =
   /!\[([^\]]*)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|\[([^\]]+)\]\(([^)\s]+(?:\s+"[^"]*")?)\)|`([^`\n]+)`|~~([^~\n]+)~~|\*\*([^*\n]+)\*\*|__([^_\n]+)__|\*([^*\n]+)\*|(?<![a-zA-Z0-9:])_([^_\n]+)_(?![a-zA-Z0-9:])/g;
+
+function CopiedIndicator({
+  block,
+  visible,
+}: {
+  block: boolean;
+  visible: boolean;
+}) {
+  return (
+    <span
+      className={`pointer-events-none inline-flex align-middle text-foreground transition-opacity duration-200 ease-out ${block ? "mt-3 shrink-0" : "ml-1"} ${visible ? "opacity-100" : "opacity-0"}`}
+      aria-live="polite"
+      aria-hidden={!visible}
+    >
+      <svg
+        className="size-3.5"
+        viewBox="0 0 16 16"
+        fill="none"
+        aria-hidden="true"
+      >
+        <rect
+          x="3"
+          y="3.5"
+          width="10"
+          height="11"
+          rx="2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M6 4V2.75C6 2.06 6.56 1.5 7.25 1.5h1.5c.69 0 1.25.56 1.25 1.25V4"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="sr-only">Copied</span>
+    </span>
+  );
+}
+
+function CopyableCode({
+  block = false,
+  language,
+  value,
+}: {
+  block?: boolean;
+  language?: string;
+  value: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(
+    () => () => {
+      clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
+
+  async function copy() {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 1200);
+  }
+
+  const code = (
+    <code
+      className={block ? "tm-md-codeblock" : "tm-md-code"}
+      data-language={language}
+      role="button"
+      tabIndex={0}
+      onClick={() => void copy()}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        void copy();
+      }}
+    >
+      {value}
+    </code>
+  );
+
+  if (block) {
+    return (
+      <div className="flex min-w-0 items-start gap-1">
+        <pre className="tm-md-pre min-w-0 flex-1">{code}</pre>
+        <CopiedIndicator block visible={copied} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {code}
+      <CopiedIndicator block={false} visible={copied} />
+    </>
+  );
+}
 
 /**
  * Executes parseInlineNodes.
@@ -429,11 +527,7 @@ function renderInline(nodes: InlineNode[]): ReactNode[] {
     }
 
     if (node.type === "code") {
-      return (
-        <code key={index} className="tm-md-code">
-          {node.value}
-        </code>
-      );
+      return <CopyableCode key={index} value={node.value} />;
     }
 
     if (node.type === "link") {
@@ -523,11 +617,12 @@ export function renderBlocks(blocks: MarkdownBlock[]): ReactElement {
 
         if (block.type === "code") {
           return (
-            <pre key={blockIndex} className="tm-md-pre">
-              <code className="tm-md-codeblock" data-language={block.language}>
-                {block.code}
-              </code>
-            </pre>
+            <CopyableCode
+              key={blockIndex}
+              block
+              language={block.language}
+              value={block.code}
+            />
           );
         }
 
@@ -666,7 +761,7 @@ function readTable(
 }
 
 const markdownStyles = `
-.tm-md-root { color: hsl(var(--foreground)); line-height: 1.65; font-size: 1rem; }
+.tm-md-root { color: var(--foreground); line-height: 1.65; font-size: 1rem; }
 .tm-md-heading { margin: 0.2rem 0 0.35rem; font-weight: 700; line-height: 1.25; }
 .tm-md-h1 { font-size: 1.65rem; }
 .tm-md-h2 { font-size: 1.45rem; }
@@ -676,13 +771,15 @@ const markdownStyles = `
 .tm-md-h6 { font-size: 0.95rem; opacity: 0.9; }
 .tm-md-blockquote { margin: 0.45rem 0; padding-left: 0.75rem; opacity: 0.95; }
 .tm-md-blockquote p { margin: 0.2rem 0; }
-.tm-md-pre { margin: 0.45rem 0; padding: 0.65rem 0.75rem; border-radius: 0.5rem; background: hsl(var(--muted)); overflow-x: auto; }
-.tm-md-code, .tm-md-codeblock { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-.tm-md-code { padding: 0.08rem 0.32rem; border-radius: 0.28rem; background: hsl(var(--muted)); }
+.tm-md-pre { margin: 0.45rem 0; padding: 0.65rem 0.75rem; border-radius: 0.5rem; background: var(--muted); overflow-x: auto; }
+.tm-md-code, .tm-md-codeblock { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.87em; cursor: pointer; }
+.tm-md-code { padding: 0.08rem 0.32rem; border: 1px solid var(--border); border-radius: 0.28rem; background: var(--muted); }
+.tm-md-codeblock { display: block; }
+.tm-md-code:focus-visible, .tm-md-codeblock:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .tm-md-strong { font-weight: 700; }
 .tm-md-em { font-style: italic; }
 .tm-md-del { text-decoration: line-through; }
-.tm-md-link { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 0.14rem; }
+.tm-md-link { color: var(--primary); text-decoration: underline; text-underline-offset: 0.14rem; }
 .tm-md-image { display: block; max-width: 100%; border-radius: 0.4rem; margin: 0.5rem 0; }
 .tm-md-emoji { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.18em; }
 .tm-md-ul, .tm-md-ol { margin: 0.3rem 0 0.35rem 1.2rem; padding: 0; }
@@ -691,7 +788,7 @@ const markdownStyles = `
 .tm-md-table-wrap { overflow-x: auto; margin: 0.45rem 0; }
 .tm-md-table { border-collapse: collapse; width: 100%; min-width: 16rem; }
 .tm-md-table th, .tm-md-table td { padding: 0.4rem 0.5rem; text-align: left; }
-.tm-md-table th { background: hsl(var(--muted)); font-weight: 600; }
+.tm-md-table th { background: var(--muted); font-weight: 600; }
 .tm-md-hr { margin: 0.55rem 0; }
 
 .cm-editor.tm-md-editor { border-radius: inherit; background: transparent; caret-color: var(--foreground); }
@@ -699,10 +796,10 @@ const markdownStyles = `
 .cm-editor.tm-md-editor .cm-scroller { font-family: inherit; line-height: 1.55; max-height: 30vh; overflow-y: auto; overflow-x: hidden; }
 .cm-editor.tm-md-editor .cm-content { caret-color: var(--foreground); }
 .cm-editor.tm-md-editor .cm-content { padding: var(--tm-md-content-padding, 0.25rem 0.625rem); min-height: 2rem; }
-.cm-editor.tm-md-editor .cm-line { padding: 0; color: hsl(var(--foreground)); }
+.cm-editor.tm-md-editor .cm-line { padding: 0; color: var(--foreground); }
 .cm-editor.tm-md-editor .tm-md-editor-emoji { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.18em; object-fit: contain; pointer-events: none; }
 .cm-editor.tm-md-editor .tm-md-hidden-token { color: transparent; opacity: 0; font-size: inherit; }
-.cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: hsl(var(--muted)); border-radius: 0.3rem; }
+.cm-editor.tm-md-editor .tm-md-code-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: var(--muted); border-radius: 0.3rem; }
 .cm-tooltip.cm-tooltip-autocomplete { min-width: 18rem; max-width: min(26rem, calc(100vw - 1rem)); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--popover); color: var(--popover-foreground); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); font-family: "Public Sans Variable", sans-serif; font-size: 0.875rem; }
 .cm-editor.tm-md-editor .cm-tooltip.cm-tooltip-autocomplete > ul { max-height: min(20rem, 45vh); padding: 0.25rem; font-family: "Public Sans Variable", sans-serif; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -726,10 +823,15 @@ export function ensureMarkdownStyles(): void {
   if (typeof document === "undefined") return;
 
   const styleId = "tensamin-markdown-styles";
-  if (document.getElementById(styleId)) return;
+  let style = document.getElementById(styleId) as HTMLStyleElement | null;
 
-  const style = document.createElement("style");
-  style.id = styleId;
-  style.textContent = markdownStyles;
-  document.head.appendChild(style);
+  if (!style) {
+    style = document.createElement("style");
+    style.id = styleId;
+    document.head.appendChild(style);
+  }
+
+  if (style.textContent !== markdownStyles) {
+    style.textContent = markdownStyles;
+  }
 }

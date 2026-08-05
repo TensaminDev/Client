@@ -1,14 +1,14 @@
 type StringKeyOf<T> = Extract<keyof T, string>;
 
-type SettingDefinition = {
-  display: string;
-  type: string;
-  default?: unknown;
-};
+
 
 export type SettingsSchema = Record<
   string,
-  Record<string, Record<string, SettingDefinition>>
+  Record<string, Record<string, {
+  display: string;
+  type: string;
+  default?: unknown;
+}>>
 >;
 
 const settings = {

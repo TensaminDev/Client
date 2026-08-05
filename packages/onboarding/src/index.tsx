@@ -8,10 +8,12 @@ import {
 import { useStorage } from "@tensamin/storage/context";
 import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
 import { log } from "@tensamin/shared/log";
+import { isTauri } from "@tauri-apps/api/core";
 import type { z } from "zod";
 
 import LegalPage from "./pages/legal";
 import { onboardingSteps } from "./steps";
+import TauriPermissionsPage from "./pages/tauriPermissions";
 
 export {
   useOnboardingStep,
@@ -19,14 +21,15 @@ export {
   type OnboardingStepControls,
 } from "@methanium/ui";
 
-type LegalDocs = z.infer<typeof legalDocsSchema>;
+
 
 interface GateState {
-  docs: LegalDocs;
+  docs: z.infer<typeof legalDocsSchema>;
   acceptedPP: boolean;
   acceptedTOS: boolean;
   includeLegal: boolean;
   includeOnboarding: boolean;
+  includeTauriPermissions: boolean;
 }
 
 export default function OnboardingGate({ children }: { children: ReactNode }) {
@@ -72,12 +75,14 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
           acceptedTOS,
           onboardingDone,
           onboardingStarted,
+          tauriPermissionsDone,
         ] = await Promise.all([
           load("legal_docs"),
           load("accepted_privacy_policy"),
           load("accepted_terms_of_service"),
           load("onboarding_done"),
           load("onboarding_started"),
+          load("tauri_permissions_done"),
         ]);
 
         if (!active) return;
@@ -104,6 +109,10 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
           acceptedTOS: currentAcceptedTOS,
           includeLegal: !currentAcceptedPP || !currentAcceptedTOS,
           includeOnboarding,
+          includeTauriPermissions:
+            isTauri() &&
+            /Android/.test(navigator.userAgent) &&
+            !tauriPermissionsDone,
         });
       } catch (caught) {
         if (!active) return;
@@ -142,8 +151,11 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
         save("onboarding_started", false),
       ]);
     }
+    if (state?.includeTauriPermissions) {
+      await save("tauri_permissions_done", true);
+    }
     setComplete(true);
-  }, [save, state?.includeOnboarding]);
+  }, [save, state?.includeOnboarding, state?.includeTauriPermissions]);
 
   if (error && errorDescription) {
     return <ErrorScreen error={error} description={errorDescription} />;
@@ -173,6 +185,16 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
   }
   if (state.includeOnboarding) {
     steps.push(...onboardingSteps(onboardingThemeId, setOnboardingThemeId));
+  }
+  if (state.includeTauriPermissions) {
+    steps.push({
+      id: "tauri-permissions",
+      title: "Enable notifications",
+      description:
+        "We need these permissions so that notifications can be independent of Google Play Services.",
+      defaultCanContinue: false,
+      content: <TauriPermissionsPage />,
+    });
   }
 
   if (complete || steps.length === 0) return <>{children}</>;

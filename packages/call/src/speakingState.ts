@@ -1,12 +1,10 @@
 import { create } from "zustand";
 
-type SpeakingState = {
+const useSpeakingState = create<{
   speakingParticipantIds: Set<number>;
   lastSpeakingParticipantId: number | null;
   micGated: boolean;
-};
-
-const useSpeakingState = create<SpeakingState>(() => ({
+}>(() => ({
   speakingParticipantIds: new Set(),
   lastSpeakingParticipantId: null,
   micGated: false,
