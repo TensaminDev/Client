@@ -13,6 +13,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 
 class MtpForegroundService : Service() {
+  private var started = false
+
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -22,6 +24,8 @@ class MtpForegroundService : Service() {
       stopSelf()
       return START_NOT_STICKY
     }
+
+    if (started) return START_STICKY
 
     createChannel(this)
     val notification = buildNotification(this, "Connecting")
@@ -44,12 +48,20 @@ class MtpForegroundService : Service() {
     try {
       NativeMtpBridge.nativeAttach(applicationContext)
       NativeMtpBridge.nativeStart(config)
+      started = true
       NativeMtpBridge.log(2, "Started MTP foreground service")
     } catch (error: Throwable) {
       NativeMtpBridge.log(0, "Failed to start MTP foreground service", error)
       updateNotification(this, "Connection failed")
     }
     return START_STICKY
+  }
+
+  override fun onTaskRemoved(rootIntent: Intent?) {
+    if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
+      startService(Intent(this, MtpForegroundService::class.java))
+    }
+    super.onTaskRemoved(rootIntent)
   }
 
   override fun onDestroy() {
@@ -95,7 +107,7 @@ class MtpForegroundService : Service() {
       )
       return NotificationCompat.Builder(context, CHANNEL_ID)
         .setSmallIcon(android.R.drawable.stat_notify_sync)
-        .setContentTitle("Tensamin background connection")
+        .setContentTitle("Tensamin")
         .setContentText(status)
         .setContentIntent(openIntent)
         .setOngoing(true)

@@ -65,11 +65,11 @@ class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     WindowCompat.setDecorFitsSystemWindows(window, true)
     window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
-    super.onCreate(savedInstanceState)
-    NativeMtpBridge.nativeAttach(applicationContext)
     if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
       NativeMtpBridge.startService(this)
     }
+    super.onCreate(savedInstanceState)
+    NativeMtpBridge.nativeAttach(applicationContext)
     installKeyboardResizeWorkaround()
   }
 

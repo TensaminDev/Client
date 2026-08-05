@@ -6,6 +6,7 @@ import * as tsParser from "@typescript-eslint/parser";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  inlineSingleUseDeclarations,
   noReactNamespaceImport,
   noWindowLocationReload,
 } from "./utils/eslint-rules/index.js";
@@ -34,6 +35,7 @@ export default [
       "react-hooks": reactHooks,
       tensamin: {
         rules: {
+          "inline-single-use-declarations": inlineSingleUseDeclarations,
           "no-react-namespace-import": noReactNamespaceImport,
           "no-window-location-reload": noWindowLocationReload,
         },
@@ -42,6 +44,7 @@ export default [
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-hooks/set-state-in-effect": "off",
+      "tensamin/inline-single-use-declarations": "error",
       "tensamin/no-react-namespace-import": "error",
       "tensamin/no-window-location-reload": "error",
     },

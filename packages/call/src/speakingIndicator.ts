@@ -10,18 +10,19 @@ const SPEAKING_HANGTIME_MS = 500;
 const ANALYSIS_INTERVAL_MS = 30;
 const FFT_SIZE = 256;
 
-type AnalyserEntry = {
-  source: MediaStreamAudioSourceNode;
-  analyser: AnalyserNode;
-  track: MediaStreamTrack;
-  originalTrack?: MediaStreamTrack;
-  lastSpeakingTime: number;
-  isSpeaking: boolean;
-};
-
 class SpeakingDetector {
   private audioContext: AudioContext | null = null;
-  private entries = new Map<number, AnalyserEntry>();
+  private entries = new Map<
+    number,
+    {
+      source: MediaStreamAudioSourceNode;
+      analyser: AnalyserNode;
+      track: MediaStreamTrack;
+      originalTrack?: MediaStreamTrack;
+      lastSpeakingTime: number;
+      isSpeaking: boolean;
+    }
+  >();
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private deaf = false;
   private gateThresholdStart = -50;

@@ -56,7 +56,7 @@ Zwkt6K2EOMmh1nvEzl83eMLYcod4GCl3b0J1Nn0CMBNYmEQJb4CEG5WoOe7aRn/L\n\
 VKu6saHmHEynI7ysIPd8zQsK1HdmhlHKlw9Z5GpGvA==\n\
 -----END CERTIFICATE-----\n";
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpConfig {
     pub user_id: u64,
@@ -135,6 +135,11 @@ impl MtpManager {
 
     pub fn configure_and_start(&'static self, config: MtpConfig) {
         let _guard = self.start_lock.lock().expect("start lock poisoned");
+        if self.enabled.load(Ordering::SeqCst)
+            && self.config.read().expect("config lock poisoned").as_ref() == Some(&config)
+        {
+            return;
+        }
         *self.config.write().expect("config lock poisoned") = Some(config);
         self.enabled.store(true, Ordering::SeqCst);
         let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
@@ -180,6 +185,10 @@ impl MtpManager {
 
     pub fn set_ui_visible(&self, visible: bool) {
         self.ui_visible.store(visible, Ordering::SeqCst);
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled.load(Ordering::SeqCst)
     }
 
     pub fn snapshot(&self) -> MtpSnapshot {
@@ -446,6 +455,19 @@ async fn handle_push(generation: u64, connection: Arc<MTPConnection>, frame: Com
             message,
         });
     }
+    if frame.is_type(CommunicationType::MessageState)
+        && frame.get_str(DataType::MessageState) == Some("read")
+    {
+        if let Some(partner_id) = frame
+            .get_data(DataType::ChatPartnerId)
+            .as_number()
+            .and_then(|value| u64::try_from(value).ok())
+        {
+            if let Err(error) = android_cancel_notification(partner_id) {
+                eprintln!("failed to clear read message notification: {error}");
+            }
+        }
+    }
     if frame.is_type(CommunicationType::MessageLive) && !manager.ui_visible.load(Ordering::SeqCst) {
         if let Err(error) = notify_message(connection, &frame).await {
             eprintln!("failed to create background message notification: {error}");
@@ -533,7 +555,15 @@ async fn notify_message(
         .or_else(|| user.get_str(DataType::Username))
         .map(str::to_owned)
         .unwrap_or_else(|| format!("User {sender_id}"));
-    android_notify(sender_id, &sender, &String::from_utf8_lossy(&plaintext));
+    let avatar = user
+        .get_str(DataType::Avatar)
+        .and_then(|avatar| decode_browser_base64(avatar).ok());
+    android_notify(
+        sender_id,
+        &sender,
+        &String::from_utf8_lossy(&plaintext),
+        avatar.as_deref(),
+    )?;
     Ok(())
 }
 
@@ -834,6 +864,26 @@ pub fn mtp_set_ui_visible(visible: bool) {
     manager().set_ui_visible(visible);
 }
 
+#[tauri::command]
+pub fn mtp_post_message_notification(
+    sender_id: u64,
+    sender: String,
+    body: String,
+    avatar: Option<String>,
+) -> Result<bool, String> {
+    #[cfg(target_os = "android")]
+    {
+        let avatar = avatar.as_deref().map(decode_browser_base64).transpose()?;
+        android_notify(sender_id, &sender, &body, avatar.as_deref())?;
+        Ok(true)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (sender_id, sender, body, avatar);
+        Ok(false)
+    }
+}
+
 #[cfg(not(target_os = "android"))]
 fn android_store_config(_: &str) -> Result<(), String> {
     Ok(())
@@ -853,7 +903,13 @@ fn android_set_enabled(_: bool) -> Result<(), String> {
 #[cfg(not(target_os = "android"))]
 fn android_status(_: &str) {}
 #[cfg(not(target_os = "android"))]
-fn android_notify(_: u64, _: &str, _: &str) {}
+fn android_notify(_: u64, _: &str, _: &str, _: Option<&[u8]>) -> Result<(), String> {
+    Ok(())
+}
+#[cfg(not(target_os = "android"))]
+fn android_cancel_notification(_: u64) -> Result<(), String> {
+    Ok(())
+}
 #[cfg(not(target_os = "android"))]
 fn android_is_ignoring_battery_optimizations() -> Result<bool, String> {
     Ok(true)
@@ -974,24 +1030,49 @@ mod android {
         });
     }
 
-    pub fn notify(sender_id: u64, sender: &str, body: &str) {
-        let _ = with_env(|env, host| {
+    pub fn notify(
+        sender_id: u64,
+        sender: &str,
+        body: &str,
+        avatar: Option<&[u8]>,
+    ) -> Result<(), String> {
+        with_env(|env, host| {
             let sender = env.new_string(sender).map_err(|e| e.to_string())?;
             let body = env.new_string(body).map_err(|e| e.to_string())?;
+            let avatar = env
+                .byte_array_from_slice(avatar.unwrap_or_default())
+                .map_err(|e| e.to_string())?;
             env.call_method(
                 host.bridge.as_obj(),
                 "postMessageNotification",
-                "(Landroid/content/Context;JLjava/lang/String;Ljava/lang/String;)V",
+                "(Landroid/content/Context;JLjava/lang/String;Ljava/lang/String;[B)V",
                 &[
                     JValue::Object(host.context.as_obj()),
                     JValue::Long(sender_id as i64),
                     JValue::Object(&sender),
                     JValue::Object(&body),
+                    JValue::Object(&avatar),
                 ],
             )
             .map_err(|e| e.to_string())?;
             Ok(())
-        });
+        })
+    }
+
+    pub fn cancel_notification(sender_id: u64) -> Result<(), String> {
+        with_env(|env, host| {
+            env.call_method(
+                host.bridge.as_obj(),
+                "cancelMessageNotification",
+                "(Landroid/content/Context;J)V",
+                &[
+                    JValue::Object(host.context.as_obj()),
+                    JValue::Long(sender_id as i64),
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })
     }
 
     pub fn is_ignoring_battery_optimizations() -> Result<bool, String> {
@@ -1084,7 +1165,7 @@ mod android {
 
 #[cfg(target_os = "android")]
 use android::{
-    has_config as android_has_config,
+    cancel_notification as android_cancel_notification, has_config as android_has_config,
     is_ignoring_battery_optimizations as android_is_ignoring_battery_optimizations,
     notify as android_notify, request_battery_exemption as android_request_battery_exemption,
     set_enabled as android_set_enabled, status as android_status,

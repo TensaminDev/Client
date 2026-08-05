@@ -8,31 +8,15 @@ import type {
   MediaShareSource,
 } from "./types";
 
-type MobileMediaApi = {
-  startScreenShare: (includeAudio: boolean) => void;
-  stopScreenShare: () => void;
-  requestCameraPermission: () => void;
-};
-
 declare global {
   interface Window {
-    tensaminMobileMedia?: MobileMediaApi;
+    tensaminMobileMedia?: {
+      startScreenShare: (includeAudio: boolean) => void;
+      stopScreenShare: () => void;
+      requestCameraPermission: () => void;
+    };
   }
 }
-
-type FrameDetail = {
-  data: string;
-  mimeType: string;
-  width: number;
-  height: number;
-};
-
-type AudioDetail = {
-  data: string;
-  sampleRate: number;
-  channelCount: number;
-  encoding: "pcm16le";
-};
 
 function eventDetail<T>(event: Event): T {
   return (event as CustomEvent<T>).detail;
@@ -164,7 +148,12 @@ async function startMobileScreen(
     };
 
     const onFrame = (event: Event) => {
-      const detail = eventDetail<FrameDetail>(event);
+      const detail = eventDetail<{
+        data: string;
+        mimeType: string;
+        width: number;
+        height: number;
+      }>(event);
       const image = new Image();
       image.onload = () => {
         if (canvas.width !== detail.width || canvas.height !== detail.height) {
@@ -179,7 +168,14 @@ async function startMobileScreen(
     };
 
     const onAudio = (event: Event) => {
-      const bytes = decodeBase64(eventDetail<AudioDetail>(event).data);
+      const bytes = decodeBase64(
+        eventDetail<{
+          data: string;
+          sampleRate: number;
+          channelCount: number;
+          encoding: "pcm16le";
+        }>(event).data,
+      );
       const samples = new Int16Array(
         bytes.buffer,
         bytes.byteOffset,

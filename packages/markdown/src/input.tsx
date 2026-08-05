@@ -76,10 +76,6 @@ export type InputProps = {
   onControllerChange?: (controller: InputController | null) => void;
 };
 
-type InputStyle = CSSProperties & {
-  "--tm-md-content-padding"?: string;
-};
-
 function toCssLength(value: CSSProperties["padding"]): string | undefined {
   if (value === undefined) {
     return undefined;
@@ -98,11 +94,6 @@ function toCssPadding(
 
   return `${toCssLength(vertical) ?? defaultVertical} ${toCssLength(horizontal) ?? defaultHorizontal}`;
 }
-
-type TokenRange = {
-  from: number;
-  to: number;
-};
 
 const hiddenTokenDecoration = Decoration.mark({ class: "tm-md-hidden-token" });
 const strongDecoration = Decoration.mark({ class: "tm-md-strong" });
@@ -443,7 +434,9 @@ export default function Input(props: InputProps) {
             props.paddingX,
             Boolean(props.styled),
           ),
-        } as InputStyle
+        } as CSSProperties & {
+          "--tm-md-content-padding"?: string;
+        }
       }
     />
   );
@@ -834,7 +827,10 @@ function buildDecorations(view: EditorView): DecorationSet {
 function addHiddenToken(
   builder: Range<Decoration>[],
   selections: ReadonlyArray<{ from: number; to: number }>,
-  token: TokenRange,
+  token: {
+    from: number;
+    to: number;
+  },
 ): void {
   if (token.from >= token.to) return;
 

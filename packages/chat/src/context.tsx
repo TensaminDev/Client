@@ -145,8 +145,6 @@ type SendMessageGet = (
   data: { SendTime: number },
 ) => Promise<{ data: RawMessage }>;
 
-type GetChatSecret = (userId: number) => Promise<Uint8Array | null>;
-
 type StoredDraftState = ChatDraft & {
   accountId: number;
   userId: number;
@@ -204,7 +202,7 @@ export async function fetchReplyMessage({
   ownId: number;
   chatUserId: number;
   send: SendMessageGet;
-  getChatSecret: GetChatSecret;
+  getChatSecret: (userId: number) => Promise<Uint8Array | null>;
 }) {
   const message = await getMessage({
     sendTime: replyTo,

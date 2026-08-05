@@ -27,7 +27,7 @@ import { useCall, useInitializeCall } from "@tensamin/call/store";
 import { useIsSpeaking } from "@tensamin/call/speakingState";
 import { Provider as MTPProvider } from "@tensamin/mtp";
 import UserProvider from "@tensamin/user/context";
-import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
+import DeeplinkContext, { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
 
 import TAuthWrapper from "@tensamin/tauth/context";
@@ -288,6 +288,7 @@ function AppShell() {
         <DesktopMediaProvider>
           <MTPProvider>
             <CacheSync />
+            <DeeplinkNavigator />
             <Session>
               <UserProvider>
                 <CallInit />
@@ -307,6 +308,36 @@ function AppShell() {
       </Crypto>
     </OnboardingGate>
   );
+}
+
+function DeeplinkNavigator() {
+  const { deeplinks } = useDeeplinks();
+  const navigate = useNavigate();
+  const handledCount = useRef(0);
+
+  useEffect(() => {
+    const links = deeplinks.slice(handledCount.current);
+    handledCount.current = deeplinks.length;
+
+    for (const link of links) {
+      try {
+        const url = new URL(link);
+        const id = Number(url.searchParams.get("id"));
+        if (
+          url.protocol === "tensamin:" &&
+          url.hostname === "chat" &&
+          Number.isSafeInteger(id) &&
+          id > 0
+        ) {
+          void navigate({ to: "/chat", search: { id } });
+        }
+      } catch {
+        // Ignore malformed URLs delivered by the platform.
+      }
+    }
+  }, [deeplinks, navigate]);
+
+  return null;
 }
 
 function createCallTrayIcon(color: string, speaking: boolean) {

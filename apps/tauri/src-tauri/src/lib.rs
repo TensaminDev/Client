@@ -17,7 +17,7 @@ pub fn run() {
     #[cfg(any(target_os = "ios", target_os = "android"))]
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
 
-    if let Err(error) = builder
+    let app = builder
         .invoke_handler(tauri::generate_handler![
             mtp_backend::mtp_request,
             mtp_backend::mtp_status,
@@ -26,6 +26,7 @@ pub fn run() {
             mtp_backend::mtp_load_keyring,
             mtp_backend::mtp_set_enabled,
             mtp_backend::mtp_set_ui_visible,
+            mtp_backend::mtp_post_message_notification,
             mtp_backend::mtp_is_ignoring_battery_optimizations,
             mtp_backend::mtp_request_battery_exemption,
         ])
@@ -45,9 +46,18 @@ pub fn run() {
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-    {
-        eprintln!("error while running tauri application: {error}");
-        panic!("error while running tauri application: {error}");
-    }
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|_app, event| {
+        #[cfg(target_os = "android")]
+        if let tauri::RunEvent::ExitRequested {
+            api, code: None, ..
+        } = event
+        {
+            if mtp_backend::manager().is_enabled() {
+                api.prevent_exit();
+            }
+        }
+    });
 }

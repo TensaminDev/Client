@@ -5,7 +5,7 @@ import type { z } from "zod";
 
 import { useOnboardingStep } from "@methanium/ui";
 
-type LegalDocs = z.infer<typeof legalDocsSchema>;
+
 
 export default function LegalPage({
   docs,
@@ -13,7 +13,7 @@ export default function LegalPage({
   initiallyAcceptedTOS,
   onAccept,
 }: {
-  docs: LegalDocs;
+  docs: z.infer<typeof legalDocsSchema>;
   initiallyAcceptedPP: boolean;
   initiallyAcceptedTOS: boolean;
   onAccept: () => Promise<void>;

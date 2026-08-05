@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -13,7 +14,12 @@ import android.provider.Settings
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
+import androidx.core.app.Person
+import androidx.core.content.LocusIdCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 
 @Keep
 object NativeMtpBridge {
@@ -85,6 +91,7 @@ object NativeMtpBridge {
     senderId: Long,
     sender: String,
     body: String,
+    avatar: ByteArray,
   ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       context.getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -107,11 +114,36 @@ object NativeMtpBridge {
       openIntent,
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
+    val avatarBitmap = avatar.takeIf { it.isNotEmpty() }?.let {
+      BitmapFactory.decodeByteArray(it, 0, it.size)
+    }
+    val avatarIcon = avatarBitmap?.let(IconCompat::createWithAdaptiveBitmap)
+    val person = Person.Builder()
+      .setName(sender)
+      .setKey(senderId.toString())
+      .setIcon(avatarIcon)
+      .build()
+    val shortcutId = "chat-$senderId"
+    val shortcut = ShortcutInfoCompat.Builder(context, shortcutId)
+      .setShortLabel(sender)
+      .setLongLived(true)
+      .setPerson(person)
+      .setIntent(openIntent)
+      .apply { if (avatarIcon != null) setIcon(avatarIcon) }
+      .build()
+    ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
+
+    val style = NotificationCompat.MessagingStyle(
+      Person.Builder().setName("You").build(),
+    ).addMessage(body, System.currentTimeMillis(), person)
     val notification = NotificationCompat.Builder(context, MESSAGE_CHANNEL)
-      .setSmallIcon(android.R.drawable.sym_action_chat)
+      .setSmallIcon(R.drawable.ic_notification_small)
       .setContentTitle(sender)
       .setContentText(body)
-      .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+      .setStyle(style)
+      .setShortcutId(shortcutId)
+      .setLocusId(LocusIdCompat(shortcutId))
+      .setLargeIcon(avatarBitmap)
       .setCategory(Notification.CATEGORY_MESSAGE)
       .setAutoCancel(true)
       .setContentIntent(pendingIntent)
@@ -119,6 +151,11 @@ object NativeMtpBridge {
       .build()
     context.getSystemService(NotificationManager::class.java)
       .notify(senderId.hashCode(), notification)
+  }
+
+  fun cancelMessageNotification(context: Context, senderId: Long) {
+    context.getSystemService(NotificationManager::class.java)
+      .cancel(senderId.hashCode())
   }
 
 }

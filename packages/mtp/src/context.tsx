@@ -631,16 +631,6 @@ type NativeSnapshot = {
   error?: string;
 };
 
-type NativeEvent =
-  | { kind: "state"; snapshot: NativeSnapshot }
-  | { kind: "message"; generation: number; message: unknown }
-  | {
-      kind: "log";
-      level: number;
-      message: string;
-      details?: unknown;
-    };
-
 function TauriProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
@@ -713,7 +703,16 @@ function TauriProvider(props: {
     let disposed = false;
     let unlisten: UnlistenFn | undefined;
     void (async () => {
-      unlisten = await listen<NativeEvent>("mtp://event", ({ payload }) => {
+      unlisten = await listen<
+        | { kind: "state"; snapshot: NativeSnapshot }
+        | { kind: "message"; generation: number; message: unknown }
+        | {
+            kind: "log";
+            level: number;
+            message: string;
+            details?: unknown;
+          }
+      >("mtp://event", ({ payload }) => {
         if (disposed) return;
         if (payload.kind === "state") {
           applySnapshot(payload.snapshot);

@@ -22,7 +22,11 @@ export type DesktopScreenShareCapabilities = {
   hasReliableSystemAudio: boolean;
 };
 
-type ElectronDesktopApi = {
+
+
+declare global {
+  interface Window {
+    tensaminDesktop?: {
   media?: {
     getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
     listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
@@ -53,10 +57,6 @@ type ElectronDesktopApi = {
     clear?: () => Promise<void>;
   };
 };
-
-declare global {
-  interface Window {
-    tensaminDesktop?: ElectronDesktopApi;
   }
 }
 

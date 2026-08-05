@@ -21,12 +21,6 @@ import {
 } from "./values";
 import Wrapper from "@tensamin/user/wrapper";
 
-type MessageChunk = {
-  key: string;
-  messages: Array<RawMessage | LiveMessage>;
-  startIndex: number;
-};
-
 function shouldFetchPreviousPage({
   entry,
   hasNextPage,
@@ -108,7 +102,11 @@ function buildMessageChunks(
   keyPrefix: string,
   startOffset = 0,
 ) {
-  const chunks: MessageChunk[] = [];
+  const chunks: {
+    key: string;
+    messages: Array<RawMessage | LiveMessage>;
+    startIndex: number;
+  }[] = [];
 
   for (let end = messages.length; end > 0; end -= MESSAGES_PER_VIRTUAL_ROW) {
     const start = Math.max(0, end - MESSAGES_PER_VIRTUAL_ROW);
@@ -282,7 +280,7 @@ export default function Screen() {
     getItemKey,
     estimateSize,
     overscan: 2,
-    paddingStart: composerHeight + 8,
+    paddingStart: composerHeight + 20,
   });
   const totalSize = virtualizer.getTotalSize();
   const contentHeight = Math.max(totalSize, viewportHeight);

@@ -67,6 +67,13 @@ export default function InputComponent({
   }, [userId]);
 
   useEffect(() => {
+    if (replyTo === undefined) return;
+
+    const frame = requestAnimationFrame(() => composerRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [replyTo]);
+
+  useEffect(() => {
     const focusComposerOnType = (event: KeyboardEvent) => {
       const composer = composerRef.current;
       const target = event.target;

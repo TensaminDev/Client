@@ -21,10 +21,10 @@ export {
   type OnboardingStepControls,
 } from "@methanium/ui";
 
-type LegalDocs = z.infer<typeof legalDocsSchema>;
+
 
 interface GateState {
-  docs: LegalDocs;
+  docs: z.infer<typeof legalDocsSchema>;
   acceptedPP: boolean;
   acceptedTOS: boolean;
   includeLegal: boolean;
