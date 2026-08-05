@@ -15,7 +15,7 @@ name = "mobile_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { git = "https://github.com/tauri-apps/tauri", rev = "20f3f2515c65ca1e115991c3ef3625e2c29c1bbb", features = [] }
+tauri-build = { git = "https://github.com/tauri-apps/tauri", rev = "0aeadb6b2674ecd43f15b5dd6fcace3232f74b8a", features = [] }
 
 [dependencies]
 tauri-plugin-opener = "2"
