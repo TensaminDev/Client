@@ -35,7 +35,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-use-callback-ref": "^1.1.1",
     "@radix-ui/react-use-controllable-state": "^1.2.3",
-    "@radix-ui/react-use-effect-event": "^0.0.2",
+    "@radix-ui/react-use-effect-event": "^0.0.5",
     "@radix-ui/react-use-layout-effect": "^1.1.0",
     "@reduxjs/toolkit": "^2.0.0",
     "@tailwindcss/vite": "^4.2.4",
