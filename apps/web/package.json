@@ -111,7 +111,7 @@
     "recharts": "3.10.1",
     "redux": "^5.0.0",
     "redux-thunk": "^3.1.0",
-    "reselect": "5.1.1",
+    "reselect": "5.2.0",
     "scheduler": "^0.27.0",
     "seroval": "^1.5.4",
     "seroval-plugins": "^1.5.4",
