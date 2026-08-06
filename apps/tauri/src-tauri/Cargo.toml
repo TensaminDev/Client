@@ -25,7 +25,7 @@ base64 = "0.22"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["rt-multi-thread", "sync", "time"] }
 mtp = { git = "https://git.methanium.net/methanium/mtp.git", rev = "7182272e3edb0079d7b74b45b2f62a298d2fee22", features = ["client", "crypto"] }
-mtp-transport = { git = "https://git.methanium.net/methanium/mtp.git", rev = "a81ac4efca46fbf0e708c1a0f184735fc9bf7fec" }
+mtp-transport = { git = "https://git.methanium.net/methanium/mtp.git", rev = "7182272e3edb0079d7b74b45b2f62a298d2fee22" }
 webpki-root-certs = "1"
 tauri-plugin-deep-link = "2"
 tauri-plugin-notification = "2"
