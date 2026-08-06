@@ -22,13 +22,13 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@base-ui_react@1.6.0`
 - Source package dir: `apps/web/node_modules/@base-ui/react`
 
-## @base-ui/utils@0.3.1
+## @base-ui/utils@0.3.2
 
 - License: MIT
 - Repository: git+https://github.com/mui/base-ui.git
 - Description: A collection of React utility functions for Base UI.
 - Included files: LICENSE
-- Folder: `licenses/@base-ui_utils@0.3.1`
+- Folder: `licenses/@base-ui_utils@0.3.2`
 - Source package dir: `apps/web/node_modules/@base-ui/utils`
 
 ## @codemirror/autocomplete@6.20.3
@@ -163,6 +163,13 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@livekit_components-react@2.9.21`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
 
+## @methanium/ui@0.0.22
+
+- License: UNKNOWN
+- Included files: LICENSE
+- Folder: `licenses/@methanium_ui@0.0.22`
+- Source package dir: `apps/tauri/node_modules/@methanium/ui`
+
 ## @radix-ui/primitive@1.1.4
 
 - License: MIT
@@ -289,13 +296,13 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@radix-ui_react-use-controllable-state@1.2.3`
 - Source package dir: `apps/web/node_modules/@radix-ui/react-use-controllable-state`
 
-## @radix-ui/react-use-effect-event@0.0.2
+## @radix-ui/react-use-effect-event@0.0.5
 
 - License: MIT
 - Homepage: https://radix-ui.com/primitives
 - Repository: git+https://github.com/radix-ui/primitives.git
 - Included files: LICENSE
-- Folder: `licenses/@radix-ui_react-use-effect-event@0.0.2`
+- Folder: `licenses/@radix-ui_react-use-effect-event@0.0.5`
 - Source package dir: `apps/web/node_modules/@radix-ui/react-use-effect-event`
 
 ## @radix-ui/react-use-layout-effect@1.1.2
@@ -327,14 +334,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@tailwindcss_vite@4.3.2`
 - Source package dir: `apps/web/node_modules/@tailwindcss/vite`
 
-## @tanstack/devtools-event-client@0.3.5
+## @tanstack/devtools-event-client@0.5.0
 
 - License: MIT
 - Homepage: https://tanstack.com/devtools
-- Repository: https://github.com/TanStack/devtools.git
+- Repository: git+https://github.com/TanStack/devtools.git
 - Description: TanStack Event Client is a lightweight event client for TanStack Devtools event bus.
 - Included files: LICENSE
-- Folder: `licenses/@tanstack_devtools-event-client@0.3.5`
+- Folder: `licenses/@tanstack_devtools-event-client@0.5.0`
 - Source package dir: `apps/web/node_modules/@tanstack/devtools-event-client`
 
 ## @tanstack/history@1.162.0
@@ -367,6 +374,16 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@tanstack_query-core@5.101.2`
 - Source package dir: `apps/web/node_modules/@tanstack/query-core`
 
+## @tanstack/react-hotkeys@0.10.0
+
+- License: MIT
+- Homepage: https://tanstack.com/hotkeys
+- Repository: git+https://github.com/TanStack/hotkeys.git
+- Description: React adapter for TanStack Hotkeys
+- Included files: LICENSE
+- Folder: `licenses/@tanstack_react-hotkeys@0.10.0`
+- Source package dir: `packages/hotkeys/node_modules/@tanstack/react-hotkeys`
+
 ## @tanstack/react-query@5.101.2
 
 - License: MIT
@@ -387,14 +404,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@tanstack_react-router@1.170.17`
 - Source package dir: `apps/web/node_modules/@tanstack/react-router`
 
-## @tanstack/react-store@0.9.3
+## @tanstack/react-store@0.11.0
 
 - License: MIT
 - Homepage: https://tanstack.com/store
 - Repository: https://github.com/TanStack/store.git
 - Description: Framework agnostic type-safe store w/ reactive framework adapters
 - Included files: LICENSE
-- Folder: `licenses/@tanstack_react-store@0.9.3`
+- Folder: `licenses/@tanstack_react-store@0.11.0`
 - Source package dir: `apps/web/node_modules/@tanstack/react-store`
 
 ## @tanstack/react-virtual@3.14.5
@@ -417,14 +434,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@tanstack_router-core@1.171.14`
 - Source package dir: `apps/web/node_modules/@tanstack/router-core`
 
-## @tanstack/store@0.9.3
+## @tanstack/store@0.11.0
 
 - License: MIT
 - Homepage: https://tanstack.com/store
 - Repository: git+https://github.com/TanStack/store.git
 - Description: Framework agnostic type-safe store w/ reactive framework adapters
 - Included files: LICENSE
-- Folder: `licenses/@tanstack_store@0.9.3`
+- Folder: `licenses/@tanstack_store@0.11.0`
 - Source package dir: `apps/web/node_modules/@tanstack/store`
 
 ## @tanstack/virtual-core@3.17.3
@@ -491,13 +508,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Included files: LICENSE.spdx
 - Folder: `licenses/@tauri-apps_plugin-notification@2.3.3`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-notification`
-
-## @tensamin/ui@0.0.41
-
-- License: UNKNOWN
-- Included files: none found
-- Folder: `licenses/@tensamin_ui@0.0.41`
-- Source package dir: `apps/tauri/node_modules/@tensamin/ui`
 
 ## @twemoji/api@17.0.3
 
@@ -743,14 +753,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/decimal.js-light@2.5.1`
 - Source package dir: `apps/web/node_modules/decimal.js-light`
 
-## deepfilternet3-noise-filter@1.2.1
+## deepfilternet3-noise-filter@1.3.0
 
 - License: (Apache-2.0 OR MIT)
 - Homepage: https://github.com/mezonai/mezon-noise-suppression#readme
 - Repository: git+https://github.com/mezonai/mezon-noise-suppression.git
 - Description: Custom audio processor with DeepFilterNet3 noise filtering integrated with LiveKit client
 - Included files: LICENSE-APACHE, LICENSE-MIT
-- Folder: `licenses/deepfilternet3-noise-filter@1.2.1`
+- Folder: `licenses/deepfilternet3-noise-filter@1.3.0`
 - Source package dir: `packages/call/node_modules/deepfilternet3-noise-filter`
 
 ## detect-node-es@1.1.0
@@ -841,13 +851,13 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/es-toolkit@1.49.0`
 - Source package dir: `apps/web/node_modules/es-toolkit`
 
-## esbuild@0.25.12
+## esbuild@0.28.1
 
 - License: MIT
 - Repository: git+https://github.com/evanw/esbuild.git
 - Description: An extremely fast JavaScript and CSS bundler and minifier.
 - Included files: LICENSE.md
-- Folder: `licenses/esbuild@0.25.12`
+- Folder: `licenses/esbuild@0.28.1`
 - Source package dir: `apps/electron/node_modules/esbuild`
 
 ## eslint@10.6.0
@@ -1108,14 +1118,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/react-style-singleton@2.2.3`
 - Source package dir: `apps/web/node_modules/react-style-singleton`
 
-## recharts@3.8.1
+## recharts@3.10.1
 
 - License: MIT
 - Homepage: https://github.com/recharts/recharts
 - Repository: git+https://github.com/recharts/recharts.git
 - Description: React charts
 - Included files: LICENSE
-- Folder: `licenses/recharts@3.8.1`
+- Folder: `licenses/recharts@3.10.1`
 - Source package dir: `apps/web/node_modules/recharts`
 
 ## redux@5.0.1
@@ -1225,16 +1235,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Included files: LICENSE
 - Folder: `licenses/tailwindcss@4.3.2`
 - Source package dir: `apps/web/node_modules/tailwindcss`
-
-## tauri-plugin-app-events-api@0.2.0
-
-- License: MIT
-- Homepage: https://github.com/wtto00/tauri-plugin-app-events#readme
-- Repository: git+https://github.com/wtto00/tauri-plugin-app-events.git
-- Description: A plugin for tauri@v2 to listen some events on iOS and Android.
-- Included files: LICENSE
-- Folder: `licenses/tauri-plugin-app-events-api@0.2.0`
-- Source package dir: `packages/mtp/node_modules/tauri-plugin-app-events-api`
 
 ## tiny-invariant@1.3.3
 
