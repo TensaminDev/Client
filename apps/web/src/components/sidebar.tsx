@@ -36,23 +36,19 @@ import { useShowMobileNavbar } from "@/routes/app/useShowMobileNavbar";
 import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
 import type { User } from "@tensamin/user/context";
-import type z from "zod";
-import { mtp } from "@tensamin/shared/data";
+import { mtp, userPresencePreferenceSchema } from "@tensamin/shared/data";
 import { useMTP } from "@tensamin/mtp";
+import {
+  onlineStatusLabels,
+  onlineStatusOptions,
+  type OnlineStatus,
+} from "./status-options";
 
-type OnlineStatus = z.infer<typeof mtp.GetUserData.response.shape.OnlineStatus>;
-
-const onlineStatusLabels: Record<OnlineStatus, string> = {
-  user_online: "Online",
-  user_offline: "Offline",
-  user_dnd: "Do not disturb",
-  user_idle: "Idle",
-  user_wc: "Away",
-  user_borked: "Borked",
-  iota_offline: "Iota offline",
-  iota_online: "Iota online",
-  iota_borked: "Iota borked",
-};
+function accountPreference(status: User["OnlineStatus"]): OnlineStatus {
+  return userPresencePreferenceSchema.safeParse(status).success
+    ? (status as OnlineStatus)
+    : "user_online";
+}
 
 function StatusDialog({
   user,
@@ -87,7 +83,7 @@ function StatusDialog({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
           setDraftStatus(user.Status ?? "");
-          setDraftOnlineStatus(user.OnlineStatus);
+          setDraftOnlineStatus(accountPreference(user.OnlineStatus));
           setErrorMessage("");
           setSaveSucceeded(false);
         }
@@ -126,10 +122,11 @@ function StatusDialog({
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="p-1">
-              <SelectItem value="user_online">Online</SelectItem>
-              <SelectItem value="user_offline">Offline</SelectItem>
-              <SelectItem value="user_idle">Idle</SelectItem>
-              <SelectItem value="user_dnd">Do not disturb</SelectItem>
+              {onlineStatusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -140,12 +137,9 @@ function StatusDialog({
           <DialogClose render={<Button variant="destructive">Cancel</Button>} />
           <Button
             onClick={async () => {
-              const payload = {
-                ...(draftStatus && { status: draftStatus }),
-                OnlineStatus: draftOnlineStatus,
-              };
+              const payload = { UserState: draftOnlineStatus };
 
-              const validation = mtp.ChangeUserData.request.safeParse(payload);
+              const validation = mtp.SetUserState.request.safeParse(payload);
 
               if (!validation.success) {
                 setSaveSucceeded(false);
@@ -156,7 +150,17 @@ function StatusDialog({
               }
 
               try {
-                await send("ChangeUserData", validation.data);
+                await send("SetUserState", validation.data);
+                const profileValidation = mtp.ChangeUserData.request.safeParse({
+                  Status: draftStatus,
+                });
+                if (!profileValidation.success) {
+                  throw new Error(
+                    profileValidation.error.issues[0]?.message ??
+                      "Invalid status data",
+                  );
+                }
+                await send("ChangeUserData", profileValidation.data);
                 setSaveSucceeded(true);
                 setErrorMessage("");
               } catch (err) {
@@ -227,7 +231,9 @@ export default function Sidebar() {
                             <DropdownMenuItem
                               onClick={() => {
                                 setDraftStatus(user.Status ?? "");
-                                setDraftOnlineStatus(user.OnlineStatus);
+                                setDraftOnlineStatus(
+                                  accountPreference(user.OnlineStatus),
+                                );
                                 setStatusErrorMessage("");
                                 setStatusSaveSucceeded(false);
                                 setDialogOpen(true);
@@ -246,7 +252,9 @@ export default function Sidebar() {
                     onOpenChange={(nextOpen) => {
                       if (!nextOpen) {
                         setDraftStatus(user.Status ?? "");
-                        setDraftOnlineStatus(user.OnlineStatus);
+                        setDraftOnlineStatus(
+                          accountPreference(user.OnlineStatus),
+                        );
                         setStatusErrorMessage("");
                         setStatusSaveSucceeded(false);
                       }

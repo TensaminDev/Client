@@ -24,6 +24,7 @@ import {
   type MTP as Schemas,
 } from "@tensamin/shared/data";
 import { log } from "@tensamin/shared/log";
+import { ProtocolError } from "@tensamin/shared/errors";
 import { useStorage } from "@tensamin/storage/context";
 
 import { RECONNECT_RESET, RECONNECT_TRIES, RETRY_INTERVAL } from "./values";
@@ -62,8 +63,29 @@ const PUSH_TYPES = [
   "MessageDeleteLive",
   "MessageState",
   "CallInvite",
+  "GetStates",
+  "ClientChanged",
   "ErrorNoIota",
 ] as const;
+
+export function isPushType(type: string): boolean {
+  return (PUSH_TYPES as readonly string[]).includes(type);
+}
+
+function removeMissingContacts(
+  contacts: Contacts,
+  message: ProtocolMessage,
+): Contacts {
+  if (message.type !== "GetStates") return contacts;
+  const data = message.data as { MissingUserIds?: unknown };
+  if (!Array.isArray(data.MissingUserIds)) return contacts;
+  const missing = new Set(
+    data.MissingUserIds.filter(
+      (userId): userId is number => typeof userId === "number",
+    ),
+  );
+  return contacts.filter((contact) => !missing.has(contact.UserId));
+}
 
 export type MTPExchange = {
   type: keyof Schemas & string;
@@ -110,7 +132,7 @@ function getProtocolErrorDetails(error: unknown) {
 }
 
 // Zod schema validation
-function validateResponse<T extends keyof Schemas & string>(
+export function validateResponse<T extends keyof Schemas & string>(
   type: T,
   message: { id?: number; type: string; data: unknown },
 ): ProtocolMessage<T> {
@@ -142,15 +164,26 @@ function validateResponse<T extends keyof Schemas & string>(
 function useMessageHandlers() {
   const interceptorsRef = useRef(new Set<MTPInterceptor>());
   const pushHandlersRef = useRef(new Set<PushHandler>());
+  const lastInitialStateRef = useRef<ProtocolMessage | null>(null);
   const subscribePush = useCallback((handler: PushHandler) => {
     pushHandlersRef.current.add(handler);
+    const initialState = lastInitialStateRef.current;
+    if (initialState?.type === "GetStates") {
+      void Promise.resolve(handler(initialState)).catch(() => undefined);
+    }
     return () => pushHandlersRef.current.delete(handler);
   }, []);
   const addInterceptor = useCallback((interceptor: MTPInterceptor) => {
     interceptorsRef.current.add(interceptor);
     return () => interceptorsRef.current.delete(interceptor);
   }, []);
-  return { addInterceptor, interceptorsRef, pushHandlersRef, subscribePush };
+  return {
+    addInterceptor,
+    interceptorsRef,
+    lastInitialStateRef,
+    pushHandlersRef,
+    subscribePush,
+  };
 }
 
 function BrowserProvider(props: {
@@ -172,8 +205,13 @@ function BrowserProvider(props: {
   const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
     null,
   );
-  const { addInterceptor, interceptorsRef, pushHandlersRef, subscribePush } =
-    useMessageHandlers();
+  const {
+    addInterceptor,
+    interceptorsRef,
+    lastInitialStateRef,
+    pushHandlersRef,
+    subscribePush,
+  } = useMessageHandlers();
 
   const connected = readyState === ConnectionState.Connected;
 
@@ -197,7 +235,20 @@ function BrowserProvider(props: {
         (data ?? {}) as Record<string, unknown>,
         options,
       );
-      return validateResponse(type, message);
+      const response = validateResponse(type, message);
+      setFreshContacts((contacts) => removeMissingContacts(contacts, response));
+      if (response.type.startsWith("Error")) {
+        const errorData = response.data as Record<string, unknown>;
+        throw new ProtocolError({
+          type: response.type,
+          requestId: response.id,
+          errorType:
+            typeof errorData.ErrorType === "string"
+              ? errorData.ErrorType
+              : undefined,
+        });
+      }
+      return response;
     },
     [],
   );
@@ -418,12 +469,18 @@ function BrowserProvider(props: {
               return;
             }
 
+            setFreshContacts((contacts) =>
+              removeMissingContacts(contacts, validated),
+            );
             for (const handler of [...pushHandlersRef.current]) {
               void Promise.resolve()
                 .then(() => handler(validated))
                 .catch((error) => {
                   log(1, "mtp", "red", "Push handler failed", error, { type });
                 });
+            }
+            if (validated.type === "GetStates") {
+              lastInitialStateRef.current = validated;
             }
           });
         }
@@ -537,7 +594,13 @@ function BrowserProvider(props: {
       setIdentifying(false);
       sonnerToast.dismiss("mtp-connection-toast");
     };
-  }, [mtpUrl, props.blockConnection, load, pushHandlersRef]);
+  }, [
+    lastInitialStateRef,
+    mtpUrl,
+    props.blockConnection,
+    load,
+    pushHandlersRef,
+  ]);
 
   // No Iota check
   useEffect(() => {
@@ -644,8 +707,13 @@ function TauriProvider(props: {
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
   const generationRef = useRef(0);
-  const { addInterceptor, interceptorsRef, pushHandlersRef, subscribePush } =
-    useMessageHandlers();
+  const {
+    addInterceptor,
+    interceptorsRef,
+    lastInitialStateRef,
+    pushHandlersRef,
+    subscribePush,
+  } = useMessageHandlers();
   const subscriptionsRef = useRef(
     new Map<string, Set<(message: ProtocolMessage) => void>>(),
   );
@@ -686,7 +754,10 @@ function TauriProvider(props: {
         []) {
         handler(validated);
       }
-      if (!(PUSH_TYPES as readonly string[]).includes(validated.type)) return;
+      if (!isPushType(validated.type)) return;
+      setFreshContacts((contacts) =>
+        removeMissingContacts(contacts, validated),
+      );
       for (const handler of [...pushHandlersRef.current]) {
         void Promise.resolve(handler(validated)).catch((error) => {
           log(1, "mtp", "red", "Native MTP push handler failed", error, {
@@ -694,8 +765,11 @@ function TauriProvider(props: {
           });
         });
       }
+      if (validated.type === "GetStates") {
+        lastInitialStateRef.current = validated;
+      }
     },
-    [pushHandlersRef],
+    [lastInitialStateRef, pushHandlersRef],
   );
 
   useEffect(() => {
@@ -770,6 +844,20 @@ function TauriProvider(props: {
         id: options?.id,
       });
       const validated = validateResponse(type, response);
+      setFreshContacts((contacts) =>
+        removeMissingContacts(contacts, validated),
+      );
+      if (validated.type.startsWith("Error")) {
+        const errorData = validated.data as Record<string, unknown>;
+        throw new ProtocolError({
+          type: validated.type,
+          requestId: validated.id,
+          errorType:
+            typeof errorData.ErrorType === "string"
+              ? errorData.ErrorType
+              : undefined,
+        });
+      }
       for (const interceptor of interceptorsRef.current) {
         void Promise.resolve(
           interceptor({ type, data, response: validated as ProtocolMessage }),

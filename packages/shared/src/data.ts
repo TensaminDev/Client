@@ -143,34 +143,71 @@ export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
 export type Communities = z.infer<typeof authPayload.shape.Communities>;
 export type Calls = z.infer<typeof authPayload.shape.Calls>;
 
-
-
 // MTP
-const user = z.object({
+const userFields = {
   About: z.string().max(255).optional(),
   Avatar: z.string().optional(),
   Display: z.string().min(1).max(15),
   IotaId: z.number(),
   OmikronConnections: z.array(z.number()),
   OmikronId: z.number().optional(),
-  OnlineStatus: z.enum([
-    "user_offline",
-    "user_online",
-    "user_dnd",
-    "user_idle",
-    "user_wc",
-    "user_borked",
-    "iota_offline",
-    "iota_online",
-    "iota_borked",
-  ]),
   PublicKey: z.base64(),
   Status: z.string().max(15).optional(),
   SubEnd: z.number(),
   SubLevel: z.number(),
   UserId: z.number(),
   Username: z.string().min(1).max(15),
+};
+
+export const publicUserStateSchema = z.enum([
+  "user_online",
+  "user_idle",
+  "user_dnd",
+  "user_wc",
+  "user_offline",
+  "iota_offline",
+]);
+
+export const userPresencePreferenceSchema = z.enum([
+  "user_online",
+  "user_idle",
+  "user_dnd",
+  "user_wc",
+  "user_invisible",
+]);
+
+export const clientUserStateSchema = z.union([
+  publicUserStateSchema,
+  userPresencePreferenceSchema,
+]);
+
+export const publicUserSchema = z.object({
+  ...userFields,
+  OnlineStatus: z.enum([
+    "user_online",
+    "user_idle",
+    "user_dnd",
+    "user_wc",
+    "user_offline",
+    "iota_offline",
+    "user_borked",
+    "iota_online",
+    "iota_borked",
+  ]),
 });
+
+export const accountUserSchema = z.object({
+  ...userFields,
+  OnlineStatus: userPresencePreferenceSchema,
+});
+
+export const userSchema = z.union([publicUserSchema, accountUserSchema]);
+
+export const userStateEntrySchema = z.object({
+  UserId: z.number().int().positive(),
+  UserState: publicUserStateSchema,
+});
+
 export const mtp = {
   IdentificationResponse: {
     request: z.object({}).optional(),
@@ -201,10 +238,47 @@ export const mtp = {
       UserId: z.number().optional(),
       Username: z.string().optional(),
     }),
-    response: user,
+    response: userSchema,
+  },
+  GetStates: {
+    request: z.object({
+      SessionId: z.number().int().positive(),
+      UserIds: z.array(z.number().int().positive()),
+    }),
+    response: z.object({
+      SessionId: z.number().int().positive(),
+      // Keep valid entries when one entry in a server snapshot is malformed.
+      UserStates: z.array(userStateEntrySchema.nullable().catch(null)),
+      MissingUserIds: z.array(z.number().int().positive()).optional(),
+    }),
+  },
+  ClientChanged: {
+    request: z.object({}).optional(),
+    response: z.object({
+      SessionId: z.number().int().positive(),
+      UserId: z.number().int().positive(),
+      UserState: clientUserStateSchema,
+    }),
+  },
+  SetUserState: {
+    request: z.object({
+      UserState: userPresencePreferenceSchema,
+    }),
+    response: z.object({
+      UserState: userPresencePreferenceSchema,
+    }),
   },
   ChangeUserData: {
-    request: user.partial(),
+    request: z
+      .object({
+        About: userFields.About,
+        Avatar: userFields.Avatar,
+        Display: userFields.Display,
+        PublicKey: userFields.PublicKey,
+        Status: userFields.Status,
+        Username: userFields.Username,
+      })
+      .partial(),
     response: z.object({}),
   },
   MessageDelete: {
@@ -455,24 +529,24 @@ export interface Storage extends SettingsStorageDefaults {
   call_mute_range_end: number;
   theme_color: string;
   theme_palette: Record<
-  | "base00"
-  | "base01"
-  | "base02"
-  | "base03"
-  | "base04"
-  | "base05"
-  | "base06"
-  | "base07"
-  | "base08"
-  | "base09"
-  | "base0A"
-  | "base0B"
-  | "base0C"
-  | "base0D"
-  | "base0E"
-  | "base0F",
-  string
-> | null;
+    | "base00"
+    | "base01"
+    | "base02"
+    | "base03"
+    | "base04"
+    | "base05"
+    | "base06"
+    | "base07"
+    | "base08"
+    | "base09"
+    | "base0A"
+    | "base0B"
+    | "base0C"
+    | "base0D"
+    | "base0E"
+    | "base0F",
+    string
+  > | null;
   theme_primary_color: string;
   theme_polarity: "dark" | "light" | "system";
   theme_tint: "soft" | "hard" | "extreme";
@@ -585,7 +659,9 @@ export const storageDefaults: Storage = {
 
 // User Status
 export function getStatusColor(
-  status: z.infer<typeof mtp.GetUserData.response.shape.OnlineStatus>,
+  status:
+    | z.infer<typeof publicUserSchema.shape.OnlineStatus>
+    | z.infer<typeof userPresencePreferenceSchema>,
 ) {
   switch (status) {
     case "user_online":

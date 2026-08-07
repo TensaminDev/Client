@@ -49,5 +49,9 @@
     "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.2/methanium-ui.tgz",
     "mtp": "*",
     "sonner": "^2.0.7"
+  },
+  "overrides": {
+    "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.22/methanium-ui.tgz",
+    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.2.0-dev-a692bed/mtp-0.2.0.tgz"
   }
 }
