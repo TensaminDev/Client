@@ -15,7 +15,7 @@
     "build": "pnpm run test && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }
