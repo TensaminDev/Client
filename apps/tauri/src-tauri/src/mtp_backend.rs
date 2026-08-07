@@ -923,28 +923,33 @@ mod android {
     use std::sync::OnceLock;
 
     use jni::{
-        objects::{GlobalRef, JClass, JObject, JString, JValue},
-        JNIEnv, JavaVM,
+        jni_sig, jni_str,
+        objects::{Global, JClass, JObject, JString, JValue},
+        Env, EnvUnowned, JavaVM,
     };
     use serde_json::Value;
 
     pub struct Host {
         vm: JavaVM,
-        context: GlobalRef,
-        bridge: GlobalRef,
+        context: Global<JObject<'static>>,
+        bridge: Global<JObject<'static>>,
     }
 
     static HOST: OnceLock<Host> = OnceLock::new();
 
-    pub fn attach(env: &mut JNIEnv, context: JObject) -> Result<(), String> {
+    pub fn attach(env: &mut Env, context: JObject) -> Result<(), String> {
         if HOST.get().is_some() {
             return Ok(());
         }
         let class = env
-            .find_class("net/tensamin/client/NativeMtpBridge")
+            .find_class(jni_str!("net/tensamin/client/NativeMtpBridge"))
             .map_err(|e| e.to_string())?;
         let bridge = env
-            .get_static_field(class, "INSTANCE", "Lnet/tensamin/client/NativeMtpBridge;")
+            .get_static_field(
+                class,
+                jni_str!("INSTANCE"),
+                jni_sig!("Lnet/tensamin/client/NativeMtpBridge;"),
+            )
             .and_then(|value| value.l())
             .map_err(|e| e.to_string())?;
         HOST.set(Host {
@@ -955,15 +960,11 @@ mod android {
         .map_err(|_| "Android MTP host is already attached".to_string())
     }
 
-    fn with_env<T>(
-        call: impl FnOnce(&mut JNIEnv, &Host) -> Result<T, String>,
-    ) -> Result<T, String> {
+    fn with_env<T>(call: impl FnOnce(&mut Env, &Host) -> Result<T, String>) -> Result<T, String> {
         let host = HOST.get().ok_or("Android MTP host is not attached")?;
-        let mut env = host
-            .vm
-            .attach_current_thread_as_daemon()
-            .map_err(|e| e.to_string())?;
-        call(&mut env, host)
+        host.vm
+            .attach_current_thread(|env| Ok::<_, jni::errors::Error>(call(env, host)))
+            .map_err(|e| e.to_string())?
     }
 
     pub fn store_config(config: &str) -> Result<(), String> {
@@ -971,8 +972,8 @@ mod android {
             let value = env.new_string(config).map_err(|e| e.to_string())?;
             env.call_method(
                 host.bridge.as_obj(),
-                "storeConfig",
-                "(Landroid/content/Context;Ljava/lang/String;)V",
+                jni_str!("storeConfig"),
+                jni_sig!("(Landroid/content/Context;Ljava/lang/String;)V"),
                 &[
                     JValue::Object(host.context.as_obj()),
                     JValue::Object(&value),
@@ -987,8 +988,8 @@ mod android {
         with_env(|env, host| {
             env.call_method(
                 host.bridge.as_obj(),
-                "hasConfig",
-                "(Landroid/content/Context;)Z",
+                jni_str!("hasConfig"),
+                jni_sig!("(Landroid/content/Context;)Z"),
                 &[JValue::Object(host.context.as_obj())],
             )
             .and_then(|value| value.z())
@@ -1000,8 +1001,8 @@ mod android {
         with_env(|env, host| {
             env.call_method(
                 host.bridge.as_obj(),
-                "setServiceEnabled",
-                "(Landroid/content/Context;Z)V",
+                jni_str!("setServiceEnabled"),
+                jni_sig!("(Landroid/content/Context;Z)V"),
                 &[
                     JValue::Object(host.context.as_obj()),
                     JValue::Bool(enabled.into()),
@@ -1017,8 +1018,8 @@ mod android {
             let status = env.new_string(status).map_err(|e| e.to_string())?;
             env.call_method(
                 host.bridge.as_obj(),
-                "updateServiceStatus",
-                "(Landroid/content/Context;Ljava/lang/String;)V",
+                jni_str!("updateServiceStatus"),
+                jni_sig!("(Landroid/content/Context;Ljava/lang/String;)V"),
                 &[
                     JValue::Object(host.context.as_obj()),
                     JValue::Object(&status),
@@ -1043,8 +1044,8 @@ mod android {
                 .map_err(|e| e.to_string())?;
             env.call_method(
                 host.bridge.as_obj(),
-                "postMessageNotification",
-                "(Landroid/content/Context;JLjava/lang/String;Ljava/lang/String;[B)V",
+                jni_str!("postMessageNotification"),
+                jni_sig!("(Landroid/content/Context;JLjava/lang/String;Ljava/lang/String;[B)V"),
                 &[
                     JValue::Object(host.context.as_obj()),
                     JValue::Long(sender_id as i64),
@@ -1062,8 +1063,8 @@ mod android {
         with_env(|env, host| {
             env.call_method(
                 host.bridge.as_obj(),
-                "cancelMessageNotification",
-                "(Landroid/content/Context;J)V",
+                jni_str!("cancelMessageNotification"),
+                jni_sig!("(Landroid/content/Context;J)V"),
                 &[
                     JValue::Object(host.context.as_obj()),
                     JValue::Long(sender_id as i64),
@@ -1078,8 +1079,8 @@ mod android {
         with_env(|env, host| {
             env.call_method(
                 host.bridge.as_obj(),
-                "isIgnoringBatteryOptimizations",
-                "(Landroid/content/Context;)Z",
+                jni_str!("isIgnoringBatteryOptimizations"),
+                jni_sig!("(Landroid/content/Context;)Z"),
                 &[JValue::Object(host.context.as_obj())],
             )
             .and_then(|value| value.z())
@@ -1091,8 +1092,8 @@ mod android {
         with_env(|env, host| {
             env.call_method(
                 host.bridge.as_obj(),
-                "requestBatteryExemption",
-                "(Landroid/content/Context;)V",
+                jni_str!("requestBatteryExemption"),
+                jni_sig!("(Landroid/content/Context;)V"),
                 &[JValue::Object(host.context.as_obj())],
             )
             .map_err(|e| e.to_string())?;
@@ -1101,32 +1102,36 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeAttach(
-        mut env: JNIEnv,
+    pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeAttach<'caller>(
+        mut env: EnvUnowned<'caller>,
         _class: JClass,
-        context: JObject,
+        context: JObject<'caller>,
     ) {
-        let _ =
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| attach(&mut env, context)));
+        let _ = env.with_env(|env| {
+            let _ = attach(env, context);
+            Ok::<_, jni::errors::Error>(())
+        });
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeStart(
-        mut env: JNIEnv,
+    pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeStart<'caller>(
+        mut env: EnvUnowned<'caller>,
         _class: JClass,
-        config: JString,
+        config: JString<'caller>,
     ) {
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let config: String = env.get_string(&config).map_err(|e| e.to_string())?.into();
-            let config = serde_json::from_str(&config).map_err(|e| e.to_string())?;
-            super::manager().configure_and_start(config);
-            Ok::<_, String>(())
-        }));
+        let _ = env.with_env(|env| {
+            if let Ok(config) = config.mutf8_chars(env) {
+                if let Ok(config) = serde_json::from_str(config.to_str().as_ref()) {
+                    super::manager().configure_and_start(config);
+                }
+            }
+            Ok::<_, jni::errors::Error>(())
+        });
     }
 
     #[no_mangle]
     pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeStop(
-        _env: JNIEnv,
+        _env: EnvUnowned,
         _class: JClass,
     ) {
         let _ = std::panic::catch_unwind(|| super::manager().stop());
@@ -1134,31 +1139,34 @@ mod android {
 
     #[no_mangle]
     pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeSetUiState(
-        _env: JNIEnv,
+        _env: EnvUnowned,
         _class: JClass,
         visible: jni::sys::jboolean,
     ) {
-        super::manager().set_ui_visible(visible != 0);
+        super::manager().set_ui_visible(visible);
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeLog(
-        mut env: JNIEnv,
+    pub extern "system" fn Java_net_tensamin_client_NativeMtpBridge_nativeLog<'caller>(
+        mut env: EnvUnowned<'caller>,
         _class: JClass,
         level: jni::sys::jint,
-        message: JString,
-        details: JString,
+        message: JString<'caller>,
+        details: JString<'caller>,
     ) {
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let message: String = env.get_string(&message).map_err(|e| e.to_string())?.into();
-            let details: String = env.get_string(&details).map_err(|e| e.to_string())?.into();
-            super::manager().log(
-                level.clamp(0, 3) as u8,
-                message,
-                (!details.is_empty()).then(|| Value::String(details)),
-            );
-            Ok::<_, String>(())
-        }));
+        let _ = env.with_env(|env| {
+            if let (Ok(message), Ok(details)) = (message.mutf8_chars(env), details.mutf8_chars(env))
+            {
+                let message = message.to_str();
+                let details = details.to_str();
+                super::manager().log(
+                    level.clamp(0, 3) as u8,
+                    message.into_owned(),
+                    (!details.is_empty()).then(|| Value::String(details.into_owned())),
+                );
+            }
+            Ok::<_, jni::errors::Error>(())
+        });
     }
 }
 

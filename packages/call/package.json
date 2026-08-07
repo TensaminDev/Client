@@ -17,21 +17,21 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@livekit/components-react": "^2.9.20",
-    "@tanstack/react-router": "^1.169.1",
+    "@livekit/components-react": "^2.9.23",
+    "@methanium/ui": "*",
+    "@tanstack/react-router": "^1.170.21",
     "@tensamin/crypto": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/mtp": "workspace:*",
-    "@methanium/ui": "*",
     "@tensamin/user": "workspace:*",
     "deepfilternet3-noise-filter": "1.3.0",
-    "livekit-client": "^2.18.8",
-    "lucide-react": "^1.14.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "recharts": "^3.8.1",
-    "zod": "^4.3.6",
-    "zustand": "^5.0.8"
+    "livekit-client": "^2.21.0",
+    "lucide-react": "^1.29.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "recharts": "^3.10.1",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
   }
 }

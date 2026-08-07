@@ -1,0 +1,49 @@
+name: Dependency builds
+
+on:
+  pull_request:
+
+env:
+  NIX_CONFIG: experimental-features = nix-command flakes
+  FORGEJO_TOKEN: ""
+  GITHUB_TOKEN: ""
+
+jobs:
+  web:
+    if: ${{ github.actor == 'renovate' }}
+    name: Build web
+    runs-on: nixos
+    steps:
+      - run: nix profile add nixpkgs#nodejs_24
+      - uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: nix develop .#electron --command pnpm install --frozen-lockfile
+      - run: nix develop .#electron --command pnpm run build:packages
+      - run: nix develop .#electron --command pnpm run build:web
+
+  desktop:
+    if: ${{ github.actor == 'renovate' }}
+    name: Build desktop
+    runs-on: nixos
+    steps:
+      - run: nix profile add nixpkgs#nodejs_24
+      - uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: nix develop .#electron --command pnpm install --frozen-lockfile
+      - run: nix develop .#electron --command pnpm run build:packages
+      - run: nix develop .#electron --command pnpm run build:desktop
+
+  mobile:
+    if: ${{ github.actor == 'renovate' }}
+    name: Build mobile
+    runs-on: nixos
+    steps:
+      - run: nix profile add nixpkgs#nodejs_24
+      - uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: nix develop .#tauri --command pnpm install --frozen-lockfile
+      - run: nix develop .#tauri --command pnpm run build:packages
+      - run: nix develop .#tauri --command pnpm --dir apps/tauri run build:mobile:ci
