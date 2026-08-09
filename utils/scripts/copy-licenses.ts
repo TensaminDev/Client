@@ -1,6 +1,5 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { parse } from "yaml";
 
 type PnpmLock = {
   lockfileVersion?: number;
@@ -97,13 +96,92 @@ async function main(): Promise<void> {
 
 async function readPnpmLock(): Promise<PnpmLock> {
   const raw = await fs.readFile(LOCKFILE_PATH, "utf8");
-  const parsed = parse(raw);
 
-  if (!parsed || typeof parsed !== "object") {
-    throw new Error("Failed to parse pnpm-lock.yaml");
+  return {
+    importers: extractTopLevelMappingKeys(raw, "importers"),
+    packages: extractTopLevelMappingKeys(raw, "packages"),
+  };
+}
+
+function extractTopLevelMappingKeys(
+  yaml: string,
+  sectionName: string,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  const lines = yaml.split(/\r?\n/);
+
+  let inSection = false;
+
+  for (const line of lines) {
+    if (!line.trim() || line.trimStart().startsWith("#")) continue;
+
+    const indent = line.length - line.trimStart().length;
+
+    if (indent === 0) {
+      inSection = line === `${sectionName}:`;
+      continue;
+    }
+
+    if (!inSection || indent !== 2) continue;
+
+    const trimmed = line.trim();
+    const colonIndex = findYamlKeyColon(trimmed);
+    if (colonIndex < 0) continue;
+
+    const rawKey = trimmed.slice(0, colonIndex).trim();
+    if (!rawKey) continue;
+
+    result[decodeYamlKey(rawKey)] = {};
   }
 
-  return parsed as PnpmLock;
+  return result;
+}
+
+function findYamlKeyColon(value: string): number {
+  let quote: "'" | '"' | null = null;
+
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i];
+
+    if (quote === '"') {
+      if (ch === "\\") {
+        i++;
+      } else if (ch === '"') {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (quote === "'") {
+      if (ch === "'" && value[i + 1] === "'") {
+        i++;
+      } else if (ch === "'") {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+
+    if (ch === ":") return i;
+  }
+
+  return -1;
+}
+
+function decodeYamlKey(value: string): string {
+  if (value.startsWith('"') && value.endsWith('"')) {
+    return JSON.parse(value) as string;
+  }
+
+  if (value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1).replace(/''/g, "'");
+  }
+
+  return value;
 }
 
 async function getNodeModulesRoots(lock: PnpmLock): Promise<string[]> {
