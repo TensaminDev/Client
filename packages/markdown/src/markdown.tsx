@@ -8,6 +8,7 @@ import {
 } from "react";
 import Emoji from "./emoji";
 import { findEmojiShortcodes } from "./emojiData";
+import { Check } from "lucide-react";
 
 type InlineNode =
   | { type: "text"; value: string }
@@ -86,30 +87,7 @@ function CopiedIndicator({
       aria-live="polite"
       aria-hidden={!visible}
     >
-      <svg
-        className="size-3.5"
-        viewBox="0 0 16 16"
-        fill="none"
-        aria-hidden="true"
-      >
-        <rect
-          x="3"
-          y="3.5"
-          width="10"
-          height="11"
-          rx="2"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M6 4V2.75C6 2.06 6.56 1.5 7.25 1.5h1.5c.69 0 1.25.56 1.25 1.25V4"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span className="sr-only">Copied</span>
+      <Check className="size-3.5" />
     </span>
   );
 }
@@ -144,7 +122,7 @@ function CopyableCode({
 
   const code = (
     <code
-      className={block ? "tm-md-codeblock" : "tm-md-code"}
+      className={block ? "" : "bg-card border p-0.5 rounded text-sm"}
       data-language={language}
       role="button"
       tabIndex={0}
