@@ -16,7 +16,6 @@
     "@tanstack/react-router": "^1.170.21",
     "@tensamin/cache": "workspace:*",
     "@tensamin/hotkeys": "workspace:*",
-    "@tensamin/markdown": "workspace:*",
     "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",

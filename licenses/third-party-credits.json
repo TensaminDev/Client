@@ -1,85 +1,7 @@
 {
-  "generatedAt": "2026-08-09T18:16:10.172Z",
-  "packageCount": 60,
+  "generatedAt": "2026-08-09T22:09:04.466Z",
+  "packageCount": 52,
   "packages": [
-    {
-      "name": "@codemirror/autocomplete",
-      "version": "6.20.3",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "git+https://code.haverbeke.berlin/codemirror/autocomplete.git",
-      "description": "Autocompletion for the CodeMirror code editor",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@codemirror_autocomplete@6.20.3",
-      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/autocomplete"
-    },
-    {
-      "name": "@codemirror/commands",
-      "version": "6.10.4",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "git+https://code.haverbeke.berlin/codemirror/commands.git",
-      "description": "Collection of editing commands for the CodeMirror code editor",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@codemirror_commands@6.10.4",
-      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/commands"
-    },
-    {
-      "name": "@codemirror/lang-markdown",
-      "version": "6.5.2",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "git+https://code.haverbeke.berlin/codemirror/lang-markdown.git",
-      "description": "Markdown language support for the CodeMirror code editor",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@codemirror_lang-markdown@6.5.2",
-      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/lang-markdown"
-    },
-    {
-      "name": "@codemirror/language",
-      "version": "6.12.4",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "git+https://code.haverbeke.berlin/codemirror/language.git",
-      "description": "Language support infrastructure for the CodeMirror code editor",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@codemirror_language@6.12.4",
-      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/language"
-    },
-    {
-      "name": "@codemirror/state",
-      "version": "6.7.1",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "git+https://code.haverbeke.berlin/codemirror/state.git",
-      "description": "Editor state data structures for the CodeMirror code editor",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@codemirror_state@6.7.1",
-      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/state"
-    },
-    {
-      "name": "@codemirror/view",
-      "version": "6.43.8",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "git+https://code.haverbeke.berlin/codemirror/view.git",
-      "description": "DOM view component for the CodeMirror code editor",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@codemirror_view@6.43.8",
-      "sourcePackageDir": "packages/markdown/node_modules/@codemirror/view"
-    },
     {
       "name": "@eslint/js",
       "version": "10.0.1",
@@ -121,7 +43,7 @@
     },
     {
       "name": "@methanium/ui",
-      "version": "0.0.22",
+      "version": "0.0.28",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
@@ -129,7 +51,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@methanium_ui@0.0.22",
+      "licenseFolder": "licenses/@methanium_ui@0.0.28",
       "sourcePackageDir": "apps/tauri/node_modules/@methanium/ui"
     },
     {
@@ -278,19 +200,6 @@
       "sourcePackageDir": "packages/notifications/node_modules/@tauri-apps/plugin-notification"
     },
     {
-      "name": "@twemoji/api",
-      "version": "17.0.3",
-      "license": "MIT AND CC-BY-4.0",
-      "homepage": "https://github.com/jdecked/twemoji",
-      "repository": "git://github.com/jdecked/twemoji.git",
-      "description": "A Unicode standard based way to implement emoji across all platforms.",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@twemoji_api@17.0.3",
-      "sourcePackageDir": "packages/markdown/node_modules/@twemoji/api"
-    },
-    {
       "name": "@types/node",
       "version": "26.2.0",
       "license": "MIT",
@@ -420,19 +329,6 @@
       ],
       "licenseFolder": "licenses/electron-builder@26.15.3",
       "sourcePackageDir": "apps/electron/node_modules/electron-builder"
-    },
-    {
-      "name": "emojibase-data",
-      "version": "17.0.0",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "git@github.com:milesj/emojibase.git",
-      "description": "Evergreen emoji datasets.",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/emojibase-data@17.0.0",
-      "sourcePackageDir": "packages/markdown/node_modules/emojibase-data"
     },
     {
       "name": "esbuild",

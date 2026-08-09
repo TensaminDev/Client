@@ -1,4 +1,4 @@
-import MDInput from "@tensamin/markdown/input";
+import { Input as MDInput } from "@methanium/ui/markdown";
 import { useMTP } from "@tensamin/mtp";
 import { mtp } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
@@ -145,7 +145,6 @@ export default function Page() {
           value={draftUser.Username || ""}
         />
         <MDInput
-          styled
           paddingY="4px"
           paddingX="10px"
           fontSize=".875rem"

@@ -2,60 +2,6 @@
 
 Generated from pnpm-lock.yaml and installed packages in workspace node_modules folders.
 
-## @codemirror/autocomplete@6.20.3
-
-- License: MIT
-- Repository: git+https://code.haverbeke.berlin/codemirror/autocomplete.git
-- Description: Autocompletion for the CodeMirror code editor
-- Included files: LICENSE
-- Folder: `licenses/@codemirror_autocomplete@6.20.3`
-- Source package dir: `packages/markdown/node_modules/@codemirror/autocomplete`
-
-## @codemirror/commands@6.10.4
-
-- License: MIT
-- Repository: git+https://code.haverbeke.berlin/codemirror/commands.git
-- Description: Collection of editing commands for the CodeMirror code editor
-- Included files: LICENSE
-- Folder: `licenses/@codemirror_commands@6.10.4`
-- Source package dir: `packages/markdown/node_modules/@codemirror/commands`
-
-## @codemirror/lang-markdown@6.5.2
-
-- License: MIT
-- Repository: git+https://code.haverbeke.berlin/codemirror/lang-markdown.git
-- Description: Markdown language support for the CodeMirror code editor
-- Included files: LICENSE
-- Folder: `licenses/@codemirror_lang-markdown@6.5.2`
-- Source package dir: `packages/markdown/node_modules/@codemirror/lang-markdown`
-
-## @codemirror/language@6.12.4
-
-- License: MIT
-- Repository: git+https://code.haverbeke.berlin/codemirror/language.git
-- Description: Language support infrastructure for the CodeMirror code editor
-- Included files: LICENSE
-- Folder: `licenses/@codemirror_language@6.12.4`
-- Source package dir: `packages/markdown/node_modules/@codemirror/language`
-
-## @codemirror/state@6.7.1
-
-- License: MIT
-- Repository: git+https://code.haverbeke.berlin/codemirror/state.git
-- Description: Editor state data structures for the CodeMirror code editor
-- Included files: LICENSE
-- Folder: `licenses/@codemirror_state@6.7.1`
-- Source package dir: `packages/markdown/node_modules/@codemirror/state`
-
-## @codemirror/view@6.43.8
-
-- License: MIT
-- Repository: git+https://code.haverbeke.berlin/codemirror/view.git
-- Description: DOM view component for the CodeMirror code editor
-- Included files: LICENSE
-- Folder: `licenses/@codemirror_view@6.43.8`
-- Source package dir: `packages/markdown/node_modules/@codemirror/view`
-
 ## @eslint/js@10.0.1
 
 - License: MIT
@@ -84,11 +30,11 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@livekit_components-react@2.9.23`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
 
-## @methanium/ui@0.0.22
+## @methanium/ui@0.0.28
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@methanium_ui@0.0.22`
+- Folder: `licenses/@methanium_ui@0.0.28`
 - Source package dir: `apps/tauri/node_modules/@methanium/ui`
 
 ## @tailwindcss/vite@4.3.3
@@ -197,16 +143,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@tauri-apps_plugin-notification@2.3.3`
 - Source package dir: `packages/notifications/node_modules/@tauri-apps/plugin-notification`
 
-## @twemoji/api@17.0.3
-
-- License: MIT AND CC-BY-4.0
-- Homepage: https://github.com/jdecked/twemoji
-- Repository: git://github.com/jdecked/twemoji.git
-- Description: A Unicode standard based way to implement emoji across all platforms.
-- Included files: LICENSE
-- Folder: `licenses/@twemoji_api@17.0.3`
-- Source package dir: `packages/markdown/node_modules/@twemoji/api`
-
 ## @types/node@26.2.0
 
 - License: MIT
@@ -304,15 +240,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Included files: LICENSE
 - Folder: `licenses/electron-builder@26.15.3`
 - Source package dir: `apps/electron/node_modules/electron-builder`
-
-## emojibase-data@17.0.0
-
-- License: MIT
-- Repository: git@github.com:milesj/emojibase.git
-- Description: Evergreen emoji datasets.
-- Included files: LICENSE
-- Folder: `licenses/emojibase-data@17.0.0`
-- Source package dir: `packages/markdown/node_modules/emojibase-data`
 
 ## esbuild@0.28.1
 

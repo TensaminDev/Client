@@ -1,5 +1,4 @@
 import type { RawMessage } from "../values";
-import Text from "@tensamin/markdown/text";
 import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@tensamin/user/context";
@@ -9,6 +8,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
+  Card,
   cn,
   Skeleton,
 } from "@methanium/ui";
@@ -16,11 +16,10 @@ import MessageContextMenu from "./messageContextMenu";
 import Media from "./media";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
-import Input from "@tensamin/markdown/input";
 import { getMessage, useChat } from "../context";
 import { decryptChatText, encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
-import Emoji, { normalizeShortcode } from "@tensamin/markdown/emoji";
+import { Emoji, Input, normalizeShortcode, Text } from "@methanium/ui/markdown";
 import { useRecordEmojiUse } from "./emojiRanks";
 import { useUser } from "@tensamin/user/context";
 import ReplyBox from "./replyBox";
@@ -347,7 +346,7 @@ function MessageComponent({
                   </Avatar>
                 )}
                 <div
-                  className={cn("flex flex-col group", {
+                  className={cn("flex flex-col group w-full", {
                     "min-w-0 flex-1": editing,
                   })}
                 >
@@ -388,20 +387,21 @@ function MessageComponent({
                   )}
                   {editing ? (
                     <div className="flex w-full flex-col gap-1">
-                      <Input
-                        autoFocus
-                        className="w-full"
-                        styled
-                        setValue={setEditDraft}
-                        value={editDraft}
-                        onSubmit={() => {
-                          if (!editDraft.trim()) return;
-                          if (editDraft !== message.Content) {
-                            void submitEditMessage(editDraft);
-                          }
-                          onSetEditing(false);
-                        }}
-                      />
+                      <Card className="p-2!">
+                        <Input
+                          autoFocus
+                          className="w-full"
+                          setValue={setEditDraft}
+                          value={editDraft}
+                          onSubmit={() => {
+                            if (!editDraft.trim()) return;
+                            if (editDraft !== message.Content) {
+                              void submitEditMessage(editDraft);
+                            }
+                            onSetEditing(false);
+                          }}
+                        />
+                      </Card>
                       <div className="flex gap-1">
                         <Button
                           size="xs"
@@ -429,7 +429,7 @@ function MessageComponent({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 w-full!">
                       {isValidURL ? (
                         <Media
                           link={message.Content}
@@ -440,12 +440,12 @@ function MessageComponent({
                           })}
                         />
                       ) : (
-                        <Text value={message.Content} />
-                      )}
-                      {message.Edited && (
-                        <p className="text-xs text-muted-foreground self-center">
-                          (edited)
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <Text
+                            showEditedIndicator={message.Edited}
+                            value={message.Content}
+                          />
+                        </div>
                       )}
                     </div>
                   )}

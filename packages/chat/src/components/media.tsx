@@ -1,4 +1,4 @@
-import Text from "@tensamin/markdown/text";
+import { Text } from "@methanium/ui/markdown";
 import { useStorage } from "@tensamin/storage/context";
 import {
   Avatar,
@@ -22,9 +22,9 @@ import {
   X,
   ZoomIn,
 } from "lucide-react";
-import { useState, useMemo, useEffect, useRef, WheelEvent } from "react";
+import { useState, useMemo, useEffect, useRef, type WheelEvent } from "react";
 import MediaSaveButton from "./mediaSaveButton";
-import { User, useUser } from "@tensamin/user/context";
+import { type User, useUser } from "@tensamin/user/context";
 
 const zoomLevels = [1, 1.5, 2, 3];
 

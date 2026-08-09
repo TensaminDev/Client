@@ -1,4 +1,4 @@
-import Input, { type InputController } from "@tensamin/markdown/input";
+import { Input, type InputController } from "@methanium/ui/markdown";
 import {
   Card,
   CardHeader,
@@ -276,7 +276,7 @@ export default function InputComponent({
         <CardHeader className="relative p-0 flex flex-col">
           <div className="w-full flex items-center">
             <Input
-              className="w-full"
+              className="w-full p-2"
               onControllerChange={setComposer}
               paddingY="13px"
               paddingX="13px"

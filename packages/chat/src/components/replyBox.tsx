@@ -6,7 +6,7 @@ import {
   cn,
   Skeleton,
 } from "@methanium/ui";
-import Text from "@tensamin/markdown/text";
+import { Text } from "@methanium/ui/markdown";
 import type { User } from "@tensamin/user/context";
 import Wrapper from "@tensamin/user/wrapper";
 import { Forward, X } from "lucide-react";
@@ -77,12 +77,11 @@ export default function ReplyBox({
             ) : null}
             {content !== undefined && (
               <div className="h-5.5 min-w-0 flex-1 truncate flex gap-1">
-                <Text fontSize="0.88rem" value={content} />
-                {edited && (
-                  <p className="text-xs text-muted-foreground self-center">
-                    (edited)
-                  </p>
-                )}
+                <Text
+                  fontSize="0.88rem"
+                  showEditedIndicator={edited}
+                  value={content}
+                />
               </div>
             )}
           </>

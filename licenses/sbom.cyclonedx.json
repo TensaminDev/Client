@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-08-09T18:16:10.177Z",
+    "timestamp": "2026-08-09T22:09:04.469Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -16,192 +16,6 @@
     }
   },
   "components": [
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/autocomplete@6.20.3",
-      "name": "@codemirror/autocomplete",
-      "version": "6.20.3",
-      "purl": "pkg:npm/%40codemirror/autocomplete@6.20.3",
-      "description": "Autocompletion for the CodeMirror code editor",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "git+https://code.haverbeke.berlin/codemirror/autocomplete.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_autocomplete@6.20.3"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/@codemirror/autocomplete"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/commands@6.10.4",
-      "name": "@codemirror/commands",
-      "version": "6.10.4",
-      "purl": "pkg:npm/%40codemirror/commands@6.10.4",
-      "description": "Collection of editing commands for the CodeMirror code editor",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "git+https://code.haverbeke.berlin/codemirror/commands.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_commands@6.10.4"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/@codemirror/commands"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/lang-markdown@6.5.2",
-      "name": "@codemirror/lang-markdown",
-      "version": "6.5.2",
-      "purl": "pkg:npm/%40codemirror/lang-markdown@6.5.2",
-      "description": "Markdown language support for the CodeMirror code editor",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "git+https://code.haverbeke.berlin/codemirror/lang-markdown.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_lang-markdown@6.5.2"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/@codemirror/lang-markdown"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/language@6.12.4",
-      "name": "@codemirror/language",
-      "version": "6.12.4",
-      "purl": "pkg:npm/%40codemirror/language@6.12.4",
-      "description": "Language support infrastructure for the CodeMirror code editor",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "git+https://code.haverbeke.berlin/codemirror/language.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_language@6.12.4"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/@codemirror/language"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/state@6.7.1",
-      "name": "@codemirror/state",
-      "version": "6.7.1",
-      "purl": "pkg:npm/%40codemirror/state@6.7.1",
-      "description": "Editor state data structures for the CodeMirror code editor",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "git+https://code.haverbeke.berlin/codemirror/state.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_state@6.7.1"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/@codemirror/state"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/%40codemirror/view@6.43.8",
-      "name": "@codemirror/view",
-      "version": "6.43.8",
-      "purl": "pkg:npm/%40codemirror/view@6.43.8",
-      "description": "DOM view component for the CodeMirror code editor",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "git+https://code.haverbeke.berlin/codemirror/view.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@codemirror_view@6.43.8"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/@codemirror/view"
-        }
-      ]
-    },
     {
       "type": "library",
       "bomRef": "pkg:npm/%40eslint/js@10.0.1",
@@ -304,15 +118,15 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40methanium/ui@0.0.22",
+      "bomRef": "pkg:npm/%40methanium/ui@0.0.28",
       "name": "@methanium/ui",
-      "version": "0.0.22",
-      "purl": "pkg:npm/%40methanium/ui@0.0.22",
+      "version": "0.0.28",
+      "purl": "pkg:npm/%40methanium/ui@0.0.28",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@methanium_ui@0.0.22"
+          "value": "licenses/@methanium_ui@0.0.28"
         },
         {
           "name": "local:sourcePackageDir",
@@ -694,41 +508,6 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40twemoji/api@17.0.3",
-      "name": "@twemoji/api",
-      "version": "17.0.3",
-      "purl": "pkg:npm/%40twemoji/api@17.0.3",
-      "description": "A Unicode standard based way to implement emoji across all platforms.",
-      "licenses": [
-        {
-          "license": {
-            "name": "MIT AND CC-BY-4.0"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://github.com/jdecked/twemoji"
-        },
-        {
-          "type": "vcs",
-          "url": "git://github.com/jdecked/twemoji.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@twemoji_api@17.0.3"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/@twemoji/api"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bomRef": "pkg:npm/%40types/node@26.2.0",
       "name": "@types/node",
       "version": "26.2.0",
@@ -1066,37 +845,6 @@
         {
           "name": "local:sourcePackageDir",
           "value": "apps/electron/node_modules/electron-builder"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/emojibase-data@17.0.0",
-      "name": "emojibase-data",
-      "version": "17.0.0",
-      "purl": "pkg:npm/emojibase-data@17.0.0",
-      "description": "Evergreen emoji datasets.",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "git@github.com:milesj/emojibase.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/emojibase-data@17.0.0"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/markdown/node_modules/emojibase-data"
         }
       ]
     },
