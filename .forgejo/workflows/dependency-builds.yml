@@ -10,7 +10,7 @@ env:
 
 jobs:
   web:
-    if: ${{ github.actor == 'renovate' }}
+    if: ${{ github.actor == 'rasensprenger' }}
     name: Build web
     runs-on: nixos
     steps:
@@ -23,7 +23,7 @@ jobs:
       - run: nix develop .#electron --command pnpm run build:web
 
   desktop:
-    if: ${{ github.actor == 'renovate' }}
+    if: ${{ github.actor == 'rasensprenger' }}
     name: Build desktop
     runs-on: nixos
     steps:
@@ -36,7 +36,7 @@ jobs:
       - run: nix develop .#electron --command pnpm run build:desktop
 
   mobile:
-    if: ${{ github.actor == 'renovate' }}
+    if: ${{ github.actor == 'rasensprenger' }}
     name: Build mobile
     runs-on: nixos
     steps:
