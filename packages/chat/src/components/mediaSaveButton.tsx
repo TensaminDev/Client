@@ -1,6 +1,6 @@
-import { Button, cn } from "@methanium/ui";
+import { Button, cn, useIsMobile } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
-import { Save } from "lucide-react";
+import { Star } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function MediaSaveButton({
@@ -17,6 +17,7 @@ export default function MediaSaveButton({
   url: string;
 }) {
   const { load, save } = useStorage();
+  const isMobile = useIsMobile();
   const [savedMedia, setSavedMedia] = useState<string[] | null>(null);
   const isSaved = savedMedia ? savedMedia.includes(url) : defaultSaved;
 
@@ -40,17 +41,21 @@ export default function MediaSaveButton({
 
   return (
     <Button
+      variant="secondary"
       aria-label={ariaLabel ?? (isSaved ? "Unsave media" : "Save media")}
       className={cn(
-        "rounded-sm border-0! p-0 absolute right-1 top-1 z-10 h-9 w-9 -translate-y-2 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100 bg-card",
+        "rounded-sm border-0! p-0 absolute right-1 top-1 z-10 h-9 w-9 transition-all",
+        !isMobile &&
+          "-translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100",
         className,
       )}
       onClick={handleClick}
     >
-      <Save
+      <Star
+        color="var(--primary-foreground-alt)"
         className={cn(
           "size-4.5 stroke-1.5!",
-          isSaved && "fill-(--primary) stroke-(--primary-foreground-alt)",
+          isSaved ? "fill-(--primary)" : "",
         )}
       />
     </Button>

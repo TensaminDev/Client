@@ -431,7 +431,14 @@ function MessageComponent({
                   ) : (
                     <div className="flex gap-1">
                       {isValidURL ? (
-                        <Media link={message.Content} />
+                        <Media
+                          link={message.Content}
+                          senderId={message.SenderId}
+                          time={new Date(message.SendTime).toLocaleString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        />
                       ) : (
                         <Text value={message.Content} />
                       )}
