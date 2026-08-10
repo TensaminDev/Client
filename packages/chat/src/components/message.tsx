@@ -1,7 +1,7 @@
 import type { RawMessage } from "../values";
 import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import type { User } from "@tensamin/user/context";
+import { type SelectedUser, useUserFields } from "@tensamin/user/context";
 
 import {
   Avatar,
@@ -21,7 +21,6 @@ import { decryptChatText, encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
 import { Emoji, Input, normalizeShortcode, Text } from "@methanium/ui/markdown";
 import { useRecordEmojiUse } from "./emojiRanks";
-import { useUser } from "@tensamin/user/context";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { cancelMessageEditHotkey } from "../hotkeys";
@@ -40,7 +39,7 @@ function MessageComponent({
     decryptionFailed?: boolean;
   };
   onSetEditing: (editing: boolean) => void;
-  user: User | null;
+  user: SelectedUser<readonly ["UserId", "Avatar", "Display"]> | null;
 }) {
   const actuallyFailed =
     (message.failed && message.MessageState === "awaiting") ||
@@ -150,13 +149,14 @@ function MessageComponent({
     removeReaction,
     replyTo,
   } = useChat();
-  const { get: getUser } = useUser();
   const [replyMessage, setReplyMessage] = useState<RawMessage | null>(null);
-  const [replyUser, setReplyUser] = useState<User | null>(null);
+  const { data: replyUser } = useUserFields(replyMessage?.SenderId ?? null, [
+    "Avatar",
+    "Display",
+  ]);
   useEffect(() => {
     if (!message.ReplyId || !ownId || !chatSecret) {
       setReplyMessage(null);
-      setReplyUser(null);
       return;
     }
 
@@ -168,25 +168,20 @@ function MessageComponent({
       send,
     })
       .then(async (reply) => {
-        const [Content, author] = await Promise.all([
-          decryptChatText(chatSecret, reply.Content),
-          getUser(reply.SenderId),
-        ]);
+        const Content = await decryptChatText(chatSecret, reply.Content);
         if (!active) return;
         setReplyMessage({ ...reply, Content });
-        setReplyUser(author);
       })
       .catch((err) => {
         if (!active) return;
         setReplyMessage(null);
-        setReplyUser(null);
         log(1, "chat", "red", "Failed to get replied-to message", err);
       });
 
     return () => {
       active = false;
     };
-  }, [chatSecret, getUser, message.ReplyId, ownId, send, userId]);
+  }, [chatSecret, message.ReplyId, ownId, send, userId]);
   const recordUse = useRecordEmojiUse();
   const editingRef = useRef(editing);
   const onSetEditingRef = useRef(onSetEditing);

@@ -7,11 +7,13 @@ import {
   Skeleton,
 } from "@methanium/ui";
 import { Text } from "@methanium/ui/markdown";
-import type { User } from "@tensamin/user/context";
+import type { SelectedUser } from "@tensamin/user/context";
 import Wrapper from "@tensamin/user/wrapper";
 import { Forward, X } from "lucide-react";
 
-function ReplyUser({ user }: { user: User }) {
+type ReplyUserData = SelectedUser<readonly ["Avatar", "Display"]>;
+
+function ReplyUser({ user }: { user: ReplyUserData }) {
   return (
     <div className="flex gap-1 items-center">
       <Avatar className="h-5 w-5 shrink-0">
@@ -40,7 +42,7 @@ export default function ReplyBox({
   content?: string;
   loading?: boolean;
   onDismiss?: () => void;
-  user?: User;
+  user?: ReplyUserData;
   userId?: number;
   variant: "composer" | "message";
 }) {
@@ -71,6 +73,7 @@ export default function ReplyBox({
             ) : userId ? (
               <Wrapper
                 userId={userId}
+                fields={["Avatar", "Display"]}
                 loading={<Skeleton className="h-5 w-5 rounded-full" />}
                 component={(resolvedUser) => <ReplyUser user={resolvedUser} />}
               />

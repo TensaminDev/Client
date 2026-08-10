@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, type WheelEvent } from "react";
 import MediaSaveButton from "./mediaSaveButton";
-import { type User, useUser } from "@tensamin/user/context";
+import { useUserFields } from "@tensamin/user/context";
 
 const zoomLevels = [1, 1.5, 2, 3];
 
@@ -46,12 +46,7 @@ export default function Media({
   const wheelDelta = useRef(0);
   const hostname = useMemo(() => new URL(link).hostname, [link]);
 
-  // Get user's
-  const { get } = useUser();
-  const [user, setUser] = useState<undefined | User>(undefined);
-  useEffect(() => {
-    get(senderId).then(setUser);
-  }, [senderId, get]);
+  const { data: user } = useUserFields(senderId, ["Avatar", "Display"]);
   const avatar = user?.Avatar
     ? `data:image/webp;base64,${user.Avatar}`
     : undefined;

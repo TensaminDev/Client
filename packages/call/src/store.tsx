@@ -70,7 +70,6 @@ type SendFn = (
   data: Record<string, unknown>,
 ) => Promise<{ data: unknown }>;
 type LoadFn = (key: string) => Promise<unknown>;
-type GetUserFn = (userId: number) => Promise<{ PublicKey: string }>;
 type RemoteVideoTrackSelector = Track.Kind | Track.Source;
 
 type Runtime = {
@@ -80,7 +79,7 @@ type Runtime = {
   }) => Promise<void>;
   send: SendFn;
   load: LoadFn;
-  getUser: GetUserFn;
+  getPublicKey: (userId: number) => Promise<string>;
 };
 
 let _keyProvider: ExternalE2EEKeyProvider | null = null;
@@ -671,9 +670,7 @@ export async function sendCallInvite(userId: number) {
     throw new Error("Cannot send call invite without an active call.");
   }
 
-  const remotePublicKey = await runtime
-    .getUser(userId)
-    .then((data) => data.PublicKey);
+  const remotePublicKey = await runtime.getPublicKey(userId);
   const secretId = deriveCallSecretId(callId);
   const wrapped = await wrapCallSecret({
     callSecret,
@@ -1255,7 +1252,8 @@ export function useInitializeCall() {
       navigate,
       send: send as SendFn,
       load: load as LoadFn,
-      getUser: get as GetUserFn,
+      getPublicKey: (userId) =>
+        get(userId, ["PublicKey"]).then((user) => user.PublicKey),
     });
   }, [get, load, navigate, send]);
 

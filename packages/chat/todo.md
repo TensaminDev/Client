@@ -7,3 +7,4 @@
 - Drop any unique reactions above 10
 - Reply jumping
 - Add emoji picker
+- Improve arrow-up hotkey

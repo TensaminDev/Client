@@ -598,6 +598,7 @@ export default function Screen() {
                           <Wrapper
                             key={getMessageRenderKey(message)}
                             userId={message.SenderId}
+                            fields={["UserId", "Avatar", "Display"]}
                             loading={null}
                             component={(user) => (
                               <>

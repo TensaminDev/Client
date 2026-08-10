@@ -15,7 +15,10 @@ export function Basic({
   user,
   extra,
 }: {
-  user: User;
+  user: Pick<
+    User,
+    "Display" | "Username" | "Avatar" | "OnlineStatus" | "Status"
+  >;
   extra?: React.ReactNode;
 }) {
   const display = user.Display || user.Username || "Unknown";
@@ -57,8 +60,9 @@ export function Basic({
           </TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex w-full flex-col items-start justify-center gap-1 text-[15px]">
+      <div className="flex w-full flex-col items-start justify-center text-[15px]">
         <p>{display}</p>
+        <p className="text-xs text-muted-foreground">{user.Status}</p>
       </div>
       <div className="pr-1">{extra}</div>
     </Button>

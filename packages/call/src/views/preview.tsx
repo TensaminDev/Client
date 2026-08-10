@@ -1,54 +1,23 @@
-import { useEffect, useState } from "react";
 import { useCall } from "../store";
-import { useUser, type User } from "@tensamin/user/context";
+import { useUserFields } from "@tensamin/user/context";
+
+const USER_FIELDS = ["Display"] as const;
+
+function Participant({ userId }: { userId: number }) {
+  const { data: user } = useUserFields(userId, USER_FIELDS);
+  return user ? <p className="text-2xl">User: {user.Display}</p> : null;
+}
 
 export default function Preview() {
-  const { get } = useUser();
   const currentCallData = useCall((state) => state.currentCallData);
-
-  const [data, setData] = useState<User[]>([]);
-
-  useEffect(() => {
-    let active = true;
-
-    if (!currentCallData?.exists) {
-      return () => {
-        active = false;
-      };
-    }
-
-    void Promise.all(currentCallData.UserIds.map((id) => get(id)))
-      .then((users) => {
-        if (!active) {
-          return;
-        }
-
-        setData(users);
-      })
-      .catch(() => {
-        if (!active) {
-          return;
-        }
-
-        setData([]);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [currentCallData, get]);
 
   return (
     <div className="w-full h-full flex items-center justify-center">
       {currentCallData?.exists ? (
         <div className="flex flex-col gap-2">
-          {data.map((user) => {
-            return (
-              <p key={user.UserId} className="text-2xl">
-                User: {user.Display}
-              </p>
-            );
-          })}
+          {currentCallData.UserIds.map((userId) => (
+            <Participant key={userId} userId={userId} />
+          ))}
         </div>
       ) : (
         <p className="text-2xl">Call expired</p>

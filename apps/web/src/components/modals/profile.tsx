@@ -4,7 +4,20 @@ import { Text } from "@methanium/ui/markdown";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
-export default function Profile({ user }: { user: User }) {
+export default function Profile({
+  user,
+}: {
+  user: Pick<
+    User,
+    | "UserId"
+    | "Display"
+    | "Username"
+    | "Avatar"
+    | "About"
+    | "IotaId"
+    | "PublicKey"
+  >;
+}) {
   const [showAdvancedInformation, setShowAdvancedInformation] = useState(false);
 
   return (

@@ -1,3 +1,1 @@
-- Tauri notifications
-- Mobile notifications channel setup
 - Add notification symbol / outline to user modal

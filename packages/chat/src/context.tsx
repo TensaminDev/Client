@@ -458,7 +458,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           secretId,
           version: CHAT_SECRET_VERSION,
         });
-        const peerUser = await getUser(userIdValue);
+        const peerUser = await getUser(userIdValue, ["PublicKey"]);
         const peerWrapped = await wrapChatSecret({
           chatSecret: rawSecret,
           recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(

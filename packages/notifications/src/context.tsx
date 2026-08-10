@@ -99,7 +99,11 @@ export default function Provider(props: { children: React.ReactNode }) {
               }
             }
 
-            const user = await get(data.SenderId);
+            const user = await get(data.SenderId, [
+              "UserId",
+              "Display",
+              "Avatar",
+            ]);
 
             if (isTauri()) {
               if (!appFocused) return;

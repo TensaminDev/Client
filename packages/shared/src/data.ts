@@ -260,20 +260,13 @@ export const mtp = {
       UserState: clientUserStateSchema,
     }),
   },
-  SetUserState: {
-    request: z.object({
-      UserState: userPresencePreferenceSchema,
-    }),
-    response: z.object({
-      UserState: userPresencePreferenceSchema,
-    }),
-  },
   ChangeUserData: {
     request: z
       .object({
         About: userFields.About,
         Avatar: userFields.Avatar,
         Display: userFields.Display,
+        OnlineStatus: userPresencePreferenceSchema,
         PublicKey: userFields.PublicKey,
         Status: userFields.Status,
         Username: userFields.Username,

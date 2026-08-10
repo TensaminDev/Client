@@ -16,12 +16,14 @@ import {
 } from "../../store";
 import { Track, type Participant } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
-import { useUser, type User } from "@tensamin/user/context";
+import { type SelectedUser, useUserFields } from "@tensamin/user/context";
 import { useIsSpeaking } from "../../speakingState";
 import VideoViewer from "../videoViewer";
 import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
 import ContextMenu from "./contextMenu";
 import { useStorage } from "@tensamin/storage/context";
+
+const USER_FIELDS = ["UserId", "Avatar", "Display"] as const;
 
 function getTrackPublicationBySource(
   participant: Participant | undefined,
@@ -113,7 +115,7 @@ function Overlay({
   participant,
 }: {
   type: "user" | "stream";
-  user: User;
+  user: SelectedUser<typeof USER_FIELDS>;
   participant: Participant;
 }) {
   const isAdmin = getRoomMetadata()?.admins.includes(user.UserId) === true;
@@ -163,12 +165,16 @@ export default function Base({
   fill?: boolean;
   flush?: boolean;
 }) {
-  const { get } = useUser();
   const { load } = useStorage();
 
   const focusedParticipantId = useCall((state) => state.focusedParticipantId);
   const view = useCall((state) => state.view);
-  const [user, setUser] = useState<User | null>(null);
+  const participantId = Number(participant?.identity);
+  const validParticipantId =
+    participant && Number.isInteger(participantId) && participantId > 0
+      ? participantId
+      : null;
+  const { data: user } = useUserFields(validParticipantId, USER_FIELDS);
   const [avatarBackgroundColor, setAvatarBackgroundColor] = useState<
     string | undefined
   >(undefined);
@@ -190,31 +196,6 @@ export default function Base({
   useEffect(() => {
     load("user_id").then(setOwnId);
   }, [load]);
-
-  useEffect(() => {
-    const participantId = Number(participant?.identity);
-
-    if (
-      !participant ||
-      !Number.isInteger(participantId) ||
-      participantId <= 0
-    ) {
-      setUser(null);
-      return;
-    }
-
-    let active = true;
-
-    void get(participantId).then((nextUser) => {
-      if (active) {
-        setUser(nextUser);
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [participant, get]);
 
   useEffect(() => {
     if (type !== "user" || !user?.Avatar) {

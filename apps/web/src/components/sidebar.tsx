@@ -35,7 +35,7 @@ import SidebarBox from "@tensamin/call/sidebarBox";
 import { useShowMobileNavbar } from "@/routes/app/useShowMobileNavbar";
 import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
-import type { User } from "@tensamin/user/context";
+import { useUser, type User } from "@tensamin/user/context";
 import { mtp, userPresencePreferenceSchema } from "@tensamin/shared/data";
 import { useMTP } from "@tensamin/mtp";
 import {
@@ -64,7 +64,7 @@ function StatusDialog({
   saveSucceeded,
   setSaveSucceeded,
 }: {
-  user: User;
+  user: Pick<User, "UserId" | "OnlineStatus" | "Status">;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   send: ReturnType<typeof useMTP>["send"];
@@ -77,6 +77,8 @@ function StatusDialog({
   saveSucceeded: boolean;
   setSaveSucceeded: (value: boolean) => void;
 }) {
+  const { updateProfile, updateState } = useUser();
+
   return (
     <Dialog
       open={open}
@@ -137,9 +139,10 @@ function StatusDialog({
           <DialogClose render={<Button variant="destructive">Cancel</Button>} />
           <Button
             onClick={async () => {
-              const payload = { UserState: draftOnlineStatus };
-
-              const validation = mtp.SetUserState.request.safeParse(payload);
+              const validation = mtp.ChangeUserData.request.safeParse({
+                OnlineStatus: draftOnlineStatus,
+                Status: draftStatus,
+              });
 
               if (!validation.success) {
                 setSaveSucceeded(false);
@@ -150,17 +153,9 @@ function StatusDialog({
               }
 
               try {
-                await send("SetUserState", validation.data);
-                const profileValidation = mtp.ChangeUserData.request.safeParse({
-                  Status: draftStatus,
-                });
-                if (!profileValidation.success) {
-                  throw new Error(
-                    profileValidation.error.issues[0]?.message ??
-                      "Invalid status data",
-                  );
-                }
-                await send("ChangeUserData", profileValidation.data);
+                await send("ChangeUserData", validation.data);
+                updateState(user.UserId, draftOnlineStatus);
+                await updateProfile(user.UserId, { Status: draftStatus });
                 setSaveSucceeded(true);
                 setErrorMessage("");
               } catch (err) {
@@ -209,6 +204,14 @@ export default function Sidebar() {
             <Wrapper
               loading={<Loading />}
               userId={"own"}
+              fields={[
+                "UserId",
+                "Display",
+                "Username",
+                "Avatar",
+                "OnlineStatus",
+                "Status",
+              ]}
               component={(user) => (
                 <>
                   <Basic

@@ -14,9 +14,11 @@ import {
   useSidebar,
 } from "@methanium/ui";
 import { ScreenShareOff } from "lucide-react";
-import { useUser, type User } from "@tensamin/user/context";
+import { useUserFields } from "@tensamin/user/context";
 import { useIsSpeaking, useLastSpeakingParticipantId } from "../speakingState";
 import { getAverageImageColor } from "./modals/base";
+
+const USER_FIELDS = ["Avatar", "Display"] as const;
 
 function getTrackPublicationBySource(
   participant: Participant | undefined,
@@ -62,10 +64,12 @@ function MobileCallPill({
   callId: string;
 }) {
   const { setOpenMobile } = useSidebar();
-  const { get } = useUser();
   const lastSpeakingParticipantId = useLastSpeakingParticipantId();
   const isSpeaking = useIsSpeaking(lastSpeakingParticipantId ?? -1);
-  const [lastSpeakingUser, setLastSpeakingUser] = useState<User | null>(null);
+  const { data: lastSpeakingUser } = useUserFields(
+    lastSpeakingParticipantId,
+    USER_FIELDS,
+  );
   const [avatarBackgroundColor, setAvatarBackgroundColor] = useState<
     string | undefined
   >(undefined);
@@ -82,25 +86,6 @@ function MobileCallPill({
   const [position, setPosition] = useState<Positions>("top-right");
   const [coords, setCoords] = useState(initialCoords);
   const [isDragging, setIsDragging] = useState(false);
-
-  useEffect(() => {
-    if (lastSpeakingParticipantId == null) {
-      setLastSpeakingUser(null);
-      return;
-    }
-
-    let mounted = true;
-
-    void get(lastSpeakingParticipantId).then((user) => {
-      if (mounted) {
-        setLastSpeakingUser(user);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [get, lastSpeakingParticipantId]);
 
   useEffect(() => {
     if (!lastSpeakingUser?.Avatar) {

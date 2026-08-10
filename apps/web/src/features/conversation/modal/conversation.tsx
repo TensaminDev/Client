@@ -28,6 +28,13 @@ export default function ConversationModal({ userId }: { userId: number }) {
             <Wrapper
               loading={<Loading />}
               userId={userId}
+              fields={[
+                "Display",
+                "Username",
+                "Avatar",
+                "OnlineStatus",
+                "Status",
+              ]}
               component={(user) => <Basic user={user} />}
             />
           </div>

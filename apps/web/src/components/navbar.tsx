@@ -91,6 +91,15 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
         {pathname === "/chat" && id && (
           <Wrapper
             userId={id}
+            fields={[
+              "UserId",
+              "Display",
+              "Username",
+              "Avatar",
+              "About",
+              "IotaId",
+              "PublicKey",
+            ]}
             component={(user) =>
               isMobile ? (
                 <p className="font-medium text-[1.07rem]">{user?.Display}</p>
