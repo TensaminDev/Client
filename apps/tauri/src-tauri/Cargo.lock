@@ -5126,7 +5126,7 @@ dependencies = [
 [[package]]
 name = "tauri-build"
 version = "2.6.3"
-source = "git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390#c0bd0d5a61eedba5c4783add24455c5028c6f390"
+source = "git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762#e2e585ad1196c9572f86ef39aae01ef4c3b1a762"
 dependencies = [
  "anyhow",
  "cargo_toml",
@@ -5138,7 +5138,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "tauri-utils 2.9.3 (git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390)",
+ "tauri-utils 2.9.3 (git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762)",
  "tauri-winres",
  "walkdir",
 ]
@@ -5418,7 +5418,7 @@ dependencies = [
 [[package]]
 name = "tauri-utils"
 version = "2.9.3"
-source = "git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390#c0bd0d5a61eedba5c4783add24455c5028c6f390"
+source = "git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762#e2e585ad1196c9572f86ef39aae01ef4c3b1a762"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -5507,7 +5507,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tauri",
- "tauri-build 2.6.3 (git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390)",
+ "tauri-build 2.6.3 (git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762)",
  "tauri-plugin-barcode-scanner",
  "tauri-plugin-deep-link",
  "tauri-plugin-log",
