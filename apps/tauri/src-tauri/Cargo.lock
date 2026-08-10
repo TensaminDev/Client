@@ -924,7 +924,23 @@ dependencies = [
  "cpufeatures 0.2.17",
  "curve25519-dalek-derive",
  "digest 0.10.7",
- "fiat-crypto",
+ "fiat-crypto 0.2.9",
+ "rustc_version",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "curve25519-dalek"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5eed333089e2e1c1ac8c6c0398e5e2497b4c9926ca6d0365ed1e099afa5bc23"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.0",
+ "curve25519-dalek-derive",
+ "digest 0.11.3",
+ "fiat-crypto 0.3.0",
  "rustc_version",
  "subtle",
  "zeroize",
@@ -999,7 +1015,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7c1832837b905bbfb5101e07cc24c8deddf52f93225eee6ead5f4d63d53ddcb"
 dependencies = [
  "const-oid 0.9.6",
- "pem-rfc7468",
+ "pem-rfc7468 0.7.0",
  "zeroize",
 ]
 
@@ -1010,6 +1026,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a69dedd701da44b0536442edf09c81a64b0ab97a7a4a5e3d1971f00027cbc63d"
 dependencies = [
  "const-oid 0.10.2",
+ "pem-rfc7468 1.0.0",
  "zeroize",
 ]
 
@@ -1247,15 +1264,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "ed25519"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29fcf32e6c73d1079f83ab4d782de2d81620346a5f38c6237a86a22f8368980a"
+dependencies = [
+ "pkcs8 0.11.0",
+ "signature 3.0.0",
+]
+
+[[package]]
 name = "ed25519-dalek"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "70e796c081cee67dc755e1a36a0a172b897fab85fc3f6bc48307991f64e4eca9"
 dependencies = [
- "curve25519-dalek",
- "ed25519",
+ "curve25519-dalek 4.1.3",
+ "ed25519 2.2.3",
  "serde",
  "sha2 0.10.9",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "ed25519-dalek"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ebaa1a2bf1290ab3bfe5a7b771d050ebffab2711c19a81691c683a5144a25de"
+dependencies = [
+ "curve25519-dalek 5.0.0",
+ "ed25519 3.0.0",
+ "serde",
+ "sha2 0.11.0",
+ "signature 3.0.0",
  "subtle",
  "zeroize",
 ]
@@ -1405,6 +1447,12 @@ name = "fiat-crypto"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
+
+[[package]]
+name = "fiat-crypto"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64cd1e32ddd350061ae6edb1b082d7c54915b5c672c389143b9a63403a109f24"
 
 [[package]]
 name = "field-offset"
@@ -2822,12 +2870,12 @@ version = "0.2.0"
 source = "git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22#7182272e3edb0079d7b74b45b2f62a298d2fee22"
 dependencies = [
  "mtp-client",
- "mtp-codec",
- "mtp-common",
- "mtp-crypto",
+ "mtp-codec 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-crypto 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
  "mtp-host",
- "mtp-transport",
- "mtp-type-map",
+ "mtp-transport 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-type-map 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
  "mtp-webserver",
 ]
 
@@ -2836,10 +2884,10 @@ name = "mtp-client"
 version = "0.2.0"
 source = "git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22#7182272e3edb0079d7b74b45b2f62a298d2fee22"
 dependencies = [
- "mtp-codec",
- "mtp-common",
- "mtp-crypto",
- "mtp-transport",
+ "mtp-codec 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-crypto 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-transport 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
  "rand 0.10.2",
  "tokio",
 ]
@@ -2851,9 +2899,21 @@ source = "git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7
 dependencies = [
  "base64 0.23.1",
  "byteorder",
- "mtp-common",
- "mtp-crypto",
- "mtp-type-map",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-crypto 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-type-map 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "rand 0.10.2",
+]
+
+[[package]]
+name = "mtp-codec"
+version = "0.2.0"
+source = "git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b#b067614a684eb1856bc5db7b3fd82148c036ce6b"
+dependencies = [
+ "base64 0.23.1",
+ "byteorder",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b)",
+ "mtp-type-map 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b)",
  "rand 0.10.2",
 ]
 
@@ -2869,13 +2929,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mtp-common"
+version = "0.2.0"
+source = "git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b#b067614a684eb1856bc5db7b3fd82148c036ce6b"
+dependencies = [
+ "quinn",
+ "rustls",
+ "thiserror 2.0.19",
+ "wtransport",
+]
+
+[[package]]
 name = "mtp-crypto"
 version = "0.2.0"
 source = "git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22#7182272e3edb0079d7b74b45b2f62a298d2fee22"
 dependencies = [
  "base64 0.23.1",
  "chacha20poly1305",
- "ed25519-dalek",
+ "ed25519-dalek 2.2.0",
  "getrandom 0.4.3",
  "hkdf",
  "ml-dsa",
@@ -2891,14 +2962,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "mtp-crypto"
+version = "0.2.0"
+source = "git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b#b067614a684eb1856bc5db7b3fd82148c036ce6b"
+dependencies = [
+ "base64 0.23.1",
+ "chacha20poly1305",
+ "ed25519-dalek 3.0.0",
+ "getrandom 0.4.3",
+ "hkdf",
+ "ml-dsa",
+ "rand 0.10.2",
+ "rand_core 0.10.1",
+ "rustls",
+ "sha2 0.11.0",
+ "thiserror 2.0.19",
+ "tokio",
+ "zeroize",
+]
+
+[[package]]
 name = "mtp-host"
 version = "0.2.0"
 source = "git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22#7182272e3edb0079d7b74b45b2f62a298d2fee22"
 dependencies = [
- "mtp-codec",
- "mtp-common",
- "mtp-crypto",
- "mtp-transport",
+ "mtp-codec 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-crypto 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-transport 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
  "rand 0.10.2",
  "tokio",
  "tracing",
@@ -2911,9 +3002,27 @@ version = "0.2.0"
 source = "git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22#7182272e3edb0079d7b74b45b2f62a298d2fee22"
 dependencies = [
  "async-trait",
- "mtp-codec",
- "mtp-common",
- "mtp-crypto",
+ "mtp-codec 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-crypto 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "rcgen",
+ "rustls",
+ "rustls-native-certs",
+ "sha2 0.11.0",
+ "tokio",
+ "tracing",
+ "wtransport",
+]
+
+[[package]]
+name = "mtp-transport"
+version = "0.2.0"
+source = "git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b#b067614a684eb1856bc5db7b3fd82148c036ce6b"
+dependencies = [
+ "async-trait",
+ "mtp-codec 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b)",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b)",
+ "mtp-crypto 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b)",
  "rcgen",
  "rustls",
  "rustls-native-certs",
@@ -2933,6 +3042,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mtp-type-map"
+version = "0.2.0"
+source = "git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b#b067614a684eb1856bc5db7b3fd82148c036ce6b"
+dependencies = [
+ "serde",
+ "serde_yaml",
+]
+
+[[package]]
 name = "mtp-webserver"
 version = "0.2.0"
 source = "git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22#7182272e3edb0079d7b74b45b2f62a298d2fee22"
@@ -2946,11 +3064,11 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
- "mtp-codec",
- "mtp-common",
- "mtp-crypto",
+ "mtp-codec 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-common 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
+ "mtp-crypto 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
  "mtp-host",
- "mtp-transport",
+ "mtp-transport 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=7182272e3edb0079d7b74b45b2f62a298d2fee22)",
  "quinn",
  "rand 0.10.2",
  "rustls",
@@ -3459,6 +3577,15 @@ name = "pem-rfc7468"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88b39c9bfcfc231068454382784bb460aae594343fb030d46e9f50a645418412"
+dependencies = [
+ "base64ct",
+]
+
+[[package]]
+name = "pem-rfc7468"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6305423e0e7738146434843d1694d621cce767262b2a86910beab705e4493d9"
 dependencies = [
  "base64ct",
 ]
@@ -4999,7 +5126,7 @@ dependencies = [
 [[package]]
 name = "tauri-build"
 version = "2.6.3"
-source = "git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390#c0bd0d5a61eedba5c4783add24455c5028c6f390"
+source = "git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762#e2e585ad1196c9572f86ef39aae01ef4c3b1a762"
 dependencies = [
  "anyhow",
  "cargo_toml",
@@ -5011,7 +5138,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "tauri-utils 2.9.3 (git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390)",
+ "tauri-utils 2.9.3 (git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762)",
  "tauri-winres",
  "walkdir",
 ]
@@ -5291,7 +5418,7 @@ dependencies = [
 [[package]]
 name = "tauri-utils"
 version = "2.9.3"
-source = "git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390#c0bd0d5a61eedba5c4783add24455c5028c6f390"
+source = "git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762#e2e585ad1196c9572f86ef39aae01ef4c3b1a762"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -5370,17 +5497,17 @@ dependencies = [
 
 [[package]]
 name = "tensamin"
-version = "0.0.11"
+version = "0.0.0"
 dependencies = [
  "base64 0.22.1",
  "jni 0.22.4",
  "mtp",
- "mtp-transport",
+ "mtp-transport 0.2.0 (git+https://git.methanium.net/methanium/mtp.git?rev=b067614a684eb1856bc5db7b3fd82148c036ce6b)",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
  "tauri",
- "tauri-build 2.6.3 (git+https://github.com/tauri-apps/tauri?rev=c0bd0d5a61eedba5c4783add24455c5028c6f390)",
+ "tauri-build 2.6.3 (git+https://github.com/tauri-apps/tauri?rev=e2e585ad1196c9572f86ef39aae01ef4c3b1a762)",
  "tauri-plugin-barcode-scanner",
  "tauri-plugin-deep-link",
  "tauri-plugin-log",
@@ -6701,7 +6828,7 @@ version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7e468321c81fb07fa7f4c636c3972b9100f0346e5b6a9f2bd0603a52f7ed277"
 dependencies = [
- "curve25519-dalek",
+ "curve25519-dalek 4.1.3",
  "rand_core 0.6.4",
  "serde",
  "zeroize",
