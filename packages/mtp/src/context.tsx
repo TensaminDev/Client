@@ -777,40 +777,49 @@ function TauriProvider(props: {
     let disposed = false;
     let unlisten: UnlistenFn | undefined;
     void (async () => {
-      unlisten = await listen<
-        | { kind: "state"; snapshot: NativeSnapshot }
-        | { kind: "message"; generation: number; message: unknown }
-        | {
-            kind: "log";
-            level: number;
-            message: string;
-            details?: unknown;
+      try {
+        const nextUnlisten = await listen<
+          | { kind: "state"; snapshot: NativeSnapshot }
+          | { kind: "message"; generation: number; message: unknown }
+          | {
+              kind: "log";
+              level: number;
+              message: string;
+              details?: unknown;
+            }
+        >("mtp://event", ({ payload }) => {
+          if (disposed) return;
+          if (payload.kind === "state") {
+            applySnapshot(payload.snapshot);
+            return;
           }
-      >("mtp://event", ({ payload }) => {
-        if (disposed) return;
-        if (payload.kind === "state") {
-          applySnapshot(payload.snapshot);
-          return;
-        }
-        if (payload.kind === "message") {
-          if (payload.generation === generationRef.current) {
-            dispatchMessage(payload.message);
+          if (payload.kind === "message") {
+            if (payload.generation === generationRef.current) {
+              dispatchMessage(payload.message);
+            }
+            return;
           }
-          return;
-        }
-        log(
-          payload.level,
-          "android",
-          "orange",
-          payload.message,
-          payload.details,
-        );
-      });
-      const current = await invoke<NativeSnapshot>("mtp_status");
-      if (!disposed) applySnapshot(current);
-    })().catch((error) => {
-      log(0, "mtp", "red", "Failed to initialize native MTP bridge", error);
-    });
+          log(
+            payload.level,
+            "android",
+            "orange",
+            payload.message,
+            payload.details,
+          );
+        });
+        if (disposed) nextUnlisten();
+        else unlisten = nextUnlisten;
+      } catch (error) {
+        log(0, "mtp", "red", "Failed to subscribe to native MTP events", error);
+      }
+
+      try {
+        const current = await invoke<NativeSnapshot>("mtp_status");
+        if (!disposed) applySnapshot(current);
+      } catch (error) {
+        log(0, "mtp", "red", "Failed to load native MTP status", error);
+      }
+    })();
     return () => {
       disposed = true;
       unlisten?.();

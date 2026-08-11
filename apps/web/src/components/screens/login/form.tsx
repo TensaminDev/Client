@@ -76,11 +76,6 @@ function parseTuFileContent(rawFileContent: string): {
     throw new Error("Invalid file");
   }
 
-  console.log({
-    domain,
-    userId,
-  });
-
   return { userId, privateKey, domain };
 }
 

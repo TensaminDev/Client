@@ -14,6 +14,7 @@
   "dependencies": {
     "@methanium/ui": "*",
     "@tanstack/react-router": "^1.170.21",
+    "@tauri-apps/api": "^2.11.1",
     "@tensamin/cache": "workspace:*",
     "@tensamin/hotkeys": "workspace:*",
     "@tensamin/mtp": "workspace:*",

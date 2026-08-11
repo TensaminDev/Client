@@ -1,3 +1,4 @@
+mod accessibility_backend;
 mod mtp_backend;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -19,6 +20,8 @@ pub fn run() {
 
     let app = builder
         .invoke_handler(tauri::generate_handler![
+            accessibility_backend::accessibility_get_initial_scale,
+            accessibility_backend::accessibility_set_initial_scale,
             mtp_backend::mtp_request,
             mtp_backend::mtp_status,
             mtp_backend::mtp_store_credentials,

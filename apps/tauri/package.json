@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "dev:mobile:raw": "tauri android dev --host ${TAURI_DEV_HOST:-127.0.0.1}",
+    "dev:mobile:raw": "adb reverse tcp:3000 tcp:3000 && tauri android dev --host ${TAURI_DEV_HOST:-127.0.0.1}",
     "start-adb:mobile:raw": "adb devices",
     "build:mobile:raw": "tauri android build",
     "build:mobile:ci": "node render-version.ts && trap 'node render-version.ts --unrender' EXIT && tauri android build --debug",

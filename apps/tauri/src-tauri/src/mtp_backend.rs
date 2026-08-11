@@ -372,9 +372,13 @@ async fn connect(config: &MtpConfig) -> Result<(MTPConnection, Value), String> {
         .with_max_missed_pings(3);
     #[cfg(target_os = "android")]
     let client_config = client_config.with_pinned_pem(android_root_certificates().clone());
-    let connection = MTPClient::auth_connect(client_config, &keyring, &host_key)
-        .await
-        .map_err(|error| format!("transport authentication failed: {error}"))?;
+    let connection = tokio::time::timeout(
+        Duration::from_secs(30),
+        MTPClient::auth_connect(client_config, &keyring, &host_key),
+    )
+    .await
+    .map_err(|_| "transport authentication timed out".to_string())?
+    .map_err(|error| format!("transport authentication failed: {error}"))?;
     manager().log(2, "Native MTP authentication completed", None);
 
     let connected = CommunicationValue::new(CommunicationType::ClientConnected)
@@ -385,10 +389,13 @@ async fn connect(config: &MtpConfig) -> Result<(MTPConnection, Value), String> {
         .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
         .add_typed_default(DataType::CacheValid, DataValue::BoolFalse)
         .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0));
-    let state = connection
-        .request(&connected, None)
-        .await
-        .map_err(|error| format!("initial state synchronization failed: {error}"))?;
+    let state = tokio::time::timeout(
+        Duration::from_secs(30),
+        connection.request(&connected, None),
+    )
+    .await
+    .map_err(|_| "initial state synchronization timed out".to_string())?
+    .map_err(|error| format!("initial state synchronization failed: {error}"))?;
     if !state.is_type(CommunicationType::ClientStateSync) {
         return Err(format!(
             "expected ClientStateSync, received {}",
@@ -406,9 +413,9 @@ async fn connect(config: &MtpConfig) -> Result<(MTPConnection, Value), String> {
     let ack = CommunicationValue::new(CommunicationType::ClientStateAck)
         .add_typed_default(DataType::SessionId, number_to_data(session_id))
         .add_typed_default(DataType::VersionNumber, number_to_data(version));
-    let response = connection
-        .request(&ack, None)
+    let response = tokio::time::timeout(Duration::from_secs(30), connection.request(&ack, None))
         .await
+        .map_err(|_| "state acknowledgement timed out".to_string())?
         .map_err(|error| format!("state acknowledgement failed: {error}"))?;
     if response
         .get_type_name()
@@ -433,7 +440,19 @@ async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String
         public_key: String,
     }
     let root = config.omega_url.trim_end_matches('/');
-    let response = reqwest::get(format!("{root}/api/get/omikron/{}", config.user_id))
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(20));
+    #[cfg(target_os = "android")]
+    let client = client.tls_certs_only(
+        reqwest::Certificate::from_pem_bundle(android_root_certificates())
+            .map_err(|error| format!("invalid bundled root certificates: {error}"))?,
+    );
+    let response = client
+        .build()
+        .map_err(|error| error.to_string())?
+        .get(format!("{root}/api/get/omikron/{}", config.user_id))
+        .send()
         .await
         .map_err(|error| error.to_string())?;
     if !response.status().is_success() {
