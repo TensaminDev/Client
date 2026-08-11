@@ -13,14 +13,14 @@ import {
   Skeleton,
 } from "@methanium/ui";
 import MessageContextMenu from "./messageContextMenu";
-import Media from "./media";
+import Media from "./media/media";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
 import { getMessage, useChat } from "../context";
 import { decryptChatText, encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
 import { Emoji, Input, normalizeShortcode, Text } from "@methanium/ui/markdown";
-import { useRecordEmojiUse } from "./emojiRanks";
+import { useRecordEmojiUse } from "./emoji/emojiRanks";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { cancelMessageEditHotkey } from "../hotkeys";
@@ -381,8 +381,8 @@ function MessageComponent({
                     </div>
                   )}
                   {editing ? (
-                    <div className="flex w-full flex-col gap-1">
-                      <Card className="p-2!">
+                    <div className="flex w-full flex-col gap-1 py-1.5">
+                      <Card className="px-2! py-0! rounded-md">
                         <Input
                           autoFocus
                           className="w-full"
@@ -400,8 +400,7 @@ function MessageComponent({
                       <div className="flex gap-1">
                         <Button
                           size="xs"
-                          variant="link"
-                          className="text-primary-foreground-alt"
+                          variant="subtleDefault"
                           onClick={() => {
                             if (!editDraft.trim()) return;
                             if (editDraft !== message.Content) {
@@ -415,8 +414,7 @@ function MessageComponent({
                         </Button>
                         <Button
                           size="xs"
-                          variant="link"
-                          className="text-muted-foreground"
+                          variant="outline"
                           onClick={cancelEditing}
                         >
                           Cancel

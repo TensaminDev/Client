@@ -8,9 +8,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@methanium/ui";
+import type { ChatPickerMediaGroup } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
-import { Loader2, Search } from "lucide-react";
+import { ArrowLeft, Loader2, Search } from "lucide-react";
 import MediaSaveButton from "./mediaSaveButton";
+import { getUngroupedMedia } from "./mediaGroups";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -443,21 +445,34 @@ function KlipyPanel({
 }
 
 function SavedPanel({
+  groups,
   onSelect,
   onSavedMediaChange,
+  onSavedMediaGroupsChange,
   resizeWidth,
   urls,
 }: {
+  groups: ChatPickerMediaGroup[];
   onSelect: (url: string) => void;
   onSavedMediaChange: (savedMedia: string[]) => void;
+  onSavedMediaGroupsChange: (groups: ChatPickerMediaGroup[]) => void;
   resizeWidth?: number;
   urls: string[];
 }) {
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [scrollRef, measuredWidth] = useMeasuredWidth();
-  const imageSizes = useImageSizes(urls);
+  const selectedGroup = groups.find((group) => group.id === selectedGroupId);
+  const sortedGroups = [...groups].sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
+  const visibleUrls = selectedGroup
+    ? selectedGroup.media.filter((url) => urls.includes(url))
+    : getUngroupedMedia(urls, groups);
+  const imageSizes = useImageSizes(visibleUrls);
   const columnWidth = resizeWidth ?? measuredWidth;
-  const columnCount = getColumnCount(columnWidth, urls.length);
-  const columns = distributeByHeight(urls, columnCount, (url) => {
+  const columnCount = getColumnCount(columnWidth, visibleUrls.length);
+  const groupColumnCount = getColumnCount(columnWidth, groups.length);
+  const columns = distributeByHeight(visibleUrls, columnCount, (url) => {
     const size = imageSizes[url];
 
     if (!size?.width || !size.height) return 1;
@@ -475,6 +490,50 @@ function SavedPanel({
 
   return (
     <div ref={scrollRef} className="min-h-0 w-full flex-1 overflow-y-auto pr-1">
+      {selectedGroup ? (
+        <div className="mb-2 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            aria-label="Back to saved media groups"
+            className="h-8 w-8 p-0"
+            onClick={() => setSelectedGroupId(null)}
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
+          <span className="font-medium">{selectedGroup.name}</span>
+        </div>
+      ) : groups.length > 0 ? (
+        <div
+          className="mb-2 grid gap-2"
+          style={{
+            gridTemplateColumns: `repeat(${groupColumnCount}, minmax(0, 1fr))`,
+          }}
+        >
+          {sortedGroups.map((group) => (
+            <button
+              key={group.id}
+              className="relative h-24 overflow-hidden rounded-lg border bg-muted bg-cover bg-center p-1 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              style={{
+                backgroundImage: `url(${JSON.stringify(group.media[0])})`,
+              }}
+              type="button"
+              onClick={() => setSelectedGroupId(group.id)}
+            >
+              <span className="absolute inset-0 bg-black/40" />
+              <span className="relative flex h-full items-center justify-center font-medium text-white drop-shadow-sm">
+                {group.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {visibleUrls.length === 0 ? (
+        <div className="flex min-h-32 items-center justify-center text-center text-muted-foreground">
+          {selectedGroup ? "This group is empty." : "No ungrouped media."}
+        </div>
+      ) : null}
+
       <div className="flex w-full items-start gap-2">
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="flex min-w-0 flex-1 flex-col gap-2">
@@ -504,6 +563,7 @@ function SavedPanel({
                     ariaLabel="Unsave media"
                     defaultSaved
                     onSavedMediaChange={onSavedMediaChange}
+                    onSavedMediaGroupsChange={onSavedMediaGroupsChange}
                     url={url}
                   />
                 </div>
@@ -530,6 +590,9 @@ export default function GifPicker({
   const [searchString, setSearchString] = useState("");
   const [debouncedSearchString, setDebouncedSearchString] = useState("");
   const [savedMedia, setSavedMedia] = useState<string[]>([]);
+  const [savedMediaGroups, setSavedMediaGroups] = useState<
+    ChatPickerMediaGroup[]
+  >([]);
   const didLoadLastTabRef = useRef(false);
   const searchDebouncerRef = useRef<Debouncer<(value: string) => void> | null>(
     null,
@@ -555,7 +618,13 @@ export default function GifPicker({
   useEffect(() => {
     if (tab !== "saved") return;
 
-    void load("chat_picker_saved_media").then(setSavedMedia);
+    void Promise.all([
+      load("chat_picker_saved_media"),
+      load("chat_picker_saved_media_groups"),
+    ]).then(([nextSavedMedia, nextGroups]) => {
+      setSavedMedia(nextSavedMedia);
+      setSavedMediaGroups(nextGroups);
+    });
   }, [load, tab]);
 
   useEffect(() => {
@@ -627,8 +696,10 @@ export default function GifPicker({
         className="flex min-h-0 w-full flex-col overflow-hidden"
       >
         <SavedPanel
+          groups={savedMediaGroups}
           onSelect={onSelect}
           onSavedMediaChange={setSavedMedia}
+          onSavedMediaGroupsChange={setSavedMediaGroups}
           resizeWidth={resizeWidth}
           urls={savedMedia}
         />

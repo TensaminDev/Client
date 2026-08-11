@@ -18,9 +18,9 @@ import { cn, useIsMobile } from "@methanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/storage/session";
-import GifPicker from "./gifPicker";
-import EmojiPicker from "./emojiPicker";
-import { useEmojiRanks, useRecordEmojiUse } from "./emojiRanks";
+import EmojiPicker from "./emoji/emojiPicker";
+import { useEmojiRanks, useRecordEmojiUse } from "./emoji/emojiRanks";
+import GifPicker from "./media/gifPicker";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { editLastMessageHotkey } from "../hotkeys";
@@ -345,7 +345,7 @@ export default function InputComponent({
                 />
                 <PopoverContent
                   ref={gifPopoverRef}
-                  className="relative min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
+                  className="relative h-130 w-120 min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
                   onTouchMoveCapture={(event) => event.stopPropagation()}
                   onWheelCapture={(event) => event.stopPropagation()}
                   style={{

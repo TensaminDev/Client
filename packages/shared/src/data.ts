@@ -497,6 +497,12 @@ export const mtp = {
 export type MTP = typeof mtp;
 
 // Storage
+export type ChatPickerMediaGroup = {
+  id: string;
+  name: string;
+  media: string[];
+};
+
 export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
@@ -549,6 +555,7 @@ export interface Storage extends SettingsStorageDefaults {
   theme_design: ThemeDesign;
   chat_trusted_domains: string[];
   chat_picker_saved_media: string[];
+  chat_picker_saved_media_groups: ChatPickerMediaGroup[];
   chat_picker_last_tab: "gif" | "meme" | "saved";
   chat_picker_size: {
     width: number;
@@ -640,6 +647,7 @@ export const storageDefaults: Storage = {
     "media4.giphy.com",
   ],
   chat_picker_saved_media: [],
+  chat_picker_saved_media_groups: [],
   chat_picker_last_tab: "gif",
   chat_picker_size: null,
   reactions: {
