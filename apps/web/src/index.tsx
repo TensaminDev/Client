@@ -48,7 +48,6 @@ import CacheSync from "@tensamin/cache/sync";
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
-import { isTauri } from "@tauri-apps/api/core";
 import { HotkeysProvider } from "@tensamin/hotkeys";
 
 const wrapper = document.getElementById("root");
@@ -255,16 +254,7 @@ function RootShell() {
         designStorageKey={null}
       >
         <div className="w-screen h-dvh overflow-hidden">
-          <Toaster
-            position={isMobile ? "top-center" : "bottom-right"}
-            {...(isTauri() && isMobile
-              ? {
-                  mobileOffset: {
-                    top: "env(safe-area-inset-top)",
-                  },
-                }
-              : {})}
-          />
+          <Toaster position={isMobile ? "top-center" : "bottom-right"} />
           <TooltipProvider>
             <Storage>
               <HotkeysProvider>

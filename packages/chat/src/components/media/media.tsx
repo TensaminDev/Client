@@ -166,9 +166,9 @@ export default function Media({
         <DialogContent
           showCloseButton={false}
           onWheel={handleWheel}
-          className="bg-black/50 border-0! w-screen! h-screen! max-w-screen! rounded-none! p-0!"
+          className="inset-0! h-dvh! w-screen! max-h-none! max-w-none! translate-none! overflow-hidden! rounded-none! border-0! bg-black/50 p-0!"
         >
-          <div className="relative z-10 flex w-full h-full justify-between p-7 items-start pointer-events-none">
+          <div className="pointer-events-none relative z-10 flex h-full w-full items-start justify-between pt-[max(1.75rem,var(--ui-safe-area-top))] pr-[max(1.75rem,var(--ui-safe-area-right))] pb-[max(1.75rem,var(--ui-safe-area-bottom))] pl-[max(1.75rem,var(--ui-safe-area-left))]">
             <div
               className={`flex gap-2 items-center transition-opacity duration-200 ${zoomLevel === 0 ? "opacity-100" : "pointer-events-none opacity-0"}`}
               inert={zoomLevel !== 0}

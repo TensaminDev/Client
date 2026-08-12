@@ -2,6 +2,11 @@ import { Input, type InputController } from "@methanium/ui/markdown";
 import {
   Card,
   CardHeader,
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+  DrawerTrigger,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -331,42 +336,65 @@ export default function InputComponent({
                   />
                 </PopoverContent>
               </Popover>
-              <Popover open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
-                <PopoverTrigger
-                  render={({ onClick }) => (
-                    <Button
-                      onClick={onClick}
-                      className="w-9 h-9! p-0"
-                      variant="ghost"
-                    >
-                      <FileVideo size={20} />
-                    </Button>
-                  )}
-                />
-                <PopoverContent
-                  ref={gifPopoverRef}
-                  className="relative h-130 w-120 min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
-                  onTouchMoveCapture={(event) => event.stopPropagation()}
-                  onWheelCapture={(event) => event.stopPropagation()}
-                  style={{
-                    ...gifPopoverSize,
-                    maxHeight: gifPopoverSize?.height,
-                  }}
-                >
-                  <div
-                    className="absolute left-0 top-0 z-10 h-4 w-4 cursor-nwse-resize"
-                    onPointerDown={handleGifPopoverResizeStart}
+              {isMobile ? (
+                <Drawer open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
+                  <DrawerTrigger asChild>
+                    <div>
+                      <Button className="w-9 h-9! p-0" variant="ghost">
+                        <FileVideo size={20} />
+                      </Button>
+                    </div>
+                  </DrawerTrigger>
+                  <DrawerContent className="h-[80dvh]">
+                    <div className="min-h-0 flex-1 p-3">
+                      <GifPicker
+                        onSelect={(url) => {
+                          void handleSubmit(url, true);
+                          setGifPopoverOpen(false);
+                        }}
+                      />
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              ) : (
+                <Popover open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
+                  <PopoverTrigger
+                    render={({ onClick }) => (
+                      <Button
+                        onClick={onClick}
+                        aria-label="Open GIF picker"
+                        className="w-9 h-9! p-0"
+                        variant="ghost"
+                      >
+                        <FileVideo size={20} />
+                      </Button>
+                    )}
                   />
-                  <GifPicker
-                    resizeHeight={gifPopoverSize?.height}
-                    resizeWidth={gifPopoverSize?.width}
-                    onSelect={(url) => {
-                      void handleSubmit(url, true);
-                      setGifPopoverOpen(false);
+                  <PopoverContent
+                    ref={gifPopoverRef}
+                    className="relative h-130 w-120 min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
+                    onTouchMoveCapture={(event) => event.stopPropagation()}
+                    onWheelCapture={(event) => event.stopPropagation()}
+                    style={{
+                      ...gifPopoverSize,
+                      maxHeight: gifPopoverSize?.height,
                     }}
-                  />
-                </PopoverContent>
-              </Popover>
+                  >
+                    <div
+                      className="absolute left-0 top-0 z-10 h-4 w-4 cursor-nwse-resize"
+                      onPointerDown={handleGifPopoverResizeStart}
+                    />
+                    <GifPicker
+                      resizeHeight={gifPopoverSize?.height}
+                      resizeWidth={gifPopoverSize?.width}
+                      onSelect={(url) => {
+                        void handleSubmit(url, true);
+                        setGifPopoverOpen(false);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           </div>
         </CardHeader>

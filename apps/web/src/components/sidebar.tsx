@@ -27,7 +27,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@methanium/ui";
-import { isTauri } from "@tauri-apps/api/core";
 import { useIsMobile } from "@methanium/ui";
 import { MobileNavbar } from "./navbar";
 
@@ -194,11 +193,7 @@ export default function Sidebar() {
 
   const content = (
     <>
-      <SidebarContent
-        className={
-          isTauri() && isMobile ? "pt-[env(safe-area-inset-top)]" : "pt-2"
-        }
-      >
+      <SidebarContent className="pt-2">
         <div className="h-full w-full flex flex-col gap-3 p-2 pt-0!">
           <div>
             <Wrapper
@@ -309,7 +304,7 @@ export default function Sidebar() {
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="fixed inset-y-0 left-0 z-50 w-screen bg-sidebar p-0 text-sidebar-foreground"
+          className="fixed inset-y-0 left-0 z-50 w-screen bg-sidebar pt-[var(--ui-safe-area-top)] pr-[var(--ui-safe-area-right)] pl-[var(--ui-safe-area-left)] text-sidebar-foreground"
           style={{
             transform: openMobile ? "translateX(0)" : "translateX(-100%)",
             opacity: openMobile ? 1 : 0,

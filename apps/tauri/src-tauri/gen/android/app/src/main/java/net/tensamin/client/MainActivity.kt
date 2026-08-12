@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
@@ -54,6 +55,32 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onWebViewCreate(webView: WebView) {
+    webView.settings.apply {
+      setSupportZoom(false)
+      builtInZoomControls = false
+      displayZoomControls = false
+    }
+
+    var blockingMultiTouch = false
+    webView.setOnTouchListener { _, event ->
+      val shouldBlock = blockingMultiTouch || event.pointerCount > 1
+
+      when (event.actionMasked) {
+        MotionEvent.ACTION_POINTER_DOWN -> {
+          // Cancel the one-finger gesture before consuming the rest of the pinch.
+          MotionEvent.obtain(event).let { cancelEvent ->
+            cancelEvent.action = MotionEvent.ACTION_CANCEL
+            webView.onTouchEvent(cancelEvent)
+            cancelEvent.recycle()
+          }
+          blockingMultiTouch = true
+        }
+        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> blockingMultiTouch = false
+      }
+
+      shouldBlock
+    }
+
     NativeAccessibilityBridge.attach(webView)
     mediaWebView = webView
     MobileMediaEvents.attach(webView)
