@@ -416,37 +416,6 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40tauri-apps/plugin-barcode-scanner@2.4.5",
-      "name": "@tauri-apps/plugin-barcode-scanner",
-      "version": "2.4.5",
-      "purl": "pkg:npm/%40tauri-apps/plugin-barcode-scanner@2.4.5",
-      "description": "Scan QR codes, EAN-13 and other kinds of barcodes on Android and iOS",
-      "licenses": [
-        {
-          "license": {
-            "name": "MIT OR Apache-2.0"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/tauri-apps/plugins-workspace"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@tauri-apps_plugin-barcode-scanner@2.4.5"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/@tauri-apps/plugin-barcode-scanner"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bomRef": "pkg:npm/%40tauri-apps/plugin-deep-link@2.4.9",
       "name": "@tauri-apps/plugin-deep-link",
       "version": "2.4.9",

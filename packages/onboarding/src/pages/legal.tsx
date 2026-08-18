@@ -1,21 +1,17 @@
 import { useCallback, useState } from "react";
-import { Checkbox, Label, Link } from "@methanium/ui";
-import { legalDocsSchema } from "@tensamin/shared/features/legal/schema";
-import type { z } from "zod";
-
-import { useOnboardingStep } from "@methanium/ui";
-
-
+import { Checkbox, Label, Link, useOnboardingStep } from "@methanium/ui";
 
 export default function LegalPage({
-  docs,
   initiallyAcceptedPP,
   initiallyAcceptedTOS,
+  changedPP,
+  changedTOS,
   onAccept,
 }: {
-  docs: z.infer<typeof legalDocsSchema>;
   initiallyAcceptedPP: boolean;
   initiallyAcceptedTOS: boolean;
+  changedPP: boolean;
+  changedTOS: boolean;
   onAccept: () => Promise<void>;
 }) {
   const [acceptedPP, setAcceptedPP] = useState(initiallyAcceptedPP);
@@ -34,30 +30,57 @@ export default function LegalPage({
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-17rem)] w-full max-w-5xl flex-col gap-10 p-2 py-20 md:min-h-[calc(100dvh-20.5rem)] md:p-24">
       <div className="flex flex-1 items-center justify-center">
-        <div className="flex flex-col items-start gap-2">
-          <BigCheckbox
-            id="acceptPP"
-            checked={acceptedPP}
-            onChange={setAcceptedPP}
-            label="I agree to the Privacy Policy"
-          />
-          <BigCheckbox
-            id="acceptTOS"
-            checked={acceptedTOS}
-            onChange={setAcceptedTOS}
-            label="I agree to the Terms of Service"
-          />
-          <div className="w-full border-t-2" />
-          <Link
-            label="Privacy Policy"
-            link={`https://legal.tensamin.net/pp/${docs.pp.version}`}
-          />
-          <Link
-            label="Terms of Service"
-            link={`https://legal.tensamin.net/tos/${docs.tos.version}`}
-          />
+        <div className="flex w-full max-w-xl flex-col items-start gap-8">
+          {!initiallyAcceptedPP && (
+            <LegalDocumentAcceptance
+              id="acceptPP"
+              name="Privacy Policy"
+              link="https://legal.methanium.net/tensamin/privacy-policy/"
+              changed={changedPP}
+              checked={acceptedPP}
+              onChange={setAcceptedPP}
+            />
+          )}
+          {!initiallyAcceptedTOS && (
+            <LegalDocumentAcceptance
+              id="acceptTOS"
+              name="Terms of Service"
+              link="https://legal.methanium.net/tensamin/terms-of-service/"
+              changed={changedTOS}
+              checked={acceptedTOS}
+              onChange={setAcceptedTOS}
+            />
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function LegalDocumentAcceptance({
+  id,
+  name,
+  link,
+  changed,
+  checked,
+  onChange,
+}: {
+  id: string;
+  name: string;
+  link: string;
+  changed: boolean;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex w-full flex-col items-start gap-3">
+      <Link label={`Read the ${name}`} link={link} />
+      <BigCheckbox
+        id={id}
+        checked={checked}
+        onChange={onChange}
+        label={`I agree to the ${changed ? `updated ${name}` : name}`}
+      />
     </div>
   );
 }

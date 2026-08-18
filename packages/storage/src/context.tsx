@@ -30,7 +30,7 @@ import {
 
 export type SaveOptions = { secure?: boolean };
 
-interface StorageContextValue {
+export interface StorageContextValue {
   load<K extends keyof StorageSchema>(key: K): Promise<StorageSchema[K]>;
   save<K extends keyof StorageSchema>(
     key: K,

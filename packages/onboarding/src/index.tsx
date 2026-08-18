@@ -21,15 +21,35 @@ export {
   type OnboardingStepControls,
 } from "@methanium/ui";
 
-
-
 interface GateState {
   docs: z.infer<typeof legalDocsSchema>;
   acceptedPP: boolean;
   acceptedTOS: boolean;
+  changedPP: boolean;
+  changedTOS: boolean;
   includeLegal: boolean;
   includeOnboarding: boolean;
   includeTauriPermissions: boolean;
+}
+
+async function fetchLegalDocumentHash(document: string) {
+  const response = await fetch(
+    `https://legal.methanium.net/tensamin/${document}/raw`,
+  );
+  if (!response.ok) {
+    throw new Error(`Legal document request failed: ${response.status}`);
+  }
+  if (!response.headers.get("content-type")?.startsWith("text/plain")) {
+    throw new Error("Legal document request returned an invalid content type");
+  }
+
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    await response.arrayBuffer(),
+  );
+  return Array.from(new Uint8Array(hash), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 export default function OnboardingGate({ children }: { children: ReactNode }) {
@@ -51,25 +71,9 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        const response = await fetch("https://legal.tensamin.net/api/current");
-        if (!response.ok) {
-          throw new Error(`Legal documents request failed: ${response.status}`);
-        }
-
-        const current: unknown = await response.json();
-        if (!active) return;
-
-        const parsed = legalDocsSchema.safeParse(current);
-        if (!parsed.success) {
-          setError("Failed to load legal documents");
-          setErrorDescription(
-            "The legal documents data received from the server is invalid. Please try again later.",
-          );
-          log(0, "Legal", "red", "Invalid legal documents data", parsed.error);
-          return;
-        }
-
         const [
+          ppHash,
+          tosHash,
           localDocs,
           acceptedPP,
           acceptedTOS,
@@ -77,6 +81,8 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
           onboardingStarted,
           tauriPermissionsDone,
         ] = await Promise.all([
+          fetchLegalDocumentHash("privacy-policy"),
+          fetchLegalDocumentHash("terms-of-service"),
           load("legal_docs"),
           load("accepted_privacy_policy"),
           load("accepted_terms_of_service"),
@@ -87,10 +93,16 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
 
         if (!active) return;
 
+        const docs = legalDocsSchema.parse({
+          pp: { hash: ppHash },
+          tos: { hash: tosHash },
+        });
+        const changedPP = acceptedPP && localDocs.pp.hash !== docs.pp.hash;
+        const changedTOS = acceptedTOS && localDocs.tos.hash !== docs.tos.hash;
         const currentAcceptedPP =
-          acceptedPP && localDocs.pp.hash === parsed.data.pp.hash;
+          acceptedPP && localDocs.pp.hash === docs.pp.hash;
         const currentAcceptedTOS =
-          acceptedTOS && localDocs.tos.hash === parsed.data.tos.hash;
+          acceptedTOS && localDocs.tos.hash === docs.tos.hash;
         const existingUser = acceptedPP && acceptedTOS;
         const includeOnboarding =
           !onboardingDone && (!existingUser || onboardingStarted);
@@ -104,9 +116,11 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
         }
 
         setState({
-          docs: parsed.data,
+          docs,
           acceptedPP: currentAcceptedPP,
           acceptedTOS: currentAcceptedTOS,
+          changedPP,
+          changedTOS,
           includeLegal: !currentAcceptedPP || !currentAcceptedTOS,
           includeOnboarding,
           includeTauriPermissions:
@@ -168,16 +182,28 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
 
   const steps: OnboardingStep[] = [];
   if (state.includeLegal) {
+    const changedDocuments = [
+      state.changedPP && "Privacy Policy",
+      state.changedTOS && "Terms of Service",
+    ].filter(Boolean);
+
     steps.push({
       id: "legal",
-      title: "Privacy Policy & ToS",
-      description: `${state.docs.pp.version} / ${state.docs.tos.version}`,
+      title:
+        changedDocuments.length > 0
+          ? "Legal documents changed"
+          : "Privacy Policy & ToS",
+      description:
+        changedDocuments.length > 0
+          ? changedDocuments.join(" & ")
+          : "Review and accept our legal documents",
       defaultCanContinue: false,
       content: (
         <LegalPage
-          docs={state.docs}
           initiallyAcceptedPP={state.acceptedPP}
           initiallyAcceptedTOS={state.acceptedTOS}
+          changedPP={state.changedPP}
+          changedTOS={state.changedTOS}
           onAccept={acceptLegal}
         />
       ),

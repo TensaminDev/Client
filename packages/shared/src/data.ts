@@ -580,20 +580,11 @@ export const storageDefaults: Storage = {
   analytics_done: false,
   ...settingsStorageDefaults,
   legal_docs: {
-    eula: {
-      version: "0.0",
-      hash: "000000000000",
-      unix: 0,
-    },
     tos: {
-      version: "0.0",
-      hash: "000000000000",
-      unix: 0,
+      hash: "0000000000000000000000000000000000000000000000000000000000000000",
     },
     pp: {
-      version: "0.0",
-      hash: "000000000000",
-      unix: 0,
+      hash: "0000000000000000000000000000000000000000000000000000000000000000",
     },
   },
   cached_contacts: [],

@@ -52,6 +52,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   return (
     <div
       data-tauri-drag-region
+      data-pwa-navbar
       className={`${forMobile && "border-b"} pl-px w-full shrink-0 gap-2 h-13.5 flex items-center justify-between`}
     >
       <div className="flex items-center justify-center gap-2">

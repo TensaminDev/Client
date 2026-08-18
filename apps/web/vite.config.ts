@@ -8,6 +8,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { mtp } from "mtp/vite";
 import { methaniumUi } from "@methanium/ui/vite";
+import { tensaminPwa } from "@tensamin/pwa/vite";
 
 const host = process.env.TAURI_DEV_HOST;
 const appDir = dirname(fileURLToPath(import.meta.url));
@@ -125,6 +126,7 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
   plugins: [
+    ...tensaminPwa(),
     methaniumUi({ defaultThemeId: "tensamin" }),
     deepFilterAssetHeaders(resolve(appDir, "public")),
     mtp({ typeMaps: resolve(appDir, "../../mtp-type-maps/type-maps.yaml") }),

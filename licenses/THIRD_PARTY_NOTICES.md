@@ -117,15 +117,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@tauri-apps_cli@2.11.4`
 - Source package dir: `apps/tauri/node_modules/@tauri-apps/cli`
 
-## @tauri-apps/plugin-barcode-scanner@2.4.5
-
-- License: MIT OR Apache-2.0
-- Repository: https://github.com/tauri-apps/plugins-workspace
-- Description: Scan QR codes, EAN-13 and other kinds of barcodes on Android and iOS
-- Included files: LICENSE.spdx
-- Folder: `licenses/@tauri-apps_plugin-barcode-scanner@2.4.5`
-- Source package dir: `apps/tauri/node_modules/@tauri-apps/plugin-barcode-scanner`
-
 ## @tauri-apps/plugin-deep-link@2.4.9
 
 - License: MIT OR Apache-2.0

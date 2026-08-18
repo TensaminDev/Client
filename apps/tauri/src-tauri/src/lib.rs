@@ -15,9 +15,6 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init());
 
-    #[cfg(any(target_os = "ios", target_os = "android"))]
-    let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
-
     let app = builder
         .invoke_handler(tauri::generate_handler![
             accessibility_backend::accessibility_get_initial_scale,

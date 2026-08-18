@@ -6,7 +6,9 @@
   "exports": {
     "./session": "./src/session.tsx",
     "./context": "./src/context.tsx",
-    "./secure": "./src/secure.ts"
+    "./secure": "./src/secure.ts",
+    "./browserSecure": "./src/browserSecure.ts",
+    "./credentials": "./src/credentials.ts"
   },
   "scripts": {
     "format": "pnpm exec prettier --write .",

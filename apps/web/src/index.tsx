@@ -29,6 +29,7 @@ import { Provider as MTPProvider } from "@tensamin/mtp";
 import UserProvider from "@tensamin/user/context";
 import DeeplinkContext, { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
+import PwaRuntime from "@tensamin/pwa/runtime";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
@@ -253,10 +254,14 @@ function RootShell() {
         parentThemeStorageKey={null}
         designStorageKey={null}
       >
-        <div className="w-screen h-dvh overflow-hidden">
+        <div
+          data-pwa-root
+          className="box-border w-screen h-dvh overflow-hidden"
+        >
           <Toaster position={isMobile ? "top-center" : "bottom-right"} />
           <TooltipProvider>
             <Storage>
+              <PwaRuntime />
               <HotkeysProvider>
                 <ThemeStorageBridge />
                 <LoginWrapper>

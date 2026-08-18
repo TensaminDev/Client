@@ -7,10 +7,6 @@
     "./deeplinkHandler": {
       "types": "./src/deeplinkHandler.tsx",
       "default": "./src/deeplinkHandler.tsx"
-    },
-    "./qrCodeScanner": {
-      "types": "./src/qrCodeScanner.tsx",
-      "default": "./src/qrCodeScanner.tsx"
     }
   },
   "scripts": {
@@ -28,7 +24,6 @@
   "dependencies": {
     "@methanium/ui": "*",
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-barcode-scanner": "~2.4.5",
     "@tauri-apps/plugin-deep-link": "~2.4.9",
     "@tensamin/shared": "workspace:*",
     "react": "^19.2.8",

@@ -4,10 +4,7 @@ import { getDatabaseEntry, setDatabaseEntry } from "@tensamin/shared/indexedDb";
 
 export type SecureStorageStatus = {
   backend:
-    | "electron-keyring"
-    | "application-storage"
-    | "webcrypto"
-    | "indexeddb";
+    "electron-keyring" | "application-storage" | "webcrypto" | "indexeddb";
   secure: boolean;
   reason?: string;
 };
@@ -71,7 +68,12 @@ async function getKey() {
     if (!globalThis.crypto?.subtle || typeof indexedDB === "undefined") {
       return null;
     }
-    if (window.tensaminDesktop?.secureStorage) return loadElectronKey();
+    if (
+      typeof window !== "undefined" &&
+      window.tensaminDesktop?.secureStorage
+    ) {
+      return loadElectronKey();
+    }
     return loadBrowserKey();
   })().catch(() => null);
   return keyPromise;
@@ -120,7 +122,10 @@ export async function decodeSecureValue(value: unknown): Promise<unknown> {
 }
 
 export async function getSecureStorageStatus(): Promise<SecureStorageStatus> {
-  const desktop = window.tensaminDesktop?.secureStorage;
+  const desktop =
+    typeof window === "undefined"
+      ? undefined
+      : window.tensaminDesktop?.secureStorage;
   if (desktop?.getStatus) {
     const status = await desktop.getStatus();
     if (status.available) return { backend: "electron-keyring", secure: true };

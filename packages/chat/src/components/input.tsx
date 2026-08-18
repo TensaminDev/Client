@@ -4,8 +4,6 @@ import {
   CardHeader,
   Drawer,
   DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
   DrawerTrigger,
   Popover,
   PopoverContent,
