@@ -1,17 +1,10 @@
 {
   "identifier": "mobile-capability",
-  "platforms": [
-    "android",
-    "iOS"
-  ],
-  "windows": [
-    "main"
-  ],
+  "platforms": ["android", "iOS"],
+  "windows": ["main"],
   "permissions": [
+    "core:event:default",
     "deep-link:default",
-    "barcode-scanner:default",
-    "barcode-scanner:allow-scan",
-    "barcode-scanner:allow-cancel",
     "notification:default",
     "log:default"
   ]

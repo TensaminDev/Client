@@ -26,6 +26,7 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Base64
 import android.util.DisplayMetrics
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.AtomicBoolean
@@ -107,16 +108,12 @@ class MediaProjectionService : Service() {
       stopIntent,
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
-    val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      android.app.Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-    } else {
-      android.app.Notification.Builder(this)
-    }
+    val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
       .setSmallIcon(android.R.drawable.ic_menu_share)
       .setContentTitle("Tensamin is sharing your screen")
       .setContentText("Tap Stop to end screen sharing")
       .setOngoing(true)
-      .setCategory(android.app.Notification.CATEGORY_SERVICE)
+      .setCategory(NotificationCompat.CATEGORY_SERVICE)
       .addAction(android.R.drawable.ic_media_pause, "Stop", stopPendingIntent)
       .build()
 

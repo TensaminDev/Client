@@ -99,7 +99,11 @@ export default function Provider(props: { children: React.ReactNode }) {
               }
             }
 
-            const user = await get(data.SenderId);
+            const user = await get(data.SenderId, [
+              "UserId",
+              "Display",
+              "Avatar",
+            ]);
 
             if (isTauri()) {
               if (!appFocused) return;
@@ -137,20 +141,30 @@ export default function Provider(props: { children: React.ReactNode }) {
               const hasPermissions = await requestNotificationPermission();
 
               if (hasPermissions) {
-                const notification = new Notification(user.Display, {
+                const options: NotificationOptions = {
                   body: content,
-                  icon: user.Avatar || user.Display.slice(0, 2).toUpperCase(),
-                  badge: user.Avatar || user.Display.slice(0, 2).toUpperCase(),
+                  icon: user.Avatar || "/icons/icon-192.png",
+                  badge: "/icons/notification-badge.png",
                   tag: `message-${user.UserId}`,
                   silent: true,
-                });
-
+                };
+                if ("serviceWorker" in navigator) {
+                  const registration =
+                    await navigator.serviceWorker.getRegistration();
+                  if (registration) {
+                    await registration.showNotification(user.Display, {
+                      ...options,
+                      data: { url: `/chat?id=${user.UserId}` },
+                    });
+                    return;
+                  }
+                }
+                const notification = new Notification(user.Display, options);
                 notification.onclick = () => {
                   window.focus();
                   navigate({
                     to: `/chat?id=${user.UserId}`,
                   });
-
                   notification.close();
                 };
               } else {

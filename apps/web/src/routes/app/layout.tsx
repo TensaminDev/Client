@@ -19,6 +19,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <Sidebar />
         <CallPopout />
         <div
+          data-app-layout
           // Background of ui that is overlapping with the system ui
           className={cn(
             "w-full h-full min-h-0 flex flex-col overflow-hidden",

@@ -28,12 +28,11 @@
     "validate:raw": "pnpm run build && pnpm run package:linux:raw",
     "validate": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#electron --command pnpm run validate:raw; else pnpm run validate:raw; fi"
   },
-  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^25.9.1",
-    "electron": "^39.2.7",
-    "electron-builder": "^26.0.12",
-    "esbuild": "^0.28.0",
+    "@types/node": "^26.1.2",
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.1",
     "typescript": "~6.0.3"
   },
   "build": {

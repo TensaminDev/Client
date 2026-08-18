@@ -7,16 +7,13 @@
     "./deeplinkHandler": {
       "types": "./src/deeplinkHandler.tsx",
       "default": "./src/deeplinkHandler.tsx"
-    },
-    "./qrCodeScanner": {
-      "types": "./src/qrCodeScanner.tsx",
-      "default": "./src/qrCodeScanner.tsx"
     }
   },
   "scripts": {
-    "dev:mobile:raw": "tauri android dev --host ${TAURI_DEV_HOST:-127.0.0.1}",
+    "dev:mobile:raw": "adb reverse tcp:3000 tcp:3000 && tauri android dev --host ${TAURI_DEV_HOST:-127.0.0.1}",
     "start-adb:mobile:raw": "adb devices",
     "build:mobile:raw": "tauri android build",
+    "build:mobile:ci": "node render-version.ts && trap 'node render-version.ts --unrender' EXIT && tauri android build --debug",
     "dev:mobile": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#tauri --command pnpm run dev:mobile:raw; else pnpm run dev:mobile:raw; fi",
     "start-adb:mobile": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#tauri --command pnpm run start-adb:mobile:raw; else pnpm run start-adb:mobile:raw; fi",
     "build:mobile": "node render-version.ts && trap 'node render-version.ts --unrender' EXIT && if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#tauri --command pnpm run build:mobile:raw; else pnpm run build:mobile:raw; fi",
@@ -25,18 +22,15 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-barcode-scanner": "~2",
-    "@tauri-apps/plugin-deep-link": "~2",
-    "@tauri-apps/plugin-log": "~2",
-    "@tauri-apps/plugin-notification": "~2",
-    "@tensamin/shared": "workspace:*",
     "@methanium/ui": "*",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-deep-link": "~2.4.9",
+    "@tensamin/shared": "workspace:*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
-    "@types/node": "^25.9.1"
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^26.1.2"
   }
 }

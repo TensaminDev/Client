@@ -1,3 +1,4 @@
+import Accessibility from "./pages/accessibility";
 import Cache from "./pages/cache";
 import Call from "./pages/call";
 import Chat from "./pages/chat";
@@ -26,6 +27,12 @@ export const settingsPages = [
   { category: "general", path: "call", label: "Call", component: Call },
   { category: "application", path: "cache", label: "Cache", component: Cache },
   { category: "application", path: "theme", label: "Theme", component: Theme },
+  {
+    category: "application",
+    path: "accessibility",
+    label: "Accessibility",
+    component: Accessibility,
+  },
   {
     category: "application",
     path: "hotkeys",

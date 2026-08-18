@@ -27,7 +27,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@methanium/ui";
-import { isTauri } from "@tauri-apps/api/core";
 import { useIsMobile } from "@methanium/ui";
 import { MobileNavbar } from "./navbar";
 
@@ -35,24 +34,20 @@ import SidebarBox from "@tensamin/call/sidebarBox";
 import { useShowMobileNavbar } from "@/routes/app/useShowMobileNavbar";
 import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
-import type { User } from "@tensamin/user/context";
-import type z from "zod";
-import { mtp } from "@tensamin/shared/data";
+import { useUser, type User } from "@tensamin/user/context";
+import { mtp, userPresencePreferenceSchema } from "@tensamin/shared/data";
 import { useMTP } from "@tensamin/mtp";
+import {
+  onlineStatusLabels,
+  onlineStatusOptions,
+  type OnlineStatus,
+} from "./status-options";
 
-type OnlineStatus = z.infer<typeof mtp.GetUserData.response.shape.OnlineStatus>;
-
-const onlineStatusLabels: Record<OnlineStatus, string> = {
-  user_online: "Online",
-  user_offline: "Offline",
-  user_dnd: "Do not disturb",
-  user_idle: "Idle",
-  user_wc: "Away",
-  user_borked: "Borked",
-  iota_offline: "Iota offline",
-  iota_online: "Iota online",
-  iota_borked: "Iota borked",
-};
+function accountPreference(status: User["OnlineStatus"]): OnlineStatus {
+  return userPresencePreferenceSchema.safeParse(status).success
+    ? (status as OnlineStatus)
+    : "user_online";
+}
 
 function StatusDialog({
   user,
@@ -68,7 +63,7 @@ function StatusDialog({
   saveSucceeded,
   setSaveSucceeded,
 }: {
-  user: User;
+  user: Pick<User, "UserId" | "OnlineStatus" | "Status">;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   send: ReturnType<typeof useMTP>["send"];
@@ -81,13 +76,15 @@ function StatusDialog({
   saveSucceeded: boolean;
   setSaveSucceeded: (value: boolean) => void;
 }) {
+  const { updateProfile, updateState } = useUser();
+
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
           setDraftStatus(user.Status ?? "");
-          setDraftOnlineStatus(user.OnlineStatus);
+          setDraftOnlineStatus(accountPreference(user.OnlineStatus));
           setErrorMessage("");
           setSaveSucceeded(false);
         }
@@ -126,10 +123,11 @@ function StatusDialog({
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="p-1">
-              <SelectItem value="user_online">Online</SelectItem>
-              <SelectItem value="user_offline">Offline</SelectItem>
-              <SelectItem value="user_idle">Idle</SelectItem>
-              <SelectItem value="user_dnd">Do not disturb</SelectItem>
+              {onlineStatusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -140,12 +138,10 @@ function StatusDialog({
           <DialogClose render={<Button variant="destructive">Cancel</Button>} />
           <Button
             onClick={async () => {
-              const payload = {
-                ...(draftStatus && { status: draftStatus }),
+              const validation = mtp.ChangeUserData.request.safeParse({
                 OnlineStatus: draftOnlineStatus,
-              };
-
-              const validation = mtp.ChangeUserData.request.safeParse(payload);
+                Status: draftStatus,
+              });
 
               if (!validation.success) {
                 setSaveSucceeded(false);
@@ -157,6 +153,8 @@ function StatusDialog({
 
               try {
                 await send("ChangeUserData", validation.data);
+                updateState(user.UserId, draftOnlineStatus);
+                await updateProfile(user.UserId, { Status: draftStatus });
                 setSaveSucceeded(true);
                 setErrorMessage("");
               } catch (err) {
@@ -195,16 +193,20 @@ export default function Sidebar() {
 
   const content = (
     <>
-      <SidebarContent
-        className={
-          isTauri() && isMobile ? "pt-[env(safe-area-inset-top)]" : "pt-2"
-        }
-      >
+      <SidebarContent className="pt-2">
         <div className="h-full w-full flex flex-col gap-3 p-2 pt-0!">
           <div>
             <Wrapper
               loading={<Loading />}
               userId={"own"}
+              fields={[
+                "UserId",
+                "Display",
+                "Username",
+                "Avatar",
+                "OnlineStatus",
+                "Status",
+              ]}
               component={(user) => (
                 <>
                   <Basic
@@ -227,7 +229,9 @@ export default function Sidebar() {
                             <DropdownMenuItem
                               onClick={() => {
                                 setDraftStatus(user.Status ?? "");
-                                setDraftOnlineStatus(user.OnlineStatus);
+                                setDraftOnlineStatus(
+                                  accountPreference(user.OnlineStatus),
+                                );
                                 setStatusErrorMessage("");
                                 setStatusSaveSucceeded(false);
                                 setDialogOpen(true);
@@ -246,7 +250,9 @@ export default function Sidebar() {
                     onOpenChange={(nextOpen) => {
                       if (!nextOpen) {
                         setDraftStatus(user.Status ?? "");
-                        setDraftOnlineStatus(user.OnlineStatus);
+                        setDraftOnlineStatus(
+                          accountPreference(user.OnlineStatus),
+                        );
                         setStatusErrorMessage("");
                         setStatusSaveSucceeded(false);
                       }
@@ -298,7 +304,7 @@ export default function Sidebar() {
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="fixed inset-y-0 left-0 z-50 w-screen bg-sidebar p-0 text-sidebar-foreground"
+          className="fixed inset-y-0 left-0 z-50 w-screen bg-sidebar pt-[var(--ui-safe-area-top)] pr-[var(--ui-safe-area-right)] pl-[var(--ui-safe-area-left)] text-sidebar-foreground"
           style={{
             transform: openMobile ? "translateX(0)" : "translateX(-100%)",
             opacity: openMobile ? 1 : 0,

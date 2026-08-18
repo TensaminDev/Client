@@ -29,6 +29,7 @@ import { Provider as MTPProvider } from "@tensamin/mtp";
 import UserProvider from "@tensamin/user/context";
 import DeeplinkContext, { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
+import PwaRuntime from "@tensamin/pwa/runtime";
 
 import TAuthWrapper from "@tensamin/tauth/context";
 
@@ -48,7 +49,6 @@ import CacheSync from "@tensamin/cache/sync";
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
-import { isTauri } from "@tauri-apps/api/core";
 import { HotkeysProvider } from "@tensamin/hotkeys";
 
 const wrapper = document.getElementById("root");
@@ -254,19 +254,14 @@ function RootShell() {
         parentThemeStorageKey={null}
         designStorageKey={null}
       >
-        <div className="w-screen h-dvh overflow-hidden">
-          <Toaster
-            position={isMobile ? "top-center" : "bottom-right"}
-            {...(isTauri() && isMobile
-              ? {
-                  mobileOffset: {
-                    top: "env(safe-area-inset-top)",
-                  },
-                }
-              : {})}
-          />
+        <div
+          data-pwa-root
+          className="box-border w-screen h-dvh overflow-hidden"
+        >
+          <Toaster position={isMobile ? "top-center" : "bottom-right"} />
           <TooltipProvider>
             <Storage>
+              <PwaRuntime />
               <HotkeysProvider>
                 <ThemeStorageBridge />
                 <LoginWrapper>

@@ -1,4 +1,4 @@
-import { createReadStream, realpathSync, statSync } from "node:fs";
+import { createReadStream, statSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,14 +8,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { mtp } from "mtp/vite";
 import { methaniumUi } from "@methanium/ui/vite";
+import { tensaminPwa } from "@tensamin/pwa/vite";
 
 const host = process.env.TAURI_DEV_HOST;
 const appDir = dirname(fileURLToPath(import.meta.url));
-const markdownPackageDir = resolve(appDir, "../../packages/markdown");
-
-function resolveMarkdownDependency(packageName: string): string {
-  return realpathSync(resolve(markdownPackageDir, "node_modules", packageName));
-}
 
 function deepFilterAssetHeaders(rootDir: string): Plugin {
   const serveModel = (
@@ -57,24 +53,6 @@ export default defineConfig({
   clearScreen: false,
   resolve: {
     tsconfigPaths: true,
-    alias: [
-      {
-        find: "@codemirror/commands",
-        replacement: resolveMarkdownDependency("@codemirror/commands"),
-      },
-      {
-        find: "@codemirror/lang-markdown",
-        replacement: resolveMarkdownDependency("@codemirror/lang-markdown"),
-      },
-      {
-        find: "@codemirror/state",
-        replacement: resolveMarkdownDependency("@codemirror/state"),
-      },
-      {
-        find: "@codemirror/view",
-        replacement: resolveMarkdownDependency("@codemirror/view"),
-      },
-    ],
     dedupe: [
       "react",
       "react-dom",
@@ -90,16 +68,12 @@ export default defineConfig({
       "@tensamin/user",
       "@tensamin/tauri",
       "@tensamin/chat",
-      "@codemirror/commands",
-      "@codemirror/lang-markdown",
-      "@codemirror/state",
-      "@codemirror/view",
     ],
   },
   server: {
-    port: 5173,
+    port: 3000,
     strictPort: true,
-    host: host || "0.0.0.0",
+    host: "0.0.0.0",
     hmr: host
       ? {
           protocol: "ws",
@@ -133,7 +107,6 @@ export default defineConfig({
       "@tensamin/crypto",
       "@tensamin/crypto/context",
       "@tensamin/hotkeys",
-      "@tensamin/markdown",
       "@tensamin/mtp",
       "@tensamin/notifications",
       "@tensamin/onboarding",
@@ -153,6 +126,7 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
   plugins: [
+    ...tensaminPwa(),
     methaniumUi({ defaultThemeId: "tensamin" }),
     deepFilterAssetHeaders(resolve(appDir, "public")),
     mtp({ typeMaps: resolve(appDir, "../../mtp-type-maps/type-maps.yaml") }),

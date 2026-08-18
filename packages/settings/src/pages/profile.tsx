@@ -1,4 +1,4 @@
-import MDInput from "@tensamin/markdown/input";
+import { Input as MDInput } from "@methanium/ui/markdown";
 import { useMTP } from "@tensamin/mtp";
 import { mtp } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
@@ -11,9 +11,24 @@ import {
   Input,
   useIsMobile,
 } from "@methanium/ui";
-import { useUser, type User } from "@tensamin/user/context";
+import {
+  useUser,
+  useUserFields,
+  type SelectedUser,
+} from "@tensamin/user/context";
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+const PROFILE_FIELDS = [
+  "Avatar",
+  "Display",
+  "Username",
+  "About",
+  "UserId",
+] as const;
+type ProfileDraft = Partial<
+  Omit<SelectedUser<typeof PROFILE_FIELDS>, "UserId">
+>;
 
 async function prepImage(
   file: File,
@@ -44,12 +59,13 @@ async function prepImage(
 }
 
 export default function Page() {
-  const { get, update } = useUser();
+  const { updateProfile } = useUser();
   const { load } = useStorage();
   const { send } = useMTP();
   const isMobile = useIsMobile();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [draftUser, setDraftUser] = useState<Partial<User>>({});
+  const [userId, setUserId] = useState<number | null>(null);
+  const { data: currentUser } = useUserFields(userId, PROFILE_FIELDS);
+  const [draftUser, setDraftUser] = useState<ProfileDraft>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [saveSucceeded, setSaveSucceeded] = useState(false);
   const avatarUploadRef = useRef<HTMLInputElement>(null);
@@ -57,18 +73,23 @@ export default function Page() {
   const effectiveAvatar =
     draftUser.Avatar === "none" ? undefined : draftUser.Avatar;
   const updateDraftUser = (
-    updater: (previous: Partial<User>) => Partial<User>,
+    updater: (previous: ProfileDraft) => ProfileDraft,
   ) => {
     setSaveSucceeded(false);
     setErrorMessage("");
     setDraftUser(updater);
   };
   useEffect(() => {
-    void (async () => setCurrentUser(await get(await load("user_id"))))();
-  }, [get, load]);
+    void load("user_id").then(setUserId);
+  }, [load]);
   useEffect(() => {
     if (!currentUser || draftInitializedRef.current) return;
-    setDraftUser(currentUser);
+    setDraftUser({
+      Avatar: currentUser.Avatar,
+      Display: currentUser.Display,
+      Username: currentUser.Username,
+      About: currentUser.About,
+    });
     draftInitializedRef.current = true;
   }, [currentUser]);
   async function handleAvatarUpload(file: File) {
@@ -127,7 +148,7 @@ export default function Page() {
           onChange={(event) =>
             updateDraftUser((previous) => ({
               ...previous,
-              display: event.target.value,
+              Display: event.target.value,
             }))
           }
           placeholder="Display Name"
@@ -138,20 +159,19 @@ export default function Page() {
           onChange={(event) =>
             updateDraftUser((previous) => ({
               ...previous,
-              username: event.target.value,
+              Username: event.target.value,
             }))
           }
           placeholder="Username"
           value={draftUser.Username || ""}
         />
         <MDInput
-          styled
           paddingY="4px"
           paddingX="10px"
           fontSize=".875rem"
           placeholder="About Me"
           setValue={(value) =>
-            updateDraftUser((previous) => ({ ...previous, about: value }))
+            updateDraftUser((previous) => ({ ...previous, About: value }))
           }
           value={draftUser.About || ""}
         />
@@ -181,13 +201,7 @@ export default function Page() {
               if (response.type.startsWith("Error")) {
                 throw new Error(response.type);
               }
-              const updatedUser = mtp.GetUserData.response.parse({
-                ...currentUser,
-                ...draftUser,
-              });
-              await update(updatedUser);
-              setCurrentUser(updatedUser);
-              setDraftUser(updatedUser);
+              await updateProfile(currentUser.UserId, validation.data);
               setSaveSucceeded(true);
               setErrorMessage("");
             } catch (error) {

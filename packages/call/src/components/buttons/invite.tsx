@@ -63,6 +63,7 @@ export default function InviteButton({
             <Wrapper
               key={contact.UserId}
               userId={contact.UserId}
+              fields={["Display"]}
               loading={<div>Loading...</div>}
               component={(user) => (
                 <Button

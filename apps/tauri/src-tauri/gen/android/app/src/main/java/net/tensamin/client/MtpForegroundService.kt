@@ -13,6 +13,8 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.IBinder
+import android.os.Process
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 
 class MtpForegroundService : Service() {
@@ -74,10 +76,19 @@ class MtpForegroundService : Service() {
   }
 
   override fun onTaskRemoved(rootIntent: Intent?) {
+    val preferences = getSharedPreferences(SERVICE_PREFERENCES, Context.MODE_PRIVATE)
+    val now = SystemClock.elapsedRealtime()
+    if (now - preferences.getLong(LAST_TASK_RESTART, 0) < TASK_RESTART_COOLDOWN_MS) {
+      super.onTaskRemoved(rootIntent)
+      return
+    }
+    preferences.edit().putLong(LAST_TASK_RESTART, now).commit()
     if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
       startService(Intent(this, MtpForegroundService::class.java))
     }
     super.onTaskRemoved(rootIntent)
+    // Tauri cannot recreate its WebView after the UI task is removed while this process survives.
+    Process.killProcess(Process.myPid())
   }
 
   override fun onDestroy() {
@@ -94,6 +105,9 @@ class MtpForegroundService : Service() {
     private const val CHANNEL_ID = "tensamin-connection"
     private const val NOTIFICATION_ID = 2201
     private const val ACTION_STOP = "net.tensamin.client.STOP_MTP"
+    private const val SERVICE_PREFERENCES = "tensamin-service"
+    private const val LAST_TASK_RESTART = "last-task-restart"
+    private const val TASK_RESTART_COOLDOWN_MS = 15_000L
     @Volatile private var connectionStatus = "Connecting"
 
     fun updateNotification(context: Context, status: String) {

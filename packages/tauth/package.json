@@ -12,17 +12,15 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@tanstack/react-router": "^1.0.0",
-    "@tauri-apps/api": "^2.10.1",
+    "@methanium/ui": "*",
+    "@tanstack/react-router": "^1.170.21",
     "@tensamin/crypto": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "@tensamin/tauri": "workspace:*",
-    "@tensamin/mtp": "workspace:*",
-    "@methanium/ui": "*",
     "@tensamin/user": "workspace:*",
-    "lucide-react": "^1.8.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }

@@ -12,6 +12,14 @@ function isError(message: ProtocolMessage) {
   return message.type.startsWith("Error");
 }
 
+export function removeMissingContactSnapshots<T extends { UserId: number }>(
+  contacts: T[],
+  missingUserIds: readonly number[],
+): T[] {
+  const missing = new Set(missingUserIds);
+  return contacts.filter((contact) => !missing.has(contact.UserId));
+}
+
 export default function CacheSync() {
   const { addInterceptor, contextReady, freshContacts, subscribePush } =
     useMTP();
@@ -35,6 +43,20 @@ export default function CacheSync() {
         codec: secureValueCodec,
       }),
     [accountId],
+  );
+
+  const removeMissingContacts = useCallback(
+    async (userIds: number[]) => {
+      if (userIds.length === 0) return;
+      const cache = secureCache();
+      const contacts = await cache.contacts.get();
+      if (!contacts) return;
+      const remaining = removeMissingContactSnapshots(contacts, userIds);
+      if (remaining.length === contacts.length) return;
+      await cache.contacts.replace(remaining);
+      await cache.conversations.replaceSelected(remaining);
+    },
+    [secureCache],
   );
 
   const replaceMessage = useCallback(
@@ -109,6 +131,15 @@ export default function CacheSync() {
       if (!accountId || isError(response)) return;
       const request = (data ?? {}) as Record<string, unknown>;
       const result = response.data as Record<string, unknown>;
+
+      if (type === "GetStates" && Array.isArray(result.MissingUserIds)) {
+        await removeMissingContacts(
+          result.MissingUserIds.filter(
+            (userId): userId is number => typeof userId === "number",
+          ),
+        );
+        return;
+      }
 
       if (type === "GetUserData") {
         await createCache(String(accountId)).profiles.put(
@@ -196,7 +227,14 @@ export default function CacheSync() {
         return;
       }
     },
-    [accountId, insertMessage, removeMessage, replaceMessage, secureCache],
+    [
+      accountId,
+      insertMessage,
+      removeMissingContacts,
+      removeMessage,
+      replaceMessage,
+      secureCache,
+    ],
   );
 
   useEffect(() => {
@@ -210,6 +248,14 @@ export default function CacheSync() {
     async (message: ProtocolMessage) => {
       if (!accountId || isError(message)) return;
       const data = message.data as Record<string, unknown>;
+      if (message.type === "GetStates" && Array.isArray(data.MissingUserIds)) {
+        await removeMissingContacts(
+          data.MissingUserIds.filter(
+            (userId): userId is number => typeof userId === "number",
+          ),
+        );
+        return;
+      }
       if (message.type === "MessageLive") {
         await insertMessage(
           Number(data.SenderId),
@@ -263,7 +309,14 @@ export default function CacheSync() {
         await replaceMessage(partnerId, sendTime, { Reactions: reactions });
       }
     },
-    [accountId, insertMessage, removeMessage, replaceMessage, secureCache],
+    [
+      accountId,
+      insertMessage,
+      removeMessage,
+      removeMissingContacts,
+      replaceMessage,
+      secureCache,
+    ],
   );
 
   useEffect(() => {

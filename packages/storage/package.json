@@ -6,7 +6,9 @@
   "exports": {
     "./session": "./src/session.tsx",
     "./context": "./src/context.tsx",
-    "./secure": "./src/secure.ts"
+    "./secure": "./src/secure.ts",
+    "./browserSecure": "./src/browserSecure.ts",
+    "./credentials": "./src/credentials.ts"
   },
   "scripts": {
     "format": "pnpm exec prettier --write .",
@@ -14,12 +16,12 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2",
-    "@tensamin/cache": "workspace:*",
-    "@tensamin/shared": "workspace:*",
-    "@tensamin/mtp": "workspace:*",
     "@methanium/ui": "*",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@tauri-apps/api": "^2.11.1",
+    "@tensamin/cache": "workspace:*",
+    "@tensamin/mtp": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }

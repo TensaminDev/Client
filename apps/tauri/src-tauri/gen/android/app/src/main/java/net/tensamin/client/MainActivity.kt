@@ -3,10 +3,9 @@ package net.tensamin.client
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
-import android.graphics.Rect
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
-import android.view.ViewGroup
+import android.view.MotionEvent
 import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
@@ -56,7 +55,33 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onWebViewCreate(webView: WebView) {
-    webView.setInitialScale(290)
+    webView.settings.apply {
+      setSupportZoom(false)
+      builtInZoomControls = false
+      displayZoomControls = false
+    }
+
+    var blockingMultiTouch = false
+    webView.setOnTouchListener { _, event ->
+      val shouldBlock = blockingMultiTouch || event.pointerCount > 1
+
+      when (event.actionMasked) {
+        MotionEvent.ACTION_POINTER_DOWN -> {
+          // Cancel the one-finger gesture before consuming the rest of the pinch.
+          MotionEvent.obtain(event).let { cancelEvent ->
+            cancelEvent.action = MotionEvent.ACTION_CANCEL
+            webView.onTouchEvent(cancelEvent)
+            cancelEvent.recycle()
+          }
+          blockingMultiTouch = true
+        }
+        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> blockingMultiTouch = false
+      }
+
+      shouldBlock
+    }
+
+    NativeAccessibilityBridge.attach(webView)
     mediaWebView = webView
     MobileMediaEvents.attach(webView)
     webView.addJavascriptInterface(MobileMediaJavascriptInterface(), "tensaminMobileMedia")
@@ -65,11 +90,12 @@ class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     WindowCompat.setDecorFitsSystemWindows(window, true)
     window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+    super.onCreate(savedInstanceState)
+    NativeMtpBridge.nativeAttach(applicationContext)
     if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
       NativeMtpBridge.startService(this)
     }
-    super.onCreate(savedInstanceState)
-    NativeMtpBridge.nativeAttach(applicationContext)
+    NativeAccessibilityBridge.nativeAttach(applicationContext)
     installKeyboardResizeWorkaround()
   }
 
@@ -90,7 +116,10 @@ class MainActivity : TauriActivity() {
     attachLayoutListener = null
     contentRoot = null
     contentChild = null
-    mediaWebView?.removeJavascriptInterface("tensaminMobileMedia")
+    mediaWebView?.let {
+      NativeAccessibilityBridge.detach(it)
+      it.removeJavascriptInterface("tensaminMobileMedia")
+    }
     mediaWebView = null
     MobileMediaEvents.detach()
     super.onDestroy()
@@ -203,16 +232,20 @@ class MainActivity : TauriActivity() {
     child: android.view.View,
     insets: WindowInsetsCompat? = ViewCompat.getRootWindowInsets(child),
   ) {
-    val visibleFrame = Rect()
-    child.getWindowVisibleDisplayFrame(visibleFrame)
-
     val rootHeight = child.rootView.height
     if (rootHeight <= 0) return
 
-    val imeHeight = insets?.getInsets(WindowInsetsCompat.Type.ime())?.bottom ?: 0
-    val keyboardHeight = maxOf(imeHeight, rootHeight - visibleFrame.bottom)
-    val keyboardVisible = keyboardHeight > rootHeight * 0.15
-    val usableHeight = if (keyboardVisible) rootHeight - keyboardHeight else ViewGroup.LayoutParams.MATCH_PARENT
+    val imeVisible = insets?.isVisible(WindowInsetsCompat.Type.ime()) == true
+    val imeHeight = if (imeVisible) {
+      insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+    } else {
+      0
+    }
+    val usableHeight = if (imeHeight in 1 until rootHeight) {
+      rootHeight - imeHeight
+    } else {
+      WindowManager.LayoutParams.MATCH_PARENT
+    }
 
     if (previousUsableHeight == usableHeight) return
 

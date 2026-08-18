@@ -5,7 +5,6 @@ import {
   ContextMenuSeparator,
   Slider,
 } from "@methanium/ui";
-import type { User } from "@tensamin/user/context";
 import { setParticipantCameraDisabled, useCall } from "../../store";
 import { useState } from "react";
 
@@ -23,7 +22,7 @@ export default function ContextMenu({
   user,
   ownId,
 }: {
-  user: User;
+  user: Readonly<{ UserId: number }>;
   ownId: number;
 }) {
   const [muted, setMuted] = useState(false);

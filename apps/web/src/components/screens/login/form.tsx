@@ -13,8 +13,11 @@ import {
   useState,
 } from "react";
 import { z } from "zod";
-import { invoke, isTauri } from "@tauri-apps/api/core";
-import QrCodeScanner from "@tensamin/tauri/qrCodeScanner";
+import { subscribeTuFileLaunch } from "@tensamin/pwa/runtime";
+import {
+  parseTuFileContent,
+  persistMtpCredentials,
+} from "@tensamin/storage/credentials";
 import { useNavigate } from "@tanstack/react-router";
 
 const fetchedUser = z.object({
@@ -35,55 +38,6 @@ const formSchema = z.object({
   mtp_keyring: z.string().min(1).max(92),
 });
 
-/**
- * Parses a .tu file payload into credentials.
- * @param rawFileContent UTF-8 file content from an uploaded .tu file.
- * @returns Parsed user id and private key credentials.
- */
-function parseTuFileContent(rawFileContent: string): {
-  userId: number;
-  privateKey: string;
-  domain: string | null;
-} {
-  if (rawFileContent.trim().length === 0) {
-    throw new Error("File is empty");
-  } else if (!rawFileContent.includes("::")) {
-    throw new Error("Invalid file");
-  } else if (rawFileContent.split("::").length !== 2) {
-    throw new Error("Invalid file");
-  }
-
-  const left = rawFileContent.split("::")[0];
-  const right = rawFileContent.split("::")[1];
-
-  if (left.length === 0) {
-    throw new Error("Invalid file");
-  } else if (right.length === 0) {
-    throw new Error("Invalid file");
-  } else if (isNaN(Number(left)) && !left.includes("@")) {
-    throw new Error("Invalid file");
-  }
-
-  const [userIdString, privateKeyValue] = rawFileContent.split("::");
-  const privateKey = privateKeyValue.trim();
-  const userId = isNaN(Number(userIdString))
-    ? Number(userIdString.split("@")[0])
-    : Number(userIdString);
-
-  const domain = userIdString.includes("@") ? userIdString.split("@")[1] : null;
-
-  if (!userId || !privateKey) {
-    throw new Error("Invalid file");
-  }
-
-  console.log({
-    domain,
-    userId,
-  });
-
-  return { userId, privateKey, domain };
-}
-
 export default function Form() {
   const isMobile = useIsMobile();
   const uploadRef = useRef<HTMLInputElement | null>(null);
@@ -97,27 +51,12 @@ export default function Form() {
       if (loginPendingRef.current) return false;
       loginPendingRef.current = true;
       try {
-        if (domain) await save("omega_url", `https://${domain}/`);
-        if (isTauri()) {
-          const [omegaUrl, forcedOmikronUrl, forcedOmikronPublicKey] =
-            await Promise.all([
-              domain ? `https://${domain}/` : load("omega_url"),
-              load("forced_omikron_url"),
-              load("forced_omikron_public_key"),
-            ]);
-          await invoke("mtp_store_credentials", {
-            config: {
-              userId,
-              keyring: privateKey,
-              omegaUrl,
-              forcedOmikronUrl,
-              forcedOmikronPublicKey,
-            },
-          });
-        }
-        await save("mtp_keyring", privateKey, { secure: true });
-        await save("session_id", Date.now());
-        await save("user_id", userId);
+        await persistMtpCredentials({
+          storage: { load, save },
+          userId,
+          keyring: privateKey,
+          domain,
+        });
         await navigate({ to: "/", replace: true });
         return true;
       } finally {
@@ -146,6 +85,11 @@ export default function Form() {
       }
     },
     [persistLogin],
+  );
+
+  useEffect(
+    () => subscribeTuFileLaunch(processDroppedFile),
+    [processDroppedFile],
   );
 
   // Handle .tu files
@@ -286,32 +230,10 @@ export default function Form() {
 
   return (
     <div className="relative flex md:flex-row flex-col gap-15">
-      {isTauri() && isMobile ? (
-        <>
-          <QrCodeScanner
-            onData={async (data) => {
-              if (!data.startsWith("tensamin://tu::")) {
-                toast("error", "Invalid QR code");
-                return;
-              }
-
-              const decoded = data.replace("tensamin://tu::", "");
-
-              try {
-                const { userId, privateKey, domain } =
-                  parseTuFileContent(decoded);
-
-                await persistLogin(userId, privateKey, domain);
-              } catch (error) {
-                log(0, "login", "red", error);
-                toast("error", "Failed to parse QR code data");
-              }
-            }}
-          />
-          <Button onClick={() => uploadRef.current?.click()}>
-            Select .tu file
-          </Button>
-        </>
+      {isMobile ? (
+        <Button onClick={() => uploadRef.current?.click()}>
+          Select .tu file
+        </Button>
       ) : (
         <div
           onClick={() => uploadRef.current?.click()}

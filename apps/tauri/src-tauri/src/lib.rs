@@ -1,3 +1,4 @@
+mod accessibility_backend;
 mod mtp_backend;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -14,11 +15,10 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init());
 
-    #[cfg(any(target_os = "ios", target_os = "android"))]
-    let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
-
     let app = builder
         .invoke_handler(tauri::generate_handler![
+            accessibility_backend::accessibility_get_initial_scale,
+            accessibility_backend::accessibility_set_initial_scale,
             mtp_backend::mtp_request,
             mtp_backend::mtp_status,
             mtp_backend::mtp_store_credentials,

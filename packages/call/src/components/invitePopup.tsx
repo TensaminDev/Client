@@ -23,6 +23,7 @@ export default function InvitePopup({
   return (
     <Wrapper
       userId={user}
+      fields={["Avatar", "Display"]}
       loading={null}
       component={(user) => (
         <Dialog open={open} onOpenChange={setOpen}>

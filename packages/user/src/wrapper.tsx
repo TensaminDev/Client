@@ -1,48 +1,47 @@
 import { useEffect, useState } from "react";
-import { useUser, type User } from "./context";
+import { type SelectedUser, type UserFields, useUserFields } from "./context";
 
 import { failedUser } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
 
 // Wrapper function to pass user data to some component
-export default function Wrapper(props: {
+export default function Wrapper<const Fields extends UserFields>(props: {
   userId: number | "own";
+  fields: Fields;
   loading: React.ReactNode;
-  component: (user: User) => React.ReactNode;
+  component: (user: SelectedUser<Fields>) => React.ReactNode;
 }) {
-  const { get } = useUser();
   const { load } = useStorage();
-  const [user, setUser] = useState<User | null>(null);
+  const [ownUserId, setOwnUserId] = useState<number | null>(null);
+  const [ownUserError, setOwnUserError] = useState(false);
 
   useEffect(() => {
-    if (props.userId == null) return;
-
+    if (props.userId !== "own") return;
     let active = true;
-
-    void (async () => {
-      try {
-        const userId =
-          props.userId === "own" ? await load("user_id") : props.userId;
-        const value = await get(userId);
-
+    void load("user_id").then(
+      (value) => {
         if (active) {
-          setUser(value);
+          setOwnUserId(value);
+          setOwnUserError(false);
         }
-      } catch {
-        if (active) {
-          setUser(failedUser);
-        }
-      }
-    })();
-
+      },
+      () => {
+        if (active) setOwnUserError(true);
+      },
+    );
     return () => {
       active = false;
     };
-  }, [load, get, props.userId]);
+  }, [load, props.userId]);
 
-  if (props.userId == null) {
-    return <>{props.component(failedUser)}</>;
+  const userId = props.userId === "own" ? ownUserId : props.userId;
+  const result = useUserFields(userId, props.fields);
+  if (
+    (props.userId === "own" && ownUserError) ||
+    (!result.loading && !result.data)
+  ) {
+    return <>{props.component(failedUser as SelectedUser<Fields>)}</>;
   }
 
-  return <>{user ? props.component(user) : props.loading}</>;
+  return <>{result.data ? props.component(result.data) : props.loading}</>;
 }

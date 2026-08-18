@@ -6,6 +6,7 @@
   "exports": {
     "./asyncQueue": "./src/asyncQueue.ts",
     "./code": "./src/code.ts",
+    "./errors": "./src/errors.ts",
     "./data": "./src/data.ts",
     "./desktopMedia": "./src/desktopMedia.tsx",
     "./log": "./src/log.tsx",
@@ -22,9 +23,9 @@
   },
   "dependencies": {
     "@methanium/ui": "*",
-    "lucide-react": "^1.14.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "zod": "^4.3.6"
+    "lucide-react": "^1.29.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.4.3"
   }
 }

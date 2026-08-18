@@ -44,9 +44,9 @@ import type {
   Ref,
 } from "react";
 import { useChat } from "../context";
-import Emoji from "@tensamin/markdown/emoji";
-import EmojiPicker from "./emojiPicker";
-import { getRecentEmojis, useEmojiRanks } from "./emojiRanks";
+import { Emoji } from "@methanium/ui/markdown";
+import EmojiPicker from "./emoji/emojiPicker";
+import { getRecentEmojis, useEmojiRanks } from "./emoji/emojiRanks";
 
 async function copyText(text: string) {
   await navigator.clipboard.writeText(text);
