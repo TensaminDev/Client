@@ -1,15 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { setDatabaseEntry } from "@tensamin/shared/indexedDb";
 import { isTauri } from "@tauri-apps/api/core";
 
 import "./style.css";
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
 
 const launchedFiles: File[] = [];
 const fileListeners = new Set<(file: File) => void>();
@@ -66,9 +61,6 @@ async function enablePush() {
 }
 
 export default function PwaRuntime() {
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-
   useEffect(() => {
     if (
       isTauri() ||
@@ -130,16 +122,6 @@ export default function PwaRuntime() {
   }, []);
 
   useEffect(() => {
-    const handleInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
-    return () =>
-      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
-  }, []);
-
-  useEffect(() => {
     const launchQueue = (
       window as Window & {
         launchQueue?: {
@@ -156,39 +138,6 @@ export default function PwaRuntime() {
         void handle.getFile().then(emitLaunchedFile);
       }
     });
-  }, []);
-
-  useEffect(() => {
-    if (!installPrompt) return;
-    toast("Install Tensamin for a native app experience", {
-      duration: Infinity,
-      action: {
-        label: "Install",
-        onClick: () => {
-          void installPrompt.prompt().then(() => installPrompt.userChoice);
-          setInstallPrompt(null);
-        },
-      },
-    });
-  }, [installPrompt]);
-
-  useEffect(() => {
-    const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (
-      isTauri() ||
-      !isAppleMobile ||
-      isStandalone() ||
-      localStorage.getItem("pwa-ios-install-hint")
-    ) {
-      return;
-    }
-    localStorage.setItem("pwa-ios-install-hint", "shown");
-    toast(
-      "Install Tensamin from Safari's Share menu to enable background notifications.",
-      {
-        duration: 12_000,
-      },
-    );
   }, []);
 
   useEffect(() => {
