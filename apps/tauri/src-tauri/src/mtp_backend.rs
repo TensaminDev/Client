@@ -2,7 +2,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Mutex, OnceLock, RwLock,
 };
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use base64::{
     engine::general_purpose::{STANDARD, STANDARD_NO_PAD},
@@ -16,6 +16,7 @@ use mtp::crypto::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tauri::{AppHandle, Emitter};
+use tokio::sync::mpsc;
 
 const EVENT_NAME: &str = "mtp://event";
 const DISCONNECTED: u8 = 0;
@@ -24,6 +25,9 @@ const CONNECTED: u8 = 2;
 const CHAT_SECRET_SALT: &[u8] = b"tensamin-chat-secret-v1";
 const CHAT_MESSAGE_SALT: &[u8] = b"tensamin-chat-message-v1";
 const CHAT_SECRET_SCHEME: &str = "mtp-chat-secret-kem-chacha20poly1305-hkdf-sha256-v1";
+const INITIAL_SYNC_TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_BUFFERED_INITIAL_FRAMES: usize = 1_000;
+const NOTIFICATION_QUEUE_CAPACITY: usize = 32;
 #[cfg(target_os = "android")]
 const ROOT_YE_PEM: &[u8] = b"-----BEGIN CERTIFICATE-----\n\
 MIIB2TCCAWCgAwIBAgIRAKQCa6LvbHwg1AR+XmWmk4AwCgYIKoZIzj0EAwMwLjEL\n\
@@ -95,13 +99,53 @@ enum MtpEvent {
 pub struct MtpManager {
     runtime: tokio::runtime::Runtime,
     config: RwLock<Option<MtpConfig>>,
-    connection: RwLock<Option<Arc<MTPConnection>>>,
+    connection: RwLock<Option<Arc<ManagedConnection>>>,
     snapshot: RwLock<MtpSnapshot>,
     generation: AtomicU64,
     enabled: AtomicBool,
     ui_visible: AtomicBool,
     app: RwLock<Option<AppHandle>>,
     start_lock: Mutex<()>,
+}
+
+struct RequestIdAllocator {
+    next: AtomicU64,
+}
+
+impl RequestIdAllocator {
+    fn new() -> Self {
+        Self {
+            next: AtomicU64::new(1),
+        }
+    }
+
+    fn next(&self) -> Result<u32, String> {
+        let value = self.next.fetch_add(1, Ordering::Relaxed);
+        u32::try_from(value)
+            .map_err(|_| "MTP request ID space exhausted for this connection".to_string())
+    }
+}
+
+struct ManagedConnection {
+    mtp: Arc<MTPConnection>,
+    request_ids: RequestIdAllocator,
+}
+
+impl ManagedConnection {
+    async fn next_request_id(&self) -> Result<u32, String> {
+        let id = self.request_ids.next();
+        if id.is_err() {
+            self.mtp.sender.close().await;
+        }
+        id
+    }
+}
+
+struct PreparedConnection {
+    connection: MTPConnection,
+    request_ids: RequestIdAllocator,
+    initial_state: Value,
+    buffered_frames: Vec<CommunicationValue>,
 }
 
 static MANAGER: OnceLock<MtpManager> = OnceLock::new();
@@ -149,7 +193,7 @@ impl MtpManager {
             .take()
         {
             self.runtime
-                .spawn(async move { connection.sender.close().await });
+                .spawn(async move { connection.mtp.sender.close().await });
         }
         self.set_snapshot(MtpSnapshot {
             generation,
@@ -171,7 +215,7 @@ impl MtpManager {
             .take()
         {
             self.runtime
-                .spawn(async move { connection.sender.close().await });
+                .spawn(async move { connection.mtp.sender.close().await });
         }
         self.set_snapshot(MtpSnapshot {
             generation: self.generation.load(Ordering::SeqCst),
@@ -231,20 +275,16 @@ impl MtpManager {
         self.enabled.load(Ordering::SeqCst) && self.generation.load(Ordering::SeqCst) == generation
     }
 
-    async fn request(
-        &self,
-        type_name: &str,
-        data: Value,
-        id: Option<u32>,
-    ) -> Result<Value, String> {
+    async fn request(&self, type_name: &str, data: Value) -> Result<Value, String> {
         let connection = self
             .connection
             .read()
             .map_err(|_| "MTP connection lock is unavailable")?
             .clone()
             .ok_or_else(|| "MTP is not connected".to_string())?;
-        let request = json_to_frame(type_name, data, id)?;
+        let request = json_to_frame(type_name, data, connection.next_request_id().await?)?;
         let response = connection
+            .mtp
             .request(&request, None)
             .await
             .map_err(|error| error.to_string())?;
@@ -261,9 +301,12 @@ async fn supervise(generation: u64) {
         manager.log(2, "Starting native MTP connection", None);
         android_status("Connecting");
         match connect(&config).await {
-            Ok((connection, state)) => {
+            Ok(prepared) => {
                 delay = Duration::from_secs(1);
-                let connection = Arc::new(connection);
+                let connection = Arc::new(ManagedConnection {
+                    mtp: Arc::new(prepared.connection),
+                    request_ids: prepared.request_ids,
+                });
                 let stale = {
                     let _guard = manager.start_lock.lock().expect("start lock poisoned");
                     let mut current = manager
@@ -279,22 +322,47 @@ async fn supervise(generation: u64) {
                             generation,
                             ready_state: CONNECTED,
                             identified: true,
-                            state: Some(state),
+                            state: Some(prepared.initial_state),
                             error: None,
                         });
                         false
                     }
                 };
                 if stale {
-                    connection.sender.close().await;
+                    connection.mtp.sender.close().await;
                     break;
                 }
                 android_status("Connected");
                 manager.log(2, "Native MTP connection established", None);
 
+                let (notification_tx, mut notification_rx) =
+                    mpsc::channel(NOTIFICATION_QUEUE_CAPACITY);
+                let notification_connection = connection.clone();
+                let notification_config = config.clone();
+                let notification_worker = tokio::spawn(async move {
+                    while let Some(frame) = notification_rx.recv().await {
+                        if !manager().is_current(generation) {
+                            break;
+                        }
+                        if let Err(error) = notify_message(
+                            &notification_config,
+                            notification_connection.clone(),
+                            &frame,
+                        )
+                        .await
+                        {
+                            eprintln!("failed to create background message notification: {error}");
+                        }
+                    }
+                });
+
+                for frame in prepared.buffered_frames {
+                    handle_push(generation, &notification_tx, frame).await;
+                }
+
                 while manager.is_current(generation) {
-                    match connection.receive().await {
-                        Ok(frame) => handle_push(generation, connection.clone(), frame).await,
+                    match connection.mtp.receive().await {
+                        Ok(frame) => handle_push(generation, &notification_tx, frame).await,
                         Err(error) => {
                             let _guard = manager.start_lock.lock().expect("start lock poisoned");
                             if manager.is_current(generation) {
@@ -308,6 +376,13 @@ async fn supervise(generation: u64) {
                             }
                             break;
                         }
+                    }
+                }
+                drop(notification_tx);
+                notification_worker.abort();
+                if let Err(error) = notification_worker.await {
+                    if !error.is_cancelled() {
+                        eprintln!("background notification worker failed: {error}");
                     }
                 }
                 let mut current = manager
@@ -339,12 +414,21 @@ async fn supervise(generation: u64) {
             break;
         }
         android_status("Reconnecting");
-        tokio::time::sleep(delay).await;
+        tokio::time::sleep(jittered_retry_delay(delay)).await;
         delay = (delay * 2).min(Duration::from_secs(60));
     }
 }
 
-async fn connect(config: &MtpConfig) -> Result<(MTPConnection, Value), String> {
+fn jittered_retry_delay(delay: Duration) -> Duration {
+    let entropy = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.subsec_nanos())
+        .unwrap_or_default();
+    let percent = 80 + entropy % 41;
+    delay.mul_f64(percent as f64 / 100.0)
+}
+
+async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
     let (url, public_key) = resolve_endpoint(config)
         .await
         .map_err(|error| format!("endpoint discovery failed: {error}"))?;
@@ -381,39 +465,10 @@ async fn connect(config: &MtpConfig) -> Result<(MTPConnection, Value), String> {
     .map_err(|error| format!("transport authentication failed: {error}"))?;
     manager().log(2, "Native MTP authentication completed", None);
 
-    let connected = CommunicationValue::new(CommunicationType::ClientConnected)
-        .add_typed_default(
-            DataType::SessionId,
-            DataValue::UnsignedNumber(current_millis() as u128),
-        )
-        .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
-        .add_typed_default(DataType::CacheValid, DataValue::BoolFalse)
-        .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0));
-    let state = tokio::time::timeout(
-        Duration::from_secs(30),
-        connection.request(&connected, None),
-    )
-    .await
-    .map_err(|_| "initial state synchronization timed out".to_string())?
-    .map_err(|error| format!("initial state synchronization failed: {error}"))?;
-    if !state.is_type(CommunicationType::ClientStateSync) {
-        return Err(format!(
-            "expected ClientStateSync, received {}",
-            state.get_type_name().unwrap_or("unknown")
-        ));
-    }
-    let session_id = state
-        .get_data(DataType::SessionId)
-        .as_number()
-        .ok_or("ClientStateSync omitted SessionId")?;
-    let version = state
-        .get_data(DataType::VersionNumber)
-        .as_number()
-        .ok_or("ClientStateSync omitted VersionNumber")?;
-    let ack = CommunicationValue::new(CommunicationType::ClientStateAck)
-        .add_typed_default(DataType::SessionId, number_to_data(session_id))
-        .add_typed_default(DataType::VersionNumber, number_to_data(version));
-    let response = tokio::time::timeout(Duration::from_secs(30), connection.request(&ack, None))
+    let (state, buffered_frames) = await_initial_state(&connection).await?;
+    let request_ids = RequestIdAllocator::new();
+    let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids)?;
+    let response = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&ack, None))
         .await
         .map_err(|_| "state acknowledgement timed out".to_string())?
         .map_err(|error| format!("state acknowledgement failed: {error}"))?;
@@ -423,7 +478,182 @@ async fn connect(config: &MtpConfig) -> Result<(MTPConnection, Value), String> {
     {
         return Err(format!("ClientStateAck failed: {response}"));
     }
-    Ok((connection, frame_data_to_json(&state)?))
+    Ok(PreparedConnection {
+        connection,
+        request_ids,
+        initial_state,
+        buffered_frames,
+    })
+}
+
+fn prepare_initial_state_ack(
+    state: &CommunicationValue,
+    request_ids: &RequestIdAllocator,
+) -> Result<(Value, CommunicationValue), String> {
+    let initial_state = frame_data_to_json(state)?;
+    validate_client_state_sync(&initial_state)?;
+    let data = initial_state
+        .as_object()
+        .ok_or("ClientStateSync payload is not an object")?;
+    let session_id = required_integer(data, "SessionId")?;
+    let version = required_integer(data, "VersionNumber")?;
+    let ack = CommunicationValue::new(CommunicationType::ClientStateAck)
+        .with_id(request_ids.next()?)
+        .add_typed_default(DataType::SessionId, number_to_data(session_id))
+        .add_typed_default(DataType::VersionNumber, number_to_data(version));
+    Ok((initial_state, ack))
+}
+
+fn validate_client_state_sync(state: &Value) -> Result<(), String> {
+    let data = state
+        .as_object()
+        .ok_or("ClientStateSync payload is not an object")?;
+    if required_integer(data, "SessionId")? <= 0 {
+        return Err("ClientStateSync SessionId must be a positive integer".into());
+    }
+    for field in ["VersionNumber", "CacheSchemaVersion"] {
+        if required_integer(data, field)? < 0 {
+            return Err(format!("ClientStateSync {field} must be nonnegative"));
+        }
+    }
+    match data.get("SyncMode").and_then(Value::as_str) {
+        Some("full" | "delta") => {}
+        _ => return Err("ClientStateSync SyncMode must be 'full' or 'delta'".into()),
+    }
+    for field in ["Contacts", "Communities", "Calls", "Messages"] {
+        if !data.get(field).is_some_and(Value::is_array) {
+            return Err(format!("ClientStateSync {field} must be an array"));
+        }
+    }
+    for field in ["DeletedMessageIds", "DeletedContactIds"] {
+        if let Some(value) = data.get(field) {
+            let values = value
+                .as_array()
+                .ok_or_else(|| format!("ClientStateSync {field} must be an array"))?;
+            if values.iter().any(|value| !value.is_number()) {
+                return Err(format!("ClientStateSync {field} must contain numbers"));
+            }
+        }
+    }
+    validate_object_array(data, "Communities", |_| Ok(()))?;
+    validate_object_array(data, "Contacts", validate_contact)?;
+    validate_object_array(data, "Calls", validate_call)?;
+    validate_object_array(data, "Messages", validate_message)?;
+    Ok(())
+}
+
+fn validate_object_array(
+    data: &Map<String, Value>,
+    field: &str,
+    validate: impl Fn(&Map<String, Value>) -> Result<(), String>,
+) -> Result<(), String> {
+    let values = data
+        .get(field)
+        .and_then(Value::as_array)
+        .ok_or_else(|| format!("ClientStateSync {field} must be an array"))?;
+    for value in values {
+        let object = value
+            .as_object()
+            .ok_or_else(|| format!("ClientStateSync {field} entries must be objects"))?;
+        validate(object)?;
+    }
+    Ok(())
+}
+
+fn validate_contact(contact: &Map<String, Value>) -> Result<(), String> {
+    if !contact.get("UserId").is_some_and(Value::is_number) {
+        return Err("ClientStateSync contact omitted numeric UserId".into());
+    }
+    if let Some(messages) = contact.get("Messages") {
+        let messages = messages
+            .as_array()
+            .ok_or("ClientStateSync contact Messages must be an array")?;
+        for message in messages {
+            validate_message(
+                message
+                    .as_object()
+                    .ok_or("ClientStateSync contact message must be an object")?,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_call(call: &Map<String, Value>) -> Result<(), String> {
+    if !call.get("CallId").is_some_and(Value::is_string) {
+        return Err("ClientStateSync call omitted string CallId".into());
+    }
+    let members = call
+        .get("CallMembers")
+        .and_then(Value::as_array)
+        .ok_or("ClientStateSync call omitted CallMembers array")?;
+    if members.iter().any(|member| !member.is_number()) {
+        return Err("ClientStateSync CallMembers must contain numbers".into());
+    }
+    Ok(())
+}
+
+fn validate_message(message: &Map<String, Value>) -> Result<(), String> {
+    for field in ["SenderId", "SendTime"] {
+        if !message.get(field).is_some_and(Value::is_number) {
+            return Err(format!("ClientStateSync message omitted numeric {field}"));
+        }
+    }
+    let content = message
+        .get("Content")
+        .and_then(Value::as_str)
+        .ok_or("ClientStateSync message omitted string Content")?;
+    STANDARD
+        .decode(content)
+        .or_else(|_| STANDARD_NO_PAD.decode(content))
+        .map_err(|_| "ClientStateSync message Content must be base64".to_string())?;
+    if let Some(state) = message.get("MessageState") {
+        match state.as_str() {
+            Some("read" | "received" | "sent" | "sending" | "awaiting") => {}
+            _ => return Err("ClientStateSync message has invalid MessageState".into()),
+        }
+    }
+    Ok(())
+}
+
+fn required_integer(data: &Map<String, Value>, field: &str) -> Result<i128, String> {
+    let value = data
+        .get(field)
+        .ok_or_else(|| format!("ClientStateSync omitted {field}"))?;
+    if let Some(value) = value.as_i64() {
+        return Ok(value as i128);
+    }
+    value
+        .as_u64()
+        .map(|value| value as i128)
+        .ok_or_else(|| format!("ClientStateSync {field} must be an integer"))
+}
+
+async fn await_initial_state(
+    connection: &MTPConnection,
+) -> Result<(CommunicationValue, Vec<CommunicationValue>), String> {
+    let mut buffered = Vec::new();
+    let deadline = tokio::time::Instant::now() + INITIAL_SYNC_TIMEOUT;
+
+    loop {
+        let frame = tokio::time::timeout_at(deadline, connection.receive())
+            .await
+            .map_err(|_| "initial state synchronization timed out".to_string())?
+            .map_err(|error| format!("initial state synchronization failed: {error}"))?;
+
+        if frame.is_type(CommunicationType::ErrorNoIota) {
+            return Err("No Iota is currently connected".into());
+        }
+
+        if frame.is_type(CommunicationType::ClientStateSync) {
+            return Ok((frame, buffered));
+        }
+
+        if buffered.len() == MAX_BUFFERED_INITIAL_FRAMES {
+            return Err("initial state synchronization buffered too many frames".into());
+        }
+        buffered.push(frame);
+    }
 }
 
 async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String> {
@@ -465,7 +695,11 @@ async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String
     ))
 }
 
-async fn handle_push(generation: u64, connection: Arc<MTPConnection>, frame: CommunicationValue) {
+async fn handle_push(
+    generation: u64,
+    notification_tx: &mpsc::Sender<CommunicationValue>,
+    frame: CommunicationValue,
+) {
     let manager = manager();
     if let Ok(message) = frame_to_json(&frame) {
         manager.emit(MtpEvent::Message {
@@ -478,7 +712,7 @@ async fn handle_push(generation: u64, connection: Arc<MTPConnection>, frame: Com
     {
         if let Some(partner_id) = frame
             .get_data(DataType::ChatPartnerId)
-            .as_number()
+            .and_then(DataValue::as_number)
             .and_then(|value| u64::try_from(value).ok())
         {
             if let Err(error) = android_cancel_notification(partner_id) {
@@ -487,40 +721,39 @@ async fn handle_push(generation: u64, connection: Arc<MTPConnection>, frame: Com
         }
     }
     if frame.is_type(CommunicationType::MessageLive) && !manager.ui_visible.load(Ordering::SeqCst) {
-        if let Err(error) = notify_message(connection, &frame).await {
-            eprintln!("failed to create background message notification: {error}");
+        if notification_tx.try_send(frame).is_err() {
+            eprintln!("background message notification queue is full");
         }
     }
 }
 
 async fn notify_message(
-    connection: Arc<MTPConnection>,
+    config: &MtpConfig,
+    connection: Arc<ManagedConnection>,
     frame: &CommunicationValue,
 ) -> Result<(), String> {
     let sender_id = frame
         .get_data(DataType::SenderId)
-        .as_number()
+        .and_then(DataValue::as_number)
         .and_then(|value| u64::try_from(value).ok())
         .ok_or("MessageLive omitted SenderId")?;
-    let message = frame.get_data(DataType::Message);
-    let content = container_value(message, DataType::Content)
+    let message = frame
+        .get_data(DataType::Message)
+        .ok_or("MessageLive omitted Message")?;
+    let content = container_value(message, DataType::AppContent)
         .and_then(DataValue::as_str)
         .ok_or("MessageLive omitted Content")?;
-    let config = manager()
-        .config
-        .read()
-        .expect("config lock poisoned")
-        .clone()
-        .ok_or("missing config")?;
     let keyring_bytes = decode_browser_base64(&config.keyring)?;
     let keyring = Keyring::from_bytes(&keyring_bytes).map_err(|error| error.to_string())?;
     let chat_id = derive_chat_id(config.user_id, sender_id);
     let secret_id = format!("chat:{chat_id}:main");
     let secret_request = CommunicationValue::new(CommunicationType::GetChatSecret)
+        .with_id(connection.next_request_id().await?)
         .add_typed_default(DataType::UserId, DataValue::Str(config.user_id.to_string()))
         .add_typed_default(DataType::ChatId, DataValue::Str(chat_id.clone()))
         .add_typed_default(DataType::SecretId, DataValue::Str(secret_id.clone()));
     let secret = connection
+        .mtp
         .request(&secret_request, None)
         .await
         .map_err(|error| error.to_string())?;
@@ -532,7 +765,7 @@ async fn notify_message(
     }
     let version = secret
         .get_data(DataType::VersionNumber)
-        .as_number()
+        .and_then(DataValue::as_number)
         .ok_or("missing secret version")?;
     let encrypted_secret = secret
         .get_bytes(DataType::EncryptedSecret)
@@ -560,11 +793,14 @@ async fn notify_message(
         .decrypt(&ciphertext, b"")
         .map_err(|error| error.to_string())?;
 
-    let user_request = CommunicationValue::new(CommunicationType::GetUserData).add_typed_default(
-        DataType::UserId,
-        DataValue::UnsignedNumber(sender_id as u128),
-    );
+    let user_request = CommunicationValue::new(CommunicationType::GetUserData)
+        .with_id(connection.next_request_id().await?)
+        .add_typed_default(
+            DataType::UserId,
+            DataValue::UnsignedNumber(sender_id as u128),
+        );
     let user = connection
+        .mtp
         .request(&user_request, None)
         .await
         .map_err(|error| error.to_string())?;
@@ -652,24 +888,42 @@ fn container_value(value: &DataValue, field: DataType) -> Option<&DataValue> {
     value.get_field(id)
 }
 
-fn json_to_frame(
-    type_name: &str,
-    data: Value,
-    id: Option<u32>,
-) -> Result<CommunicationValue, String> {
+fn wire_field_name(name: &str) -> &str {
+    match name {
+        "Content" => "AppContent",
+        "CreatedAt" => "AppCreatedAt",
+        "MessageId" => "AppMessageId",
+        _ => name,
+    }
+}
+
+fn application_field_name(name: &str) -> &str {
+    match name {
+        "AppContent" => "Content",
+        "AppCreatedAt" => "CreatedAt",
+        "AppMessageId" => "MessageId",
+        _ => name,
+    }
+}
+
+fn json_to_frame(type_name: &str, data: Value, id: u32) -> Result<CommunicationValue, String> {
     let comm_type = CommunicationType::from_name(type_name)
         .ok_or_else(|| format!("unknown communication type: {type_name}"))?;
-    let mut frame = CommunicationValue::new(comm_type);
-    if let Some(id) = id {
-        frame = frame.with_id(id);
-    }
+    let mut frame = CommunicationValue::new(comm_type).with_id(id);
     let Value::Object(fields) = data else {
         return Err("MTP request data must be an object".into());
     };
+    let mut translated_fields = std::collections::HashSet::<String>::with_capacity(fields.len());
     for (name, value) in fields {
+        let wire_name = wire_field_name(&name).to_owned();
+        if !translated_fields.insert(wire_name.clone()) {
+            return Err(format!(
+                "duplicate MTP field after translation: {wire_name}"
+            ));
+        }
         let data_type =
-            DataType::from_name(&name).ok_or_else(|| format!("unknown data type: {name}"))?;
-        frame = frame.add_typed_default(data_type, json_to_data(&name, value)?);
+            DataType::from_name(&wire_name).ok_or_else(|| format!("unknown data type: {name}"))?;
+        frame = frame.add_typed_default(data_type, json_to_data(&wire_name, value)?);
     }
     Ok(frame)
 }
@@ -707,13 +961,21 @@ fn json_to_data(field: &str, value: Value) -> Result<DataValue, String> {
         ),
         Value::Object(fields) => {
             let mut entries = Vec::with_capacity(fields.len());
+            let mut translated_fields =
+                std::collections::HashSet::<String>::with_capacity(fields.len());
             for (name, value) in fields {
-                let data_type = DataType::from_name(&name)
+                let wire_name = wire_field_name(&name).to_owned();
+                if !translated_fields.insert(wire_name.clone()) {
+                    return Err(format!(
+                        "duplicate MTP field after translation: {wire_name}"
+                    ));
+                }
+                let data_type = DataType::from_name(&wire_name)
                     .ok_or_else(|| format!("unknown nested data type: {name}"))?;
                 let id = data_type
                     .try_to_id(&TypeMap::latest())
                     .ok_or_else(|| format!("unmapped data type: {name}"))?;
-                entries.push((id, json_to_data(&name, value)?));
+                entries.push((id, json_to_data(&wire_name, value)?));
             }
             DataValue::Container(entries)
         }
@@ -737,8 +999,8 @@ fn is_bytes_field(field: &str) -> bool {
 
 fn frame_to_json(frame: &CommunicationValue) -> Result<Value, String> {
     let mut result = Map::new();
-    if frame.get_id() != 0 {
-        result.insert("id".into(), Value::from(frame.get_id()));
+    if let Some(id) = frame.id() {
+        result.insert("id".into(), Value::from(id));
     }
     result.insert(
         "type".into(),
@@ -751,11 +1013,20 @@ fn frame_to_json(frame: &CommunicationValue) -> Result<Value, String> {
 fn frame_data_to_json(frame: &CommunicationValue) -> Result<Value, String> {
     let map = frame.type_map().cloned().unwrap_or_else(TypeMap::latest);
     let mut result = Map::new();
-    for (id, value) in frame.data() {
+    let entries = frame
+        .data()
+        .ok_or("MTP frame payload is not a data container")?;
+    for (id, value) in entries {
         let name = map
             .data_type_name(id.0)
             .ok_or_else(|| format!("unknown data type id: {}", id.0))?;
-        result.insert(name.to_owned(), data_to_json(value, &map)?);
+        let application_name = application_field_name(name);
+        if result.contains_key(application_name) {
+            return Err(format!(
+                "duplicate MTP field after translation: {application_name}"
+            ));
+        }
+        result.insert(application_name.to_owned(), data_to_json(value, &map)?);
     }
     Ok(Value::Object(result))
 }
@@ -786,7 +1057,13 @@ fn data_to_json(value: &DataValue, map: &TypeMap) -> Result<Value, String> {
                 let name = map
                     .data_type_name(id.0)
                     .ok_or_else(|| format!("unknown nested data type id: {}", id.0))?;
-                object.insert(name.to_owned(), data_to_json(value, map)?);
+                let application_name = application_field_name(name);
+                if object.contains_key(application_name) {
+                    return Err(format!(
+                        "duplicate MTP field after translation: {application_name}"
+                    ));
+                }
+                object.insert(application_name.to_owned(), data_to_json(value, map)?);
             }
             Value::Object(object)
         }
@@ -801,16 +1078,15 @@ fn number_to_json(value: i128) -> Result<Value, String> {
         .map_err(|_| "number exceeds JSON range".into())
 }
 
-fn current_millis() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as u64
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{decode_browser_base64, decode_sdk_bytes};
+    use mtp::codec::{CommunicationType, CommunicationValue, DataType, DataValue};
+    use serde_json::json;
+
+    use super::{
+        container_value, decode_browser_base64, decode_sdk_bytes, frame_to_json,
+        jittered_retry_delay, json_to_frame, prepare_initial_state_ack, RequestIdAllocator,
+    };
 
     #[test]
     fn browser_base64_accepts_file_whitespace_and_missing_padding() {
@@ -823,11 +1099,148 @@ mod tests {
         assert_eq!(decode_sdk_bytes("0x01:02-ff").unwrap(), [1, 2, 255]);
         assert_eq!(decode_sdk_bytes("AQI=").unwrap(), [1, 2]);
     }
+
+    #[test]
+    fn request_ids_are_nonzero_and_monotonic() {
+        let ids = RequestIdAllocator::new();
+
+        assert_eq!(ids.next().unwrap(), 1);
+        assert_eq!(ids.next().unwrap(), 2);
+    }
+
+    #[test]
+    fn retry_jitter_stays_within_policy_bounds() {
+        let delay = jittered_retry_delay(std::time::Duration::from_secs(10));
+
+        assert!(delay >= std::time::Duration::from_secs(8));
+        assert!(delay <= std::time::Duration::from_secs(12));
+    }
+
+    #[test]
+    fn json_content_uses_app_content_wire_type() {
+        let frame = json_to_frame(
+            "MessageEdit",
+            json!({
+                "Content": "ciphertext",
+                "ChatPartnerId": 42,
+                "SendTime": 10,
+            }),
+            1,
+        )
+        .unwrap();
+
+        assert_eq!(
+            frame
+                .get_data(DataType::AppContent)
+                .and_then(DataValue::as_str),
+            Some("ciphertext")
+        );
+    }
+
+    #[test]
+    fn nested_json_content_uses_app_content_wire_type() {
+        let frame = json_to_frame(
+            "MessageEdit",
+            json!({
+                "Message": { "Content": "ciphertext" },
+            }),
+            1,
+        )
+        .unwrap();
+        let message = frame.get_data(DataType::Message).unwrap();
+
+        assert_eq!(
+            container_value(message, DataType::AppContent).and_then(DataValue::as_str),
+            Some("ciphertext")
+        );
+    }
+
+    #[test]
+    fn app_content_is_exposed_as_content_to_frontend() {
+        let frame = CommunicationValue::new(CommunicationType::MessageEditLive)
+            .with_id(1)
+            .add_typed_default(DataType::AppContent, DataValue::Str("ciphertext".into()));
+
+        let json = frame_to_json(&frame).unwrap();
+
+        assert_eq!(json["data"]["Content"], "ciphertext");
+        assert!(json["data"].get("AppContent").is_none());
+    }
+
+    #[test]
+    fn translated_field_collisions_are_rejected() {
+        assert!(json_to_frame(
+            "MessageEdit",
+            json!({ "Content": "a", "AppContent": "b" }),
+            1,
+        )
+        .is_err());
+    }
+
+    fn valid_initial_state() -> CommunicationValue {
+        CommunicationValue::new(CommunicationType::ClientStateSync)
+            .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
+            .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
+            .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))
+            .add_typed_default(DataType::SyncMode, DataValue::Str("full".into()))
+            .add_typed_default(DataType::Contacts, DataValue::Array(vec![]))
+            .add_typed_default(DataType::Communities, DataValue::Array(vec![]))
+            .add_typed_default(DataType::Calls, DataValue::Array(vec![]))
+            .add_typed_default(DataType::Messages, DataValue::Array(vec![]))
+    }
+
+    #[test]
+    fn valid_initial_state_is_prepared_before_ack() {
+        let ids = RequestIdAllocator::new();
+        let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids).unwrap();
+
+        assert_eq!(state["SyncMode"], "full");
+        assert!(ack.is_type(CommunicationType::ClientStateAck));
+        assert_eq!(ack.id(), Some(1));
+    }
+
+    #[test]
+    fn malformed_initial_state_does_not_prepare_ack() {
+        let ids = RequestIdAllocator::new();
+        let malformed = valid_initial_state()
+            .add_typed_default(DataType::SyncMode, DataValue::Str("invalid".into()));
+
+        assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
+        assert_eq!(
+            ids.next().unwrap(),
+            1,
+            "no acknowledgement ID was allocated"
+        );
+    }
+
+    #[test]
+    fn malformed_nested_initial_state_does_not_prepare_ack() {
+        let ids = RequestIdAllocator::new();
+        let malformed = CommunicationValue::new(CommunicationType::ClientStateSync)
+            .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
+            .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
+            .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))
+            .add_typed_default(DataType::SyncMode, DataValue::Str("full".into()))
+            .add_typed_default(
+                DataType::Contacts,
+                DataValue::Array(vec![DataValue::Container(vec![])]),
+            )
+            .add_typed_default(DataType::Communities, DataValue::Array(vec![]))
+            .add_typed_default(DataType::Calls, DataValue::Array(vec![]))
+            .add_typed_default(DataType::Messages, DataValue::Array(vec![]));
+
+        assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
+        assert_eq!(
+            ids.next().unwrap(),
+            1,
+            "no acknowledgement ID was allocated"
+        );
+    }
 }
 
 #[tauri::command]
-pub async fn mtp_request(type_name: String, data: Value, id: Option<u32>) -> Result<Value, String> {
-    manager().request(&type_name, data, id).await
+pub async fn mtp_request(type_name: String, data: Value) -> Result<Value, String> {
+    manager().request(&type_name, data).await
 }
 
 #[tauri::command]

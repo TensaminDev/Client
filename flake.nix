@@ -17,7 +17,7 @@
       systems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
       version = "0.0.11";
-      x86_64DebHash = "sha256-E4FGMpCt2ByaN6d+YzglqeA6LbhMOQmPf3UzAj7uZXE=";
+      x86_64DebHash = "sha256-p/6boNv9uWTHsPTVa3EhGzr41EwRzCY/fJWlj854DVA=";
       forgejoBaseUrl = "https://git.methanium.net/tensamin/client/releases/download/${version}";
     in
     {
@@ -63,6 +63,7 @@
             pipewire
             systemd
             wayland
+            webkitgtk_4_1
             libX11
             libXScrnSaver
             libXcomposite
@@ -184,6 +185,7 @@
             pipewire
             systemd
             wayland
+            webkitgtk_4_1
             libX11
             libXScrnSaver
             libXcomposite

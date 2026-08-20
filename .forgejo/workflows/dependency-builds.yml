@@ -34,6 +34,18 @@ jobs:
       - run: nix develop .#electron --command pnpm run build:packages
       - run: nix develop .#electron --command pnpm run build:desktop
 
+  native-mtp:
+    if: ${{ github.actor == 'rasensprenger' }}
+    name: Test native MTP
+    runs-on: nixos
+    steps:
+      - run: nix profile add nixpkgs#nodejs_24
+      - uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: git submodule update --init --recursive
+      - run: nix develop .#electron --command bash -lc 'cd apps/tauri/src-tauri && cargo test'
+
   mobile:
     if: ${{ github.actor == 'rasensprenger' }}
     name: Build mobile

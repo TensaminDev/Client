@@ -27,7 +27,20 @@ import { log } from "@tensamin/shared/log";
 import { ProtocolError } from "@tensamin/shared/errors";
 import { useStorage } from "@tensamin/storage/context";
 
-import { RECONNECT_RESET, RECONNECT_TRIES, RETRY_INTERVAL } from "./values";
+import { fromWireMessage, toWireData } from "./protocolFields";
+import { RequestIdAllocator } from "./requestIds";
+import {
+  DISCOVERY_TIMEOUT,
+  INITIAL_SYNC_TIMEOUT,
+  RECONNECT_JITTER,
+  RECONNECT_LONG_INTERVAL,
+  RECONNECT_RESET,
+  RECONNECT_TRIES,
+  RETRY_INTERVAL,
+  STATE_ACK_TIMEOUT,
+} from "./values";
+
+type BrowserMtpClient = Awaited<ReturnType<typeof MTPClient.create>>;
 
 function base64ToUint8Array(b64: string) {
   const bin = atob(b64);
@@ -51,7 +64,6 @@ export type ProtocolMessage<
 export type BoundSendFn = <T extends keyof Schemas & string>(
   type: T,
   data?: z.infer<Schemas[T]["request"]>,
-  options?: { id?: number },
 ) => Promise<ProtocolMessage<T>>;
 
 export type PushHandler = (message: ProtocolMessage) => void | Promise<void>;
@@ -70,6 +82,29 @@ const PUSH_TYPES = [
 
 export function isPushType(type: string): boolean {
   return (PUSH_TYPES as readonly string[]).includes(type);
+}
+
+function normalizeMtpMessage<T extends { data: unknown }>(message: T): T {
+  return fromWireMessage(message);
+}
+
+async function requestWithId(
+  client: BrowserMtpClient,
+  ids: RequestIdAllocator,
+  type: string,
+  data: Record<string, unknown>,
+) {
+  let id: number;
+  try {
+    id = ids.allocate();
+  } catch (error) {
+    client.disconnect();
+    throw error;
+  }
+
+  return client.request(type, toWireData(data) as Record<string, unknown>, {
+    id,
+  });
 }
 
 function removeMissingContacts(
@@ -161,6 +196,120 @@ export function validateResponse<T extends keyof Schemas & string>(
   } as ProtocolMessage<T>;
 }
 
+function abortError(signal: AbortSignal): Error {
+  return signal.reason instanceof Error
+    ? signal.reason
+    : new Error("Initial state synchronization was cancelled");
+}
+
+function withDeadline<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string,
+  signal: AbortSignal,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(abortError(signal));
+      return;
+    }
+    let settled = false;
+    const finish = (complete: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", onAbort);
+      complete();
+    };
+    const timeout = setTimeout(
+      () => finish(() => reject(new Error(timeoutMessage))),
+      timeoutMs,
+    );
+    const onAbort = () => finish(() => reject(abortError(signal)));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => finish(() => resolve(value)),
+      (error: unknown) => finish(() => reject(error)),
+    );
+  });
+}
+
+export async function completeInitialSynchronization(
+  client: BrowserMtpClient,
+  ids: RequestIdAllocator,
+  signal: AbortSignal,
+  syncTimeoutMs = INITIAL_SYNC_TIMEOUT,
+  ackTimeoutMs = STATE_ACK_TIMEOUT,
+): Promise<ProtocolMessage<"ClientStateSync">> {
+  const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
+    (resolve, reject) => {
+      let unsubscribeStateSync = () => {};
+      let unsubscribeNoIota = () => {};
+      const cleanup = () => {
+        clearTimeout(timeout);
+        unsubscribeStateSync();
+        unsubscribeNoIota();
+        signal.removeEventListener("abort", onAbort);
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(abortError(signal));
+      };
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("Initial state synchronization timed out"));
+      }, syncTimeoutMs);
+      signal.addEventListener("abort", onAbort, { once: true });
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+      unsubscribeStateSync = client.subscribe("ClientStateSync", (message) => {
+        cleanup();
+        try {
+          resolve(
+            validateResponse("ClientStateSync", normalizeMtpMessage(message)),
+          );
+        } catch (error) {
+          reject(error);
+        }
+      });
+      unsubscribeNoIota = client.subscribe("ErrorNoIota", () => {
+        cleanup();
+        reject(new Error("No Iota is currently connected"));
+      });
+    },
+  );
+  const [, state] = await Promise.all([
+    withDeadline(
+      client.auth(),
+      syncTimeoutMs,
+      "MTP authentication timed out",
+      signal,
+    ),
+    stateSync,
+  ]);
+  if (state.type.startsWith("Error")) {
+    throw new Error(`State synchronization failed: ${state.type}`);
+  }
+  const acknowledgement = normalizeMtpMessage(
+    await withDeadline(
+      requestWithId(client, ids, "ClientStateAck", {
+        SessionId: state.data.SessionId,
+        VersionNumber: state.data.VersionNumber,
+      }),
+      ackTimeoutMs,
+      "State acknowledgement timed out",
+      signal,
+    ),
+  );
+  if (acknowledgement.type.startsWith("Error")) {
+    throw new Error(`State acknowledgement failed: ${acknowledgement.type}`);
+  }
+  if (signal.aborted) throw abortError(signal);
+  return state;
+}
+
 function useMessageHandlers() {
   const interceptorsRef = useRef(new Set<MTPInterceptor>());
   const pushHandlersRef = useRef(new Set<PushHandler>());
@@ -205,6 +354,7 @@ function BrowserProvider(props: {
   const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
     null,
   );
+  const requestIdsRef = useRef<RequestIdAllocator | null>(null);
   const {
     addInterceptor,
     interceptorsRef,
@@ -223,19 +373,24 @@ function BrowserProvider(props: {
 
   // Validation override functions
   const send: BoundSendFn = useMemo(
-    () => async (type, data, options) => {
+    () => async (type, data) => {
       const client = clientRef.current;
+      const ids = requestIdsRef.current;
 
       if (!client) {
         throw new Error("mtp is not connected");
       }
+      if (!ids) {
+        throw new Error("MTP request allocator is unavailable");
+      }
 
-      const message = await client.request(
+      const rawMessage = await requestWithId(
+        client,
+        ids,
         type,
         (data ?? {}) as Record<string, unknown>,
-        options,
       );
-      const response = validateResponse(type, message);
+      const response = validateResponse(type, normalizeMtpMessage(rawMessage));
       setFreshContacts((contacts) => removeMissingContacts(contacts, response));
       if (response.type.startsWith("Error")) {
         const errorData = response.data as Record<string, unknown>;
@@ -260,7 +415,7 @@ function BrowserProvider(props: {
     }
 
     return client.subscribe(type, (message) => {
-      handler(validateResponse(type, message));
+      handler(validateResponse(type, normalizeMtpMessage(message)));
     });
   }, []);
 
@@ -291,33 +446,39 @@ function BrowserProvider(props: {
 
     const scheduleReconnect = (error: unknown) => {
       if (disposed || reconnectScheduled) return;
-      if (attempts >= RECONNECT_TRIES) {
+      attempts += 1;
+      const shortRetry = attempts <= RECONNECT_TRIES;
+      if (!shortRetry) {
         log(0, "mtp", "red", "Reconnection attempts exhausted", error);
         sonnerToast.error("Connection failed", {
           id: "mtp-connection-toast",
           description:
             error instanceof Error
-              ? error.message.split(":")[0]
-              : "Connection lost",
+              ? `${error.message.split(":")[0]}. Retrying in the background.`
+              : "Connection lost. Retrying in the background.",
           icon: null,
           duration: Infinity,
           closeButton: true,
           promise: null,
         } as unknown as Parameters<typeof sonnerToast.error>[1]);
-        return;
+      } else {
+        sonnerToast.loading(
+          `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
+          { id: "mtp-connection-toast" },
+        );
       }
 
-      attempts += 1;
-      sonnerToast.loading(
-        `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
-        { id: "mtp-connection-toast" },
-      );
+      const baseDelay = shortRetry ? RETRY_INTERVAL : RECONNECT_LONG_INTERVAL;
+      const jitter = 1 + (Math.random() * 2 - 1) * RECONNECT_JITTER;
       reconnectScheduled = true;
-      reconnectTimer = setTimeout(() => {
-        reconnectScheduled = false;
-        reconnectTimer = null;
-        void connect();
-      }, RETRY_INTERVAL);
+      reconnectTimer = setTimeout(
+        () => {
+          reconnectScheduled = false;
+          reconnectTimer = null;
+          void connect();
+        },
+        Math.round(baseDelay * jitter),
+      );
     };
 
     async function connect() {
@@ -326,10 +487,16 @@ function BrowserProvider(props: {
       const generation = ++connectionGeneration;
       let client: Awaited<ReturnType<typeof MTPClient.create>> | null = null;
       let failed = false;
+      let connectionReady = false;
+      const attemptAbort = new AbortController();
       const cleanup = () => {
+        attemptAbort.abort(
+          new Error("Initial state synchronization was cancelled"),
+        );
         client?.disconnect();
         if (clientRef.current === client) {
           clientRef.current = null;
+          requestIdsRef.current = null;
         }
         clearReconnectResetTimer();
         if (generation === connectionGeneration) {
@@ -359,19 +526,18 @@ function BrowserProvider(props: {
           omikronPublicKey = forcedOmikronPublicKey;
         } else {
           log(2, "mtp", "purple", "Fetching Omikron data.");
-          const data = await fetch(`${mtpUrl}api/get/omikron/${userId}`);
+          const data = await fetch(`${mtpUrl}api/get/omikron/${userId}`, {
+            signal: AbortSignal.any([
+              attemptAbort.signal,
+              AbortSignal.timeout(DISCOVERY_TIMEOUT),
+            ]),
+          });
 
           if (data.status === 404) {
-            sonnerToast.error("We couldn't reach your Iota", {
-              description:
-                "Check your network connection and try restarting your Iota",
-              icon: null,
-              duration: Infinity,
-              closeButton: true,
-            });
-            resolveConnectionRef.current?.();
-            cleanup();
-            return;
+            throw new Error("No Omikron assignment is currently available");
+          }
+          if (!data.ok) {
+            throw new Error(`Omikron discovery failed: HTTP ${data.status}`);
           }
           const omikronData = (await data.json()) as {
             id: number;
@@ -404,7 +570,10 @@ function BrowserProvider(props: {
             clientId: userId,
             keyring: base64ToUint8Array(keyring),
           },
-          hostPublicKey: omikronPublicKey,
+          hostPublicKey: {
+            value: omikronPublicKey,
+            encoding: "base64",
+          },
           descriptor: "client",
           pings: true,
           logger: (event) => {
@@ -418,10 +587,12 @@ function BrowserProvider(props: {
                 !failed
               ) {
                 failed = true;
-                clientRef.current = null;
-                setIdentified(false);
-                setIdentifying(false);
-                scheduleReconnect(new Error("MTP connection lost"));
+                const error = new Error("MTP connection lost");
+                attemptAbort.abort(error);
+                if (connectionReady) {
+                  cleanup();
+                  scheduleReconnect(error);
+                }
               }
             }
 
@@ -456,11 +627,12 @@ function BrowserProvider(props: {
         const activeClient = client;
 
         clientRef.current = activeClient;
+        requestIdsRef.current = new RequestIdAllocator();
         for (const type of PUSH_TYPES) {
           activeClient.subscribe(type, (message) => {
             let validated: ProtocolMessage;
             try {
-              validated = validateResponse(type, message);
+              validated = validateResponse(type, normalizeMtpMessage(message));
             } catch (error) {
               log(1, "mtp", "red", "Failed to validate push message", error, {
                 type,
@@ -482,80 +654,45 @@ function BrowserProvider(props: {
             if (validated.type === "GetStates") {
               lastInitialStateRef.current = validated;
             }
+            if (
+              validated.type === "ErrorNoIota" &&
+              clientRef.current === activeClient &&
+              !failed
+            ) {
+              failed = true;
+              const error = new Error("No Iota is currently connected");
+              attemptAbort.abort(error);
+              cleanup();
+              scheduleReconnect(error);
+            }
           });
         }
         setReadyState(activeClient.state);
-
-        clearReconnectTimer();
-
-        // Schedule reconnect reset
-        clearReconnectResetTimer();
-        reconnectResetTimer = setTimeout(() => {
-          attempts = 0;
-          reconnectResetTimer = null;
-        }, RECONNECT_RESET * 1_000);
-
-        setReadyState(activeClient.state);
         setIdentifying(true);
 
-        const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
-          (resolve, reject) => {
-            let unsubscribeStateSync = () => {};
-            let unsubscribeNoIota = () => {};
-            const cleanupStateSync = () => {
-              clearTimeout(timeout);
-              unsubscribeStateSync();
-              unsubscribeNoIota();
-            };
-            const timeout = setTimeout(() => {
-              cleanupStateSync();
-              reject(new Error("Initial state synchronization timed out"));
-            }, 120_000);
-            unsubscribeStateSync = activeClient.subscribe(
-              "ClientStateSync",
-              (message) => {
-                cleanupStateSync();
-                try {
-                  resolve(validateResponse("ClientStateSync", message));
-                } catch (error) {
-                  reject(error);
-                }
-              },
-            );
-            unsubscribeNoIota = activeClient.subscribe("ErrorNoIota", () => {
-              cleanupStateSync();
-              reject(new Error("No Iota is currently connected"));
-            });
-          },
+        const ids = requestIdsRef.current;
+        if (!ids) throw new Error("MTP request allocator is unavailable");
+        const finalResponse = await completeInitialSynchronization(
+          activeClient,
+          ids,
+          attemptAbort.signal,
         );
-        const [, finalResponse] = await Promise.all([
-          activeClient.auth(),
-          stateSync,
-        ]);
-
-        if (finalResponse.type.startsWith("Error")) {
-          throw new Error(
-            `State synchronization failed: ${finalResponse.type}`,
-          );
-        }
-
-        const acknowledgement = await activeClient.request("ClientStateAck", {
-          SessionId: finalResponse.data.SessionId,
-          VersionNumber: finalResponse.data.VersionNumber,
-        });
-        if (acknowledgement.type.startsWith("Error")) {
-          throw new Error(
-            `State acknowledgement failed: ${acknowledgement.type}`,
-          );
-        }
 
         if (disposed || clientRef.current !== activeClient) return;
 
         setFreshContacts(finalResponse.data.Contacts);
         setFreshCommunities(finalResponse.data.Communities);
         setFreshCalls(finalResponse.data.Calls);
+        connectionReady = true;
         setIdentifying(false);
         setIdentified(true);
+
+        clearReconnectTimer();
+        clearReconnectResetTimer();
+        reconnectResetTimer = setTimeout(() => {
+          attempts = 0;
+          reconnectResetTimer = null;
+        }, RECONNECT_RESET * 1_000);
         resolveConnectionRef.current?.();
       } catch (connectError) {
         if (disposed || generation !== connectionGeneration) {
@@ -589,6 +726,7 @@ function BrowserProvider(props: {
 
       clientRef.current?.disconnect();
       clientRef.current = null;
+      requestIdsRef.current = null;
       setReadyState(ConnectionState.Disconnected);
       setIdentified(false);
       setIdentifying(false);
@@ -650,9 +788,9 @@ function BrowserProvider(props: {
   }, [connected, identified, mtpUrl, send, subscribe, subscribePush, mtpRef]);
 
   const sendQueued: BoundSendFn = useMemo(
-    () => async (type, data, options) => {
+    () => async (type, data) => {
       const mtp = await mtpRef.get();
-      const response = await mtp.send(type, data, options);
+      const response = await mtp.send(type, data);
       for (const interceptor of interceptorsRef.current) {
         void Promise.resolve(
           interceptor({ type, data, response: response as ProtocolMessage }),
@@ -724,16 +862,32 @@ function TauriProvider(props: {
     if (next.error) {
       log(0, "android", "orange", "MTP connection failed", next.error);
     }
-    setSnapshot(next);
-    if (!next.identified || next.state === undefined) return;
+    if (!next.identified) {
+      setSnapshot(next);
+      return;
+    }
+    if (next.state === undefined) {
+      setSnapshot({
+        ...next,
+        identified: false,
+        error: "Native MTP connection omitted initial state",
+      });
+      return;
+    }
     const parsed = schemas.ClientStateSync.response.safeParse(next.state);
     if (!parsed.success) {
       log(0, "mtp", "red", "Invalid native MTP state", parsed.error);
+      setSnapshot({
+        ...next,
+        identified: false,
+        error: "Invalid ClientStateSync payload",
+      });
       return;
     }
     setFreshContacts(parsed.data.Contacts);
     setFreshCommunities(parsed.data.Communities);
     setFreshCalls(parsed.data.Calls);
+    setSnapshot(next);
   }, []);
 
   const dispatchMessage = useCallback(
@@ -744,7 +898,7 @@ function TauriProvider(props: {
       try {
         validated = validateResponse(
           message.type as keyof Schemas & string,
-          message,
+          normalizeMtpMessage(message),
         );
       } catch (error) {
         log(1, "mtp", "red", "Failed to validate native MTP message", error);
@@ -846,13 +1000,12 @@ function TauriProvider(props: {
   }, [props.blockConnection]);
 
   const send = useCallback<BoundSendFn>(
-    async (type, data, options) => {
+    async (type, data) => {
       const response = await invoke<ProtocolMessage>("mtp_request", {
         typeName: type,
         data: data ?? {},
-        id: options?.id,
       });
-      const validated = validateResponse(type, response);
+      const validated = validateResponse(type, normalizeMtpMessage(response));
       setFreshContacts((contacts) =>
         removeMissingContacts(contacts, validated),
       );
