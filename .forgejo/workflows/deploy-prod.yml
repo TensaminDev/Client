@@ -13,9 +13,6 @@ jobs:
   build-web:
     runs-on: nixos
     steps:
-      - name: Install node
-        run: nix profile add nixpkgs#nodejs_24
-
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
@@ -40,9 +37,6 @@ jobs:
   build-mobile:
     runs-on: nixos
     steps:
-      - name: Install node
-        run: nix profile add nixpkgs#nodejs_24
-
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
@@ -63,8 +57,6 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
         run: |
-          nix profile add nixpkgs#gnused
-
           set -euo pipefail
 
           if [ -z "$KEYSTORE_BASE64" ]; then
@@ -129,9 +121,6 @@ jobs:
       matrix:
         target: [linux]
     steps:
-      - name: Install node
-        run: nix profile add nixpkgs#nodejs_24
-
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
@@ -180,9 +169,6 @@ jobs:
     runs-on: nixos
     needs: [build-web, build-mobile, build-desktop]
     steps:
-      - name: Install node
-        run: nix profile add nixpkgs#nodejs_24
-
       - name: Check out repo
         uses: https://data.forgejo.org/actions/checkout@v4
 
