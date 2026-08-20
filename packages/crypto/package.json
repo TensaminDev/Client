@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "mtp": "*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }

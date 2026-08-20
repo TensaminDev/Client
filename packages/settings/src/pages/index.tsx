@@ -1,4 +1,4 @@
-import { SettingsSidebar } from "../layout";
+import { SettingsSidebar } from "../sidebar";
 
 export default function Page() {
   return (

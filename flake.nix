@@ -63,6 +63,7 @@
             pipewire
             systemd
             wayland
+            webkitgtk_4_1
             libX11
             libXScrnSaver
             libXcomposite
@@ -184,6 +185,7 @@
             pipewire
             systemd
             wayland
+            webkitgtk_4_1
             libX11
             libXScrnSaver
             libXcomposite

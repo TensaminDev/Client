@@ -16,7 +16,14 @@ function getPackageDirs(dir: string): string[] {
 
   for (const entry of entries) {
     const fullPath = join(dir, entry);
-    if (!statSync(fullPath).isDirectory()) continue;
+    if (entry === "node_modules" || entry.startsWith(".")) continue;
+    let stats;
+    try {
+      stats = statSync(fullPath);
+    } catch {
+      continue;
+    }
+    if (!stats.isDirectory()) continue;
 
     if (existsSync(join(fullPath, "package.json"))) {
       dirs.push(fullPath);

@@ -19,7 +19,6 @@ export function getMediaShareAdapter(): MediaShareAdapter {
 
 export type {
   MediaShareAdapter,
-  MediaShareCapabilities,
   MediaShareKind,
   MediaShareRequest,
   MediaShareSession,
