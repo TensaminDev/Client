@@ -25,7 +25,8 @@
     "start-adb:mobile": "cd apps/tauri && pnpm run start-adb:mobile",
     "dev:desktop": "cd apps/electron && pnpm run dev",
     "build:desktop": "cd apps/electron && pnpm run package",
-    "delete:mobile": "nix develop .#tauri --command node apps/tauri/scripts/delete-mobile.ts"
+    "delete:mobile": "nix develop .#tauri --command node apps/tauri/scripts/delete-mobile.ts",
+    "update-submodules": "git submodule update --remote --force --recursive"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
