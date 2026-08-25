@@ -94,15 +94,7 @@ export default function PwaRuntime() {
             if (worker.state !== "installed") return;
             if (!navigator.serviceWorker.controller) {
               toast.success("Tensamin is ready for offline startup");
-              return;
             }
-            toast("A Tensamin update is ready", {
-              duration: Infinity,
-              action: {
-                label: "Update",
-                onClick: () => worker.postMessage({ type: "SKIP_WAITING" }),
-              },
-            });
           });
         };
         if (registration.installing) watchWorker(registration.installing);
