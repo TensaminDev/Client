@@ -4,7 +4,6 @@ on:
   pull_request:
 
 env:
-  NIX_CONFIG: experimental-features = nix-command flakes
   FORGEJO_TOKEN: ""
   GITHUB_TOKEN: ""
 
