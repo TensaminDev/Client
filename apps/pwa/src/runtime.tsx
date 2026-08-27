@@ -1,15 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { setDatabaseEntry } from "@tensamin/shared/indexedDb";
 import { isTauri } from "@tauri-apps/api/core";
 
 import "./style.css";
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
 
 const launchedFiles: File[] = [];
 const fileListeners = new Set<(file: File) => void>();
@@ -27,9 +22,10 @@ export function subscribeTuFileLaunch(listener: (file: File) => void) {
   };
 }
 
-function isStandalone() {
+function isInstalledPwa() {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: window-controls-overlay)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
@@ -65,13 +61,9 @@ async function enablePush() {
   await setDatabaseEntry("keys", "push-subscription", subscription.toJSON());
 }
 
-export default function PwaRuntime() {
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-
+function InstalledPwaRuntime() {
   useEffect(() => {
     if (
-      isTauri() ||
       !("serviceWorker" in navigator) ||
       !["http:", "https:"].includes(window.location.protocol)
     ) {
@@ -130,16 +122,6 @@ export default function PwaRuntime() {
   }, []);
 
   useEffect(() => {
-    const handleInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
-    return () =>
-      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
-  }, []);
-
-  useEffect(() => {
     const launchQueue = (
       window as Window & {
         launchQueue?: {
@@ -159,41 +141,7 @@ export default function PwaRuntime() {
   }, []);
 
   useEffect(() => {
-    if (!installPrompt) return;
-    toast("Install Tensamin for a native app experience", {
-      duration: Infinity,
-      action: {
-        label: "Install",
-        onClick: () => {
-          void installPrompt.prompt().then(() => installPrompt.userChoice);
-          setInstallPrompt(null);
-        },
-      },
-    });
-  }, [installPrompt]);
-
-  useEffect(() => {
-    const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (
-      isTauri() ||
-      !isAppleMobile ||
-      isStandalone() ||
-      localStorage.getItem("pwa-ios-install-hint")
-    ) {
-      return;
-    }
-    localStorage.setItem("pwa-ios-install-hint", "shown");
-    toast(
-      "Install Tensamin from Safari's Share menu to enable background notifications.",
-      {
-        duration: 12_000,
-      },
-    );
-  }, []);
-
-  useEffect(() => {
-    if (
-      !isStandalone() ||
       !("Notification" in window) ||
       Notification.permission !== "default" ||
       localStorage.getItem("pwa-push-hint")
@@ -222,7 +170,6 @@ export default function PwaRuntime() {
 
   useEffect(() => {
     if (
-      isStandalone() &&
       "Notification" in window &&
       Notification.permission === "granted" &&
       import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY
@@ -234,4 +181,9 @@ export default function PwaRuntime() {
   }, []);
 
   return null;
+}
+
+export default function PwaRuntime() {
+  if (isTauri() || !isInstalledPwa()) return null;
+  return <InstalledPwaRuntime />;
 }

@@ -128,6 +128,7 @@ export function tensaminPwa(): Plugin[] {
       filename: "serviceWorker.ts",
       injectRegister: null,
       registerType: "prompt",
+      buildBase: "/",
       manifestFilename: "manifest.json",
       includeAssets: ["favicon.ico", "icons/*.png"],
       manifest: {
