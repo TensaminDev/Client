@@ -14,13 +14,10 @@
   "dependencies": {
     "@methanium/ui": "*",
     "@tauri-apps/api": "^2.11.1",
-    "@tensamin/crypto": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "mtp": "*",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "zod": "^4.4.3"
+    "react": "^19.2.8"
   },
   "devDependencies": {
     "eslint": "^10.8.0"

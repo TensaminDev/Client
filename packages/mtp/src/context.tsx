@@ -10,9 +10,18 @@ import {
 } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { MTPClient } from "mtp";
-import { type z } from "zod";
-import { ConnectionState } from "mtp";
+import {
+  base64ToBytes,
+  ConnectionState,
+  MTPClient,
+  MTPProxyConnection,
+  type MTPFrame,
+  type MTPKeyMaterialInput,
+  type MTPProxyAdapter,
+  type MTPRequestOptions,
+  type MTPRequestFunction,
+  type MTPResponseFrame,
+} from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import { toast as sonnerToast } from "@methanium/ui";
 
@@ -24,35 +33,15 @@ import {
   type MTP as Schemas,
 } from "@tensamin/shared/data";
 import { log } from "@tensamin/shared/log";
-import { ProtocolError } from "@tensamin/shared/errors";
 import { useStorage } from "@tensamin/storage/context";
 
 import { RECONNECT_RESET, RECONNECT_TRIES, RETRY_INTERVAL } from "./values";
 
-function base64ToUint8Array(b64: string) {
-  const bin = atob(b64);
-  const out = new Uint8Array(bin.length);
-
-  for (let i = 0; i < bin.length; i++) {
-    out[i] = bin.charCodeAt(i);
-  }
-
-  return out;
-}
-
 export type ProtocolMessage<
   T extends keyof Schemas & string = keyof Schemas & string,
-> = {
-  id?: number;
-  type: T | string;
-  data: z.infer<Schemas[T]["response"]>;
-};
+> = MTPResponseFrame<Schemas, T>;
 
-export type BoundSendFn = <T extends keyof Schemas & string>(
-  type: T,
-  data?: z.infer<Schemas[T]["request"]>,
-  options?: { id?: number },
-) => Promise<ProtocolMessage<T>>;
+export type BoundSendFn = MTPRequestFunction<Schemas>;
 
 export type PushHandler = (message: ProtocolMessage) => void | Promise<void>;
 
@@ -67,6 +56,15 @@ const PUSH_TYPES = [
   "ClientChanged",
   "ErrorNoIota",
 ] as const;
+
+function encodedPublicKey(value: string): MTPKeyMaterialInput {
+  const trimmed = value.trim();
+  const hex = trimmed.replace(/^0x/i, "");
+  return {
+    value: /^[0-9a-f]+$/i.test(hex) ? hex : trimmed,
+    encoding: /^[0-9a-f]+$/i.test(hex) ? "hex" : "base64",
+  };
+}
 
 export function isPushType(type: string): boolean {
   return (PUSH_TYPES as readonly string[]).includes(type);
@@ -114,53 +112,6 @@ type ContextType = {
 
 const MTPContext = createContext<ContextType | undefined>(undefined);
 
-function getProtocolErrorDetails(error: unknown) {
-  if (typeof error !== "object" || error === null || !("type" in error)) {
-    return null;
-  }
-
-  const protocolError = error as {
-    id?: unknown;
-    type?: unknown;
-    data?: unknown;
-  };
-  return {
-    id: protocolError.id,
-    type: protocolError.type,
-    data: protocolError.data,
-  };
-}
-
-// Zod schema validation
-export function validateResponse<T extends keyof Schemas & string>(
-  type: T,
-  message: { id?: number; type: string; data: unknown },
-): ProtocolMessage<T> {
-  if (message.type.startsWith("Error")) {
-    return message as ProtocolMessage<T>;
-  }
-
-  const schema =
-    schemas[message.type as keyof Schemas & string]?.response ??
-    schemas[type]?.response;
-  if (!schema) {
-    return message as ProtocolMessage<T>;
-  }
-
-  const parsed = schema.safeParse(message.data);
-  if (!parsed.success) {
-    throw new Error(
-      `Response validation failed for ${type}: ${parsed.error.message}`,
-    );
-  }
-
-  return {
-    id: message.id,
-    type: message.type,
-    data: parsed.data,
-  } as ProtocolMessage<T>;
-}
-
 function useMessageHandlers() {
   const interceptorsRef = useRef(new Set<MTPInterceptor>());
   const pushHandlersRef = useRef(new Set<PushHandler>());
@@ -202,9 +153,7 @@ function BrowserProvider(props: {
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
 
-  const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
-    null,
-  );
+  const clientRef = useRef<MTPClient<Schemas> | null>(null);
   const {
     addInterceptor,
     interceptorsRef,
@@ -221,7 +170,6 @@ function BrowserProvider(props: {
     load("omega_url").then(setMtpUrl);
   }, [load]);
 
-  // Validation override functions
   const send: BoundSendFn = useMemo(
     () => async (type, data, options) => {
       const client = clientRef.current;
@@ -230,24 +178,8 @@ function BrowserProvider(props: {
         throw new Error("mtp is not connected");
       }
 
-      const message = await client.request(
-        type,
-        (data ?? {}) as Record<string, unknown>,
-        options,
-      );
-      const response = validateResponse(type, message);
+      const response = await client.request(type, data, options);
       setFreshContacts((contacts) => removeMissingContacts(contacts, response));
-      if (response.type.startsWith("Error")) {
-        const errorData = response.data as Record<string, unknown>;
-        throw new ProtocolError({
-          type: response.type,
-          requestId: response.id,
-          errorType:
-            typeof errorData.ErrorType === "string"
-              ? errorData.ErrorType
-              : undefined,
-        });
-      }
       return response;
     },
     [],
@@ -259,9 +191,7 @@ function BrowserProvider(props: {
       return () => {};
     }
 
-    return client.subscribe(type, (message) => {
-      handler(validateResponse(type, message));
-    });
+    return client.subscribe(type, handler);
   }, []);
 
   // Reconnect stuff
@@ -324,7 +254,7 @@ function BrowserProvider(props: {
       if (disposed || props.blockConnection) return;
 
       const generation = ++connectionGeneration;
-      let client: Awaited<ReturnType<typeof MTPClient.create>> | null = null;
+      let client: MTPClient<Schemas> | null = null;
       let failed = false;
       const cleanup = () => {
         client?.disconnect();
@@ -398,15 +328,20 @@ function BrowserProvider(props: {
 
         log(2, "mtp", "green", "Connecting to: " + url);
 
-        client = await MTPClient.create({
+        client = await MTPClient.create<Schemas>({
           url,
           credentials: {
             clientId: userId,
-            keyring: base64ToUint8Array(keyring),
+            keyring: base64ToBytes(keyring),
           },
-          hostPublicKey: omikronPublicKey,
+          hostPublicKey: encodedPublicKey(omikronPublicKey),
           descriptor: "client",
           pings: true,
+          schemas,
+          throwProtocolErrors: true,
+          onValidationError: (error) => {
+            log(1, "mtp", "red", "Failed to validate MTP message", error);
+          },
           logger: (event) => {
             if (event.type === "state") {
               if (generation !== connectionGeneration) return;
@@ -458,16 +393,7 @@ function BrowserProvider(props: {
         clientRef.current = activeClient;
         for (const type of PUSH_TYPES) {
           activeClient.subscribe(type, (message) => {
-            let validated: ProtocolMessage;
-            try {
-              validated = validateResponse(type, message);
-            } catch (error) {
-              log(1, "mtp", "red", "Failed to validate push message", error, {
-                type,
-                data: message.data,
-              });
-              return;
-            }
+            const validated = message as ProtocolMessage;
 
             setFreshContacts((contacts) =>
               removeMissingContacts(contacts, validated),
@@ -515,11 +441,7 @@ function BrowserProvider(props: {
               "ClientStateSync",
               (message) => {
                 cleanupStateSync();
-                try {
-                  resolve(validateResponse("ClientStateSync", message));
-                } catch (error) {
-                  reject(error);
-                }
+                resolve(message);
               },
             );
             unsubscribeNoIota = activeClient.subscribe("ErrorNoIota", () => {
@@ -539,15 +461,10 @@ function BrowserProvider(props: {
           );
         }
 
-        const acknowledgement = await activeClient.request("ClientStateAck", {
+        await activeClient.request("ClientStateAck", {
           SessionId: finalResponse.data.SessionId,
           VersionNumber: finalResponse.data.VersionNumber,
         });
-        if (acknowledgement.type.startsWith("Error")) {
-          throw new Error(
-            `State acknowledgement failed: ${acknowledgement.type}`,
-          );
-        }
 
         if (disposed || clientRef.current !== activeClient) return;
 
@@ -573,7 +490,7 @@ function BrowserProvider(props: {
           "mtp",
           "red",
           `Connection/authentication attempt failed: ${connectErrorMessage}`,
-          getProtocolErrorDetails(connectError) ?? connectError,
+          connectError,
         );
 
         scheduleReconnect(connectError);
@@ -694,6 +611,39 @@ type NativeSnapshot = {
   error?: string;
 };
 
+class TauriMTPAdapter implements MTPProxyAdapter {
+  readonly #subscriptions = new Map<string, Set<(message: MTPFrame) => void>>();
+
+  async request(
+    type: string,
+    data: Record<string, unknown>,
+    options?: MTPRequestOptions,
+  ) {
+    return await invoke<MTPFrame>("mtp_request", {
+      typeName: type,
+      data,
+      id: options?.id,
+    });
+  }
+
+  subscribe(type: string, handler: (message: MTPFrame) => void) {
+    const handlers =
+      this.#subscriptions.get(type) ?? new Set<(message: MTPFrame) => void>();
+    handlers.add(handler);
+    this.#subscriptions.set(type, handlers);
+    return () => {
+      handlers.delete(handler);
+      if (handlers.size === 0) this.#subscriptions.delete(type);
+    };
+  }
+
+  dispatch(message: MTPFrame) {
+    for (const handler of this.#subscriptions.get(message.type) ?? []) {
+      handler(message);
+    }
+  }
+}
+
 function TauriProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
@@ -714,8 +664,16 @@ function TauriProvider(props: {
     pushHandlersRef,
     subscribePush,
   } = useMessageHandlers();
-  const subscriptionsRef = useRef(
-    new Map<string, Set<(message: ProtocolMessage) => void>>(),
+  const [adapter] = useState(() => new TauriMTPAdapter());
+  const [connection] = useState(
+    () =>
+      new MTPProxyConnection<Schemas>(adapter, {
+        schemas,
+        throwProtocolErrors: true,
+        onValidationError: (error) => {
+          log(1, "mtp", "red", "Failed to validate native MTP message", error);
+        },
+      }),
   );
 
   const applySnapshot = useCallback((next: NativeSnapshot) => {
@@ -739,38 +697,34 @@ function TauriProvider(props: {
   const dispatchMessage = useCallback(
     (raw: unknown) => {
       if (!raw || typeof raw !== "object" || !("type" in raw)) return;
-      const message = raw as { id?: number; type: string; data: unknown };
-      let validated: ProtocolMessage;
-      try {
-        validated = validateResponse(
-          message.type as keyof Schemas & string,
-          message,
-        );
-      } catch (error) {
-        log(1, "mtp", "red", "Failed to validate native MTP message", error);
-        return;
-      }
-      for (const handler of subscriptionsRef.current.get(validated.type) ??
-        []) {
-        handler(validated);
-      }
-      if (!isPushType(validated.type)) return;
-      setFreshContacts((contacts) =>
-        removeMissingContacts(contacts, validated),
-      );
-      for (const handler of [...pushHandlersRef.current]) {
-        void Promise.resolve(handler(validated)).catch((error) => {
-          log(1, "mtp", "red", "Native MTP push handler failed", error, {
-            type: validated.type,
-          });
-        });
-      }
-      if (validated.type === "GetStates") {
-        lastInitialStateRef.current = validated;
-      }
+      adapter.dispatch(raw as MTPFrame);
     },
-    [lastInitialStateRef, pushHandlersRef],
+    [adapter],
   );
+
+  useEffect(() => {
+    const unsubscribers = PUSH_TYPES.map((type) =>
+      connection.subscribe(type, (message) => {
+        const validated = message as ProtocolMessage;
+        setFreshContacts((contacts) =>
+          removeMissingContacts(contacts, validated),
+        );
+        for (const handler of [...pushHandlersRef.current]) {
+          void Promise.resolve(handler(validated)).catch((error) => {
+            log(1, "mtp", "red", "Native MTP push handler failed", error, {
+              type,
+            });
+          });
+        }
+        if (validated.type === "GetStates") {
+          lastInitialStateRef.current = validated;
+        }
+      }),
+    );
+    return () => {
+      for (const unsubscribe of unsubscribers) unsubscribe();
+    };
+  }, [connection, lastInitialStateRef, pushHandlersRef]);
 
   useEffect(() => {
     if (props.blockConnection) return;
@@ -847,26 +801,10 @@ function TauriProvider(props: {
 
   const send = useCallback<BoundSendFn>(
     async (type, data, options) => {
-      const response = await invoke<ProtocolMessage>("mtp_request", {
-        typeName: type,
-        data: data ?? {},
-        id: options?.id,
-      });
-      const validated = validateResponse(type, response);
+      const validated = await connection.request(type, data, options);
       setFreshContacts((contacts) =>
         removeMissingContacts(contacts, validated),
       );
-      if (validated.type.startsWith("Error")) {
-        const errorData = validated.data as Record<string, unknown>;
-        throw new ProtocolError({
-          type: validated.type,
-          requestId: validated.id,
-          errorType:
-            typeof errorData.ErrorType === "string"
-              ? errorData.ErrorType
-              : undefined,
-        });
-      }
       for (const interceptor of interceptorsRef.current) {
         void Promise.resolve(
           interceptor({ type, data, response: validated as ProtocolMessage }),
@@ -876,20 +814,13 @@ function TauriProvider(props: {
       }
       return validated;
     },
-    [interceptorsRef],
+    [connection, interceptorsRef],
   );
 
-  const subscribe = useCallback<ContextType["subscribe"]>((type, handler) => {
-    const handlers =
-      subscriptionsRef.current.get(type) ??
-      new Set<(message: ProtocolMessage) => void>();
-    handlers.add(handler as (message: ProtocolMessage) => void);
-    subscriptionsRef.current.set(type, handlers);
-    return () => {
-      handlers.delete(handler as (message: ProtocolMessage) => void);
-      if (handlers.size === 0) subscriptionsRef.current.delete(type);
-    };
-  }, []);
+  const subscribe = useCallback<ContextType["subscribe"]>(
+    (type, handler) => connection.subscribe(type, handler),
+    [connection],
+  );
   const connected = snapshot.readyState === ConnectionState.Connected;
   const contextReady = connected && snapshot.identified;
 
@@ -916,7 +847,7 @@ function TauriProvider(props: {
   );
 }
 
-export function Provider(props: {
+function BrowserProviderLoader(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
@@ -941,10 +872,17 @@ export function Provider(props: {
   if (wasmError) throw wasmError;
   if (!wasmReady) return null;
 
+  return <BrowserProvider {...props} />;
+}
+
+export function Provider(props: {
+  children: ReactNode;
+  blockConnection?: boolean;
+}) {
   return isTauri() ? (
     <TauriProvider {...props} />
   ) : (
-    <BrowserProvider {...props} />
+    <BrowserProviderLoader {...props} />
   );
 }
 
