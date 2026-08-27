@@ -21,8 +21,7 @@ export function removeMissingContactSnapshots<T extends { UserId: number }>(
 }
 
 export default function CacheSync() {
-  const { addInterceptor, contextReady, freshContacts, subscribePush } =
-    useMTP();
+  const { addInterceptor, contextReady, freshContacts, subscribe } = useMTP();
   const { load } = useStorage();
   const [accountId, setAccountId] = useState(0);
   const queueRef = useRef(Promise.resolve());
@@ -321,10 +320,19 @@ export default function CacheSync() {
 
   useEffect(() => {
     if (!accountId || !contextReady) return;
-    return subscribePush((message) => {
+    const handleMessage = (message: ProtocolMessage) => {
       void enqueue(() => synchronizePush(message));
-    });
-  }, [accountId, contextReady, enqueue, subscribePush, synchronizePush]);
+    };
+    const unsubscribers = [
+      subscribe("GetStates", handleMessage),
+      subscribe("MessageLive", handleMessage),
+      subscribe("MessageEditLive", handleMessage),
+      subscribe("MessageDeleteLive", handleMessage),
+      subscribe("MessageState", handleMessage),
+      subscribe("MessageReactionLive", handleMessage),
+    ];
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+  }, [accountId, contextReady, enqueue, subscribe, synchronizePush]);
 
   return null;
 }

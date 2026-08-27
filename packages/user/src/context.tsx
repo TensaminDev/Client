@@ -9,13 +9,12 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { useMTP, type ProtocolMessage } from "@tensamin/mtp";
+import { useMTP } from "@tensamin/mtp";
 
 import {
   clientUserStateSchema,
   mtp as schemas,
   publicUserStateSchema,
-  userStateEntrySchema,
 } from "@tensamin/shared/data";
 import type z from "zod";
 import { createCache } from "@tensamin/cache";
@@ -89,7 +88,7 @@ export default function UserProvider(props: { children: ReactNode }) {
   );
   const revisionsRef = useRef(new Map<number, Map<UserField, number>>());
 
-  const { send, subscribePush } = useMTP();
+  const { send, subscribe: subscribeMTP } = useMTP();
   const { load } = useStorage();
   const { contacts } = useSession();
   const [accountId, setAccountId] = useState<number | null>(null);
@@ -174,39 +173,6 @@ export default function UserProvider(props: { children: ReactNode }) {
     [publishUser],
   );
 
-  const handleStatePush = useCallback(
-    async (message: ProtocolMessage) => {
-      if (!accountId) return;
-      const data = message.data as Record<string, unknown>;
-      if (message.type === "GetStates") {
-        if (Array.isArray(data.MissingUserIds)) {
-          for (const userId of data.MissingUserIds) {
-            if (typeof userId === "number") removePresence(userId);
-          }
-        }
-        if (!Array.isArray(data.UserStates)) return;
-        for (const entry of data.UserStates) {
-          const parsed = userStateEntrySchema.safeParse(entry);
-          if (!parsed.success) continue;
-          if (parsed.data.UserId === accountId) continue;
-          initialStatesRef.current.set(
-            parsed.data.UserId,
-            parsed.data.UserState,
-          );
-          if (applyUserState(parsed.data.UserId, parsed.data.UserState)) {
-            initialStatesRef.current.delete(parsed.data.UserId);
-          }
-        }
-        return;
-      }
-      if (message.type !== "ClientChanged") return;
-      const parsed = schemas.ClientChanged.response.safeParse(data);
-      if (!parsed.success) return;
-      applyUserState(parsed.data.UserId, parsed.data.UserState, true);
-    },
-    [accountId, applyUserState, removePresence],
-  );
-
   useEffect(() => {
     void load("user_id").then((accountId) => {
       accountIdRef.current = accountId;
@@ -223,8 +189,24 @@ export default function UserProvider(props: { children: ReactNode }) {
 
   useEffect(() => {
     if (!accountId) return;
-    return subscribePush(handleStatePush);
-  }, [accountId, handleStatePush, subscribePush]);
+    const unsubscribeStates = subscribeMTP("GetStates", ({ data }) => {
+      for (const userId of data.MissingUserIds ?? []) removePresence(userId);
+      for (const entry of data.UserStates) {
+        if (!entry || entry.UserId === accountId) continue;
+        initialStatesRef.current.set(entry.UserId, entry.UserState);
+        if (applyUserState(entry.UserId, entry.UserState)) {
+          initialStatesRef.current.delete(entry.UserId);
+        }
+      }
+    });
+    const unsubscribeChanged = subscribeMTP("ClientChanged", ({ data }) => {
+      applyUserState(data.UserId, data.UserState, true);
+    });
+    return () => {
+      unsubscribeStates();
+      unsubscribeChanged();
+    };
+  }, [accountId, applyUserState, removePresence, subscribeMTP]);
 
   const loadUser = useCallback(
     async (userId: number): Promise<User> => {

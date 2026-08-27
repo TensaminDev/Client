@@ -226,7 +226,7 @@ export async function fetchReplyMessage({
 
 export default function Provider({ children }: { children: ReactNode }) {
   const { load } = useStorage();
-  const { send, subscribePush } = useMTP();
+  const { send, subscribe } = useMTP();
   const { get: getUser } = useUser();
   const { moveUserIdToTop } = useSession();
 
@@ -912,124 +912,47 @@ export default function Provider({ children }: { children: ReactNode }) {
 
   // Get live updates for message states
   useEffect(() => {
-    return subscribePush((message) => {
-      if (message.type === "MessageEditLive") {
-        if (!currentChatSecret) return;
-
-        const rawData = message.data as {
-          ChatPartnerId: unknown;
-          SendTime: unknown;
-          Content: string;
-        };
-
-        const chatPartnerId = Number(rawData.ChatPartnerId);
-        const sendTime = Number(rawData.SendTime);
-
-        if (!Number.isFinite(chatPartnerId) || !Number.isFinite(sendTime)) {
-          log(
-            3,
-            "chat",
-            "yellow",
-            "Cancel message edit update due to invalid data",
-          );
-          return;
-        }
-
-        if (chatPartnerId !== userIdValue) {
-          log(
-            3,
-            "chat",
-            "yellow",
-            "Cancel message edit update due to user ID mismatch",
-            {
-              expected: userIdValue,
-              received: chatPartnerId,
-            },
-          );
-          return;
-        }
-
-        void decryptChatText(currentChatSecret, rawData.Content)
-          .then((content) => {
-            editMessage(sendTime, { Content: content, Edited: true });
-          })
-          .catch((err) => {
-            log(1, "chat", "red", "Failed to decrypt message edit", err, {
-              SendTime: sendTime,
-            });
-          });
-        return;
-      }
-
-      if (message.type === "MessageReactionLive") {
-        const rawData = message.data as {
-          ChatPartnerId: unknown;
-          SendTime: unknown;
-          Reaction: string;
-          SenderId: unknown;
-          Accepted: boolean;
-        };
-        const chatPartnerId = Number(rawData.ChatPartnerId);
-        const sendTime = Number(rawData.SendTime);
-        const senderId = Number(rawData.SenderId);
-
-        if (
-          chatPartnerId !== userIdValue ||
-          !Number.isFinite(sendTime) ||
-          !Number.isFinite(senderId)
-        ) {
-          return;
-        }
-
-        applyLiveReaction(
-          sendTime,
-          rawData.Reaction,
-          senderId,
-          rawData.Accepted,
-        );
-        return;
-      }
-
-      if (message.type === "MessageDeleteLive") {
-        const data = message.data as {
-          ChatPartnerId: number;
-          SendTime: number;
-        };
-
-        if (data.ChatPartnerId !== userIdValue) return;
-
-        removeMessage(data.SendTime);
-        return;
-      }
-
-      if (message.type !== "MessageState") return;
-
-      const rawData = message.data as {
-        ChatPartnerId: unknown;
-        SendTime: unknown;
-        MessageState: RawMessage["MessageState"];
-      };
-
-      const nextState = {
-        ChatPartnerId: Number(rawData.ChatPartnerId),
-        SendTime: Number(rawData.SendTime),
-        MessageState: rawData.MessageState,
-      };
-
-      if (
-        !Number.isFinite(nextState.ChatPartnerId) ||
-        !Number.isFinite(nextState.SendTime)
-      ) {
+    const unsubscribeEdit = subscribe("MessageEditLive", ({ data }) => {
+      if (!currentChatSecret) return;
+      if (data.ChatPartnerId !== userIdValue) {
         log(
           3,
           "chat",
           "yellow",
-          "Cancel message state update due to invalid data",
+          "Cancel message edit update due to user ID mismatch",
+          {
+            expected: userIdValue,
+            received: data.ChatPartnerId,
+          },
         );
         return;
       }
 
-      if (nextState.ChatPartnerId !== userIdValue) {
+      void decryptChatText(currentChatSecret, data.Content)
+        .then((content) => {
+          editMessage(data.SendTime, { Content: content, Edited: true });
+        })
+        .catch((err) => {
+          log(1, "chat", "red", "Failed to decrypt message edit", err, {
+            SendTime: data.SendTime,
+          });
+        });
+    });
+    const unsubscribeReaction = subscribe("MessageReactionLive", ({ data }) => {
+      if (data.ChatPartnerId !== userIdValue) return;
+      applyLiveReaction(
+        data.SendTime,
+        data.Reaction,
+        data.SenderId,
+        data.Accepted,
+      );
+    });
+    const unsubscribeDelete = subscribe("MessageDeleteLive", ({ data }) => {
+      if (data.ChatPartnerId !== userIdValue) return;
+      removeMessage(data.SendTime);
+    });
+    const unsubscribeState = subscribe("MessageState", ({ data }) => {
+      if (data.ChatPartnerId !== userIdValue) {
         log(
           3,
           "chat",
@@ -1037,22 +960,27 @@ export default function Provider({ children }: { children: ReactNode }) {
           "Cancel message state update due to user ID mismatch",
           {
             expected: userIdValue,
-            received: nextState.ChatPartnerId,
+            received: data.ChatPartnerId,
           },
         );
         return;
       }
-
-      editMessage(nextState.SendTime, {
-        MessageState: nextState.MessageState,
+      editMessage(data.SendTime, {
+        MessageState: data.MessageState,
       });
     });
+    return () => {
+      unsubscribeEdit();
+      unsubscribeReaction();
+      unsubscribeDelete();
+      unsubscribeState();
+    };
   }, [
     currentChatSecret,
     applyLiveReaction,
     editMessage,
     removeMessage,
-    subscribePush,
+    subscribe,
     userIdValue,
   ]);
 

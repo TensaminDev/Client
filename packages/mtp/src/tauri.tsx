@@ -1,0 +1,258 @@
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import {
+  ConnectionState,
+  MTPProxyConnection,
+  type MTPFrame,
+  type MTPProxyAdapter,
+} from "mtp";
+import {
+  mtp as mtpSchemas,
+  type Calls,
+  type Communities,
+  type Contacts,
+} from "@tensamin/shared/data";
+import { log } from "@tensamin/shared/log";
+
+import {
+  type BoundSendFn,
+  MTPContext,
+  type ProtocolMessage,
+  removeMissingContacts,
+  useMessageHandlers,
+} from "./mtpContext";
+
+type NativeSnapshot = {
+  generation: number;
+  readyState: number;
+  identified: boolean;
+  state?: unknown;
+  error?: string;
+};
+
+function createTauriAdapter() {
+  const subscriptions = new Map<string, Set<(message: MTPFrame) => void>>();
+  const adapter: MTPProxyAdapter = {
+    request: (type, data) =>
+      invoke<MTPFrame>("mtp_request", { typeName: type, data }),
+    subscribe(type, handler) {
+      const handlers = subscriptions.get(type) ?? new Set();
+      handlers.add(handler);
+      subscriptions.set(type, handlers);
+      return () => {
+        handlers.delete(handler);
+        if (handlers.size === 0) subscriptions.delete(type);
+      };
+    },
+  };
+  return {
+    adapter,
+    dispatch(message: MTPFrame) {
+      for (const handler of subscriptions.get(message.type) ?? [])
+        handler(message);
+    },
+  };
+}
+
+export function TauriProvider(props: {
+  children: ReactNode;
+  blockConnection?: boolean;
+}) {
+  const [snapshot, setSnapshot] = useState<NativeSnapshot>({
+    generation: 0,
+    readyState: ConnectionState.Disconnected,
+    identified: false,
+  });
+  const [freshContacts, setFreshContacts] = useState<Contacts>([]);
+  const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
+  const [freshCalls, setFreshCalls] = useState<Calls>([]);
+  const generationRef = useRef(0);
+  const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
+    useMessageHandlers();
+  const [{ bridge, connection }] = useState(() => {
+    const bridge = createTauriAdapter();
+    return {
+      bridge,
+      connection: new MTPProxyConnection(bridge.adapter, {
+        schemas: mtpSchemas,
+        throwProtocolErrors: true,
+        onValidationError: (error) => {
+          log(1, "mtp", "red", "Failed to validate native MTP message", error);
+        },
+      }),
+    };
+  });
+
+  const applySnapshot = useCallback(async (next: NativeSnapshot) => {
+    if (next.generation < generationRef.current) return;
+    generationRef.current = next.generation;
+    if (next.error)
+      log(0, "android", "orange", "MTP connection failed", next.error);
+    if (!next.identified) {
+      setSnapshot(next);
+      return;
+    }
+    if (next.state === undefined) {
+      setSnapshot({
+        ...next,
+        identified: false,
+        error: "Native MTP connection omitted initial state",
+      });
+      return;
+    }
+    try {
+      const state = await mtpSchemas.ClientStateSync.response.parseAsync(
+        next.state,
+      );
+      setFreshContacts(state.Contacts);
+      setFreshCommunities(state.Communities);
+      setFreshCalls(state.Calls);
+      setSnapshot(next);
+    } catch (error) {
+      log(0, "mtp", "red", "Invalid native MTP state", error);
+      setSnapshot({
+        ...next,
+        identified: false,
+        error: "Invalid ClientStateSync payload",
+      });
+    }
+  }, []);
+
+  const dispatchMessage = useCallback(
+    (message: MTPFrame) => {
+      bridge.dispatch(message);
+    },
+    [bridge],
+  );
+
+  useEffect(() => {
+    return attachSubscriptions(connection);
+  }, [attachSubscriptions, connection]);
+
+  useEffect(
+    () =>
+      subscribe("GetStates", (message) => {
+        setFreshContacts((contacts) =>
+          removeMissingContacts(contacts, message),
+        );
+      }),
+    [subscribe],
+  );
+
+  useEffect(() => {
+    if (props.blockConnection) return;
+    let disposed = false;
+    let unlisten: UnlistenFn | undefined;
+    void (async () => {
+      try {
+        const nextUnlisten = await listen<
+          | { kind: "state"; snapshot: NativeSnapshot }
+          | { kind: "message"; generation: number; message: MTPFrame }
+          | { kind: "log"; level: number; message: string; details?: unknown }
+        >("mtp://event", ({ payload }) => {
+          if (disposed) return;
+          if (payload.kind === "state") {
+            void applySnapshot(payload.snapshot);
+          } else if (payload.kind === "message") {
+            if (payload.generation === generationRef.current) {
+              dispatchMessage(payload.message);
+            }
+          } else {
+            log(
+              payload.level,
+              "android",
+              "orange",
+              payload.message,
+              payload.details,
+            );
+          }
+        });
+        if (disposed) nextUnlisten();
+        else unlisten = nextUnlisten;
+      } catch (error) {
+        log(0, "mtp", "red", "Failed to subscribe to native MTP events", error);
+      }
+      try {
+        const current = await invoke<NativeSnapshot>("mtp_status");
+        if (!disposed) await applySnapshot(current);
+      } catch (error) {
+        log(0, "mtp", "red", "Failed to load native MTP status", error);
+      }
+    })();
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [applySnapshot, dispatchMessage, props.blockConnection]);
+
+  useEffect(() => {
+    if (props.blockConnection) return;
+    const updateVisibility = () => {
+      void invoke("mtp_set_ui_visible", {
+        visible: document.visibilityState === "visible" && document.hasFocus(),
+      });
+    };
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    window.addEventListener("focus", updateVisibility);
+    window.addEventListener("blur", updateVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+      window.removeEventListener("focus", updateVisibility);
+      window.removeEventListener("blur", updateVisibility);
+      void invoke("mtp_set_ui_visible", { visible: false });
+    };
+  }, [props.blockConnection]);
+
+  const send = useCallback<BoundSendFn>(
+    async (type, data, options) => {
+      const response = await connection.request(type, data, options);
+      if (response.type === "GetStates") {
+        setFreshContacts((contacts) =>
+          removeMissingContacts(
+            contacts,
+            response as ProtocolMessage<"GetStates">,
+          ),
+        );
+      }
+      for (const interceptor of interceptorsRef.current) {
+        void Promise.resolve(interceptor({ type, data, response })).catch(
+          (error) => {
+            log(1, "mtp", "yellow", "MTP interceptor failed", error, { type });
+          },
+        );
+      }
+      return response;
+    },
+    [connection, interceptorsRef],
+  );
+  const connected = snapshot.readyState === ConnectionState.Connected;
+
+  return (
+    <MTPContext.Provider
+      value={{
+        send,
+        subscribe,
+        addInterceptor,
+        readyState: snapshot.readyState,
+        identified: snapshot.identified,
+        freshContacts,
+        freshCommunities,
+        freshCalls,
+        contextReady: connected && snapshot.identified,
+        loadingDescription: connected
+          ? "Waiting for authenticated session"
+          : "Establishing native transport channel",
+      }}
+    >
+      {props.children}
+    </MTPContext.Provider>
+  );
+}

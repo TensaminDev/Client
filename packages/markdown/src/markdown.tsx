@@ -159,7 +159,7 @@ function CopyableCode({
  * @param input Parameter input.
  * @returns InlineNode[].
  */
-export function parseInlineNodes(input: string): InlineNode[] {
+function parseInlineNodes(input: string): InlineNode[] {
   const nodes: InlineNode[] = [];
 
   let cursor = 0;
@@ -205,7 +205,7 @@ export function parseInlineNodes(input: string): InlineNode[] {
   return nodes;
 }
 
-export function parseEmojiText(input: string): InlineNode[] {
+function parseEmojiText(input: string): InlineNode[] {
   const nodes: InlineNode[] = [];
   let cursor = 0;
 

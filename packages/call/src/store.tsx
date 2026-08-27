@@ -1223,7 +1223,7 @@ export const useCall = create<{
 export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { send, subscribePush } = useMTP();
+  const { send, subscribe } = useMTP();
   const { load } = useStorage();
   const { insertCall } = useSession();
   const { get } = useUser();
@@ -1313,14 +1313,9 @@ export function useInitializeCall() {
 
   // listen to call invites
   useEffect(() => {
-    return subscribePush(async (message) => {
-      if (message.type !== "CallInvite") return;
-
-      const { CallId, CallSecret, SenderId } = message.data as {
-        CallId: string;
-        CallSecret: ProtocolCallSecret;
-        SenderId: number;
-      };
+    return subscribe("CallInvite", async ({ data }) => {
+      const { CallId, CallSecret, SenderId } = data;
+      if (!CallId || !CallSecret || !SenderId) return;
 
       if (SenderId === Number(await load("user_id"))) {
         return;
@@ -1337,7 +1332,7 @@ export function useInitializeCall() {
         SenderId,
       );
     });
-  }, [load, subscribePush, showCallingScreen]);
+  }, [load, subscribe, showCallingScreen]);
 
   // get callId from url
   useEffect(() => {

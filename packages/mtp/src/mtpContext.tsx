@@ -1,0 +1,159 @@
+import { createContext, useCallback, useRef } from "react";
+import type {
+  MTPRequestFunction,
+  MTPResponseFrame,
+  MTPSubscriptionFunction,
+} from "mtp";
+import {
+  mtp as mtpSchemas,
+  type Calls,
+  type Communities,
+  type Contacts,
+} from "@tensamin/shared/data";
+import { log } from "@tensamin/shared/log";
+
+export type ProtocolMessage<
+  Type extends keyof typeof mtpSchemas & string = keyof typeof mtpSchemas &
+    string,
+> = MTPResponseFrame<typeof mtpSchemas, Type>;
+
+export type BoundSendFn = MTPRequestFunction<typeof mtpSchemas>;
+
+export type MTPExchange = {
+  type: keyof typeof mtpSchemas & string;
+  data: unknown;
+  response: ProtocolMessage;
+};
+
+export type MTPInterceptor = (exchange: MTPExchange) => void | Promise<void>;
+
+export type MTPContextType = {
+  send: BoundSendFn;
+  subscribe: MTPSubscriptionFunction<typeof mtpSchemas>;
+  addInterceptor: (interceptor: MTPInterceptor) => () => void;
+  readyState: number;
+  identified: boolean;
+  freshContacts: Contacts;
+  freshCommunities: Communities;
+  freshCalls: Calls;
+  contextReady: boolean;
+  loadingDescription: string;
+};
+
+export const MTPContext = createContext<MTPContextType | undefined>(undefined);
+
+export function removeMissingContacts(
+  contacts: Contacts,
+  message: ProtocolMessage<"GetStates">,
+): Contacts {
+  const missing = new Set(message.data.MissingUserIds ?? []);
+  return contacts.filter((contact) => !missing.has(contact.UserId));
+}
+
+export function useMessageHandlers() {
+  const interceptorsRef = useRef(new Set<MTPInterceptor>());
+  const subscriptionHandlersRef = useRef(
+    new Map<string, Set<(message: ProtocolMessage) => void | Promise<void>>>(),
+  );
+  const transportRef = useRef<{
+    subscribe: MTPSubscriptionFunction<typeof mtpSchemas>;
+  } | null>(null);
+  const transportGenerationRef = useRef(0);
+  const transportUnsubscribersRef = useRef(new Map<string, () => void>());
+  const lastInitialStateRef = useRef<ProtocolMessage<"GetStates"> | null>(null);
+
+  const attachType = useCallback(
+    <Type extends keyof typeof mtpSchemas & string>(type: Type) => {
+      const transport = transportRef.current;
+      if (!transport || transportUnsubscribersRef.current.has(type)) return;
+      const generation = transportGenerationRef.current;
+      const unsubscribe = transport.subscribe(type, (message) => {
+        if (
+          transportRef.current !== transport ||
+          transportGenerationRef.current !== generation
+        )
+          return;
+        if (type === "GetStates") {
+          lastInitialStateRef.current = message as ProtocolMessage<"GetStates">;
+        }
+        for (const handler of [
+          ...(subscriptionHandlersRef.current.get(type) ?? []),
+        ]) {
+          void Promise.resolve(handler(message as ProtocolMessage)).catch(
+            (error) => {
+              log(1, "mtp", "red", "Subscription handler failed", error, {
+                type,
+              });
+            },
+          );
+        }
+      });
+      transportUnsubscribersRef.current.set(type, unsubscribe);
+    },
+    [],
+  );
+
+  const attachSubscriptions = useCallback(
+    (transport: { subscribe: MTPSubscriptionFunction<typeof mtpSchemas> }) => {
+      for (const unsubscribe of transportUnsubscribersRef.current.values()) {
+        unsubscribe();
+      }
+      transportUnsubscribersRef.current.clear();
+      transportRef.current = transport;
+      const generation = ++transportGenerationRef.current;
+      for (const type of subscriptionHandlersRef.current.keys()) {
+        attachType(type as keyof typeof mtpSchemas & string);
+      }
+      return () => {
+        if (
+          transportRef.current !== transport ||
+          transportGenerationRef.current !== generation
+        )
+          return;
+        transportRef.current = null;
+        transportGenerationRef.current += 1;
+        for (const unsubscribe of transportUnsubscribersRef.current.values()) {
+          unsubscribe();
+        }
+        transportUnsubscribersRef.current.clear();
+      };
+    },
+    [attachType],
+  );
+
+  const subscribe = useCallback<MTPSubscriptionFunction<typeof mtpSchemas>>(
+    (type, handler) => {
+      const handlers = subscriptionHandlersRef.current.get(type) ?? new Set();
+      const untypedHandler = handler as (
+        message: ProtocolMessage,
+      ) => void | Promise<void>;
+      handlers.add(untypedHandler);
+      subscriptionHandlersRef.current.set(type, handlers);
+      attachType(type);
+      const initialState = lastInitialStateRef.current;
+      if (type === "GetStates" && initialState) {
+        void Promise.resolve(untypedHandler(initialState)).catch(
+          () => undefined,
+        );
+      }
+      return () => {
+        handlers.delete(untypedHandler);
+        if (handlers.size !== 0) return;
+        subscriptionHandlersRef.current.delete(type);
+        transportUnsubscribersRef.current.get(type)?.();
+        transportUnsubscribersRef.current.delete(type);
+      };
+    },
+    [attachType],
+  );
+  const addInterceptor = useCallback((interceptor: MTPInterceptor) => {
+    interceptorsRef.current.add(interceptor);
+    return () => interceptorsRef.current.delete(interceptor);
+  }, []);
+  return {
+    addInterceptor,
+    attachSubscriptions,
+    interceptorsRef,
+    subscribe,
+  };
+}

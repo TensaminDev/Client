@@ -341,7 +341,7 @@ async fn supervise(generation: u64) {
                 let notification_config = config.clone();
                 let notification_worker = tokio::spawn(async move {
                     while let Some(frame) = notification_rx.recv().await {
-                        if !manager().is_current(generation) {
+                        if !manager.is_current(generation) {
                             break;
                         }
                         if let Err(error) = notify_message(
@@ -497,7 +497,7 @@ fn prepare_initial_state_ack(
         .ok_or("ClientStateSync payload is not an object")?;
     let session_id = required_integer(data, "SessionId")?;
     let version = required_integer(data, "VersionNumber")?;
-    let ack = CommunicationValue::new(CommunicationType::ClientStateAck)
+    let ack = CommunicationValue::new(communication_type("ClientStateAck")?)
         .with_id(request_ids.next()?)
         .add_typed_default(DataType::SessionId, number_to_data(session_id))
         .add_typed_default(DataType::VersionNumber, number_to_data(version));
@@ -645,7 +645,7 @@ async fn await_initial_state(
             return Err("No Iota is currently connected".into());
         }
 
-        if frame.is_type(CommunicationType::ClientStateSync) {
+        if frame.get_type_name() == Some("ClientStateSync") {
             return Ok((frame, buffered));
         }
 
@@ -740,7 +740,7 @@ async fn notify_message(
     let message = frame
         .get_data(DataType::Message)
         .ok_or("MessageLive omitted Message")?;
-    let content = container_value(message, DataType::AppContent)
+    let content = container_value_by_name(message, "Content")
         .and_then(DataValue::as_str)
         .ok_or("MessageLive omitted Content")?;
     let keyring_bytes = decode_browser_base64(&config.keyring)?;
@@ -888,42 +888,24 @@ fn container_value(value: &DataValue, field: DataType) -> Option<&DataValue> {
     value.get_field(id)
 }
 
-fn wire_field_name(name: &str) -> &str {
-    match name {
-        "Content" => "AppContent",
-        "CreatedAt" => "AppCreatedAt",
-        "MessageId" => "AppMessageId",
-        _ => name,
-    }
+fn container_value_by_name<'a>(value: &'a DataValue, field: &str) -> Option<&'a DataValue> {
+    container_value(value, DataType::from_name(field)?)
 }
 
-fn application_field_name(name: &str) -> &str {
-    match name {
-        "AppContent" => "Content",
-        "AppCreatedAt" => "CreatedAt",
-        "AppMessageId" => "MessageId",
-        _ => name,
-    }
+fn communication_type(name: &str) -> Result<CommunicationType, String> {
+    CommunicationType::from_name(name).ok_or_else(|| format!("unknown communication type: {name}"))
 }
 
 fn json_to_frame(type_name: &str, data: Value, id: u32) -> Result<CommunicationValue, String> {
-    let comm_type = CommunicationType::from_name(type_name)
-        .ok_or_else(|| format!("unknown communication type: {type_name}"))?;
+    let comm_type = communication_type(type_name)?;
     let mut frame = CommunicationValue::new(comm_type).with_id(id);
     let Value::Object(fields) = data else {
         return Err("MTP request data must be an object".into());
     };
-    let mut translated_fields = std::collections::HashSet::<String>::with_capacity(fields.len());
     for (name, value) in fields {
-        let wire_name = wire_field_name(&name).to_owned();
-        if !translated_fields.insert(wire_name.clone()) {
-            return Err(format!(
-                "duplicate MTP field after translation: {wire_name}"
-            ));
-        }
         let data_type =
-            DataType::from_name(&wire_name).ok_or_else(|| format!("unknown data type: {name}"))?;
-        frame = frame.add_typed_default(data_type, json_to_data(&wire_name, value)?);
+            DataType::from_name(&name).ok_or_else(|| format!("unknown data type: {name}"))?;
+        frame = frame.add_typed_default(data_type, json_to_data(&name, value)?);
     }
     Ok(frame)
 }
@@ -961,21 +943,13 @@ fn json_to_data(field: &str, value: Value) -> Result<DataValue, String> {
         ),
         Value::Object(fields) => {
             let mut entries = Vec::with_capacity(fields.len());
-            let mut translated_fields =
-                std::collections::HashSet::<String>::with_capacity(fields.len());
             for (name, value) in fields {
-                let wire_name = wire_field_name(&name).to_owned();
-                if !translated_fields.insert(wire_name.clone()) {
-                    return Err(format!(
-                        "duplicate MTP field after translation: {wire_name}"
-                    ));
-                }
-                let data_type = DataType::from_name(&wire_name)
+                let data_type = DataType::from_name(&name)
                     .ok_or_else(|| format!("unknown nested data type: {name}"))?;
                 let id = data_type
                     .try_to_id(&TypeMap::latest())
                     .ok_or_else(|| format!("unmapped data type: {name}"))?;
-                entries.push((id, json_to_data(&wire_name, value)?));
+                entries.push((id, json_to_data(&name, value)?));
             }
             DataValue::Container(entries)
         }
@@ -1020,13 +994,7 @@ fn frame_data_to_json(frame: &CommunicationValue) -> Result<Value, String> {
         let name = map
             .data_type_name(id.0)
             .ok_or_else(|| format!("unknown data type id: {}", id.0))?;
-        let application_name = application_field_name(name);
-        if result.contains_key(application_name) {
-            return Err(format!(
-                "duplicate MTP field after translation: {application_name}"
-            ));
-        }
-        result.insert(application_name.to_owned(), data_to_json(value, &map)?);
+        result.insert(name.to_owned(), data_to_json(value, &map)?);
     }
     Ok(Value::Object(result))
 }
@@ -1057,13 +1025,7 @@ fn data_to_json(value: &DataValue, map: &TypeMap) -> Result<Value, String> {
                 let name = map
                     .data_type_name(id.0)
                     .ok_or_else(|| format!("unknown nested data type id: {}", id.0))?;
-                let application_name = application_field_name(name);
-                if object.contains_key(application_name) {
-                    return Err(format!(
-                        "duplicate MTP field after translation: {application_name}"
-                    ));
-                }
-                object.insert(application_name.to_owned(), data_to_json(value, map)?);
+                object.insert(name.to_owned(), data_to_json(value, map)?);
             }
             Value::Object(object)
         }
@@ -1084,7 +1046,7 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        container_value, decode_browser_base64, decode_sdk_bytes, frame_to_json,
+        container_value_by_name, decode_browser_base64, decode_sdk_bytes, frame_to_json,
         jittered_retry_delay, json_to_frame, prepare_initial_state_ack, RequestIdAllocator,
     };
 
@@ -1117,7 +1079,7 @@ mod tests {
     }
 
     #[test]
-    fn json_content_uses_app_content_wire_type() {
+    fn json_content_uses_content_wire_type() {
         let frame = json_to_frame(
             "MessageEdit",
             json!({
@@ -1131,14 +1093,14 @@ mod tests {
 
         assert_eq!(
             frame
-                .get_data(DataType::AppContent)
+                .get_data(DataType::Content)
                 .and_then(DataValue::as_str),
             Some("ciphertext")
         );
     }
 
     #[test]
-    fn nested_json_content_uses_app_content_wire_type() {
+    fn nested_json_content_uses_content_wire_type() {
         let frame = json_to_frame(
             "MessageEdit",
             json!({
@@ -1150,35 +1112,24 @@ mod tests {
         let message = frame.get_data(DataType::Message).unwrap();
 
         assert_eq!(
-            container_value(message, DataType::AppContent).and_then(DataValue::as_str),
+            container_value_by_name(message, "Content").and_then(DataValue::as_str),
             Some("ciphertext")
         );
     }
 
     #[test]
-    fn app_content_is_exposed_as_content_to_frontend() {
+    fn content_is_exposed_to_frontend() {
         let frame = CommunicationValue::new(CommunicationType::MessageEditLive)
             .with_id(1)
-            .add_typed_default(DataType::AppContent, DataValue::Str("ciphertext".into()));
+            .add_typed_default(DataType::Content, DataValue::Str("ciphertext".into()));
 
         let json = frame_to_json(&frame).unwrap();
 
         assert_eq!(json["data"]["Content"], "ciphertext");
-        assert!(json["data"].get("AppContent").is_none());
-    }
-
-    #[test]
-    fn translated_field_collisions_are_rejected() {
-        assert!(json_to_frame(
-            "MessageEdit",
-            json!({ "Content": "a", "AppContent": "b" }),
-            1,
-        )
-        .is_err());
     }
 
     fn valid_initial_state() -> CommunicationValue {
-        CommunicationValue::new(CommunicationType::ClientStateSync)
+        CommunicationValue::new(communication_type("ClientStateSync").unwrap())
             .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
             .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
             .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))
@@ -1195,7 +1146,7 @@ mod tests {
         let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids).unwrap();
 
         assert_eq!(state["SyncMode"], "full");
-        assert!(ack.is_type(CommunicationType::ClientStateAck));
+        assert_eq!(ack.get_type_name(), Some("ClientStateAck"));
         assert_eq!(ack.id(), Some(1));
     }
 
@@ -1216,7 +1167,7 @@ mod tests {
     #[test]
     fn malformed_nested_initial_state_does_not_prepare_ack() {
         let ids = RequestIdAllocator::new();
-        let malformed = CommunicationValue::new(CommunicationType::ClientStateSync)
+        let malformed = CommunicationValue::new(communication_type("ClientStateSync").unwrap())
             .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
             .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
             .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))

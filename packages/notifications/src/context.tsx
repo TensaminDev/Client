@@ -16,7 +16,6 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { decryptChatText } from "@tensamin/crypto/chatSecret";
 import { log } from "@tensamin/shared/log";
 import { playSound } from "@tensamin/shared/sounds";
-import { type RawMessage } from "@tensamin/chat/values";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -30,7 +29,7 @@ async function requestNotificationPermission() {
 }
 
 export default function Provider(props: { children: React.ReactNode }) {
-  const { subscribePush, send } = useMTP();
+  const { subscribe, send } = useMTP();
   const { load } = useStorage();
   const { get } = useUser();
   const { addLiveMessage, chatSecret, getChatSecret, userId } = useChat();
@@ -39,148 +38,140 @@ export default function Provider(props: { children: React.ReactNode }) {
   const location = useLocation();
 
   useEffect(() => {
-    return subscribePush(async (message) => {
-      if (message.type === "MessageLive") {
-        const data = message.data as {
-          Message?: RawMessage;
-          SenderId?: number;
-        };
+    return subscribe("MessageLive", async ({ data }) => {
+      if (!data.SenderId) return;
 
-        if (!data.SenderId) return;
+      const isCurrentChat =
+        location.pathname === "/chat" && userId === data.SenderId;
+      const appFocused =
+        document.hasFocus() && document.visibilityState === "visible";
+      const shouldAlert = !isCurrentChat || !appFocused;
 
-        const isCurrentChat =
-          location.pathname === "/chat" && userId === data.SenderId;
-        const appFocused =
-          document.hasFocus() && document.visibilityState === "visible";
-        const shouldAlert = !isCurrentChat || !appFocused;
+      const messageSecret =
+        isCurrentChat && chatSecret
+          ? chatSecret
+          : await getChatSecret(data.SenderId);
 
-        const messageSecret =
-          isCurrentChat && chatSecret
-            ? chatSecret
-            : await getChatSecret(data.SenderId);
+      if (!data.Message || !messageSecret) return;
+      if (shouldAlert) playSound("message");
 
-        if (!data.Message || !messageSecret) return;
-        if (shouldAlert) playSound("message");
+      void decryptChatText(messageSecret, data.Message.Content)
+        .catch((err) => {
+          log(1, "chat", "red", "Failed to decrypt live message", err, {
+            SendTime: data.Message?.SendTime,
+          });
+          return null;
+        })
+        .then(async (content) => {
+          if (!data.Message || !content || !data.SenderId) return;
 
-        void decryptChatText(messageSecret, data.Message.Content)
-          .catch((err) => {
-            log(1, "chat", "red", "Failed to decrypt live message", err, {
-              SendTime: data.Message?.SendTime,
+          if (isCurrentChat) {
+            addLiveMessage({
+              ...data.Message,
+              Content: content ?? "Failed to decrypt message",
+              decryptionFailed: content === null,
             });
-            return null;
-          })
-          .then(async (content) => {
-            if (!data.Message || !content || !data.SenderId) return;
+          }
 
-            if (isCurrentChat) {
-              addLiveMessage({
-                ...data.Message,
-                Content: content ?? "Failed to decrypt message",
-                decryptionFailed: content === null,
+          if (!shouldAlert) return;
+
+          if (!isCurrentChat) {
+            // todo: add notification symbol to conversation cards (incl. message start)
+            moveUserIdToTop(data.SenderId);
+
+            if (await load("settings.receive_confirmations")) {
+              void send("MessageState", {
+                MessageState: "received",
               });
             }
+          }
 
-            if (!shouldAlert) return;
+          const user = await get(data.SenderId, [
+            "UserId",
+            "Display",
+            "Avatar",
+          ]);
 
-            if (!isCurrentChat) {
-              // todo: add notification symbol to conversation cards (incl. message start)
-              moveUserIdToTop(data.SenderId);
+          if (isTauri()) {
+            if (!appFocused) return;
+            const permissionGranted =
+              (await isTauriNotificationPermissionGranted()) ||
+              (await requestTauriNotificationPermission()) === "granted";
 
-              if (await load("settings.receive_confirmations")) {
-                void send("MessageState", {
-                  MessageState: "received",
-                });
-              }
-            }
-
-            const user = await get(data.SenderId, [
-              "UserId",
-              "Display",
-              "Avatar",
-            ]);
-
-            if (isTauri()) {
-              if (!appFocused) return;
-              const permissionGranted =
-                (await isTauriNotificationPermissionGranted()) ||
-                (await requestTauriNotificationPermission()) === "granted";
-
-              if (permissionGranted) {
-                let handledNatively = false;
-                try {
-                  handledNatively = await invoke<boolean>(
-                    "mtp_post_message_notification",
-                    {
-                      senderId: user.UserId,
-                      sender: user.Display,
-                      body: content,
-                      avatar: user.Avatar,
-                    },
-                  );
-                } catch (error) {
-                  log(
-                    1,
-                    "notifications",
-                    "red",
-                    "Failed to create native message notification",
-                    error,
-                  );
-                }
-
-                if (!handledNatively) {
-                  sendTauriNotification({ title: user.Display, body: content });
-                }
-              }
-            } else {
-              const hasPermissions = await requestNotificationPermission();
-
-              if (hasPermissions) {
-                const options: NotificationOptions = {
-                  body: content,
-                  icon: user.Avatar || "/icons/icon-192.png",
-                  badge: "/icons/notification-badge.png",
-                  tag: `message-${user.UserId}`,
-                  silent: true,
-                };
-                if ("serviceWorker" in navigator) {
-                  const registration =
-                    await navigator.serviceWorker.getRegistration();
-                  if (registration) {
-                    await registration.showNotification(user.Display, {
-                      ...options,
-                      data: { url: `/chat?id=${user.UserId}` },
-                    });
-                    return;
-                  }
-                }
-                const notification = new Notification(user.Display, options);
-                notification.onclick = () => {
-                  window.focus();
-                  navigate({
-                    to: `/chat?id=${user.UserId}`,
-                  });
-                  notification.close();
-                };
-              } else {
-                sonnerToast(user.Display, {
-                  classNames: {
-                    content: "pl-4",
+            if (permissionGranted) {
+              let handledNatively = false;
+              try {
+                handledNatively = await invoke<boolean>(
+                  "mtp_post_message_notification",
+                  {
+                    senderId: user.UserId,
+                    sender: user.Display,
+                    body: content,
+                    avatar: user.Avatar,
                   },
-                  description: content,
-                  icon: (
-                    <Avatar>
-                      <AvatarImage src={user.Avatar} />
-                      <AvatarFallback>
-                        {user.Display.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  ),
-                });
+                );
+              } catch (error) {
+                log(
+                  1,
+                  "notifications",
+                  "red",
+                  "Failed to create native message notification",
+                  error,
+                );
+              }
+
+              if (!handledNatively) {
+                sendTauriNotification({ title: user.Display, body: content });
               }
             }
-          });
-        return;
-      }
+          } else {
+            const hasPermissions = await requestNotificationPermission();
+
+            if (hasPermissions) {
+              const options: NotificationOptions = {
+                body: content,
+                icon: user.Avatar || "/icons/icon-192.png",
+                badge: "/icons/notification-badge.png",
+                tag: `message-${user.UserId}`,
+                silent: true,
+              };
+              if ("serviceWorker" in navigator) {
+                const registration =
+                  await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                  await registration.showNotification(user.Display, {
+                    ...options,
+                    data: { url: `/chat?id=${user.UserId}` },
+                  });
+                  return;
+                }
+              }
+              const notification = new Notification(user.Display, options);
+              notification.onclick = () => {
+                window.focus();
+                navigate({
+                  to: `/chat?id=${user.UserId}`,
+                });
+                notification.close();
+              };
+            } else {
+              sonnerToast(user.Display, {
+                classNames: {
+                  content: "pl-4",
+                },
+                description: content,
+                icon: (
+                  <Avatar>
+                    <AvatarImage src={user.Avatar} />
+                    <AvatarFallback>
+                      {user.Display.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ),
+              });
+            }
+          }
+        });
     });
   }, [
     addLiveMessage,
@@ -191,7 +182,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     navigate,
     send,
     moveUserIdToTop,
-    subscribePush,
+    subscribe,
     getChatSecret,
     userId,
   ]);
