@@ -87,15 +87,9 @@ export default function Provider(props: { children: React.ReactNode }) {
               moveUserIdToTop(data.SenderId);
 
               if (await load("settings.receive_confirmations")) {
-                void send(
-                  "MessageState",
-                  {
-                    MessageState: "received",
-                  },
-                  {
-                    id: data.Message.SendTime,
-                  },
-                );
+                void send("MessageState", {
+                  MessageState: "received",
+                });
               }
             }
 

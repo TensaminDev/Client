@@ -23,11 +23,13 @@ export function randomChatSecret(): Uint8Array {
 }
 
 export function ownKemPublicKeyFromKeyring(keyring: string): Uint8Array {
-  return crypto.keyringToKeys(keyring).kemPublicKey;
+  return crypto.keyringToKeys({ value: keyring, encoding: "base64" })
+    .kemPublicKey;
 }
 
 export function kemPublicKeyFromPublicKeyBundle(publicKey: string): Uint8Array {
-  return crypto.publicKeyBundleToKeys(publicKey).kemPublicKey;
+  return crypto.publicKeyBundleToKeys({ value: publicKey, encoding: "base64" })
+    .kemPublicKey;
 }
 
 export async function wrapChatSecret(args: {
@@ -79,7 +81,10 @@ export async function unwrapChatSecret(args: {
     );
   }
 
-  const ownKeys = crypto.keyringToKeys(args.keyring);
+  const ownKeys = crypto.keyringToKeys({
+    value: args.keyring,
+    encoding: "base64",
+  });
   const sharedSecret = crypto.decapsulate(
     ownKeys.kemSecretKey,
     args.kemCiphertext,

@@ -8,46 +8,24 @@ import Profile from "./pages/profile";
 import Security from "./pages/security";
 import Theme from "./pages/theme";
 import Hotkeys from "./pages/hotkeys";
+import { settingsNavigation } from "./navigation";
+
+const pageComponents = {
+  profile: Profile,
+  security: Security,
+  chat: Chat,
+  call: Call,
+  cache: Cache,
+  theme: Theme,
+  accessibility: Accessibility,
+  hotkeys: Hotkeys,
+  licenses: Licenses,
+} as const;
 
 export const settingsPages = [
   { path: "/", component: Index },
-  {
-    category: "account",
-    path: "profile",
-    label: "Profile",
-    component: Profile,
-  },
-  {
-    category: "account",
-    path: "security",
-    label: "Security",
-    component: Security,
-  },
-  { category: "general", path: "chat", label: "Chat", component: Chat },
-  { category: "general", path: "call", label: "Call", component: Call },
-  { category: "application", path: "cache", label: "Cache", component: Cache },
-  { category: "application", path: "theme", label: "Theme", component: Theme },
-  {
-    category: "application",
-    path: "accessibility",
-    label: "Accessibility",
-    component: Accessibility,
-  },
-  {
-    category: "application",
-    path: "hotkeys",
-    label: "Hotkeys",
-    component: Hotkeys,
-  },
-  {
-    category: "application",
-    path: "licenses",
-    label: "Licenses",
-    component: Licenses,
-  },
+  ...settingsNavigation.map((page) => ({
+    ...page,
+    component: pageComponents[page.path],
+  })),
 ] as const;
-
-export const settingsNavigation = settingsPages.filter(
-  (page): page is Exclude<(typeof settingsPages)[number], { path: "/" }> =>
-    page.path !== "/",
-);

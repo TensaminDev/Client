@@ -10,18 +10,9 @@ import {
 } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import {
-  base64ToBytes,
-  ConnectionState,
-  MTPClient,
-  MTPProxyConnection,
-  type MTPFrame,
-  type MTPKeyMaterialInput,
-  type MTPProxyAdapter,
-  type MTPRequestOptions,
-  type MTPRequestFunction,
-  type MTPResponseFrame,
-} from "mtp";
+import { MTPClient } from "mtp";
+import { type z } from "zod";
+import { ConnectionState } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import { toast as sonnerToast } from "@methanium/ui";
 
@@ -33,15 +24,47 @@ import {
   type MTP as Schemas,
 } from "@tensamin/shared/data";
 import { log } from "@tensamin/shared/log";
+import { ProtocolError } from "@tensamin/shared/errors";
 import { useStorage } from "@tensamin/storage/context";
 
-import { RECONNECT_RESET, RECONNECT_TRIES, RETRY_INTERVAL } from "./values";
+import { fromWireMessage, toWireData } from "./protocolFields";
+import { RequestIdAllocator } from "./requestIds";
+import {
+  DISCOVERY_TIMEOUT,
+  INITIAL_SYNC_TIMEOUT,
+  RECONNECT_JITTER,
+  RECONNECT_LONG_INTERVAL,
+  RECONNECT_RESET,
+  RECONNECT_TRIES,
+  RETRY_INTERVAL,
+  STATE_ACK_TIMEOUT,
+} from "./values";
+
+type BrowserMtpClient = Awaited<ReturnType<typeof MTPClient.create>>;
+
+function base64ToUint8Array(b64: string) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+
+  for (let i = 0; i < bin.length; i++) {
+    out[i] = bin.charCodeAt(i);
+  }
+
+  return out;
+}
 
 export type ProtocolMessage<
   T extends keyof Schemas & string = keyof Schemas & string,
-> = MTPResponseFrame<Schemas, T>;
+> = {
+  id?: number;
+  type: T | string;
+  data: z.infer<Schemas[T]["response"]>;
+};
 
-export type BoundSendFn = MTPRequestFunction<Schemas>;
+export type BoundSendFn = <T extends keyof Schemas & string>(
+  type: T,
+  data?: z.infer<Schemas[T]["request"]>,
+) => Promise<ProtocolMessage<T>>;
 
 export type PushHandler = (message: ProtocolMessage) => void | Promise<void>;
 
@@ -57,17 +80,31 @@ const PUSH_TYPES = [
   "ErrorNoIota",
 ] as const;
 
-function encodedPublicKey(value: string): MTPKeyMaterialInput {
-  const trimmed = value.trim();
-  const hex = trimmed.replace(/^0x/i, "");
-  return {
-    value: /^[0-9a-f]+$/i.test(hex) ? hex : trimmed,
-    encoding: /^[0-9a-f]+$/i.test(hex) ? "hex" : "base64",
-  };
-}
-
 export function isPushType(type: string): boolean {
   return (PUSH_TYPES as readonly string[]).includes(type);
+}
+
+function normalizeMtpMessage<T extends { data: unknown }>(message: T): T {
+  return fromWireMessage(message);
+}
+
+async function requestWithId(
+  client: BrowserMtpClient,
+  ids: RequestIdAllocator,
+  type: string,
+  data: Record<string, unknown>,
+) {
+  let id: number;
+  try {
+    id = ids.allocate();
+  } catch (error) {
+    client.disconnect();
+    throw error;
+  }
+
+  return client.request(type, toWireData(data) as Record<string, unknown>, {
+    id,
+  });
 }
 
 function removeMissingContacts(
@@ -112,6 +149,167 @@ type ContextType = {
 
 const MTPContext = createContext<ContextType | undefined>(undefined);
 
+function getProtocolErrorDetails(error: unknown) {
+  if (typeof error !== "object" || error === null || !("type" in error)) {
+    return null;
+  }
+
+  const protocolError = error as {
+    id?: unknown;
+    type?: unknown;
+    data?: unknown;
+  };
+  return {
+    id: protocolError.id,
+    type: protocolError.type,
+    data: protocolError.data,
+  };
+}
+
+// Zod schema validation
+export function validateResponse<T extends keyof Schemas & string>(
+  type: T,
+  message: { id?: number; type: string; data: unknown },
+): ProtocolMessage<T> {
+  if (message.type.startsWith("Error")) {
+    return message as ProtocolMessage<T>;
+  }
+
+  const schema =
+    schemas[message.type as keyof Schemas & string]?.response ??
+    schemas[type]?.response;
+  if (!schema) {
+    return message as ProtocolMessage<T>;
+  }
+
+  const parsed = schema.safeParse(message.data);
+  if (!parsed.success) {
+    throw new Error(
+      `Response validation failed for ${type}: ${parsed.error.message}`,
+    );
+  }
+
+  return {
+    id: message.id,
+    type: message.type,
+    data: parsed.data,
+  } as ProtocolMessage<T>;
+}
+
+function abortError(signal: AbortSignal): Error {
+  return signal.reason instanceof Error
+    ? signal.reason
+    : new Error("Initial state synchronization was cancelled");
+}
+
+function withDeadline<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string,
+  signal: AbortSignal,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(abortError(signal));
+      return;
+    }
+    let settled = false;
+    const finish = (complete: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", onAbort);
+      complete();
+    };
+    const timeout = setTimeout(
+      () => finish(() => reject(new Error(timeoutMessage))),
+      timeoutMs,
+    );
+    const onAbort = () => finish(() => reject(abortError(signal)));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => finish(() => resolve(value)),
+      (error: unknown) => finish(() => reject(error)),
+    );
+  });
+}
+
+export async function completeInitialSynchronization(
+  client: BrowserMtpClient,
+  ids: RequestIdAllocator,
+  signal: AbortSignal,
+  syncTimeoutMs = INITIAL_SYNC_TIMEOUT,
+  ackTimeoutMs = STATE_ACK_TIMEOUT,
+): Promise<ProtocolMessage<"ClientStateSync">> {
+  const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
+    (resolve, reject) => {
+      let unsubscribeStateSync = () => {};
+      let unsubscribeNoIota = () => {};
+      const cleanup = () => {
+        clearTimeout(timeout);
+        unsubscribeStateSync();
+        unsubscribeNoIota();
+        signal.removeEventListener("abort", onAbort);
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(abortError(signal));
+      };
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("Initial state synchronization timed out"));
+      }, syncTimeoutMs);
+      signal.addEventListener("abort", onAbort, { once: true });
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+      unsubscribeStateSync = client.subscribe("ClientStateSync", (message) => {
+        cleanup();
+        try {
+          resolve(
+            validateResponse("ClientStateSync", normalizeMtpMessage(message)),
+          );
+        } catch (error) {
+          reject(error);
+        }
+      });
+      unsubscribeNoIota = client.subscribe("ErrorNoIota", () => {
+        cleanup();
+        reject(new Error("No Iota is currently connected"));
+      });
+    },
+  );
+  const [, state] = await Promise.all([
+    withDeadline(
+      client.auth(),
+      syncTimeoutMs,
+      "MTP authentication timed out",
+      signal,
+    ),
+    stateSync,
+  ]);
+  if (state.type.startsWith("Error")) {
+    throw new Error(`State synchronization failed: ${state.type}`);
+  }
+  const acknowledgement = normalizeMtpMessage(
+    await withDeadline(
+      requestWithId(client, ids, "ClientStateAck", {
+        SessionId: state.data.SessionId,
+        VersionNumber: state.data.VersionNumber,
+      }),
+      ackTimeoutMs,
+      "State acknowledgement timed out",
+      signal,
+    ),
+  );
+  if (acknowledgement.type.startsWith("Error")) {
+    throw new Error(`State acknowledgement failed: ${acknowledgement.type}`);
+  }
+  if (signal.aborted) throw abortError(signal);
+  return state;
+}
+
 function useMessageHandlers() {
   const interceptorsRef = useRef(new Set<MTPInterceptor>());
   const pushHandlersRef = useRef(new Set<PushHandler>());
@@ -153,7 +351,10 @@ function BrowserProvider(props: {
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
 
-  const clientRef = useRef<MTPClient<Schemas> | null>(null);
+  const clientRef = useRef<Awaited<ReturnType<typeof MTPClient.create>> | null>(
+    null,
+  );
+  const requestIdsRef = useRef<RequestIdAllocator | null>(null);
   const {
     addInterceptor,
     interceptorsRef,
@@ -170,16 +371,38 @@ function BrowserProvider(props: {
     load("omega_url").then(setMtpUrl);
   }, [load]);
 
+  // Validation override functions
   const send: BoundSendFn = useMemo(
-    () => async (type, data, options) => {
+    () => async (type, data) => {
       const client = clientRef.current;
+      const ids = requestIdsRef.current;
 
       if (!client) {
         throw new Error("mtp is not connected");
       }
+      if (!ids) {
+        throw new Error("MTP request allocator is unavailable");
+      }
 
-      const response = await client.request(type, data, options);
+      const rawMessage = await requestWithId(
+        client,
+        ids,
+        type,
+        (data ?? {}) as Record<string, unknown>,
+      );
+      const response = validateResponse(type, normalizeMtpMessage(rawMessage));
       setFreshContacts((contacts) => removeMissingContacts(contacts, response));
+      if (response.type.startsWith("Error")) {
+        const errorData = response.data as Record<string, unknown>;
+        throw new ProtocolError({
+          type: response.type,
+          requestId: response.id,
+          errorType:
+            typeof errorData.ErrorType === "string"
+              ? errorData.ErrorType
+              : undefined,
+        });
+      }
       return response;
     },
     [],
@@ -191,7 +414,9 @@ function BrowserProvider(props: {
       return () => {};
     }
 
-    return client.subscribe(type, handler);
+    return client.subscribe(type, (message) => {
+      handler(validateResponse(type, normalizeMtpMessage(message)));
+    });
   }, []);
 
   // Reconnect stuff
@@ -221,45 +446,57 @@ function BrowserProvider(props: {
 
     const scheduleReconnect = (error: unknown) => {
       if (disposed || reconnectScheduled) return;
-      if (attempts >= RECONNECT_TRIES) {
+      attempts += 1;
+      const shortRetry = attempts <= RECONNECT_TRIES;
+      if (!shortRetry) {
         log(0, "mtp", "red", "Reconnection attempts exhausted", error);
         sonnerToast.error("Connection failed", {
           id: "mtp-connection-toast",
           description:
             error instanceof Error
-              ? error.message.split(":")[0]
-              : "Connection lost",
+              ? `${error.message.split(":")[0]}. Retrying in the background.`
+              : "Connection lost. Retrying in the background.",
           icon: null,
           duration: Infinity,
           closeButton: true,
           promise: null,
         } as unknown as Parameters<typeof sonnerToast.error>[1]);
-        return;
+      } else {
+        sonnerToast.loading(
+          `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
+          { id: "mtp-connection-toast" },
+        );
       }
 
-      attempts += 1;
-      sonnerToast.loading(
-        `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
-        { id: "mtp-connection-toast" },
-      );
+      const baseDelay = shortRetry ? RETRY_INTERVAL : RECONNECT_LONG_INTERVAL;
+      const jitter = 1 + (Math.random() * 2 - 1) * RECONNECT_JITTER;
       reconnectScheduled = true;
-      reconnectTimer = setTimeout(() => {
-        reconnectScheduled = false;
-        reconnectTimer = null;
-        void connect();
-      }, RETRY_INTERVAL);
+      reconnectTimer = setTimeout(
+        () => {
+          reconnectScheduled = false;
+          reconnectTimer = null;
+          void connect();
+        },
+        Math.round(baseDelay * jitter),
+      );
     };
 
     async function connect() {
       if (disposed || props.blockConnection) return;
 
       const generation = ++connectionGeneration;
-      let client: MTPClient<Schemas> | null = null;
+      let client: Awaited<ReturnType<typeof MTPClient.create>> | null = null;
       let failed = false;
+      let connectionReady = false;
+      const attemptAbort = new AbortController();
       const cleanup = () => {
+        attemptAbort.abort(
+          new Error("Initial state synchronization was cancelled"),
+        );
         client?.disconnect();
         if (clientRef.current === client) {
           clientRef.current = null;
+          requestIdsRef.current = null;
         }
         clearReconnectResetTimer();
         if (generation === connectionGeneration) {
@@ -289,19 +526,18 @@ function BrowserProvider(props: {
           omikronPublicKey = forcedOmikronPublicKey;
         } else {
           log(2, "mtp", "purple", "Fetching Omikron data.");
-          const data = await fetch(`${mtpUrl}api/get/omikron/${userId}`);
+          const data = await fetch(`${mtpUrl}api/get/omikron/${userId}`, {
+            signal: AbortSignal.any([
+              attemptAbort.signal,
+              AbortSignal.timeout(DISCOVERY_TIMEOUT),
+            ]),
+          });
 
           if (data.status === 404) {
-            sonnerToast.error("We couldn't reach your Iota", {
-              description:
-                "Check your network connection and try restarting your Iota",
-              icon: null,
-              duration: Infinity,
-              closeButton: true,
-            });
-            resolveConnectionRef.current?.();
-            cleanup();
-            return;
+            throw new Error("No Omikron assignment is currently available");
+          }
+          if (!data.ok) {
+            throw new Error(`Omikron discovery failed: HTTP ${data.status}`);
           }
           const omikronData = (await data.json()) as {
             id: number;
@@ -328,20 +564,18 @@ function BrowserProvider(props: {
 
         log(2, "mtp", "green", "Connecting to: " + url);
 
-        client = await MTPClient.create<Schemas>({
+        client = await MTPClient.create({
           url,
           credentials: {
             clientId: userId,
-            keyring: base64ToBytes(keyring),
+            keyring: base64ToUint8Array(keyring),
           },
-          hostPublicKey: encodedPublicKey(omikronPublicKey),
+          hostPublicKey: {
+            value: omikronPublicKey,
+            encoding: "base64",
+          },
           descriptor: "client",
           pings: true,
-          schemas,
-          throwProtocolErrors: true,
-          onValidationError: (error) => {
-            log(1, "mtp", "red", "Failed to validate MTP message", error);
-          },
           logger: (event) => {
             if (event.type === "state") {
               if (generation !== connectionGeneration) return;
@@ -353,10 +587,12 @@ function BrowserProvider(props: {
                 !failed
               ) {
                 failed = true;
-                clientRef.current = null;
-                setIdentified(false);
-                setIdentifying(false);
-                scheduleReconnect(new Error("MTP connection lost"));
+                const error = new Error("MTP connection lost");
+                attemptAbort.abort(error);
+                if (connectionReady) {
+                  cleanup();
+                  scheduleReconnect(error);
+                }
               }
             }
 
@@ -391,9 +627,19 @@ function BrowserProvider(props: {
         const activeClient = client;
 
         clientRef.current = activeClient;
+        requestIdsRef.current = new RequestIdAllocator();
         for (const type of PUSH_TYPES) {
           activeClient.subscribe(type, (message) => {
-            const validated = message as ProtocolMessage;
+            let validated: ProtocolMessage;
+            try {
+              validated = validateResponse(type, normalizeMtpMessage(message));
+            } catch (error) {
+              log(1, "mtp", "red", "Failed to validate push message", error, {
+                type,
+                data: message.data,
+              });
+              return;
+            }
 
             setFreshContacts((contacts) =>
               removeMissingContacts(contacts, validated),
@@ -408,71 +654,45 @@ function BrowserProvider(props: {
             if (validated.type === "GetStates") {
               lastInitialStateRef.current = validated;
             }
+            if (
+              validated.type === "ErrorNoIota" &&
+              clientRef.current === activeClient &&
+              !failed
+            ) {
+              failed = true;
+              const error = new Error("No Iota is currently connected");
+              attemptAbort.abort(error);
+              cleanup();
+              scheduleReconnect(error);
+            }
           });
         }
         setReadyState(activeClient.state);
-
-        clearReconnectTimer();
-
-        // Schedule reconnect reset
-        clearReconnectResetTimer();
-        reconnectResetTimer = setTimeout(() => {
-          attempts = 0;
-          reconnectResetTimer = null;
-        }, RECONNECT_RESET * 1_000);
-
-        setReadyState(activeClient.state);
         setIdentifying(true);
 
-        const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
-          (resolve, reject) => {
-            let unsubscribeStateSync = () => {};
-            let unsubscribeNoIota = () => {};
-            const cleanupStateSync = () => {
-              clearTimeout(timeout);
-              unsubscribeStateSync();
-              unsubscribeNoIota();
-            };
-            const timeout = setTimeout(() => {
-              cleanupStateSync();
-              reject(new Error("Initial state synchronization timed out"));
-            }, 120_000);
-            unsubscribeStateSync = activeClient.subscribe(
-              "ClientStateSync",
-              (message) => {
-                cleanupStateSync();
-                resolve(message);
-              },
-            );
-            unsubscribeNoIota = activeClient.subscribe("ErrorNoIota", () => {
-              cleanupStateSync();
-              reject(new Error("No Iota is currently connected"));
-            });
-          },
+        const ids = requestIdsRef.current;
+        if (!ids) throw new Error("MTP request allocator is unavailable");
+        const finalResponse = await completeInitialSynchronization(
+          activeClient,
+          ids,
+          attemptAbort.signal,
         );
-        const [, finalResponse] = await Promise.all([
-          activeClient.auth(),
-          stateSync,
-        ]);
-
-        if (finalResponse.type.startsWith("Error")) {
-          throw new Error(
-            `State synchronization failed: ${finalResponse.type}`,
-          );
-        }
-
-        await activeClient.request("ClientStateAck", {
-          SessionId: finalResponse.data.SessionId,
-          VersionNumber: finalResponse.data.VersionNumber,
-        });
 
         if (disposed || clientRef.current !== activeClient) return;
 
         setFreshContacts(finalResponse.data.Contacts);
         setFreshCommunities(finalResponse.data.Communities);
         setFreshCalls(finalResponse.data.Calls);
+        connectionReady = true;
         setIdentifying(false);
         setIdentified(true);
+
+        clearReconnectTimer();
+        clearReconnectResetTimer();
+        reconnectResetTimer = setTimeout(() => {
+          attempts = 0;
+          reconnectResetTimer = null;
+        }, RECONNECT_RESET * 1_000);
         resolveConnectionRef.current?.();
       } catch (connectError) {
         if (disposed || generation !== connectionGeneration) {
@@ -490,7 +710,7 @@ function BrowserProvider(props: {
           "mtp",
           "red",
           `Connection/authentication attempt failed: ${connectErrorMessage}`,
-          connectError,
+          getProtocolErrorDetails(connectError) ?? connectError,
         );
 
         scheduleReconnect(connectError);
@@ -506,6 +726,7 @@ function BrowserProvider(props: {
 
       clientRef.current?.disconnect();
       clientRef.current = null;
+      requestIdsRef.current = null;
       setReadyState(ConnectionState.Disconnected);
       setIdentified(false);
       setIdentifying(false);
@@ -567,9 +788,9 @@ function BrowserProvider(props: {
   }, [connected, identified, mtpUrl, send, subscribe, subscribePush, mtpRef]);
 
   const sendQueued: BoundSendFn = useMemo(
-    () => async (type, data, options) => {
+    () => async (type, data) => {
       const mtp = await mtpRef.get();
-      const response = await mtp.send(type, data, options);
+      const response = await mtp.send(type, data);
       for (const interceptor of interceptorsRef.current) {
         void Promise.resolve(
           interceptor({ type, data, response: response as ProtocolMessage }),
@@ -611,39 +832,6 @@ type NativeSnapshot = {
   error?: string;
 };
 
-class TauriMTPAdapter implements MTPProxyAdapter {
-  readonly #subscriptions = new Map<string, Set<(message: MTPFrame) => void>>();
-
-  async request(
-    type: string,
-    data: Record<string, unknown>,
-    options?: MTPRequestOptions,
-  ) {
-    return await invoke<MTPFrame>("mtp_request", {
-      typeName: type,
-      data,
-      id: options?.id,
-    });
-  }
-
-  subscribe(type: string, handler: (message: MTPFrame) => void) {
-    const handlers =
-      this.#subscriptions.get(type) ?? new Set<(message: MTPFrame) => void>();
-    handlers.add(handler);
-    this.#subscriptions.set(type, handlers);
-    return () => {
-      handlers.delete(handler);
-      if (handlers.size === 0) this.#subscriptions.delete(type);
-    };
-  }
-
-  dispatch(message: MTPFrame) {
-    for (const handler of this.#subscriptions.get(message.type) ?? []) {
-      handler(message);
-    }
-  }
-}
-
 function TauriProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
@@ -664,16 +852,8 @@ function TauriProvider(props: {
     pushHandlersRef,
     subscribePush,
   } = useMessageHandlers();
-  const [adapter] = useState(() => new TauriMTPAdapter());
-  const [connection] = useState(
-    () =>
-      new MTPProxyConnection<Schemas>(adapter, {
-        schemas,
-        throwProtocolErrors: true,
-        onValidationError: (error) => {
-          log(1, "mtp", "red", "Failed to validate native MTP message", error);
-        },
-      }),
+  const subscriptionsRef = useRef(
+    new Map<string, Set<(message: ProtocolMessage) => void>>(),
   );
 
   const applySnapshot = useCallback((next: NativeSnapshot) => {
@@ -682,49 +862,69 @@ function TauriProvider(props: {
     if (next.error) {
       log(0, "android", "orange", "MTP connection failed", next.error);
     }
-    setSnapshot(next);
-    if (!next.identified || next.state === undefined) return;
+    if (!next.identified) {
+      setSnapshot(next);
+      return;
+    }
+    if (next.state === undefined) {
+      setSnapshot({
+        ...next,
+        identified: false,
+        error: "Native MTP connection omitted initial state",
+      });
+      return;
+    }
     const parsed = schemas.ClientStateSync.response.safeParse(next.state);
     if (!parsed.success) {
       log(0, "mtp", "red", "Invalid native MTP state", parsed.error);
+      setSnapshot({
+        ...next,
+        identified: false,
+        error: "Invalid ClientStateSync payload",
+      });
       return;
     }
     setFreshContacts(parsed.data.Contacts);
     setFreshCommunities(parsed.data.Communities);
     setFreshCalls(parsed.data.Calls);
+    setSnapshot(next);
   }, []);
 
   const dispatchMessage = useCallback(
     (raw: unknown) => {
       if (!raw || typeof raw !== "object" || !("type" in raw)) return;
-      adapter.dispatch(raw as MTPFrame);
-    },
-    [adapter],
-  );
-
-  useEffect(() => {
-    const unsubscribers = PUSH_TYPES.map((type) =>
-      connection.subscribe(type, (message) => {
-        const validated = message as ProtocolMessage;
-        setFreshContacts((contacts) =>
-          removeMissingContacts(contacts, validated),
+      const message = raw as { id?: number; type: string; data: unknown };
+      let validated: ProtocolMessage;
+      try {
+        validated = validateResponse(
+          message.type as keyof Schemas & string,
+          normalizeMtpMessage(message),
         );
-        for (const handler of [...pushHandlersRef.current]) {
-          void Promise.resolve(handler(validated)).catch((error) => {
-            log(1, "mtp", "red", "Native MTP push handler failed", error, {
-              type,
-            });
+      } catch (error) {
+        log(1, "mtp", "red", "Failed to validate native MTP message", error);
+        return;
+      }
+      for (const handler of subscriptionsRef.current.get(validated.type) ??
+        []) {
+        handler(validated);
+      }
+      if (!isPushType(validated.type)) return;
+      setFreshContacts((contacts) =>
+        removeMissingContacts(contacts, validated),
+      );
+      for (const handler of [...pushHandlersRef.current]) {
+        void Promise.resolve(handler(validated)).catch((error) => {
+          log(1, "mtp", "red", "Native MTP push handler failed", error, {
+            type: validated.type,
           });
-        }
-        if (validated.type === "GetStates") {
-          lastInitialStateRef.current = validated;
-        }
-      }),
-    );
-    return () => {
-      for (const unsubscribe of unsubscribers) unsubscribe();
-    };
-  }, [connection, lastInitialStateRef, pushHandlersRef]);
+        });
+      }
+      if (validated.type === "GetStates") {
+        lastInitialStateRef.current = validated;
+      }
+    },
+    [lastInitialStateRef, pushHandlersRef],
+  );
 
   useEffect(() => {
     if (props.blockConnection) return;
@@ -800,11 +1000,26 @@ function TauriProvider(props: {
   }, [props.blockConnection]);
 
   const send = useCallback<BoundSendFn>(
-    async (type, data, options) => {
-      const validated = await connection.request(type, data, options);
+    async (type, data) => {
+      const response = await invoke<ProtocolMessage>("mtp_request", {
+        typeName: type,
+        data: data ?? {},
+      });
+      const validated = validateResponse(type, normalizeMtpMessage(response));
       setFreshContacts((contacts) =>
         removeMissingContacts(contacts, validated),
       );
+      if (validated.type.startsWith("Error")) {
+        const errorData = validated.data as Record<string, unknown>;
+        throw new ProtocolError({
+          type: validated.type,
+          requestId: validated.id,
+          errorType:
+            typeof errorData.ErrorType === "string"
+              ? errorData.ErrorType
+              : undefined,
+        });
+      }
       for (const interceptor of interceptorsRef.current) {
         void Promise.resolve(
           interceptor({ type, data, response: validated as ProtocolMessage }),
@@ -814,13 +1029,20 @@ function TauriProvider(props: {
       }
       return validated;
     },
-    [connection, interceptorsRef],
+    [interceptorsRef],
   );
 
-  const subscribe = useCallback<ContextType["subscribe"]>(
-    (type, handler) => connection.subscribe(type, handler),
-    [connection],
-  );
+  const subscribe = useCallback<ContextType["subscribe"]>((type, handler) => {
+    const handlers =
+      subscriptionsRef.current.get(type) ??
+      new Set<(message: ProtocolMessage) => void>();
+    handlers.add(handler as (message: ProtocolMessage) => void);
+    subscriptionsRef.current.set(type, handlers);
+    return () => {
+      handlers.delete(handler as (message: ProtocolMessage) => void);
+      if (handlers.size === 0) subscriptionsRef.current.delete(type);
+    };
+  }, []);
   const connected = snapshot.readyState === ConnectionState.Connected;
   const contextReady = connected && snapshot.identified;
 
@@ -847,7 +1069,7 @@ function TauriProvider(props: {
   );
 }
 
-function BrowserProviderLoader(props: {
+export function Provider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
@@ -872,17 +1094,10 @@ function BrowserProviderLoader(props: {
   if (wasmError) throw wasmError;
   if (!wasmReady) return null;
 
-  return <BrowserProvider {...props} />;
-}
-
-export function Provider(props: {
-  children: ReactNode;
-  blockConnection?: boolean;
-}) {
   return isTauri() ? (
     <TauriProvider {...props} />
   ) : (
-    <BrowserProviderLoader {...props} />
+    <BrowserProvider {...props} />
   );
 }
 

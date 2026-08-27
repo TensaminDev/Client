@@ -34,19 +34,22 @@ function isPushPayload(value: unknown): value is PushPayload {
   const message = payload.message as
     Partial<PushPayload["message"]> | undefined;
   const secret = payload.secret as Partial<PushPayload["secret"]> | undefined;
+  const stringValues = [
+    payload.sender,
+    message?.content,
+    secret?.chatId,
+    secret?.secretId,
+    secret?.encryptedSecret,
+    secret?.kemCiphertext,
+    secret?.wrappingScheme,
+  ];
   return (
     payload.version === 1 &&
     typeof payload.senderId === "number" &&
     Number.isSafeInteger(payload.senderId) &&
     payload.senderId > 0 &&
-    typeof payload.sender === "string" &&
-    typeof message?.content === "string" &&
-    typeof secret?.chatId === "string" &&
-    typeof secret.secretId === "string" &&
-    typeof secret.version === "number" &&
-    typeof secret.encryptedSecret === "string" &&
-    typeof secret.kemCiphertext === "string" &&
-    typeof secret.wrappingScheme === "string"
+    typeof secret?.version === "number" &&
+    stringValues.every((item) => typeof item === "string")
   );
 }
 

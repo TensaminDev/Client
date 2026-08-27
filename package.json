@@ -25,26 +25,27 @@
     "start-adb:mobile": "cd apps/tauri && pnpm run start-adb:mobile",
     "dev:desktop": "cd apps/electron && pnpm run dev",
     "build:desktop": "cd apps/electron && pnpm run package",
-    "delete:mobile": "nix develop .#tauri --command node apps/tauri/scripts/delete-mobile.ts"
+    "delete:mobile": "nix develop .#tauri --command node apps/tauri/scripts/delete-mobile.ts",
+    "update-submodules": "git submodule update --remote --force --recursive"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@typescript-eslint/parser": "^8.66.0",
-    "eslint": "^10.8.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "eslint": "^10.8.1",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "fallow": "^3.14.0",
-    "globals": "^17.9.0",
+    "fallow": "^3.17.0",
+    "globals": "^17.11.0",
     "prettier": "^3.9.6",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.66.0",
-    "vitest": "^4.1.10"
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.11"
   },
   "dependencies": {
-    "@methanium/ui": "*",
-    "mtp": "*",
-    "sonner": "^2.0.7"
+    "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.29/methanium-ui.tgz",
+    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-b331b9f6a3/mtp-0.3.0.tgz",
+    "sonner": "^2.0.8"
   }
 }
