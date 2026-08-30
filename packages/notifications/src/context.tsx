@@ -1,5 +1,5 @@
 import { useStorage } from "@tensamin/storage/context";
-import { useUser } from "@tensamin/user/context";
+import { useUser } from "@tensamin/identity/context";
 import { useChat } from "@tensamin/chat/context";
 import { useMTP } from "@tensamin/mtp";
 import { createContext, useEffect, useContext } from "react";

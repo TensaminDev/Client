@@ -7,8 +7,8 @@ import {
   Skeleton,
 } from "@methanium/ui";
 import { Text } from "@methanium/ui/markdown";
-import type { SelectedUser } from "@tensamin/user/context";
-import Wrapper from "@tensamin/user/wrapper";
+import type { SelectedUser } from "@tensamin/identity/context";
+import Wrapper from "@tensamin/identity/wrapper";
 import { Forward, X } from "lucide-react";
 
 type ReplyUserData = SelectedUser<readonly ["Avatar", "Display"]>;

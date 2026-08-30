@@ -26,7 +26,7 @@ import ChatContext from "@tensamin/chat/context";
 import { useCall, useInitializeCall } from "@tensamin/call/store";
 import { useIsSpeaking } from "@tensamin/call/speakingState";
 import { Provider as MTPProvider } from "@tensamin/mtp";
-import UserProvider from "@tensamin/user/context";
+import UserProvider from "@tensamin/identity/context";
 import DeeplinkContext, { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import NotificationsProvider from "@tensamin/notifications/context";
 import PwaRuntime from "@tensamin/pwa/runtime";

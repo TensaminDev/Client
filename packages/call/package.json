@@ -24,7 +24,7 @@
     "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/user": "workspace:*",
+    "@tensamin/identity": "workspace:*",
     "deepfilternet3-noise-filter": "1.3.0",
     "livekit-client": "^2.21.0",
     "lucide-react": "^1.29.0",

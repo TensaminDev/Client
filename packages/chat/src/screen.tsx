@@ -19,7 +19,7 @@ import {
   type LiveMessage,
   type RawMessage,
 } from "./values";
-import Wrapper from "@tensamin/user/wrapper";
+import Wrapper from "@tensamin/identity/wrapper";
 
 function shouldFetchPreviousPage({
   entry,

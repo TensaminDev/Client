@@ -25,6 +25,7 @@ import { getChangedUserFields, selectUserFields } from "./selection";
 export { getChangedUserFields, selectUserFields } from "./selection";
 
 export type User = z.infer<typeof schemas.GetUserData.response>;
+export type Iota = z.infer<typeof schemas.GetIotaData.response>;
 type ClientUserState = z.infer<typeof clientUserStateSchema>;
 export type UserField = keyof User;
 export type UserFields = readonly [UserField, ...UserField[]];
@@ -44,7 +45,7 @@ export function mergeTransientPresence<T extends { UserId: number }>(
   return state === undefined ? user : ({ ...user, OnlineStatus: state } as T);
 }
 
-const USER_CACHE_MAX_AGE = 5 * 60 * 1000;
+const DATA_CACHE_MAX_AGE = 5 * 60 * 1000;
 
 interface contextValue {
   get<const Fields extends UserFields>(
@@ -61,6 +62,7 @@ interface contextValue {
     listener: () => void,
   ): () => void;
   getVersion(userId: number, fields: readonly UserField[]): string;
+  getIota(userId: number): Promise<Iota>;
   updateProfile(userId: number, patch: UserProfilePatch): Promise<void>;
   updateState(userId: number, state: ClientUserState): void;
 }
@@ -75,6 +77,9 @@ const UserContext = createContext<contextValue | undefined>(undefined);
 export default function UserProvider(props: { children: ReactNode }) {
   const storageRef = useRef<Record<number, User>>({});
   const pendingRef = useRef<Record<number, Promise<User> | undefined>>({});
+  const iotaStorageRef = useRef<Record<number, Iota>>({});
+  const pendingIotaRef = useRef<Record<number, Promise<Iota> | undefined>>({});
+  const iotaCheckedAtRef = useRef<Record<number, number>>({});
   const profileUpdateQueuesRef = useRef(new Map<number, Promise<void>>());
   const profileGenerationsRef = useRef(new Map<number, number>());
   const checkedAtRef = useRef<Record<number, number>>({});
@@ -230,7 +235,7 @@ export default function UserProvider(props: { children: ReactNode }) {
         if (cached) {
           installProfile(cached);
           const checkedAt = checkedAtRef.current[userId];
-          if (!checkedAt || Date.now() - checkedAt < USER_CACHE_MAX_AGE) {
+          if (!checkedAt || Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
             checkedAtRef.current[userId] = Date.now();
             return storageRef.current[userId];
           }
@@ -287,6 +292,52 @@ export default function UserProvider(props: { children: ReactNode }) {
       return selectUserFields(await loadUser(userId), fields);
     },
     [loadUser],
+  );
+
+  const getIota = useCallback(
+    async (userId: number): Promise<Iota> => {
+      if (userId == null) {
+        throw new Error("userId is required");
+      }
+
+      const pendingIota = pendingIotaRef.current[userId];
+      if (pendingIota !== undefined) {
+        return pendingIota;
+      }
+
+      const cached = iotaStorageRef.current[userId];
+      const checkedAt = iotaCheckedAtRef.current[userId];
+      if (cached && checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
+        return cached;
+      }
+
+      const request = (async () => {
+        try {
+          const response = await send("GetIotaData", { UserId: userId });
+          if (response.type !== "GetIotaData") {
+            throw new Error(`GetIotaData failed: ${response.type}`);
+          }
+          const iota = schemas.GetIotaData.response.parse(response.data);
+          iotaStorageRef.current[userId] = iota;
+          iotaCheckedAtRef.current[userId] = Date.now();
+          return iota;
+        } catch (error) {
+          if (cached) {
+            iotaCheckedAtRef.current[userId] = Date.now();
+            return cached;
+          }
+          throw error;
+        }
+      })();
+
+      pendingIotaRef.current[userId] = request;
+      try {
+        return await request;
+      } finally {
+        delete pendingIotaRef.current[userId];
+      }
+    },
+    [send],
   );
 
   const peek = useCallback(
@@ -387,13 +438,14 @@ export default function UserProvider(props: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       get,
+      getIota,
       peek,
       subscribe,
       getVersion,
       updateProfile,
       updateState,
     }),
-    [get, getVersion, peek, subscribe, updateProfile, updateState],
+    [get, getIota, getVersion, peek, subscribe, updateProfile, updateState],
   );
 
   return (

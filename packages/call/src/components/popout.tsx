@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from "@methanium/ui";
 import { ScreenShareOff } from "lucide-react";
-import { useUserFields } from "@tensamin/user/context";
+import { useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking, useLastSpeakingParticipantId } from "../speakingState";
 import { getAverageImageColor } from "./modals/base";
 

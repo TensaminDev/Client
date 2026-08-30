@@ -1,5 +1,5 @@
 import { useCall } from "../store";
-import { useUserFields } from "@tensamin/user/context";
+import { useUserFields } from "@tensamin/identity/context";
 
 const USER_FIELDS = ["Display"] as const;
 

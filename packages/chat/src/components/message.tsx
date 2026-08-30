@@ -1,7 +1,7 @@
 import type { RawMessage } from "../values";
 import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { type SelectedUser, useUserFields } from "@tensamin/user/context";
+import { type SelectedUser, useUserFields } from "@tensamin/identity/context";
 
 import {
   Avatar,

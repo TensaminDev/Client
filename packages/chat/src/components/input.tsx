@@ -27,6 +27,7 @@ import GifPicker from "./media/gifPicker";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { editLastMessageHotkey } from "../hotkeys";
+import { useUser } from "@tensamin/identity/context";
 
 export default function InputComponent({
   value,
@@ -39,7 +40,8 @@ export default function InputComponent({
 }) {
   const [invertEnterBehavior, setInvertEnterBehavior] = useState(false);
 
-  const { send, sendSealedRelay } = useMTP();
+  const { sendSealedRelay } = useMTP();
+  const { getIota } = useUser();
   const {
     addLiveMessage,
     chatSecret,
@@ -176,12 +178,9 @@ export default function InputComponent({
 
     try {
       const [ownIota, peerIota] = await Promise.all([
-        send("GetIotaData", { UserId: ownId }),
-        send("GetIotaData", { UserId: userId }),
+        getIota(ownId),
+        getIota(userId),
       ]);
-      if (ownIota.type !== "GetIotaData" || peerIota.type !== "GetIotaData") {
-        throw new Error("Could not resolve an Iota for this message");
-      }
       const response = await sendSealedRelay(
         "MessageSend",
         {
@@ -191,15 +190,15 @@ export default function InputComponent({
           ...(replyTo && { ReplyId: replyTo }),
         },
         {
-          nextHop: { kind: "iota", id: ownIota.data.IotaId },
+          nextHop: { kind: "iota", id: ownIota.IotaId },
           finalRecipientId: userId,
           metadataRecipients: [
-            { value: ownIota.data.PublicKey, encoding: "base64" },
-            { value: peerIota.data.PublicKey, encoding: "base64" },
+            { value: ownIota.PublicKey, encoding: "base64" },
+            { value: peerIota.PublicKey, encoding: "base64" },
           ],
           contentRecipients: [
-            { value: ownIota.data.PublicKey, encoding: "base64" },
-            { value: peerIota.data.PublicKey, encoding: "base64" },
+            { value: ownIota.PublicKey, encoding: "base64" },
+            { value: peerIota.PublicKey, encoding: "base64" },
           ],
         },
       );

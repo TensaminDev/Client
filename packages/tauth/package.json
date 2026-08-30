@@ -19,7 +19,7 @@
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "@tensamin/tauri": "workspace:*",
-    "@tensamin/user": "workspace:*",
+    "@tensamin/identity": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }

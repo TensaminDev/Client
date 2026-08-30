@@ -20,6 +20,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { useSession } from "@tensamin/storage/session";
 import { useStorage } from "@tensamin/storage/context";
 import { ShieldAlert } from "lucide-react";
+import { useUser } from "@tensamin/identity/context";
 
 // The page
 export default function Page() {
@@ -56,6 +57,7 @@ function AddConversationButton() {
   const { send, sendSealedRelay } = useMTP();
   const { contacts, insertContact } = useSession();
   const { load } = useStorage();
+  const { getIota } = useUser();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,23 +112,15 @@ function AddConversationButton() {
 
     try {
       const userId = await load("user_id");
-      const iota = await send("GetIotaData", { UserId: userId });
-      if (iota.type !== "GetIotaData") {
-        setError(`Iota lookup failed: ${iota.type}`);
-        return;
-      }
+      const iota = await getIota(userId);
       const response = await sendSealedRelay(
         "AddConversation",
         { ChatPartnerId: user.data.UserId },
         {
-          nextHop: { kind: "iota", id: iota.data.IotaId },
+          nextHop: { kind: "iota", id: iota.IotaId },
           finalRecipientId: userId,
-          metadataRecipients: [
-            { value: iota.data.PublicKey, encoding: "base64" },
-          ],
-          contentRecipients: [
-            { value: iota.data.PublicKey, encoding: "base64" },
-          ],
+          metadataRecipients: [{ value: iota.PublicKey, encoding: "base64" }],
+          contentRecipients: [{ value: iota.PublicKey, encoding: "base64" }],
         },
       );
       requireRelaySuccess(response);
