@@ -29,7 +29,7 @@ async function requestNotificationPermission() {
 }
 
 export default function Provider(props: { children: React.ReactNode }) {
-  const { subscribe, send } = useMTP();
+  const { subscribe } = useMTP();
   const { load } = useStorage();
   const { get } = useUser();
   const { addLiveMessage, chatSecret, getChatSecret, userId } = useChat();
@@ -79,11 +79,6 @@ export default function Provider(props: { children: React.ReactNode }) {
             // todo: add notification symbol to conversation cards (incl. message start)
             moveUserIdToTop(data.SenderId);
 
-            if (await load("settings.receive_confirmations")) {
-              void send("MessageState", {
-                MessageState: "received",
-              });
-            }
           }
 
           const user = await get(data.SenderId, [
@@ -180,7 +175,6 @@ export default function Provider(props: { children: React.ReactNode }) {
     load,
     location.pathname,
     navigate,
-    send,
     moveUserIdToTop,
     subscribe,
     getChatSecret,

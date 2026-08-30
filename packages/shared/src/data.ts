@@ -70,6 +70,7 @@ const callSecretEnvelopeRequest = z.object({
 export const Reaction = z.object({
   Reaction: z.string(),
   SenderId: z.number(),
+  RelayMessageId: z.string().optional(),
 });
 
 export const Message = z.object({
@@ -82,6 +83,8 @@ export const Message = z.object({
   Avatar: z.boolean().optional(),
   Display: z.boolean().optional(),
   ReplyId: z.number().optional(),
+  UpdatedAt: z.number().optional(),
+  ErrorType: z.string().optional(),
   MessageState: z
     .enum(["read", "received", "sent", "sending", "awaiting"]) // awaiting for 'internal' use
     .default("received"),
@@ -107,6 +110,7 @@ const authPayload = z.object({
     .array(
       z.object({
         LastMessageAt: z.number().default(0),
+        CreatedAt: z.number().optional(),
         UserId: z.number(),
         LastMessage: z
           .object({
@@ -397,17 +401,12 @@ export const mtp = {
     response: z.object({}),
   },
   MessageState: {
-    request: z
-      .object({
-        ChatPartnerId: z.number(),
-        SendTime: z.number(),
-        MessageState: Message.shape.MessageState,
-      })
-      .or(
-        z.object({
-          MessageState: Message.shape.MessageState,
-        }),
-      ),
+    request: z.object({
+      ChatPartnerId: z.number(),
+      RelayMessageId: z.string(),
+      EventAt: z.number(),
+      MessageState: z.enum(["received", "read"]),
+    }),
     response: z.object({
       ChatPartnerId: z.number(),
       MessageState: Message.shape.MessageState,

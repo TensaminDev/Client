@@ -69,6 +69,14 @@ type MessageEdit = Partial<
   >
 >;
 
+const messageStateRank: Record<RawMessage["MessageState"], number> = {
+  awaiting: 0,
+  sending: 0,
+  sent: 1,
+  received: 2,
+  read: 3,
+};
+
 function updateMessagesBySendTime<T extends EditableMessage>(
   messages: T[],
   sendTime: number,
@@ -78,6 +86,13 @@ function updateMessagesBySendTime<T extends EditableMessage>(
 
   const next = messages.map((item) => {
     if (item.SendTime !== sendTime) {
+      return item;
+    }
+
+    if (
+      edit.MessageState !== undefined &&
+      messageStateRank[edit.MessageState] < messageStateRank[item.MessageState]
+    ) {
       return item;
     }
 
@@ -989,9 +1004,7 @@ export default function Provider({ children }: { children: ReactNode }) {
         );
         return;
       }
-      editMessage(data.SendTime, {
-        MessageState: data.MessageState,
-      });
+      editMessage(data.SendTime, { MessageState: data.MessageState });
     });
     return () => {
       unsubscribeEdit();
