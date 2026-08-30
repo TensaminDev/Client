@@ -1,5 +1,8 @@
 import { createContext, useCallback, useRef } from "react";
 import type {
+  MTPDataValueInput,
+  MTPEncodedBytesInput,
+  MTPFrame,
   MTPRequestFunction,
   MTPResponseFrame,
   MTPSubscriptionFunction,
@@ -19,6 +22,56 @@ export type ProtocolMessage<
 
 export type BoundSendFn = MTPRequestFunction<typeof mtpSchemas>;
 
+export type RelayTarget =
+  | { kind: "user"; id: number }
+  | { kind: "iota"; id: number };
+
+export type SealedRelayOptions = {
+  nextHop: RelayTarget;
+  finalRecipientId: number;
+  metadataRecipients: MTPEncodedBytesInput[];
+  contentRecipients: MTPEncodedBytesInput[];
+};
+
+export type SealedRelayResult = {
+  type: string;
+  data: Record<string, unknown>;
+};
+
+export function sealedRelayResultFromFrame(frame: MTPFrame): SealedRelayResult {
+  return {
+    type: frame.type,
+    data:
+      typeof frame.data === "object" &&
+      frame.data !== null &&
+      !Array.isArray(frame.data)
+        ? (frame.data as Record<string, unknown>)
+        : {},
+  };
+}
+
+export class RelayRejectedError extends Error {
+  public readonly responseType: string;
+
+  constructor(responseType: string) {
+    super(`Relay rejected with ${responseType}`);
+    this.responseType = responseType;
+    this.name = "RelayRejectedError";
+  }
+}
+
+export function requireRelaySuccess(response: SealedRelayResult): void {
+  if (response.type !== "Success") {
+    throw new RelayRejectedError(response.type);
+  }
+}
+
+export type SealedRelaySend = (
+  type: string,
+  data: MTPDataValueInput,
+  options: SealedRelayOptions,
+) => Promise<SealedRelayResult>;
+
 export type MTPExchange = {
   type: keyof typeof mtpSchemas & string;
   data: unknown;
@@ -29,6 +82,7 @@ export type MTPInterceptor = (exchange: MTPExchange) => void | Promise<void>;
 
 export type MTPContextType = {
   send: BoundSendFn;
+  sendSealedRelay: SealedRelaySend;
   subscribe: MTPSubscriptionFunction<typeof mtpSchemas>;
   addInterceptor: (interceptor: MTPInterceptor) => () => void;
   readyState: number;

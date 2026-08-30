@@ -26,6 +26,8 @@ import {
   MTPContext,
   type ProtocolMessage,
   removeMissingContacts,
+  type SealedRelayResult,
+  type SealedRelaySend,
   useMessageHandlers,
 } from "./mtpContext";
 
@@ -233,12 +235,26 @@ export function TauriProvider(props: {
     },
     [connection, interceptorsRef],
   );
+  const sendSealedRelay = useCallback<SealedRelaySend>(
+    async (type, data, options) => {
+      return invoke<SealedRelayResult>("mtp_send_sealed_relay", {
+        typeName: type,
+        data,
+        nextHop: options.nextHop,
+        finalRecipientId: options.finalRecipientId,
+        metadataRecipients: options.metadataRecipients,
+        contentRecipients: options.contentRecipients,
+      });
+    },
+    [],
+  );
   const connected = snapshot.readyState === ConnectionState.Connected;
 
   return (
     <MTPContext.Provider
       value={{
         send,
+        sendSealedRelay,
         subscribe,
         addInterceptor,
         readyState: snapshot.readyState,

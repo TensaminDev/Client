@@ -148,7 +148,7 @@ const userFields = {
   About: z.string().max(255).optional(),
   Avatar: z.string().optional(),
   Display: z.string().min(1).max(15),
-  IotaId: z.number(),
+  IotaId: z.number().optional(),
   OmikronConnections: z.array(z.number()),
   OmikronId: z.number().optional(),
   PublicKey: z.base64(),
@@ -239,6 +239,27 @@ export const mtp = {
       Username: z.string().optional(),
     }),
     response: userSchema,
+  },
+  GetIotaData: {
+    request: z
+      .object({
+        IotaId: z.number().int().positive().optional(),
+        UserId: z.number().int().positive().optional(),
+        Username: z.string().min(1).max(15).optional(),
+      })
+      .refine(
+        ({ IotaId, UserId, Username }) =>
+          [IotaId, UserId, Username].filter((value) => value !== undefined)
+            .length === 1,
+        "GetIotaData requires exactly one selector",
+      ),
+    response: z.object({
+      IotaId: z.number().int().positive(),
+      PublicKey: z.base64(),
+      OmikronConnections: z.array(z.number().int().positive()).optional(),
+      UserId: z.number().int().positive().optional(),
+      Username: z.string().optional(),
+    }),
   },
   GetStates: {
     request: z.object({

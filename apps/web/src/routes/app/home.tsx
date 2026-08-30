@@ -11,7 +11,9 @@ import {
   useIsMobile,
 } from "@methanium/ui";
 import z from "zod";
-import { useMTP } from "@tensamin/mtp";
+import { MTPProtocolError } from "mtp";
+import { RelayRejectedError, requireRelaySuccess, useMTP } from "@tensamin/mtp";
+import { log } from "@tensamin/shared/log";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
@@ -51,8 +53,9 @@ export default function Page() {
 
 // Add Conversation Button Component
 function AddConversationButton() {
-  const { send } = useMTP();
+  const { send, sendSealedRelay } = useMTP();
   const { contacts, insertContact } = useSession();
+  const { load } = useStorage();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +67,7 @@ function AddConversationButton() {
     // username check
     const schema = z
       .string()
-      .min(1, "Username is too short")
+      .regex(/^[a-z0-9]+$/, "Username must use lowercase letters and numbers")
       .max(15, "Username is too long");
 
     const result = schema.safeParse(username?.toLowerCase().trim());
@@ -74,22 +77,27 @@ function AddConversationButton() {
       return;
     }
 
-    // user existence check
-    const user = await send("GetUserData", {
-      Username: result.data,
-    })
-      .then((data) => {
-        if (data.type === "ErrorNotFound" || data.data.UserId === 0) {
-          throw new Error();
-        }
-
-        return data;
-      })
-      .catch(() => {
+    let user;
+    try {
+      user = await send("GetUserData", { Username: result.data });
+    } catch (error) {
+      if (error instanceof MTPProtocolError && error.type === "ErrorNotFound") {
         setError("User not found");
-        return;
-      });
-    if (!user) return;
+      } else if (error instanceof MTPProtocolError) {
+        setError(`User lookup failed: ${error.type}`);
+      } else {
+        setError("User lookup failed: connection error");
+      }
+      return;
+    }
+    if (user.type === "ErrorNotFound") {
+      setError("User not found");
+      return;
+    }
+    if (user.type !== "GetUserData") {
+      setError(`User lookup failed: ${user.type}`);
+      return;
+    }
 
     // alrady added check
     if (contacts.some((contact) => contact.UserId === user.data.UserId)) {
@@ -100,25 +108,44 @@ function AddConversationButton() {
     // add the conv
     const timeout = setTimeout(() => setLoading(true), 500);
 
-    send("AddConversation", {
-      ChatPartnerId: user.data.UserId,
-    })
-      .then(() => {
-        insertContact(user.data.UserId);
-        setOpen(false);
-      })
-      .catch((error) => {
-        if (String(error).includes("error_not_found")) {
-          setError("User not found");
-          return;
-        }
-
-        setError(String(error));
-      })
-      .finally(() => {
-        clearTimeout(timeout);
-        setLoading(false);
-      });
+    try {
+      const userId = await load("user_id");
+      const iota = await send("GetIotaData", { UserId: userId });
+      if (iota.type !== "GetIotaData") {
+        setError(`Iota lookup failed: ${iota.type}`);
+        return;
+      }
+      const response = await sendSealedRelay(
+        "AddConversation",
+        { ChatPartnerId: user.data.UserId },
+        {
+          nextHop: { kind: "iota", id: iota.data.IotaId },
+          finalRecipientId: userId,
+          metadataRecipients: [
+            { value: iota.data.PublicKey, encoding: "base64" },
+          ],
+          contentRecipients: [
+            { value: iota.data.PublicKey, encoding: "base64" },
+          ],
+        },
+      );
+      requireRelaySuccess(response);
+      insertContact(user.data.UserId);
+      setOpen(false);
+    } catch (error) {
+      if (error instanceof RelayRejectedError) {
+        setError(
+          `Could not route the request to your Iota: ${error.responseType}`,
+        );
+      } else {
+        log(1, "mtp", "red", "Add conversation failed", error);
+        const detail = error instanceof Error ? error.message : "unknown error";
+        setError(`Add conversation failed: ${detail}`);
+      }
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
+    }
   }
 
   return (

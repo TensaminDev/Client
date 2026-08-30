@@ -15,7 +15,7 @@ import { Button } from "@methanium/ui";
 
 import { Plus, Laugh, FileVideo, SendHorizonal } from "lucide-react";
 import { useChat, useReplyMessage } from "../context";
-import { useMTP } from "@tensamin/mtp";
+import { requireRelaySuccess, useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { cn, useIsMobile } from "@methanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
@@ -39,7 +39,7 @@ export default function InputComponent({
 }) {
   const [invertEnterBehavior, setInvertEnterBehavior] = useState(false);
 
-  const { send } = useMTP();
+  const { send, sendSealedRelay } = useMTP();
   const {
     addLiveMessage,
     chatSecret,
@@ -174,19 +174,46 @@ export default function InputComponent({
 
     log(3, "chat", "purple", "Content encrypted, sending message...");
 
-    send("MessageSend", {
-      Content: encryptedContent,
-      ReceiverId: userId,
-      SendTime: time,
-      ...(replyTo && { ReplyId: replyTo }),
-    }).catch((e) => {
+    try {
+      const [ownIota, peerIota] = await Promise.all([
+        send("GetIotaData", { UserId: ownId }),
+        send("GetIotaData", { UserId: userId }),
+      ]);
+      if (ownIota.type !== "GetIotaData" || peerIota.type !== "GetIotaData") {
+        throw new Error("Could not resolve an Iota for this message");
+      }
+      const response = await sendSealedRelay(
+        "MessageSend",
+        {
+          Content: encryptedContent,
+          ReceiverId: userId,
+          SendTime: time,
+          ...(replyTo && { ReplyId: replyTo }),
+        },
+        {
+          nextHop: { kind: "iota", id: ownIota.data.IotaId },
+          finalRecipientId: userId,
+          metadataRecipients: [
+            { value: ownIota.data.PublicKey, encoding: "base64" },
+            { value: peerIota.data.PublicKey, encoding: "base64" },
+          ],
+          contentRecipients: [
+            { value: ownIota.data.PublicKey, encoding: "base64" },
+            { value: peerIota.data.PublicKey, encoding: "base64" },
+          ],
+        },
+      );
+      requireRelaySuccess(response);
+      reference.setMessageState("sent");
+    } catch (e) {
       log(0, "Chat", "red", "Failed to send message", e, {
         ReceiverId: userId,
         SendTime: time,
       });
       reference.setFailed(true);
       toast("error", "Failed to send message");
-    });
+      return;
+    }
 
     if (replyTo) {
       setReplyTo(undefined);

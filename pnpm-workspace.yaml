@@ -7,4 +7,4 @@ allowBuilds:
   esbuild: true
 overrides:
   "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.29/methanium-ui.tgz"
-  mtp: "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-c7c7afe/mtp-0.3.0.tgz"
+  mtp: "link:../../../mtp"

@@ -9,9 +9,12 @@ use base64::{
     Engine as _,
 };
 use mtp::client::{ClientConfig, MTPClient, MTPConnection, Policy, SendMode};
-use mtp::codec::{CommunicationType, CommunicationValue, DataType, DataValue, TypeMap};
+use mtp::codec::{
+    CommunicationType, CommunicationValue, DataType, DataValue, SealedRelayBuilder, TypeMap,
+};
 use mtp::crypto::{
-    derive_encryption_key, AeadDecrypt, ChaCha20Poly1305, HybridKem, Keyring, PublicKeyBundle,
+    derive_encryption_key, AeadDecrypt, ChaCha20Poly1305, DualSigner, HybridKem, Keyring,
+    PublicKeyBundle,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -28,6 +31,9 @@ const CHAT_SECRET_SCHEME: &str = "mtp-chat-secret-kem-chacha20poly1305-hkdf-sha2
 const INITIAL_SYNC_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_BUFFERED_INITIAL_FRAMES: usize = 1_000;
 const NOTIFICATION_QUEUE_CAPACITY: usize = 32;
+const ROUTE_TARGET_ID_MASK: u64 = (1_u64 << 48) - 1;
+const USER_ROUTE_TARGET_KIND: u64 = 0x4000_0000_0000_0000;
+const IOTA_ROUTE_TARGET_KIND: u64 = 0x8000_0000_0000_0000;
 #[cfg(target_os = "android")]
 const ROOT_YE_PEM: &[u8] = b"-----BEGIN CERTIFICATE-----\n\
 MIIB2TCCAWCgAwIBAgIRAKQCa6LvbHwg1AR+XmWmk4AwCgYIKoZIzj0EAwMwLjEL\n\
@@ -77,6 +83,44 @@ pub struct MtpSnapshot {
     pub identified: bool,
     pub state: Option<Value>,
     pub error: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EncodedKeyMaterial {
+    value: String,
+    encoding: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+enum RelayTargetDto {
+    User { id: u64 },
+    Iota { id: u64 },
+}
+
+impl RelayTargetDto {
+    fn wire_id(self) -> Result<u64, String> {
+        let (kind, id) = match self {
+            Self::User { id } => (USER_ROUTE_TARGET_KIND, id),
+            Self::Iota { id } => (IOTA_ROUTE_TARGET_KIND, id),
+        };
+        if id == 0 || id > ROUTE_TARGET_ID_MASK {
+            return Err("relay target ID must be a non-zero 48-bit integer".into());
+        }
+        Ok(kind | id)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SealedRelayRequest {
+    type_name: String,
+    data: Value,
+    next_hop: RelayTargetDto,
+    final_recipient_id: u64,
+    metadata_recipients: Vec<EncodedKeyMaterial>,
+    content_recipients: Vec<EncodedKeyMaterial>,
 }
 
 #[derive(Clone, Serialize)]
@@ -695,6 +739,88 @@ async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String
     ))
 }
 
+fn decode_key_material(value: EncodedKeyMaterial) -> Result<PublicKeyBundle, String> {
+    let bytes = match value.encoding.as_str() {
+        "base64" => decode_browser_base64(&value.value)?,
+        "hex" => decode_sdk_bytes(&value.value)?,
+        encoding => return Err(format!("unsupported key material encoding: {encoding}")),
+    };
+    let key = PublicKeyBundle::from_bytes(&bytes)
+        .map_err(|error| format!("invalid relay recipient public key: {error}"))?;
+    key.validate()
+        .map_err(|error| format!("invalid relay recipient public key: {error}"))?;
+    Ok(key)
+}
+
+async fn send_sealed_relay(request: SealedRelayRequest) -> Result<Value, String> {
+    if request.metadata_recipients.is_empty() || request.content_recipients.is_empty() {
+        return Err("sealed relay requires metadata and content recipients".into());
+    }
+    if request.final_recipient_id == 0 {
+        return Err("sealed relay final recipient ID must be non-zero".into());
+    }
+    let manager = manager();
+    let connection = manager
+        .connection
+        .read()
+        .map_err(|_| "MTP connection lock is unavailable")?
+        .clone()
+        .ok_or_else(|| "MTP is not connected".to_string())?;
+    let config = manager
+        .config
+        .read()
+        .map_err(|_| "MTP configuration lock is unavailable")?
+        .clone()
+        .ok_or_else(|| "MTP credentials are unavailable".to_string())?;
+    let keyring_bytes = decode_browser_base64(&config.keyring)?;
+    let keyring = Keyring::from_bytes(&keyring_bytes)
+        .map_err(|error| format!("invalid MTP keyring: {error}"))?;
+    let signer = DualSigner::new(
+        &keyring.sig_cl_secret_key,
+        &keyring.sig_pq_secret_key,
+        &keyring.sig_pq_public_key,
+    )
+    .map_err(|error| format!("invalid MTP signing key: {error}"))?;
+    let next_hop_id = request.next_hop.wire_id()?;
+    let type_map = TypeMap::latest();
+    let content = json_to_frame(&request.type_name, request.data, 1)?.into_payload();
+    let metadata_recipients = request
+        .metadata_recipients
+        .into_iter()
+        .map(decode_key_material)
+        .collect::<Result<Vec<_>, _>>()?;
+    let content_recipients = request
+        .content_recipients
+        .into_iter()
+        .map(decode_key_material)
+        .collect::<Result<Vec<_>, _>>()?;
+    let created_at = mtp::common::unix_time_millis()
+        .map_err(|error| format!("failed to get relay timestamp: {error}"))?;
+    let request_id = connection.next_request_id().await?;
+    let message_id = format!("tensamin-relay-{created_at}-{request_id}");
+    let frame = SealedRelayBuilder::new(
+        request.type_name,
+        content,
+        config.user_id,
+        request.final_recipient_id,
+        next_hop_id,
+        &signer,
+    )
+    .message_id(message_id)
+    .created_at(created_at)
+    .metadata_recipients(metadata_recipients)
+    .content_recipients(content_recipients)
+    .type_map(&type_map)
+    .build()
+    .map_err(|error| format!("failed to build sealed relay: {error}"))?;
+    let response = connection
+        .mtp
+        .request(&frame, None)
+        .await
+        .map_err(|error| format!("sealed relay request failed: {error}"))?;
+    frame_to_json(&response)
+}
+
 async fn handle_push(
     generation: u64,
     notification_tx: &mpsc::Sender<CommunicationValue>,
@@ -1047,7 +1173,8 @@ mod tests {
 
     use super::{
         container_value_by_name, decode_browser_base64, decode_sdk_bytes, frame_to_json,
-        jittered_retry_delay, json_to_frame, prepare_initial_state_ack, RequestIdAllocator,
+        jittered_retry_delay, json_to_frame, prepare_initial_state_ack, RelayTargetDto,
+        RequestIdAllocator,
     };
 
     #[test]
@@ -1068,6 +1195,20 @@ mod tests {
 
         assert_eq!(ids.next().unwrap(), 1);
         assert_eq!(ids.next().unwrap(), 2);
+    }
+
+    #[test]
+    fn iota_relay_target_encodes_its_namespace() {
+        assert_eq!(
+            RelayTargetDto::Iota { id: 42 }.wire_id().unwrap(),
+            0x8000_0000_0000_002a
+        );
+    }
+
+    #[test]
+    fn relay_target_rejects_raw_or_out_of_range_ids() {
+        assert!(RelayTargetDto::Iota { id: 0 }.wire_id().is_err());
+        assert!(RelayTargetDto::User { id: 1_u64 << 48 }.wire_id().is_err());
     }
 
     #[test]
@@ -1192,6 +1333,11 @@ mod tests {
 #[tauri::command]
 pub async fn mtp_request(type_name: String, data: Value) -> Result<Value, String> {
     manager().request(&type_name, data).await
+}
+
+#[tauri::command]
+pub async fn mtp_send_sealed_relay(request: SealedRelayRequest) -> Result<Value, String> {
+    send_sealed_relay(request).await
 }
 
 #[tauri::command]

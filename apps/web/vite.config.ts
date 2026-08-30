@@ -129,7 +129,10 @@ export default defineConfig({
     ...tensaminPwa(),
     methaniumUi({ defaultThemeId: "tensamin" }),
     deepFilterAssetHeaders(resolve(appDir, "public")),
-    mtp({ typeMaps: resolve(appDir, "../../mtp-type-maps/type-maps.yaml") }),
+    mtp({
+      typeMaps: resolve(appDir, "../../mtp-type-maps/type-maps.yaml"),
+      outDir: ".mtp",
+    }),
     {
       name: "workspace-realpath-resolution",
       enforce: "post",

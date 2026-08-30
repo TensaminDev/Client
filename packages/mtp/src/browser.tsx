@@ -1,6 +1,11 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { toast as sonnerToast } from "@methanium/ui";
-import { base64ToBytes, ConnectionState, MTPClient } from "mtp";
+import {
+  base64ToBytes,
+  ConnectionState,
+  MTPClient,
+  MTPProtocolError,
+} from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import {
   mtp as mtpSchemas,
@@ -17,6 +22,8 @@ import {
   type MTPContextType,
   type ProtocolMessage,
   removeMissingContacts,
+  sealedRelayResultFromFrame,
+  type SealedRelaySend,
   useMessageHandlers,
 } from "./mtpContext";
 import {
@@ -201,6 +208,23 @@ export function BrowserProvider(props: {
     },
     [],
   );
+  const sendSealedRelay: SealedRelaySend = useMemo(
+    () => async (type, data, options) => {
+      const client = clientRef.current;
+      if (!client) throw new Error("mtp is not connected");
+      try {
+        return sealedRelayResultFromFrame(
+          await client.requestSealedRelay(type, data, options),
+        );
+      } catch (error) {
+        if (error instanceof MTPProtocolError) {
+          return sealedRelayResultFromFrame(error.frame);
+        }
+        throw error;
+      }
+    },
+    [],
+  );
 
   const resolveConnectionRef = useRef(() => {});
   useEffect(() => {
@@ -338,6 +362,7 @@ export function BrowserProvider(props: {
           hostPublicKey: { value: omikronPublicKey, encoding: "base64" },
           descriptor: "client",
           pings: true,
+          securityProfile: { protectedSignatureSuite: "dual" },
           logger: (event) => {
             if (event.type === "state") {
               if (generation !== connectionGeneration) return;
@@ -512,6 +537,7 @@ export function BrowserProvider(props: {
     <MTPContext.Provider
       value={{
         send: sendQueued,
+        sendSealedRelay,
         subscribe,
         addInterceptor,
         readyState,
