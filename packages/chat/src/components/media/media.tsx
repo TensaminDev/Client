@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, type WheelEvent } from "react";
 import MediaSaveButton from "./mediaSaveButton";
-import { useUserFields } from "@tensamin/user/context";
+import { useUserFields } from "@tensamin/identity/context";
 
 const zoomLevels = [1, 1.5, 2, 3];
 

@@ -15,7 +15,7 @@ import {
   useUser,
   useUserFields,
   type SelectedUser,
-} from "@tensamin/user/context";
+} from "@tensamin/identity/context";
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

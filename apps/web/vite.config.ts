@@ -65,7 +65,7 @@ export default defineConfig({
       "@tensamin/settings",
       "@tensamin/storage",
       "@tensamin/mtp",
-      "@tensamin/user",
+      "@tensamin/identity",
       "@tensamin/tauri",
       "@tensamin/chat",
     ],
@@ -118,7 +118,7 @@ export default defineConfig({
       "@tensamin/storage/context",
       "@tensamin/tauri",
       "@tensamin/tauth",
-      "@tensamin/user",
+      "@tensamin/identity",
     ],
   },
   build: {

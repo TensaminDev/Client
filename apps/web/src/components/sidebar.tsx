@@ -1,4 +1,4 @@
-import Wrapper from "@tensamin/user/wrapper";
+import Wrapper from "@tensamin/identity/wrapper";
 import { Basic, Loading } from "./modals/basic";
 import List from "@/features/conversation/list/body";
 
@@ -34,7 +34,7 @@ import SidebarBox from "@tensamin/call/sidebarBox";
 import { useShowMobileNavbar } from "@/routes/app/useShowMobileNavbar";
 import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
-import { useUser, type User } from "@tensamin/user/context";
+import { useUser, type User } from "@tensamin/identity/context";
 import { mtp, userPresencePreferenceSchema } from "@tensamin/shared/data";
 import { useMTP } from "@tensamin/mtp";
 import {

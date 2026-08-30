@@ -4,7 +4,6 @@ import {
   base64ToBytes,
   ConnectionState,
   MTPClient,
-  MTPProtocolError,
 } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import {
@@ -22,7 +21,6 @@ import {
   type MTPContextType,
   type ProtocolMessage,
   removeMissingContacts,
-  sealedRelayResultFromFrame,
   type SealedRelaySend,
   useMessageHandlers,
 } from "./mtpContext";
@@ -212,16 +210,13 @@ export function BrowserProvider(props: {
     () => async (type, data, options) => {
       const client = clientRef.current;
       if (!client) throw new Error("mtp is not connected");
-      try {
-        return sealedRelayResultFromFrame(
-          await client.requestSealedRelay(type, data, options),
-        );
-      } catch (error) {
-        if (error instanceof MTPProtocolError) {
-          return sealedRelayResultFromFrame(error.frame);
-        }
-        throw error;
-      }
+      await client.sendSealedRelay(type, data, {
+        nextHopId: options.nextHop.id,
+        finalRecipientId: options.finalRecipientId,
+        metadataRecipients: options.metadataRecipients,
+        contentRecipients: options.contentRecipients,
+      });
+      return { type: "Success", data: {} };
     },
     [],
   );

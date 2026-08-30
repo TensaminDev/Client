@@ -26,7 +26,7 @@ import { useStorage } from "@tensamin/storage/context";
 import { requireRelaySuccess, useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { useSession } from "@tensamin/storage/session";
-import { useUser } from "@tensamin/user/context";
+import { useUser } from "@tensamin/identity/context";
 import { createCache, type ChatDraft } from "@tensamin/cache";
 import { secureValueCodec } from "@tensamin/storage/secure";
 
@@ -242,7 +242,7 @@ export async function fetchReplyMessage({
 export default function Provider({ children }: { children: ReactNode }) {
   const { load } = useStorage();
   const { send, sendSealedRelay, subscribe } = useMTP();
-  const { get: getUser } = useUser();
+  const { get: getUser, getIota } = useUser();
   const { moveUserIdToTop } = useSession();
 
   const [error, setError] = useState("");
@@ -484,14 +484,8 @@ export default function Provider({ children }: { children: ReactNode }) {
           version: CHAT_SECRET_VERSION,
         });
 
-        const ownIota = await send("GetIotaData", { UserId: ownUserId });
-        if (ownIota.type !== "GetIotaData") {
-          throw new Error(`Own Iota lookup failed: ${ownIota.type}`);
-        }
-        const peerIota = await send("GetIotaData", { UserId: userIdValue });
-        if (peerIota.type !== "GetIotaData") {
-          throw new Error(`Peer Iota lookup failed: ${peerIota.type}`);
-        }
+        const ownIota = await getIota(ownUserId);
+        const peerIota = await getIota(userIdValue);
         const response = await sendSealedRelay(
           "SetChatSecret",
           {
@@ -514,15 +508,15 @@ export default function Provider({ children }: { children: ReactNode }) {
             ],
           },
           {
-            nextHop: { kind: "iota", id: ownIota.data.IotaId },
+            nextHop: { kind: "iota", id: ownIota.IotaId },
             finalRecipientId: userIdValue,
             metadataRecipients: [
-              { value: ownIota.data.PublicKey, encoding: "base64" },
-              { value: peerIota.data.PublicKey, encoding: "base64" },
+              { value: ownIota.PublicKey, encoding: "base64" },
+              { value: peerIota.PublicKey, encoding: "base64" },
             ],
             contentRecipients: [
-              { value: ownIota.data.PublicKey, encoding: "base64" },
-              { value: peerIota.data.PublicKey, encoding: "base64" },
+              { value: ownIota.PublicKey, encoding: "base64" },
+              { value: peerIota.PublicKey, encoding: "base64" },
             ],
           },
         );
@@ -544,7 +538,7 @@ export default function Provider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [getUser, load, send, sendSealedRelay, userIdValue]);
+  }, [getIota, getUser, load, send, sendSealedRelay, userIdValue]);
 
   const getChatSecret = useCallback(
     async (userId: number): Promise<Uint8Array | null> => {

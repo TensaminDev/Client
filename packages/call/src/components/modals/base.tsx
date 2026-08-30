@@ -16,7 +16,7 @@ import {
 } from "../../store";
 import { Track, type Participant } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
-import { type SelectedUser, useUserFields } from "@tensamin/user/context";
+import { type SelectedUser, useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking } from "../../speakingState";
 import VideoViewer from "../videoViewer";
 import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";

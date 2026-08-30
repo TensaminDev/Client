@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 /**
 import { useEffect, useState, type ReactNode } from "react";
-import { useUser } from "@tensamin/user/context";
+import { useUser } from "@tensamin/identity/context";
 import { useStorage } from "@tensamin/storage/context";
 import {
   Button,

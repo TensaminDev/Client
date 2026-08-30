@@ -1,5 +1,5 @@
 {
-  "name": "@tensamin/user",
+  "name": "@tensamin/identity",
   "private": true,
   "version": "0.0.0",
   "type": "module",

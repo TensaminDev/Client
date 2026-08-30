@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { joinCall, useCall } from "@tensamin/call/store";
-import Wrapper from "@tensamin/user/wrapper";
+import Wrapper from "@tensamin/identity/wrapper";
 import { Skeleton } from "@methanium/ui";
 import {
   Select,

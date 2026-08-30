@@ -27,7 +27,7 @@
     "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
-    "@tensamin/user": "workspace:*",
+    "@tensamin/identity": "workspace:*",
     "lucide-react": "^1.29.0",
     "motion": "^13.0.0",
     "react": "^19.2.8",

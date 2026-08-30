@@ -1,4 +1,4 @@
-import type { User } from "@tensamin/user/context";
+import type { User } from "@tensamin/identity/context";
 import {
   Avatar,
   AvatarImage,

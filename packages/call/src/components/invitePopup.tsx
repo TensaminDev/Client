@@ -6,7 +6,7 @@ import {
   Dialog,
   DialogContent,
 } from "@methanium/ui";
-import Wrapper from "@tensamin/user/wrapper";
+import Wrapper from "@tensamin/identity/wrapper";
 import { PhoneIncoming, X } from "lucide-react";
 
 export default function InvitePopup({
