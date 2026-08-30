@@ -17,8 +17,6 @@
       systems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
       version = "0.0.11";
-      x86_64DebHash = "sha256-iMEgdjY8Ghlx6K/YzKC5JAZbeHNJDIFHm8MKmM4efaI=";
-      forgejoBaseUrl = "https://git.methanium.net/tensamin/client/releases/download/${version}";
     in
     {
       packages = forAllSystems (
@@ -32,8 +30,6 @@
               android_sdk.accept_license = true;
             };
           };
-          debArtifact = "Tensamin-${version}-linux-amd64.deb";
-
           electronRuntimeLibs = with pkgs; [
             alsa-lib
             at-spi2-atk
@@ -75,71 +71,130 @@
             libXtst
             libxcb
           ];
-          packageDeb =
-            src:
-            pkgs.stdenv.mkDerivation {
-              pname = "tensamin";
-              inherit version src;
-
-              nativeBuildInputs = with pkgs; [
-                autoPatchelfHook
-                dpkg
-                makeWrapper
-              ];
-              buildInputs = electronRuntimeLibs;
-
-              dontConfigure = true;
-              dontBuild = true;
-
-              unpackPhase = ''
-                runHook preUnpack
-                dpkg-deb -x "$src" .
-                runHook postUnpack
-              '';
-
-              installPhase = ''
-                runHook preInstall
-
-                mkdir -p "$out"
-                cp -r opt "$out/"
-                cp -r usr/* "$out/"
-
-                mkdir -p "$out/bin"
-                makeWrapper "$out/opt/Tensamin/tensamin" "$out/bin/tensamin" \
-                  --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath electronRuntimeLibs}"
-
-                substituteInPlace "$out/share/applications/Tensamin.desktop" \
-                  --replace-fail "Exec=/opt/Tensamin/tensamin" "Exec=tensamin"
-
-                runHook postInstall
-              '';
+          electron = pkgs.electron;
+          pnpm = pkgs.pnpm;
+          mtpTypeMaps = pkgs.fetchgit {
+            url = "https://git.methanium.net/tensamin/mtp-type-maps";
+            rev = "6e5122fe44f793c0e0d3229b3d34145ce17c2d31";
+            hash = "sha256-/4n8F0YLJaLncefKL907P5l+en1CTjpgdFmLBF3gbiQ=";
+          };
+          mtpSource = pkgs.fetchzip {
+            url = "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-c7c7afe/mtp-0.3.0.tgz";
+            hash = "sha256-XLTa8DxP93Q4hBHRCLUzCPOqkbdb4V3aZxE5Iuq+kW0=";
+          };
+          mtpCargoDeps = pkgs.rustPlatform.fetchCargoVendor {
+            src = mtpSource;
+            hash = "sha256-8MZ65N/EtWPAggal0JkGDx3WSn+LxWQORinkqVbsrys=";
+          };
+          wasmBindgenCliSource = pkgs.fetchCrate {
+            pname = "wasm-bindgen-cli";
+            version = "0.2.127";
+            hash = "sha256-di+qBAdd7pENLiIB9CoZoab+W5xeDoByMREcCGTSzWo=";
+          };
+          wasmBindgenCli = pkgs.buildWasmBindgenCli {
+            src = wasmBindgenCliSource;
+            cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
+              src = wasmBindgenCliSource;
+              hash = "sha256-FTv2GZIAQs0ePdIZXIXil7JbZ6kIT05VG6vqC1qNFxQ=";
             };
-          defaultPackage = packageDeb (
-            pkgs.fetchurl {
-              url = "${forgejoBaseUrl}/${debArtifact}";
-              hash = x86_64DebHash;
-            }
-          );
-          localDebPath = builtins.getEnv "TENSAMIN_DEB";
-          localPathPackage =
-            if localDebPath == "" then
-              pkgs.writeShellScriptBin "tensamin" ''
-                echo "Set TENSAMIN_DEB to a local .deb path and run with --impure." >&2
-                exit 1
-              ''
-            else
-              packageDeb (
-                builtins.path {
-                  path = localDebPath;
-                  name = debArtifact;
-                }
-              );
+          };
+          desktopItem = pkgs.makeDesktopItem {
+            name = "tensamin";
+            desktopName = "Tensamin";
+            exec = "tensamin";
+            icon = "tensamin";
+            startupWMClass = "Tensamin";
+            categories = [ "Network" ];
+          };
+          defaultPackage = pkgs.stdenv.mkDerivation (finalAttrs: {
+            pname = "tensamin";
+            inherit version;
+            src = self;
+
+            pnpmDeps = pkgs.fetchPnpmDeps {
+              inherit (finalAttrs) pname version src;
+              inherit pnpm;
+              fetcherVersion = 4;
+              hash = "sha256-imP3MTr1YLc28Z9n617m0Wt/6vPirFznzoriKzojlEg=";
+            };
+
+            nativeBuildInputs = with pkgs; [
+              copyDesktopItems
+              makeWrapper
+              nodejs_22
+              pnpm
+              pnpmConfigHook
+              cargo
+              lld
+              rustc
+              wasm-pack
+              wasmBindgenCli
+              binaryen
+            ];
+
+            env.ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
+
+            postPatch = ''
+              rm -rf mtp-type-maps
+              ln -s ${mtpTypeMaps} mtp-type-maps
+
+              node -e '
+                const fs = require("fs");
+                const path = "apps/electron/package.json";
+                const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+                pkg.version = "${version}";
+                fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+              '
+            '';
+
+            buildPhase = ''
+              runHook preBuild
+
+              mkdir -p "$HOME/.cargo"
+              substitute ${mtpCargoDeps}/.cargo/config.toml "$HOME/.cargo/config.toml" \
+                --replace-fail @vendor@ ${mtpCargoDeps}
+
+              pnpm run copy-licenses
+              pnpm run build:packages
+              pnpm run build:web
+              pnpm --dir apps/tauri run gen-icons
+              pnpm --dir apps/electron run build
+              pnpm --dir apps/electron exec electron-builder --dir --linux --publish never \
+                --config.electronDist=${electron.dist} \
+                --config.electronVersion=${electron.version}
+
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+
+              mkdir -p "$out/lib/tensamin" "$out/bin"
+              cp -r apps/electron/release/linux-unpacked/. "$out/lib/tensamin/"
+
+              makeWrapper "$out/lib/tensamin/tensamin" "$out/bin/tensamin" \
+                --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath electronRuntimeLibs}"
+
+              install -Dm644 apps/electron/build/icons/icon.png \
+                "$out/share/icons/hicolor/512x512/apps/tensamin.png"
+
+              runHook postInstall
+            '';
+
+            desktopItems = [ desktopItem ];
+
+            meta = {
+              description = "Tensamin desktop client";
+              homepage = "https://git.methanium.net/tensamin/client";
+              mainProgram = "tensamin";
+              platforms = pkgs.lib.platforms.linux;
+            };
+          });
         in
         {
           default = defaultPackage;
           tensamin = defaultPackage;
           electron = defaultPackage;
-          localPathForDev = localPathPackage;
         }
       );
 
