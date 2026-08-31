@@ -13,8 +13,13 @@ import "@methanium/ui/index.css";
 
 import NotFound from "@/routes/404";
 import RouteLoader from "@/components/routeLoader";
+import Home from "@/routes/app/home";
+import AppShell from "@/routes/app/shell";
+import Login from "@/routes/screens/login";
 
 import { createSettingsRoute } from "@tensamin/settings";
+import ChatScreen from "@tensamin/chat/screen";
+import CallScreen from "@tensamin/call/screen";
 
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import PwaRuntime from "@tensamin/pwa/runtime";
@@ -22,14 +27,7 @@ import PwaRuntime from "@tensamin/pwa/runtime";
 import { ErrorScreen, ThemeProvider, useTheme } from "@methanium/ui";
 import z from "zod";
 
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import Storage from "@tensamin/storage/context";
 import { log } from "@tensamin/shared/log";
@@ -38,13 +36,6 @@ import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
 import { HotkeysProvider } from "@tensamin/hotkeys";
-
-const Home = lazy(() => import("@/routes/app/home"));
-const ChatScreen = lazy(() => import("@tensamin/chat/screen"));
-const CallScreen = lazy(() => import("@tensamin/call/screen"));
-const Login = lazy(() => import("@/routes/screens/login"));
-const appShellImport = import("@/routes/app/shell");
-const AppShell = lazy(() => appShellImport);
 
 const wrapper = document.getElementById("root");
 
@@ -260,9 +251,7 @@ function RootShell() {
               <HotkeysProvider>
                 <ThemeStorageBridge />
                 <LoginWrapper>
-                  <Suspense fallback={<RouteLoader />}>
-                    <Outlet />
-                  </Suspense>
+                  <Outlet />
                 </LoginWrapper>
               </HotkeysProvider>
             </Storage>

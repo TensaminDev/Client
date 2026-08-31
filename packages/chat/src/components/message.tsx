@@ -1,7 +1,11 @@
 import type { RawMessage } from "../values";
 import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { type SelectedUser, useUserFields } from "@tensamin/identity/context";
+import {
+  type SelectedUser,
+  useUser,
+  useUserFields,
+} from "@tensamin/identity/context";
 
 import {
   Avatar,
@@ -69,6 +73,7 @@ function MessageComponent({
   // Message states
   const { load } = useStorage();
   const { send, sendSealedRelay } = useMTP();
+  const { getIota } = useUser();
   const [ownId, setOwnId] = useState(0);
   useEffect(() => {
     load("user_id").then(setOwnId);
@@ -76,38 +81,34 @@ function MessageComponent({
   const messageStateReadUpdate = useCallback(async () => {
     const readConfirmations = await load("settings.read_confirmations");
 
-    if (!user?.UserId || !message.RelayMessageId || ownId === 0) return;
+    if (!user?.UserId || ownId === 0) return;
     const [ownIota, peerIota] = await Promise.all([
-      send("GetIotaData", { UserId: ownId }),
-      send("GetIotaData", { UserId: user.UserId }),
+      getIota(ownId),
+      getIota(user.UserId),
     ]);
-    if (ownIota.type !== "GetIotaData" || peerIota.type !== "GetIotaData") {
-      throw new Error("Could not resolve an Iota for this receipt");
-    }
     const response = await sendSealedRelay(
       "MessageState",
       {
         ChatPartnerId: user.UserId,
-        RelayMessageId: message.RelayMessageId,
         EventAt: Date.now(),
         MessageState: readConfirmations ? "read" : "received",
         ReceiverId: user.UserId,
       },
       {
-        nextHop: { kind: "iota", id: ownIota.data.IotaId },
+        nextHop: { kind: "iota", id: ownIota.IotaId },
         finalRecipientId: user.UserId,
         metadataRecipients: [
-          { value: ownIota.data.PublicKey, encoding: "base64" },
-          { value: peerIota.data.PublicKey, encoding: "base64" },
+          { value: ownIota.PublicKey, encoding: "base64" },
+          { value: peerIota.PublicKey, encoding: "base64" },
         ],
         contentRecipients: [
-          { value: ownIota.data.PublicKey, encoding: "base64" },
-          { value: peerIota.data.PublicKey, encoding: "base64" },
+          { value: ownIota.PublicKey, encoding: "base64" },
+          { value: peerIota.PublicKey, encoding: "base64" },
         ],
       },
     );
     requireRelaySuccess(response);
-  }, [load, message.RelayMessageId, ownId, send, sendSealedRelay, user]);
+  }, [getIota, load, ownId, sendSealedRelay, user]);
   useEffect(() => {
     if (message.SenderId === ownId || ownId === 0) return;
 

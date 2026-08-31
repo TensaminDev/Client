@@ -1,7 +1,6 @@
-import { Suspense, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "@tanstack/react-router";
 
-import RouteLoader from "@/components/routeLoader";
 import AppLayout from "./layout";
 import CallInit from "@/components/callRuntimeInit";
 import CacheSync from "@tensamin/cache/sync";
@@ -61,9 +60,7 @@ export default function AppShell() {
                   <AppLayout>
                     <ChatContext>
                       <NotificationsProvider>
-                        <Suspense fallback={<RouteLoader />}>
-                          <Outlet />
-                        </Suspense>
+                        <Outlet />
                       </NotificationsProvider>
                     </ChatContext>
                   </AppLayout>

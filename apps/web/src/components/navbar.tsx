@@ -28,6 +28,7 @@ import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@methanium/ui";
 import { WindowControls as Controls } from "@methanium/ui";
 import { useSession } from "@tensamin/identity/session";
+import { joinCall } from "@tensamin/call/store";
 import Profile from "./modals/profile";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
@@ -139,11 +140,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             {currentCalls.length === 0 ? (
               <Button
                 disabled={callState !== "closed"}
-                onClick={() => {
-                  void import("@tensamin/call/store").then(({ joinCall }) =>
-                    joinCall(id),
-                  );
-                }}
+                onClick={() => void joinCall(id)}
                 className="w-9 h-9! aspect-square rounded-lg"
                 variant="outline"
               >
@@ -153,12 +150,10 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <Button
                 disabled={callState !== "closed"}
                 onClick={() => {
-                  void import("@tensamin/call/store").then(({ joinCall }) =>
-                    joinCall(
-                      id,
-                      currentCalls[0].CallSecret,
-                      currentCalls[0].CallId,
-                    ),
+                  void joinCall(
+                    id,
+                    currentCalls[0].CallSecret,
+                    currentCalls[0].CallId,
                   );
                 }}
                 className="w-9 h-9! aspect-square rounded-lg"
@@ -185,12 +180,9 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                       <SelectItem
                         value={call.CallId}
                         key={call.CallId}
-                        onSelect={() => {
-                          void import("@tensamin/call/store").then(
-                            ({ joinCall }) =>
-                              joinCall(id, call.CallSecret, call.CallId),
-                          );
-                        }}
+                        onSelect={() =>
+                          void joinCall(id, call.CallSecret, call.CallId)
+                        }
                       >
                         {displayCallId(call.CallId)}
                       </SelectItem>

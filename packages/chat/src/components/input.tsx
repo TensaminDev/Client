@@ -10,14 +10,7 @@ import {
   PopoverTrigger,
 } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
-import React, {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useState,
-  useRef,
-} from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Button } from "@methanium/ui";
 
 import { Plus, Laugh, FileVideo, SendHorizonal } from "lucide-react";
@@ -33,9 +26,8 @@ import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { editLastMessageHotkey } from "../hotkeys";
 import { useUser } from "@tensamin/identity/context";
-
-const EmojiPicker = lazy(() => import("./emoji/emojiPicker"));
-const GifPicker = lazy(() => import("./media/gifPicker"));
+import EmojiPicker from "./emoji/emojiPicker";
+import GifPicker from "./media/gifPicker";
 
 export default function InputComponent({
   value,
@@ -359,15 +351,13 @@ export default function InputComponent({
                   )}
                 />
                 <PopoverContent className="w-auto p-0">
-                  <Suspense fallback={null}>
-                    <EmojiPicker
-                      onSelect={(shortcode) => {
-                        setValue(`${value}${shortcode} `);
-                        recordUse(shortcode);
-                        setEmojiPopoverOpen(false);
-                      }}
-                    />
-                  </Suspense>
+                  <EmojiPicker
+                    onSelect={(shortcode) => {
+                      setValue(`${value}${shortcode} `);
+                      recordUse(shortcode);
+                      setEmojiPopoverOpen(false);
+                    }}
+                  />
                 </PopoverContent>
               </Popover>
               {isMobile ? (
@@ -381,14 +371,12 @@ export default function InputComponent({
                   </DrawerTrigger>
                   <DrawerContent className="h-[80dvh]">
                     <div className="min-h-0 flex-1 p-3">
-                      <Suspense fallback={null}>
-                        <GifPicker
-                          onSelect={(url) => {
-                            void handleSubmit(url, true);
-                            setGifPopoverOpen(false);
-                          }}
-                        />
-                      </Suspense>
+                      <GifPicker
+                        onSelect={(url) => {
+                          void handleSubmit(url, true);
+                          setGifPopoverOpen(false);
+                        }}
+                      />
                     </div>
                   </DrawerContent>
                 </Drawer>
@@ -420,16 +408,14 @@ export default function InputComponent({
                       className="absolute left-0 top-0 z-10 h-4 w-4 cursor-nwse-resize"
                       onPointerDown={handleGifPopoverResizeStart}
                     />
-                    <Suspense fallback={null}>
-                      <GifPicker
-                        resizeHeight={gifPopoverSize?.height}
-                        resizeWidth={gifPopoverSize?.width}
-                        onSelect={(url) => {
-                          void handleSubmit(url, true);
-                          setGifPopoverOpen(false);
-                        }}
-                      />
-                    </Suspense>
+                    <GifPicker
+                      resizeHeight={gifPopoverSize?.height}
+                      resizeWidth={gifPopoverSize?.width}
+                      onSelect={(url) => {
+                        void handleSubmit(url, true);
+                        setGifPopoverOpen(false);
+                      }}
+                    />
                   </PopoverContent>
                 </Popover>
               )}
