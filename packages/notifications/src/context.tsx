@@ -11,7 +11,7 @@ import {
   requestPermission as requestTauriNotificationPermission,
   sendNotification as sendTauriNotification,
 } from "@tauri-apps/plugin-notification";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { decryptChatText } from "@tensamin/crypto/chatSecret";
 import { log } from "@tensamin/shared/log";

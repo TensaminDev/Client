@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./context": "./src/context.tsx",
+    "./session": "./src/session.tsx",
     "./wrapper": "./src/wrapper.tsx",
     "./values": "./src/values.ts"
   },

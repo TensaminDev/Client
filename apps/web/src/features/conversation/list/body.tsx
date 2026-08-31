@@ -5,7 +5,7 @@ import Switch from "./switch";
 import ConversationModal from "../modal/conversation";
 import CommunityModal from "../modal/community";
 import { Loader2 } from "lucide-react";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 
 export default function List() {
   const [category, setCategory] = useState<"conversations" | "communities">(

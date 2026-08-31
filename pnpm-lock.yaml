@@ -697,12 +697,6 @@ importers:
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
-      '@tensamin/cache':
-        specifier: workspace:*
-        version: link:../cache
-      '@tensamin/mtp':
-        specifier: workspace:*
-        version: link:../mtp
       '@tensamin/shared':
         specifier: workspace:*
         version: link:../shared

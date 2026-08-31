@@ -12,7 +12,7 @@ import { Provider as MTPProvider } from "@tensamin/mtp";
 import NotificationsProvider from "@tensamin/notifications/context";
 import OnboardingGate from "@tensamin/onboarding";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
-import Session from "@tensamin/storage/session";
+import Session from "@tensamin/identity/session";
 import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import TAuthWrapper from "@tensamin/tauth/context";
 

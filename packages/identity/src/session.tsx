@@ -6,10 +6,10 @@ import {
   useContext,
   useEffect,
 } from "react";
-import { useStorage } from "./context";
+import { useStorage } from "@tensamin/storage/context";
 import type { Contacts, Communities, Calls } from "@tensamin/shared/data";
 import { createCache } from "@tensamin/cache";
-import { secureValueCodec } from "./secure";
+import { secureValueCodec } from "@tensamin/storage/secure";
 
 interface SessionContextType {
   contacts: Contacts;

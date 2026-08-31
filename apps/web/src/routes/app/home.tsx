@@ -17,7 +17,7 @@ import { log } from "@tensamin/shared/log";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { isTauri } from "@tauri-apps/api/core";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 import { useStorage } from "@tensamin/storage/context";
 import { ShieldAlert } from "lucide-react";
 import { useUser } from "@tensamin/identity/context";

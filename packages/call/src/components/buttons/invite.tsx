@@ -12,7 +12,7 @@ import Wrapper from "@tensamin/identity/wrapper";
 import { Mail } from "lucide-react";
 import { sendCallInvite, useCall } from "../../store";
 import { log, toast } from "@tensamin/shared/log";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 
 export default function InviteButton({
   className,

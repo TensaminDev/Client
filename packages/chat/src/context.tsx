@@ -25,7 +25,7 @@ import {
 import { useStorage } from "@tensamin/storage/context";
 import { requireRelaySuccess, useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 import { useUser } from "@tensamin/identity/context";
 import { createCache, type ChatDraft } from "@tensamin/cache";
 import { secureValueCodec } from "@tensamin/storage/secure";

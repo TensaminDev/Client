@@ -27,7 +27,7 @@ import { log, toast } from "@tensamin/shared/log";
 import { cn, useIsMobile } from "@methanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 import { useEmojiRanks, useRecordEmojiUse } from "./emoji/emojiRanks";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";

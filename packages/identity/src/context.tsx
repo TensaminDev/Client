@@ -19,7 +19,7 @@ import {
 import type z from "zod";
 import { createCache } from "@tensamin/cache";
 import { useStorage } from "@tensamin/storage/context";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "./session";
 import { getChangedUserFields, selectUserFields } from "./selection";
 
 export { getChangedUserFields, selectUserFields } from "./selection";

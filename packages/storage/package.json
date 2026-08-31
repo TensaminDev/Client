@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./session": "./src/session.tsx",
     "./context": "./src/context.tsx",
     "./secure": "./src/secure.ts",
     "./browserSecure": "./src/browserSecure.ts",
@@ -18,8 +17,6 @@
   "dependencies": {
     "@methanium/ui": "*",
     "@tauri-apps/api": "^2.11.1",
-    "@tensamin/cache": "workspace:*",
-    "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

@@ -27,7 +27,7 @@ import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
 import { SidebarTrigger, useSidebar } from "@methanium/ui";
 import { WindowControls as Controls } from "@methanium/ui";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 import Profile from "./modals/profile";
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {

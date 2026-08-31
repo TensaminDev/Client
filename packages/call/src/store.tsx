@@ -12,7 +12,7 @@ import {
   wrapCallSecret,
 } from "@tensamin/crypto/callSecret";
 import { useStorage } from "@tensamin/storage/context";
-import { useSession } from "@tensamin/storage/session";
+import { useSession } from "@tensamin/identity/session";
 import { useUser } from "@tensamin/identity/context";
 import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
