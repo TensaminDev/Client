@@ -1,4 +1,4 @@
-import { Input, type InputController } from "@methanium/ui/markdown";
+import Input, { type InputController } from "@tensamin/markdown/input";
 import {
   Card,
   CardHeader,
@@ -10,7 +10,14 @@ import {
   PopoverTrigger,
 } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
 import { Button } from "@methanium/ui";
 
 import { Plus, Laugh, FileVideo, SendHorizonal } from "lucide-react";
@@ -21,13 +28,14 @@ import { cn, useIsMobile } from "@methanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/storage/session";
-import EmojiPicker from "./emoji/emojiPicker";
 import { useEmojiRanks, useRecordEmojiUse } from "./emoji/emojiRanks";
-import GifPicker from "./media/gifPicker";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { editLastMessageHotkey } from "../hotkeys";
 import { useUser } from "@tensamin/identity/context";
+
+const EmojiPicker = lazy(() => import("./emoji/emojiPicker"));
+const GifPicker = lazy(() => import("./media/gifPicker"));
 
 export default function InputComponent({
   value,
@@ -351,13 +359,15 @@ export default function InputComponent({
                   )}
                 />
                 <PopoverContent className="w-auto p-0">
-                  <EmojiPicker
-                    onSelect={(shortcode) => {
-                      setValue(`${value}${shortcode} `);
-                      recordUse(shortcode);
-                      setEmojiPopoverOpen(false);
-                    }}
-                  />
+                  <Suspense fallback={null}>
+                    <EmojiPicker
+                      onSelect={(shortcode) => {
+                        setValue(`${value}${shortcode} `);
+                        recordUse(shortcode);
+                        setEmojiPopoverOpen(false);
+                      }}
+                    />
+                  </Suspense>
                 </PopoverContent>
               </Popover>
               {isMobile ? (
@@ -371,12 +381,14 @@ export default function InputComponent({
                   </DrawerTrigger>
                   <DrawerContent className="h-[80dvh]">
                     <div className="min-h-0 flex-1 p-3">
-                      <GifPicker
-                        onSelect={(url) => {
-                          void handleSubmit(url, true);
-                          setGifPopoverOpen(false);
-                        }}
-                      />
+                      <Suspense fallback={null}>
+                        <GifPicker
+                          onSelect={(url) => {
+                            void handleSubmit(url, true);
+                            setGifPopoverOpen(false);
+                          }}
+                        />
+                      </Suspense>
                     </div>
                   </DrawerContent>
                 </Drawer>
@@ -408,14 +420,16 @@ export default function InputComponent({
                       className="absolute left-0 top-0 z-10 h-4 w-4 cursor-nwse-resize"
                       onPointerDown={handleGifPopoverResizeStart}
                     />
-                    <GifPicker
-                      resizeHeight={gifPopoverSize?.height}
-                      resizeWidth={gifPopoverSize?.width}
-                      onSelect={(url) => {
-                        void handleSubmit(url, true);
-                        setGifPopoverOpen(false);
-                      }}
-                    />
+                    <Suspense fallback={null}>
+                      <GifPicker
+                        resizeHeight={gifPopoverSize?.height}
+                        resizeWidth={gifPopoverSize?.width}
+                        onSelect={(url) => {
+                          void handleSubmit(url, true);
+                          setGifPopoverOpen(false);
+                        }}
+                      />
+                    </Suspense>
                   </PopoverContent>
                 </Popover>
               )}

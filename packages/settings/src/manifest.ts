@@ -1,29 +1,20 @@
-import Accessibility from "./pages/accessibility";
-import Cache from "./pages/cache";
-import Call from "./pages/call";
-import Chat from "./pages/chat";
-import Index from "./pages/index";
-import Licenses from "./pages/licenses";
-import Profile from "./pages/profile";
-import Security from "./pages/security";
-import Theme from "./pages/theme";
-import Hotkeys from "./pages/hotkeys";
+import { lazy } from "react";
 import { settingsNavigation } from "./navigation";
 
 const pageComponents = {
-  profile: Profile,
-  security: Security,
-  chat: Chat,
-  call: Call,
-  cache: Cache,
-  theme: Theme,
-  accessibility: Accessibility,
-  hotkeys: Hotkeys,
-  licenses: Licenses,
+  profile: lazy(() => import("./pages/profile")),
+  security: lazy(() => import("./pages/security")),
+  chat: lazy(() => import("./pages/chat")),
+  call: lazy(() => import("./pages/call")),
+  cache: lazy(() => import("./pages/cache")),
+  theme: lazy(() => import("./pages/theme")),
+  accessibility: lazy(() => import("./pages/accessibility")),
+  hotkeys: lazy(() => import("./pages/hotkeys")),
+  licenses: lazy(() => import("./pages/licenses")),
 } as const;
 
 export const settingsPages = [
-  { path: "/", component: Index },
+  { path: "/", component: lazy(() => import("./pages/index")) },
   ...settingsNavigation.map((page) => ({
     ...page,
     component: pageComponents[page.path],

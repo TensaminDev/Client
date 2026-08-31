@@ -94,6 +94,11 @@ function emitIcons(): Plugin {
           },
           {
             tag: "meta",
+            attrs: { name: "mobile-web-app-capable", content: "yes" },
+            injectTo: "head",
+          },
+          {
+            tag: "meta",
             attrs: {
               name: "apple-mobile-web-app-status-bar-style",
               content: "black-translucent",

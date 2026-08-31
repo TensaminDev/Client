@@ -2,8 +2,8 @@ import { type ReactNode } from "react";
 
 import Sidebar from "@/components/sidebar";
 import Navbar, { MobileNavbar } from "@/components/navbar";
+import CallPopout from "@/components/callPopout";
 import { useShowMobileNavbar } from "./useShowMobileNavbar";
-import CallPopout from "@tensamin/call/popout";
 
 import { useIsMobile, cn, SidebarProvider } from "@methanium/ui";
 

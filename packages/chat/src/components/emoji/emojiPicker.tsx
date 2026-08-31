@@ -1,5 +1,5 @@
 import { Button } from "@methanium/ui";
-import { Emoji } from "@methanium/ui/markdown";
+import Emoji from "@tensamin/markdown/emoji";
 import { getRecentEmojis, useEmojiRanks } from "./emojiRanks";
 
 export default function EmojiPicker({

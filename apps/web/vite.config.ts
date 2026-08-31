@@ -124,6 +124,35 @@ export default defineConfig({
   build: {
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    chunkSizeWarningLimit: 550,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "codemirror-core",
+              test: /node_modules\/.pnpm\/@codemirror\+(?:state|view|language)@/,
+              priority: 20,
+            },
+            {
+              name: "codemirror-editor",
+              test: /node_modules\/.pnpm\/@codemirror\+(?:autocomplete|commands|lang-markdown)@|node_modules\/.pnpm\/codemirror@/,
+              priority: 20,
+            },
+            {
+              name: "livekit-client",
+              test: /node_modules\/.pnpm\/livekit-client@/,
+              priority: 20,
+            },
+            {
+              name: "livekit-support",
+              test: /node_modules\/.pnpm\/@livekit\+/,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    },
   },
   plugins: [
     ...tensaminPwa(),

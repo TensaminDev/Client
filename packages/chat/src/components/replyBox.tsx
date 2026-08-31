@@ -6,7 +6,7 @@ import {
   cn,
   Skeleton,
 } from "@methanium/ui";
-import { Text } from "@methanium/ui/markdown";
+import Text from "@tensamin/markdown/text";
 import type { SelectedUser } from "@tensamin/identity/context";
 import Wrapper from "@tensamin/identity/wrapper";
 import { Forward, X } from "lucide-react";

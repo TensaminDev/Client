@@ -1,4 +1,4 @@
-import { Input as MDInput } from "@methanium/ui/markdown";
+import MDInput from "@tensamin/markdown/input";
 import { useMTP } from "@tensamin/mtp";
 import { mtp } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";

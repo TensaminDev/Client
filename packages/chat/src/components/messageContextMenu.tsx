@@ -44,7 +44,7 @@ import type {
   Ref,
 } from "react";
 import { useChat } from "../context";
-import { Emoji } from "@methanium/ui/markdown";
+import Emoji from "@tensamin/markdown/emoji";
 import EmojiPicker from "./emoji/emojiPicker";
 import { getRecentEmojis, useEmojiRanks } from "./emoji/emojiRanks";
 

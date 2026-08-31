@@ -1,5 +1,6 @@
 import Wrapper from "@tensamin/identity/wrapper";
 import { Basic, Loading } from "./modals/basic";
+import CallSidebarBox from "./callSidebarBox";
 import List from "@/features/conversation/list/body";
 
 import {
@@ -30,7 +31,6 @@ import {
 import { useIsMobile } from "@methanium/ui";
 import { MobileNavbar } from "./navbar";
 
-import SidebarBox from "@tensamin/call/sidebarBox";
 import { useShowMobileNavbar } from "@/routes/app/useShowMobileNavbar";
 import { Ellipsis, Check } from "lucide-react";
 import { useState } from "react";
@@ -285,7 +285,7 @@ export default function Sidebar() {
       )}
       {!isMobile && (
         <SidebarFooter>
-          <SidebarBox />
+          <CallSidebarBox />
         </SidebarFooter>
       )}
     </>

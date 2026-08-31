@@ -9,6 +9,7 @@ import {
 export type TextProps = {
   value: string;
   fontSize?: CSSProperties["fontSize"];
+  showEditedIndicator?: boolean;
 };
 
 /**
@@ -25,6 +26,9 @@ export default function Text(props: TextProps) {
   return (
     <div className="tm-md-root" style={{ fontSize: props.fontSize }}>
       {renderedBlocks}
+      {props.showEditedIndicator && (
+        <span className="ml-1 text-xs text-muted-foreground">(edited)</span>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Text } from "@methanium/ui/markdown";
+import Text from "@tensamin/markdown/text";
 import { useStorage } from "@tensamin/storage/context";
 import {
   Avatar,

@@ -1,6 +1,6 @@
 import { useStorage } from "@tensamin/storage/context";
 import { useCallback, useEffect, useState } from "react";
-import { normalizeShortcode } from "@methanium/ui/markdown";
+import { normalizeShortcode } from "@tensamin/markdown/emoji";
 
 const RANKS_CHANGED_EVENT = "tensamin-reaction-ranks-changed";
 let recordQueue = Promise.resolve();

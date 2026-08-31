@@ -12,44 +12,39 @@ import "./index.css";
 import "@methanium/ui/index.css";
 
 import NotFound from "@/routes/404";
+import RouteLoader from "@/components/routeLoader";
 
-import AppLayout from "@/routes/app/layout";
 import { createSettingsRoute } from "@tensamin/settings";
-import OnboardingGate from "@tensamin/onboarding";
 
-import Home from "@/routes/app/home";
-import ChatScreen from "@tensamin/chat/screen";
-import CallScreen from "@tensamin/call/screen";
-import Login from "@/routes/screens/login";
-
-import ChatContext from "@tensamin/chat/context";
-import { useCall, useInitializeCall } from "@tensamin/call/store";
-import { useIsSpeaking } from "@tensamin/call/speakingState";
-import { Provider as MTPProvider } from "@tensamin/mtp";
-import UserProvider from "@tensamin/identity/context";
-import DeeplinkContext, { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
-import NotificationsProvider from "@tensamin/notifications/context";
+import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import PwaRuntime from "@tensamin/pwa/runtime";
-
-import TAuthWrapper from "@tensamin/tauth/context";
 
 import { ErrorScreen, ThemeProvider, useTheme } from "@methanium/ui";
 import z from "zod";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import Storage from "@tensamin/storage/context";
-import Session from "@tensamin/storage/session";
-import Crypto from "@tensamin/crypto/context";
-import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
 import { log } from "@tensamin/shared/log";
-
-import CacheSync from "@tensamin/cache/sync";
 
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
 import { HotkeysProvider } from "@tensamin/hotkeys";
+
+const Home = lazy(() => import("@/routes/app/home"));
+const ChatScreen = lazy(() => import("@tensamin/chat/screen"));
+const CallScreen = lazy(() => import("@tensamin/call/screen"));
+const Login = lazy(() => import("@/routes/screens/login"));
+const appShellImport = import("@/routes/app/shell");
+const AppShell = lazy(() => appShellImport);
 
 const wrapper = document.getElementById("root");
 
@@ -108,7 +103,7 @@ function LoginWrapper({ children }: { children: ReactNode }) {
   }, [load, location.pathname, navigate, secureStorage]);
 
   if (loggedIn !== true && location.pathname !== "/login") {
-    return null;
+    return <RouteLoader />;
   }
 
   return children;
@@ -265,7 +260,9 @@ function RootShell() {
               <HotkeysProvider>
                 <ThemeStorageBridge />
                 <LoginWrapper>
-                  <Outlet />
+                  <Suspense fallback={<RouteLoader />}>
+                    <Outlet />
+                  </Suspense>
                 </LoginWrapper>
               </HotkeysProvider>
             </Storage>
@@ -274,155 +271,6 @@ function RootShell() {
       </ThemeProvider>
     </DeeplinkContext>
   );
-}
-
-function AppShell() {
-  return (
-    <OnboardingGate>
-      <Crypto>
-        <DesktopMediaProvider>
-          <MTPProvider>
-            <CacheSync />
-            <DeeplinkNavigator />
-            <Session>
-              <UserProvider>
-                <CallInit />
-                <TAuthWrapper>
-                  <AppLayout>
-                    <ChatContext>
-                      <NotificationsProvider>
-                        <Outlet />
-                      </NotificationsProvider>
-                    </ChatContext>
-                  </AppLayout>
-                </TAuthWrapper>
-              </UserProvider>
-            </Session>
-          </MTPProvider>
-        </DesktopMediaProvider>
-      </Crypto>
-    </OnboardingGate>
-  );
-}
-
-function DeeplinkNavigator() {
-  const { deeplinks } = useDeeplinks();
-  const navigate = useNavigate();
-  const handledCount = useRef(0);
-
-  useEffect(() => {
-    const links = deeplinks.slice(handledCount.current);
-    handledCount.current = deeplinks.length;
-
-    for (const link of links) {
-      try {
-        const url = new URL(link);
-        const id = Number(url.searchParams.get("id"));
-        if (
-          url.protocol === "tensamin:" &&
-          url.hostname === "chat" &&
-          Number.isSafeInteger(id) &&
-          id > 0
-        ) {
-          void navigate({ to: "/chat", search: { id } });
-        }
-      } catch {
-        // Ignore malformed URLs delivered by the platform.
-      }
-    }
-  }, [deeplinks, navigate]);
-
-  return null;
-}
-
-function createCallTrayIcon(color: string, speaking: boolean) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 32;
-
-  const context = canvas.getContext("2d");
-  if (!context) return undefined;
-
-  context.globalAlpha = speaking ? 1 : 0.55;
-  context.fillStyle = color;
-  context.beginPath();
-  context.arc(16, 16, 13, 0, Math.PI * 2);
-  context.fill();
-
-  if (speaking) {
-    context.globalAlpha = 0.3;
-    context.fillStyle = "#ffffff";
-    context.fill();
-  }
-
-  return canvas.toDataURL("image/png");
-}
-
-function CallInit() {
-  const callInvitePopup = useInitializeCall();
-
-  const { load } = useStorage();
-  const {
-    themeColor,
-    themePalette,
-    themePrimaryColor,
-    themePolarity,
-    themeTint,
-    themeCustomCss,
-  } = useTheme();
-  const [localUserId, setLocalUserId] = useState(-1);
-  const [primaryColor, setPrimaryColor] = useState("");
-  const inCall = useCall((state) => state.state === "open");
-  const speaking = useIsSpeaking(localUserId);
-
-  useEffect(() => {
-    let active = true;
-
-    load("user_id").then((userId) => {
-      if (active) setLocalUserId(userId);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [load]);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      setPrimaryColor(
-        getComputedStyle(document.documentElement)
-          .getPropertyValue("--primary")
-          .trim(),
-      );
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [
-    themeColor,
-    themeCustomCss,
-    themePalette,
-    themePolarity,
-    themePrimaryColor,
-    themeTint,
-  ]);
-
-  useEffect(() => {
-    const iconDataUrl = primaryColor
-      ? createCallTrayIcon(primaryColor, speaking)
-      : undefined;
-
-    void window.tensaminDesktop?.call
-      ?.setStatus?.({
-        inCall,
-        speaking: inCall && speaking,
-        iconDataUrl: inCall ? iconDataUrl : undefined,
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to update desktop call status", error);
-      });
-  }, [inCall, primaryColor, speaking]);
-
-  return callInvitePopup;
 }
 
 const rootRoute = createRootRoute({

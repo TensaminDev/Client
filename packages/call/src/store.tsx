@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { create } from "zustand";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
@@ -33,7 +32,6 @@ import {
 import z from "zod";
 import {
   createMediaShareController,
-  type LocalMediaShareSession,
 } from "./mediaShare/controller";
 import type { MediaShareRequest } from "./mediaShare";
 import {
@@ -41,6 +39,14 @@ import {
   disposeSpeakingDetector,
 } from "./speakingIndicator";
 import InvitePopup from "./components/invitePopup";
+import {
+  useCall,
+  type CallRuntime as Runtime,
+  type CallView,
+  type WrappedCallSecret,
+} from "./state";
+
+export { useCall } from "./state";
 
 // logging
 setLogExtension(
@@ -51,19 +57,9 @@ setLogExtension(
   getLogger("tensamin"),
 );
 
-type CallView = "preview" | "focused" | "grid";
 type ProtocolCallSecret = NonNullable<
   z.infer<typeof mtp.CallInvite.response>["CallSecret"]
 >;
-type WrappedCallSecret = {
-  secretId: string;
-  versionNumber: number;
-  encryptedSecret: Uint8Array;
-  kemCiphertext: Uint8Array;
-  wrappingScheme: string;
-};
-type CurrentCallData =
-  (z.infer<typeof mtp.CallData.response> & { exists: boolean }) | null;
 
 type SendFn = (
   type: string,
@@ -71,16 +67,6 @@ type SendFn = (
 ) => Promise<{ data: unknown }>;
 type LoadFn = (key: string) => Promise<unknown>;
 type RemoteVideoTrackSelector = Track.Kind | Track.Source;
-
-type Runtime = {
-  navigate: (options: {
-    to: string;
-    search?: Record<string, unknown>;
-  }) => Promise<void>;
-  send: SendFn;
-  load: LoadFn;
-  getPublicKey: (userId: number) => Promise<string>;
-};
 
 let _keyProvider: ExternalE2EEKeyProvider | null = null;
 let _e2eeWorker: Worker | null = null;
@@ -632,7 +618,7 @@ export function setCallId(callId: string | null) {
 
 // Cache server call metadata used by the preview screen.
 export function setCurrentCallData(
-  currentCallData: CurrentCallData & { exists: boolean },
+  currentCallData: { UserIds: number[]; exists: boolean },
 ) {
   useCall.setState({ currentCallData });
 }
@@ -1152,72 +1138,6 @@ async function ensureNoiseFilter(
     );
   }
 }
-
-export const useCall = create<{
-  state: "closed" | "closing" | "connecting" | "open" | "encrypting";
-  view: CallView;
-  invitedUserId: number | null;
-  callId: string | null;
-  incomingCallInvite: {
-    callId: string;
-    callSecret: WrappedCallSecret;
-    senderId: number;
-  } | null;
-  callSecret: string | null;
-  livekitToken: string | null;
-  currentCallData: CurrentCallData;
-  deaf: boolean;
-  micEnabled: boolean;
-  cameraEnabled: boolean;
-  screenShareEnabled: boolean;
-  screenShareSession: LocalMediaShareSession | null;
-  cameraSession: LocalMediaShareSession | null;
-  disabledCameraParticipantIds: number[];
-  focusedParticipantId: number | null;
-  focusedParticipantType: "user" | "stream" | null;
-  usersInFocusedViewHidden: boolean;
-  watchedStreamParticipantIds: number[];
-  pendingWatchedParticipantIds: number[];
-  activeScreenShareParticipantIds: number[];
-  isEncrypted: boolean;
-  ownCallSecretInvitePending: boolean;
-  callIsFullscreen: boolean;
-  callIsPopout: boolean;
-  layoutVersion: number;
-  screenRef: React.RefObject<HTMLDivElement | null> | null;
-  runtime: Runtime | null;
-  lastFocusedParticipantId: number | null;
-}>(() => ({
-  state: "closed",
-  view: "preview",
-  invitedUserId: null,
-  callId: null,
-  incomingCallInvite: null,
-  callSecret: null,
-  livekitToken: null,
-  currentCallData: null,
-  deaf: false,
-  micEnabled: false,
-  cameraEnabled: false,
-  screenShareEnabled: false,
-  screenShareSession: null,
-  cameraSession: null,
-  disabledCameraParticipantIds: [],
-  focusedParticipantId: null,
-  focusedParticipantType: null,
-  usersInFocusedViewHidden: false,
-  watchedStreamParticipantIds: [],
-  pendingWatchedParticipantIds: [],
-  activeScreenShareParticipantIds: [],
-  isEncrypted: false,
-  ownCallSecretInvitePending: false,
-  callIsFullscreen: false,
-  callIsPopout: false,
-  layoutVersion: 0,
-  screenRef: null,
-  runtime: null,
-  lastFocusedParticipantId: null,
-}));
 
 // Register app-level call listeners and wire React dependencies into the store.
 export function useInitializeCall() {

@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
-import { joinCall, useCall } from "@tensamin/call/store";
+import { useCall } from "@tensamin/call/state";
 import Wrapper from "@tensamin/identity/wrapper";
 import { Skeleton } from "@methanium/ui";
 import {
@@ -140,7 +140,9 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <Button
                 disabled={callState !== "closed"}
                 onClick={() => {
-                  void joinCall(id);
+                  void import("@tensamin/call/store").then(({ joinCall }) =>
+                    joinCall(id),
+                  );
                 }}
                 className="w-9 h-9! aspect-square rounded-lg"
                 variant="outline"
@@ -151,10 +153,12 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
               <Button
                 disabled={callState !== "closed"}
                 onClick={() => {
-                  void joinCall(
-                    id,
-                    currentCalls[0].CallSecret,
-                    currentCalls[0].CallId,
+                  void import("@tensamin/call/store").then(({ joinCall }) =>
+                    joinCall(
+                      id,
+                      currentCalls[0].CallSecret,
+                      currentCalls[0].CallId,
+                    ),
                   );
                 }}
                 className="w-9 h-9! aspect-square rounded-lg"
@@ -182,7 +186,10 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                         value={call.CallId}
                         key={call.CallId}
                         onSelect={() => {
-                          void joinCall(id, call.CallSecret, call.CallId);
+                          void import("@tensamin/call/store").then(
+                            ({ joinCall }) =>
+                              joinCall(id, call.CallSecret, call.CallId),
+                          );
                         }}
                       >
                         {displayCallId(call.CallId)}

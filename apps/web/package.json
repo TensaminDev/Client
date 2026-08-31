@@ -24,6 +24,7 @@
     "@tensamin/chat": "workspace:*",
     "@tensamin/crypto": "workspace:*",
     "@tensamin/hotkeys": "workspace:*",
+    "@tensamin/markdown": "workspace:*",
     "@tensamin/mtp": "workspace:*",
     "@tensamin/notifications": "workspace:*",
     "@tensamin/onboarding": "workspace:*",

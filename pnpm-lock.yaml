@@ -201,6 +201,9 @@ importers:
       '@tensamin/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@tensamin/markdown':
+        specifier: workspace:*
+        version: link:../../packages/markdown
       '@tensamin/mtp':
         specifier: workspace:*
         version: link:../../packages/mtp
@@ -403,6 +406,9 @@ importers:
       '@tensamin/identity':
         specifier: workspace:*
         version: link:../identity
+      '@tensamin/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       '@tensamin/mtp':
         specifier: workspace:*
         version: link:../mtp
@@ -639,6 +645,9 @@ importers:
       '@tensamin/identity':
         specifier: workspace:*
         version: link:../identity
+      '@tensamin/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       '@tensamin/mtp':
         specifier: workspace:*
         version: link:../mtp
