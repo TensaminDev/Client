@@ -15,7 +15,7 @@ import {
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media/media";
 import { useStorage } from "@tensamin/storage/context";
-import { useMTP } from "@tensamin/mtp";
+import { requireRelaySuccess, useMTP } from "@tensamin/mtp";
 import { getMessage, useChat } from "../context";
 import { decryptChatText, encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
@@ -44,6 +44,7 @@ function MessageComponent({
   user: SelectedUser<readonly ["UserId", "Avatar", "Display"]> | null;
 }) {
   const actuallyFailed =
+    Boolean(message.ErrorType) ||
     (message.failed && message.MessageState === "awaiting") ||
     message.decryptionFailed;
 
@@ -67,7 +68,7 @@ function MessageComponent({
 
   // Message states
   const { load } = useStorage();
-  const { send } = useMTP();
+  const { send, sendSealedRelay } = useMTP();
   const [ownId, setOwnId] = useState(0);
   useEffect(() => {
     load("user_id").then(setOwnId);
@@ -75,22 +76,38 @@ function MessageComponent({
   const messageStateReadUpdate = useCallback(async () => {
     const readConfirmations = await load("settings.read_confirmations");
 
-    if (readConfirmations) {
-      if (!user?.UserId) return;
-
-      await send("MessageState", {
-        ChatPartnerId: user?.UserId,
-        SendTime: message.SendTime,
-        MessageState: "read",
-      });
-    } else {
-      await send("MessageState", {
-        ChatPartnerId: user?.UserId,
-        SendTime: message.SendTime,
-        MessageState: "received",
-      });
+    if (!user?.UserId || !message.RelayMessageId || ownId === 0) return;
+    const [ownIota, peerIota] = await Promise.all([
+      send("GetIotaData", { UserId: ownId }),
+      send("GetIotaData", { UserId: user.UserId }),
+    ]);
+    if (ownIota.type !== "GetIotaData" || peerIota.type !== "GetIotaData") {
+      throw new Error("Could not resolve an Iota for this receipt");
     }
-  }, [load, message.SendTime, user?.UserId, send]);
+    const response = await sendSealedRelay(
+      "MessageState",
+      {
+        ChatPartnerId: user.UserId,
+        RelayMessageId: message.RelayMessageId,
+        EventAt: Date.now(),
+        MessageState: readConfirmations ? "read" : "received",
+        ReceiverId: user.UserId,
+      },
+      {
+        nextHop: { kind: "iota", id: ownIota.data.IotaId },
+        finalRecipientId: user.UserId,
+        metadataRecipients: [
+          { value: ownIota.data.PublicKey, encoding: "base64" },
+          { value: peerIota.data.PublicKey, encoding: "base64" },
+        ],
+        contentRecipients: [
+          { value: ownIota.data.PublicKey, encoding: "base64" },
+          { value: peerIota.data.PublicKey, encoding: "base64" },
+        ],
+      },
+    );
+    requireRelaySuccess(response);
+  }, [load, message.RelayMessageId, ownId, send, sendSealedRelay, user]);
   useEffect(() => {
     if (message.SenderId === ownId || ownId === 0) return;
 
