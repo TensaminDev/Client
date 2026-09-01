@@ -372,6 +372,7 @@
                 git
                 jq
                 curl
+		libsoup_3
               ]
               ++ [
                 android.androidsdk
