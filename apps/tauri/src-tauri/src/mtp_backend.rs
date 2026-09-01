@@ -114,7 +114,7 @@ impl RelayTargetDto {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct SealedRelayRequest {
+pub struct SealedRelayRequest {
     type_name: String,
     data: Value,
     next_hop: RelayTargetDto,
