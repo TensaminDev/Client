@@ -372,7 +372,15 @@
                 git
                 jq
                 curl
-		libsoup_3
+                wget
+                file
+                webkitgtk_4_1
+                libsoup_3
+                gtk3
+                glib
+                openssl
+                librsvg
+                libayatana-appindicator
               ]
               ++ [
                 android.androidsdk
