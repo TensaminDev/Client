@@ -17,7 +17,7 @@ type PushPayload = {
   senderId: number;
   sender: string;
   avatar?: string;
-  message: { content: string };
+  message: { content: string; versionNumber?: number };
   secret: {
     chatId: string;
     secretId: string;
@@ -66,7 +66,11 @@ async function decryptPush(payload: PushPayload) {
     wrappingScheme: payload.secret.wrappingScheme,
   });
   try {
-    return await decryptChatText(chatSecret, payload.message.content);
+    return await decryptChatText(
+      chatSecret,
+      payload.message.content,
+      payload.message.versionNumber ?? payload.secret.version,
+    );
   } finally {
     chatSecret.fill(0);
   }

@@ -21,6 +21,7 @@ import { useSession } from "@tensamin/identity/session";
 import { useStorage } from "@tensamin/storage/context";
 import { ShieldAlert } from "lucide-react";
 import { useUser } from "@tensamin/identity/context";
+import { useChat } from "@tensamin/chat/context";
 
 // The page
 export default function Page() {
@@ -55,9 +56,10 @@ export default function Page() {
 // Add Conversation Button Component
 function AddConversationButton() {
   const { send, sendSealedRelay } = useMTP();
-  const { contacts, insertContact } = useSession();
+  const { insertContact } = useSession();
   const { load } = useStorage();
-  const { getIota } = useUser();
+  const { getRelayIota } = useUser();
+  const { ensureChatSecret } = useChat();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,30 +103,42 @@ function AddConversationButton() {
       return;
     }
 
-    // alrady added check
-    if (contacts.some((contact) => contact.UserId === user.data.UserId)) {
-      setError("Conversation already exists");
+    const userId = Number(await load("user_id"));
+    if (user.data.UserId === userId) {
+      setError("You cannot start a conversation with yourself");
       return;
     }
 
-    // add the conv
+    // AddConversation is idempotent and also reissues bootstrap delivery for
+    // an existing contact whose cryptographic setup has not completed.
     const timeout = setTimeout(() => setLoading(true), 500);
 
     try {
-      const userId = await load("user_id");
-      const iota = await getIota(userId);
+      const [iota, peerIota] = await Promise.all([
+        getRelayIota(userId),
+        getRelayIota(user.data.UserId),
+      ]);
       const response = await sendSealedRelay(
         "AddConversation",
         { ChatPartnerId: user.data.UserId },
         {
           nextHop: { kind: "iota", id: iota.IotaId },
-          finalRecipientId: userId,
-          metadataRecipients: [{ value: iota.PublicKey, encoding: "base64" }],
-          contentRecipients: [{ value: iota.PublicKey, encoding: "base64" }],
+          finalRecipientId: user.data.UserId,
+          metadataRecipients: [
+            { value: iota.PublicKey, encoding: "base64" },
+            { value: peerIota.PublicKey, encoding: "base64" },
+          ],
+          contentRecipients: [
+            { value: iota.PublicKey, encoding: "base64" },
+            { value: peerIota.PublicKey, encoding: "base64" },
+          ],
         },
       );
       requireRelaySuccess(response);
       insertContact(user.data.UserId);
+      if (userId < user.data.UserId) {
+        await ensureChatSecret(user.data.UserId);
+      }
       setOpen(false);
     } catch (error) {
       if (error instanceof RelayRejectedError) {

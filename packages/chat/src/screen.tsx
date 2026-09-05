@@ -20,6 +20,7 @@ import {
   type RawMessage,
 } from "./values";
 import Wrapper from "@tensamin/identity/wrapper";
+import { Button } from "@methanium/ui";
 
 function shouldFetchPreviousPage({
   entry,
@@ -142,6 +143,7 @@ export default function Screen() {
     errorDescription,
     composerValue,
     setComposerValue,
+    rotateChatSecret,
   } = useChat();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
@@ -535,6 +537,25 @@ export default function Screen() {
         </div>
       ) : (
         <>
+          {ownId === Math.min(ownId, userId) &&
+            (chatSecret || error !== "") && (
+              <div className="flex justify-end border-b px-3 py-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    void rotateChatSecret().catch((rotationError) => {
+                      console.error(
+                        "Failed to rotate chat secret",
+                        rotationError,
+                      );
+                    });
+                  }}
+                >
+                  {chatSecret ? "Rotate chat key" : "Recover chat key"}
+                </Button>
+              </div>
+            )}
           <div
             ref={scrollRef}
             id="chat_container"

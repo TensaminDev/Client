@@ -111,8 +111,9 @@ export async function unwrapChatSecret(args: {
 export async function encryptChatText(
   chatSecret: Uint8Array,
   plaintext: string,
+  version = 1,
 ): Promise<string> {
-  const key = deriveMessageKey(chatSecret);
+  const key = deriveMessageKey(chatSecret, version);
   try {
     return bytesToBase64(
       await crypto.encrypt(key, textEncoder.encode(plaintext)),
@@ -125,8 +126,9 @@ export async function encryptChatText(
 export async function decryptChatText(
   chatSecret: Uint8Array,
   ciphertext: string,
+  version = 1,
 ): Promise<string> {
-  const key = deriveMessageKey(chatSecret);
+  const key = deriveMessageKey(chatSecret, version);
   try {
     return textDecoder.decode(
       await crypto.decrypt(key, base64ToBytes(ciphertext)),
@@ -149,10 +151,12 @@ function deriveWrappingKey(args: {
   );
 }
 
-function deriveMessageKey(chatSecret: Uint8Array): Uint8Array {
+function deriveMessageKey(chatSecret: Uint8Array, version: number): Uint8Array {
   return crypto.deriveEncryptionKey(
     chatSecret,
     CHAT_MESSAGE_SALT,
-    textEncoder.encode("message-content"),
+    textEncoder.encode(
+      version === 1 ? "message-content" : `message-content:${version}`,
+    ),
   );
 }

@@ -73,7 +73,7 @@ function MessageComponent({
   // Message states
   const { load } = useStorage();
   const { send, sendSealedRelay } = useMTP();
-  const { getIota } = useUser();
+  const { getRelayIota } = useUser();
   const [ownId, setOwnId] = useState(0);
   useEffect(() => {
     load("user_id").then(setOwnId);
@@ -82,14 +82,16 @@ function MessageComponent({
     const readConfirmations = await load("settings.read_confirmations");
 
     if (!user?.UserId || ownId === 0) return;
+    if (!message.RelayMessageId) return;
     const [ownIota, peerIota] = await Promise.all([
-      getIota(ownId),
-      getIota(user.UserId),
+      getRelayIota(ownId),
+      getRelayIota(user.UserId),
     ]);
     const response = await sendSealedRelay(
       "MessageState",
       {
         ChatPartnerId: user.UserId,
+        RelayMessageId: message.RelayMessageId,
         EventAt: Date.now(),
         MessageState: readConfirmations ? "read" : "received",
         ReceiverId: user.UserId,
@@ -108,7 +110,7 @@ function MessageComponent({
       },
     );
     requireRelaySuccess(response);
-  }, [getIota, load, ownId, sendSealedRelay, user]);
+  }, [getRelayIota, load, ownId, sendSealedRelay, user]);
   useEffect(() => {
     if (message.SenderId === ownId || ownId === 0) return;
 
@@ -165,6 +167,7 @@ function MessageComponent({
     addReaction,
     chatSecret,
     editMessage,
+    getChatSecret,
     userId,
     removeReaction,
     replyTo,
@@ -188,7 +191,13 @@ function MessageComponent({
       send,
     })
       .then(async (reply) => {
-        const Content = await decryptChatText(chatSecret, reply.Content);
+        const replySecret = await getChatSecret(userId, reply.VersionNumber);
+        if (!replySecret) throw new Error("Reply secret is unavailable");
+        const Content = await decryptChatText(
+          replySecret,
+          reply.Content,
+          reply.VersionNumber,
+        );
         if (!active) return;
         setReplyMessage({ ...reply, Content });
       })
@@ -201,7 +210,7 @@ function MessageComponent({
     return () => {
       active = false;
     };
-  }, [chatSecret, message.ReplyId, ownId, send, userId]);
+  }, [chatSecret, getChatSecret, message.ReplyId, ownId, send, userId]);
   const recordUse = useRecordEmojiUse();
   const editingRef = useRef(editing);
   const onSetEditingRef = useRef(onSetEditing);
@@ -233,9 +242,12 @@ function MessageComponent({
     async (newContent: string) => {
       if (!chatSecret) return;
 
+      const editSecret = await getChatSecret(userId, message.VersionNumber);
+      if (!editSecret) return;
       const encryptedContent = await encryptChatText(
-        chatSecret,
+        editSecret,
         newContent,
+        message.VersionNumber,
       ).catch((err) => {
         toast("error", "Failed to encrypt edit", String(err));
       });
@@ -246,15 +258,32 @@ function MessageComponent({
       editMessage(message.SendTime, { Content: newContent, Edited: true });
 
       try {
-        const response = await send("MessageEdit", {
-          ChatPartnerId: userId,
-          Content: encryptedContent,
-          SendTime: message.SendTime,
-        });
-
-        if (response.type.startsWith("Error")) {
-          throw new Error(response.type);
-        }
+        const [ownIota, peerIota] = await Promise.all([
+          getRelayIota(ownId),
+          getRelayIota(userId),
+        ]);
+        const response = await sendSealedRelay(
+          "MessageEdit",
+          {
+            ChatPartnerId: userId,
+            Content: encryptedContent,
+            SendTime: message.SendTime,
+            VersionNumber: message.VersionNumber,
+          },
+          {
+            nextHop: { kind: "iota", id: ownIota.IotaId },
+            finalRecipientId: userId,
+            metadataRecipients: [
+              { value: ownIota.PublicKey, encoding: "base64" },
+              { value: peerIota.PublicKey, encoding: "base64" },
+            ],
+            contentRecipients: [
+              { value: ownIota.PublicKey, encoding: "base64" },
+              { value: peerIota.PublicKey, encoding: "base64" },
+            ],
+          },
+        );
+        requireRelaySuccess(response);
       } catch (err) {
         editMessage(message.SendTime, {
           Content: previousContent,
@@ -266,12 +295,17 @@ function MessageComponent({
     },
     [
       chatSecret,
+      getChatSecret,
       editMessage,
       userId,
       message.Content,
       message.Edited,
       message.SendTime,
+      message.VersionNumber,
       send,
+      sendSealedRelay,
+      getRelayIota,
+      ownId,
     ],
   );
 

@@ -869,6 +869,9 @@ async fn notify_message(
     let content = container_value_by_name(message, "Content")
         .and_then(DataValue::as_str)
         .ok_or("MessageLive omitted Content")?;
+    let message_version = container_value_by_name(message, "VersionNumber")
+        .and_then(DataValue::as_number)
+        .unwrap_or(1);
     let keyring_bytes = decode_browser_base64(&config.keyring)?;
     let keyring = Keyring::from_bytes(&keyring_bytes).map_err(|error| error.to_string())?;
     let chat_id = derive_chat_id(config.user_id, sender_id);
@@ -877,7 +880,8 @@ async fn notify_message(
         .with_id(connection.next_request_id().await?)
         .add_typed_default(DataType::UserId, DataValue::Str(config.user_id.to_string()))
         .add_typed_default(DataType::ChatId, DataValue::Str(chat_id.clone()))
-        .add_typed_default(DataType::SecretId, DataValue::Str(secret_id.clone()));
+        .add_typed_default(DataType::SecretId, DataValue::Str(secret_id.clone()))
+        .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(message_version));
     let secret = connection
         .mtp
         .request(&secret_request, None)
@@ -910,7 +914,12 @@ async fn notify_message(
     let chat_secret = ChaCha20Poly1305::new(wrapping_key)
         .decrypt(encrypted_secret, b"")
         .map_err(|error| error.to_string())?;
-    let message_key = derive_encryption_key(&chat_secret, CHAT_MESSAGE_SALT, b"message-content")
+    let message_key_info = if version == 1 {
+        "message-content".to_string()
+    } else {
+        format!("message-content:{version}")
+    };
+    let message_key = derive_encryption_key(&chat_secret, CHAT_MESSAGE_SALT, message_key_info.as_bytes())
         .map_err(|error| error.to_string())?;
     let ciphertext = STANDARD
         .decode(content)

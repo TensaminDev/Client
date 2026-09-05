@@ -1,10 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { toast as sonnerToast } from "@methanium/ui";
-import {
-  base64ToBytes,
-  ConnectionState,
-  MTPClient,
-} from "mtp";
+import { base64ToBytes, ConnectionState, MTPClient } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import {
   mtp as mtpSchemas,
@@ -216,7 +212,7 @@ export function BrowserProvider(props: {
         metadataRecipients: options.metadataRecipients,
         contentRecipients: options.contentRecipients,
       });
-      return { type: "Success", data: {} };
+      return { type: "RelaySent", data: {} };
     },
     [],
   );

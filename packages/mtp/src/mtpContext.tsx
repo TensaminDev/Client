@@ -23,8 +23,7 @@ export type ProtocolMessage<
 export type BoundSendFn = MTPRequestFunction<typeof mtpSchemas>;
 
 export type RelayTarget =
-  | { kind: "user"; id: number }
-  | { kind: "iota"; id: number };
+  { kind: "user"; id: number } | { kind: "iota"; id: number };
 
 export type SealedRelayOptions = {
   nextHop: RelayTarget;
@@ -61,7 +60,7 @@ export class RelayRejectedError extends Error {
 }
 
 export function requireRelaySuccess(response: SealedRelayResult): void {
-  if (response.type !== "Success") {
+  if (response.type !== "Success" && response.type !== "RelaySent") {
     throw new RelayRejectedError(response.type);
   }
 }

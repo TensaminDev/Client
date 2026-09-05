@@ -70,7 +70,6 @@ const callSecretEnvelopeRequest = z.object({
 export const Reaction = z.object({
   Reaction: z.string(),
   SenderId: z.number(),
-  RelayMessageId: z.string().optional(),
 });
 
 export const Message = z.object({
@@ -78,6 +77,8 @@ export const Message = z.object({
   SenderId: z.number(),
   SendTime: z.number(),
   Content: z.base64(),
+  VersionNumber: z.number().int().positive().default(1),
+  RelayMessageId: z.string().optional(),
   Files: z.array(fileFromMessage).optional(),
   Tint: z.string().length(7).startsWith("#").optional(),
   Avatar: z.boolean().optional(),
@@ -319,6 +320,7 @@ export const mtp = {
       Content: z.base64(),
       ChatPartnerId: z.number(),
       SendTime: z.number(),
+      VersionNumber: z.number().int().positive().default(1),
     }),
   },
   MessageEdit: {
@@ -326,6 +328,7 @@ export const mtp = {
       Content: z.base64(),
       ChatPartnerId: z.number(),
       SendTime: z.number(),
+      VersionNumber: z.number().int().positive().default(1),
     }),
     response: z.object({}),
   },
@@ -388,6 +391,7 @@ export const mtp = {
       Content: z.base64(),
       ReceiverId: z.number(),
       SendTime: z.number(),
+      VersionNumber: z.number().int().positive().default(1),
       ReplyId: z.number().optional(),
       Files: z.array(fileFromMessage).optional(),
     }),
@@ -483,6 +487,7 @@ export const mtp = {
       UserId: z.string(),
       ChatId: z.string(),
       SecretId: z.string().optional(),
+      VersionNumber: z.number().int().positive().optional(),
     }),
     response: chatSecretResponse,
   },
@@ -491,18 +496,15 @@ export const mtp = {
     response: chatSecretResponse,
   },
   ChatSecretForward: {
-    request: z.object({
+    request: z.object({}).optional(),
+    response: z.object({
       ChatId: z.string(),
       SenderUserId: z.string(),
       RecipientUserId: z.string(),
       SecretId: z.string(),
-      VersionNumber: z.number(),
-      EncryptedSecret: protocolBytes,
-      KemCiphertext: protocolBytes,
-      WrappingScheme: z.string(),
-      CreatedAt: z.number(),
+      VersionNumber: z.number().int().positive(),
+      Payload: z.enum(["init", "available"]),
     }),
-    response: z.object({}),
   },
   ErrorNoIota: {
     request: z.object({}).optional(),

@@ -52,6 +52,10 @@ interface contextValue {
     userId: number,
     fields: Fields,
   ): Promise<SelectedUser<Fields>>;
+  getFresh<const Fields extends UserFields>(
+    userId: number,
+    fields: Fields,
+  ): Promise<SelectedUser<Fields>>;
   peek<const Fields extends UserFields>(
     userId: number,
     fields: Fields,
@@ -63,6 +67,7 @@ interface contextValue {
   ): () => void;
   getVersion(userId: number, fields: readonly UserField[]): string;
   getIota(userId: number): Promise<Iota>;
+  getRelayIota(userId: number): Promise<Iota>;
   updateProfile(userId: number, patch: UserProfilePatch): Promise<void>;
   updateState(userId: number, state: ClientUserState): void;
 }
@@ -235,7 +240,7 @@ export default function UserProvider(props: { children: ReactNode }) {
         if (cached) {
           installProfile(cached);
           const checkedAt = checkedAtRef.current[userId];
-          if (!checkedAt || Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
+          if (checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
             checkedAtRef.current[userId] = Date.now();
             return storageRef.current[userId];
           }
@@ -294,6 +299,26 @@ export default function UserProvider(props: { children: ReactNode }) {
     [loadUser],
   );
 
+  const getFresh = useCallback(
+    async <const Fields extends UserFields>(
+      userId: number,
+      fields: Fields,
+    ): Promise<SelectedUser<Fields>> => {
+      if (!Number.isSafeInteger(userId) || userId <= 0) {
+        throw new Error("userId must be a positive integer");
+      }
+      const response = await send("GetUserData", { UserId: userId });
+      if (response.type !== "GetUserData" || response.data.UserId === 0) {
+        throw new Error(`GetUserData failed: ${response.type}`);
+      }
+      const user = schemas.GetUserData.response.parse(response.data);
+      installProfile(user);
+      checkedAtRef.current[userId] = Date.now();
+      return selectUserFields(user, fields);
+    },
+    [installProfile, send],
+  );
+
   const getIota = useCallback(
     async (userId: number): Promise<Iota> => {
       if (userId == null) {
@@ -336,6 +361,28 @@ export default function UserProvider(props: { children: ReactNode }) {
       } finally {
         delete pendingIotaRef.current[userId];
       }
+    },
+    [send],
+  );
+
+  const getRelayIota = useCallback(
+    async (userId: number): Promise<Iota> => {
+      if (!Number.isSafeInteger(userId) || userId <= 0) {
+        throw new Error("userId must be a positive integer");
+      }
+      const cached = iotaStorageRef.current[userId];
+      const checkedAt = iotaCheckedAtRef.current[userId];
+      if (cached && checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
+        return cached;
+      }
+      const response = await send("GetIotaData", { UserId: userId });
+      if (response.type !== "GetIotaData") {
+        throw new Error(`GetIotaData failed: ${response.type}`);
+      }
+      const iota = schemas.GetIotaData.response.parse(response.data);
+      iotaStorageRef.current[userId] = iota;
+      iotaCheckedAtRef.current[userId] = Date.now();
+      return iota;
     },
     [send],
   );
@@ -438,14 +485,26 @@ export default function UserProvider(props: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       get,
+      getFresh,
       getIota,
+      getRelayIota,
       peek,
       subscribe,
       getVersion,
       updateProfile,
       updateState,
     }),
-    [get, getIota, getVersion, peek, subscribe, updateProfile, updateState],
+    [
+      get,
+      getFresh,
+      getIota,
+      getRelayIota,
+      getVersion,
+      peek,
+      subscribe,
+      updateProfile,
+      updateState,
+    ],
   );
 
   return (

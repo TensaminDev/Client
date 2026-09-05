@@ -238,12 +238,14 @@ export function TauriProvider(props: {
   const sendSealedRelay = useCallback<SealedRelaySend>(
     async (type, data, options) => {
       return invoke<SealedRelayResult>("mtp_send_sealed_relay", {
-        typeName: type,
-        data,
-        nextHop: options.nextHop,
-        finalRecipientId: options.finalRecipientId,
-        metadataRecipients: options.metadataRecipients,
-        contentRecipients: options.contentRecipients,
+        request: {
+          typeName: type,
+          data,
+          nextHop: options.nextHop,
+          finalRecipientId: options.finalRecipientId,
+          metadataRecipients: options.metadataRecipients,
+          contentRecipients: options.contentRecipients,
+        },
       });
     },
     [],

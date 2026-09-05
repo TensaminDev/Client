@@ -41,10 +41,11 @@ export default function InputComponent({
   const [invertEnterBehavior, setInvertEnterBehavior] = useState(false);
 
   const { sendSealedRelay } = useMTP();
-  const { getIota } = useUser();
+  const { getRelayIota } = useUser();
   const {
     addLiveMessage,
     chatSecret,
+    chatSecretVersion,
     userId,
     inputBoxRef,
     replyTo,
@@ -157,6 +158,7 @@ export default function InputComponent({
       NotEncrypted: true,
       SendTime: time,
       Content: currentValue,
+      VersionNumber: chatSecretVersion,
       SenderId: ownId,
       MessageState: "awaiting",
       ...(replyTo && { ReplyId: replyTo }),
@@ -167,6 +169,7 @@ export default function InputComponent({
     const encryptedContent = await encryptChatText(
       chatSecret,
       currentValue,
+      chatSecretVersion,
     ).catch((err) => {
       toast("error", "Failed to encrypt message", String(err));
       reference.setFailed(true);
@@ -178,8 +181,8 @@ export default function InputComponent({
 
     try {
       const [ownIota, peerIota] = await Promise.all([
-        getIota(ownId),
-        getIota(userId),
+        getRelayIota(ownId),
+        getRelayIota(userId),
       ]);
       const response = await sendSealedRelay(
         "MessageSend",
@@ -187,6 +190,7 @@ export default function InputComponent({
           Content: encryptedContent,
           ReceiverId: userId,
           SendTime: time,
+          VersionNumber: chatSecretVersion,
           ...(replyTo && { ReplyId: replyTo }),
         },
         {

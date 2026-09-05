@@ -32,7 +32,13 @@ export default function Provider(props: { children: React.ReactNode }) {
   const { subscribe } = useMTP();
   const { load } = useStorage();
   const { get } = useUser();
-  const { addLiveMessage, chatSecret, getChatSecret, userId } = useChat();
+  const {
+    addLiveMessage,
+    chatSecret,
+    chatSecretVersion,
+    getChatSecret,
+    userId,
+  } = useChat();
   const { moveUserIdToTop } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,15 +53,16 @@ export default function Provider(props: { children: React.ReactNode }) {
         document.hasFocus() && document.visibilityState === "visible";
       const shouldAlert = !isCurrentChat || !appFocused;
 
+      const messageVersion = data.Message?.VersionNumber ?? 1;
       const messageSecret =
-        isCurrentChat && chatSecret
+        isCurrentChat && chatSecret && messageVersion === chatSecretVersion
           ? chatSecret
-          : await getChatSecret(data.SenderId);
+          : await getChatSecret(data.SenderId, messageVersion);
 
       if (!data.Message || !messageSecret) return;
       if (shouldAlert) playSound("message");
 
-      void decryptChatText(messageSecret, data.Message.Content)
+      void decryptChatText(messageSecret, data.Message.Content, messageVersion)
         .catch((err) => {
           log(1, "chat", "red", "Failed to decrypt live message", err, {
             SendTime: data.Message?.SendTime,
@@ -78,7 +85,6 @@ export default function Provider(props: { children: React.ReactNode }) {
           if (!isCurrentChat) {
             // todo: add notification symbol to conversation cards (incl. message start)
             moveUserIdToTop(data.SenderId);
-
           }
 
           const user = await get(data.SenderId, [
