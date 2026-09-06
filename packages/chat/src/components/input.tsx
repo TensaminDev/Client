@@ -1,4 +1,4 @@
-import Input, { type InputController } from "@tensamin/markdown/input";
+import { Input, type InputController } from "@methanium/ui/markdown";
 import {
   Card,
   CardHeader,

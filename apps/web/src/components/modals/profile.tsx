@@ -1,6 +1,6 @@
 import type { User } from "@tensamin/identity/context";
 import { Avatar, AvatarFallback, AvatarImage, Button } from "@methanium/ui";
-import Text from "@tensamin/markdown/text";
+import { Text } from "@methanium/ui/markdown";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 

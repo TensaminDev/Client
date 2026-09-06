@@ -17,7 +17,6 @@
     "@tauri-apps/api": "^2.11.1",
     "@tensamin/cache": "workspace:*",
     "@tensamin/hotkeys": "workspace:*",
-    "@tensamin/markdown": "workspace:*",
     "@tensamin/mtp": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
