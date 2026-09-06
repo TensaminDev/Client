@@ -275,7 +275,7 @@ export default function UserProvider(props: { children: ReactNode }) {
           checkedAtRef.current[userId] = Date.now();
           try {
             await cache.profiles.put(profile);
-            log(2, "identity", "orange", "Cached UserData", { userId });
+            log(2, "identity", "green", "Cached UserData", { userId });
           } catch (cacheError) {
             log(1, "identity", "red", "Failed to cache UserData", cacheError, {
               userId,
@@ -329,7 +329,7 @@ export default function UserProvider(props: { children: ReactNode }) {
       checkedAtRef.current[userId] = Date.now();
       try {
         await createCache(String(await getAccountId())).profiles.put(user);
-        log(2, "identity", "orange", "Cached UserData", { userId });
+        log(2, "identity", "green", "Cached UserData", { userId });
       } catch (cacheError) {
         log(1, "identity", "red", "Failed to cache UserData", cacheError, {
           userId,

@@ -15,6 +15,9 @@ import {
   Card,
   cn,
   Skeleton,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from "@methanium/ui";
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media/media";
@@ -108,7 +111,14 @@ function MessageComponent({
       },
     );
     requireRelaySuccess(response);
-  }, [getRelayIota, load, ownId, sendSealedRelay, user]);
+  }, [
+    getRelayIota,
+    load,
+    ownId,
+    sendSealedRelay,
+    user,
+    message.RelayMessageId,
+  ]);
   useEffect(() => {
     if (message.SenderId === ownId || ownId === 0) return;
 
@@ -300,7 +310,6 @@ function MessageComponent({
       message.Edited,
       message.SendTime,
       message.VersionNumber,
-      send,
       sendSealedRelay,
       getRelayIota,
       ownId,
@@ -406,30 +415,46 @@ function MessageComponent({
                           minute: "2-digit",
                         })}
                       </p>
-                      <div className="flex items-center justify-start gap-1">
-                        {message.SenderId !==
-                        ownId ? null : message.MessageState === "read" ? (
-                          <Check
-                            size={12}
-                            color="var(--primary-foreground-alt)"
-                          />
-                        ) : message.MessageState === "received" ? (
-                          <CheckLine
-                            size={12}
-                            color="var(--muted-foreground)"
-                          />
-                        ) : message.MessageState === "sent" ? (
-                          <Check size={12} color="var(--muted-foreground)" />
-                        ) : message.MessageState === "sending" ? (
-                          <RefreshCw
-                            size={12}
-                            color="var(--muted-foreground)"
-                          />
-                        ) : null}
-                        {actuallyFailed && (
-                          <AlertTriangle color="var(--destructive)" size={12} />
-                        )}
-                      </div>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <div className="flex items-center justify-start gap-1">
+                              {message.SenderId !==
+                              ownId ? null : message.MessageState === "read" ? (
+                                <Check
+                                  size={12}
+                                  color="var(--primary-foreground-alt)"
+                                />
+                              ) : message.MessageState === "received" ? (
+                                <CheckLine
+                                  size={12}
+                                  color="var(--muted-foreground)"
+                                />
+                              ) : message.MessageState === "sent" ? (
+                                <Check
+                                  size={12}
+                                  color="var(--muted-foreground)"
+                                />
+                              ) : message.MessageState === "sending" ? (
+                                <RefreshCw
+                                  size={12}
+                                  color="var(--muted-foreground)"
+                                />
+                              ) : null}
+                              {actuallyFailed && (
+                                <AlertTriangle
+                                  color="var(--destructive)"
+                                  size={12}
+                                />
+                              )}
+                            </div>
+                          }
+                        />
+                        <TooltipContent>
+                          {message.MessageState.at(0)?.toUpperCase() +
+                            message.MessageState.slice(1)}
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   )}
                   {editing ? (

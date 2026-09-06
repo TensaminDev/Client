@@ -30,9 +30,7 @@ import {
   getLogger,
 } from "livekit-client";
 import z from "zod";
-import {
-  createMediaShareController,
-} from "./mediaShare/controller";
+import { createMediaShareController } from "./mediaShare/controller";
 import type { MediaShareRequest } from "./mediaShare";
 import {
   getSpeakingDetector,
@@ -61,11 +59,6 @@ type ProtocolCallSecret = NonNullable<
   z.infer<typeof mtp.CallInvite.response>["CallSecret"]
 >;
 
-type SendFn = (
-  type: string,
-  data: Record<string, unknown>,
-) => Promise<{ data: unknown }>;
-type LoadFn = (key: string) => Promise<unknown>;
 type RemoteVideoTrackSelector = Track.Kind | Track.Source;
 
 let _keyProvider: ExternalE2EEKeyProvider | null = null;
@@ -617,9 +610,10 @@ export function setCallId(callId: string | null) {
 }
 
 // Cache server call metadata used by the preview screen.
-export function setCurrentCallData(
-  currentCallData: { UserIds: number[]; exists: boolean },
-) {
+export function setCurrentCallData(currentCallData: {
+  UserIds: number[];
+  exists: boolean;
+}) {
   useCall.setState({ currentCallData });
 }
 
@@ -1170,8 +1164,11 @@ export function useInitializeCall() {
   useEffect(() => {
     setCallRuntime({
       navigate,
-      send: send as SendFn,
-      load: load as LoadFn,
+      send: send as (
+        type: string,
+        data: Record<string, unknown>,
+      ) => Promise<{ data: unknown }>,
+      load: load as (key: string) => Promise<unknown>,
       getPublicKey: (userId) =>
         get(userId, ["PublicKey"]).then((user) => user.PublicKey),
     });

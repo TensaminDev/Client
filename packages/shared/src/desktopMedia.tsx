@@ -22,41 +22,42 @@ export type DesktopScreenShareCapabilities = {
   hasReliableSystemAudio: boolean;
 };
 
-
-
 declare global {
   interface Window {
     tensaminDesktop?: {
-  media?: {
-    getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
-    listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
-    listScreenShareAudioOutputs?: () => Promise<
-      DesktopScreenShareAudioOutput[]
-    >;
-    selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
-  };
-  call?: {
-    setStatus?: (status: {
-      inCall: boolean;
-      speaking: boolean;
-      iconDataUrl?: string;
-    }) => Promise<void>;
-  };
-  hotkeys?: {
-    setBindings?: (
-      bindings: Array<{ id: string; accelerator: string }>,
-    ) => Promise<Record<string, boolean>>;
-    setSuspended?: (suspended: boolean) => Promise<Record<string, boolean>>;
-    onTriggered?: (callback: (id: string) => void) => () => void;
-  };
-  secureStorage?: {
-    getStatus?: () => Promise<{ available: boolean; backend: string | null }>;
-    load?: (key: string) => Promise<string | null>;
-    save?: (key: string, value: string) => Promise<void>;
-    delete?: (key: string) => Promise<void>;
-    clear?: () => Promise<void>;
-  };
-};
+      media?: {
+        getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
+        listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
+        listScreenShareAudioOutputs?: () => Promise<
+          DesktopScreenShareAudioOutput[]
+        >;
+        selectScreenShareSource?: (sourceId: string) => Promise<boolean>;
+      };
+      call?: {
+        setStatus?: (status: {
+          inCall: boolean;
+          speaking: boolean;
+          iconDataUrl?: string;
+        }) => Promise<void>;
+      };
+      hotkeys?: {
+        setBindings?: (
+          bindings: Array<{ id: string; accelerator: string }>,
+        ) => Promise<Record<string, boolean>>;
+        setSuspended?: (suspended: boolean) => Promise<Record<string, boolean>>;
+        onTriggered?: (callback: (id: string) => void) => () => void;
+      };
+      secureStorage?: {
+        getStatus?: () => Promise<{
+          available: boolean;
+          backend: string | null;
+        }>;
+        load?: (key: string) => Promise<string | null>;
+        save?: (key: string, value: string) => Promise<void>;
+        delete?: (key: string) => Promise<void>;
+        clear?: () => Promise<void>;
+      };
+    };
   }
 }
 
