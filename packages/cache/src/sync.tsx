@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  createCache,
-  type CachedMessage,
-  type UserProfile,
-} from "@tensamin/cache";
+import { createCache, type CachedMessage } from "@tensamin/cache";
 import { useMTP, type MTPExchange, type ProtocolMessage } from "@tensamin/mtp";
 import { useStorage } from "@tensamin/storage/context";
 import { secureValueCodec } from "@tensamin/storage/secure";
@@ -136,13 +132,6 @@ export default function CacheSync() {
           result.MissingUserIds.filter(
             (userId): userId is number => typeof userId === "number",
           ),
-        );
-        return;
-      }
-
-      if (type === "GetUserData") {
-        await createCache(String(accountId)).profiles.put(
-          result as unknown as UserProfile,
         );
         return;
       }

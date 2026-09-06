@@ -189,16 +189,34 @@ export function BrowserProvider(props: {
     () => async (type, data, options) => {
       const client = clientRef.current;
       if (!client) throw new Error("mtp is not connected");
-      const response = await client.request(type, data, options);
-      if (response.type === "GetStates") {
-        setFreshContacts((contacts) =>
-          removeMissingContacts(
-            contacts,
-            response as ProtocolMessage<"GetStates">,
-          ),
+      try {
+        const response = await client.request(type, data, options);
+        log(2, "mtp", "cyan", `< ${response.type}`, {
+          hint: "info",
+          type: response.type,
+          data: response.data,
+          direction: "recv",
+        });
+        if (response.type === "GetStates") {
+          setFreshContacts((contacts) =>
+            removeMissingContacts(
+              contacts,
+              response as ProtocolMessage<"GetStates">,
+            ),
+          );
+        }
+        return response;
+      } catch (error) {
+        const details = protocolErrorDetails(error);
+        log(
+          1,
+          "mtp",
+          "red",
+          `< ${typeof details?.type === "string" ? details.type : `${type} failed`}`,
+          error,
         );
+        throw error;
       }
-      return response;
     },
     [],
   );
@@ -207,7 +225,7 @@ export function BrowserProvider(props: {
       const client = clientRef.current;
       if (!client) throw new Error("mtp is not connected");
       await client.sendSealedRelay(type, data, {
-        nextHopId: options.nextHop.id,
+        nextHop: options.nextHop,
         finalRecipientId: options.finalRecipientId,
         metadataRecipients: options.metadataRecipients,
         contentRecipients: options.contentRecipients,
@@ -373,7 +391,11 @@ export function BrowserProvider(props: {
                 }
               }
             }
-            if (event.type !== "Pong" && event.type !== "Ping") {
+            if (
+              event.type !== "Pong" &&
+              event.type !== "Ping" &&
+              event.type !== "Relay"
+            ) {
               log(
                 2,
                 "mtp",

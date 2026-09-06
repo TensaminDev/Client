@@ -773,7 +773,7 @@ const markdownStyles = `
 .cm-editor.tm-md-editor.cm-focused { outline: none; box-shadow: none; }
 .cm-editor.tm-md-editor .cm-scroller { font-family: inherit; line-height: 1.55; max-height: 30vh; overflow-y: auto; overflow-x: hidden; }
 .cm-editor.tm-md-editor .cm-content { caret-color: var(--foreground); }
-.cm-editor.tm-md-editor .cm-content { padding: var(--tm-md-content-padding, 0.25rem 0.625rem); min-height: 2rem; }
+.cm-editor.tm-md-editor .cm-content { min-height: 2rem; }
 .cm-editor.tm-md-editor .cm-line { padding: 0; color: var(--foreground); }
 .cm-editor.tm-md-editor .tm-md-editor-emoji { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.18em; object-fit: contain; pointer-events: none; }
 .cm-editor.tm-md-editor .tm-md-hidden-token { color: transparent; opacity: 0; font-size: inherit; }

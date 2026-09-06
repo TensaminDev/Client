@@ -166,12 +166,6 @@ function updateMessageReaction<T extends EditableMessage>(
   return { ...message, Reactions: next };
 }
 
-function assertProtocolSuccess(type: string, response: { type: string }) {
-  if (response.type.startsWith("Error")) {
-    throw new Error(`${type} failed: ${response.type}`);
-  }
-}
-
 function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return new Uint8Array(bytes);
 }
@@ -752,93 +746,6 @@ export default function Provider({ children }: { children: ReactNode }) {
     userIdValue,
   ]);
 
-  const rotateChatSecret = useCallback(async () => {
-    if (!ownId || !userIdValue) {
-      throw new Error("No active chat to rotate");
-    }
-    if (ownId !== Math.min(ownId, userIdValue)) {
-      throw new Error("Only the lower participant can rotate a chat secret");
-    }
-
-    const version = currentChatSecret
-      ? currentChatSecretState.version + 1
-      : CHAT_SECRET_VERSION + 1;
-    const chatId = deriveChatId(ownId, userIdValue);
-    const secretId = deriveChatSecretId(chatId);
-    const keyring = await load("mtp_keyring");
-    const rawSecret = randomChatSecret();
-    const ownWrapped = await wrapChatSecret({
-      chatSecret: rawSecret,
-      recipientKemPublicKey: ownKemPublicKeyFromKeyring(keyring),
-      chatId,
-      secretId,
-      version,
-    });
-    const peerUser = await getFreshUser(userIdValue, ["PublicKey"]);
-    const peerWrapped = await wrapChatSecret({
-      chatSecret: rawSecret,
-      recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(
-        peerUser.PublicKey,
-      ),
-      chatId,
-      secretId,
-      version,
-    });
-    const [ownIota, peerIota] = await Promise.all([
-      getRelayIota(ownId),
-      getRelayIota(userIdValue),
-    ]);
-    const payload = {
-      ChatId: chatId,
-      SecretId: secretId,
-      VersionNumber: version,
-      WrappingScheme: ownWrapped.wrappingScheme,
-      CreatedAt: Date.now(),
-      Recipients: [
-        {
-          UserId: String(ownId),
-          EncryptedSecret: protocolBytes(ownWrapped.encryptedSecret),
-          KemCiphertext: protocolBytes(ownWrapped.kemCiphertext),
-        },
-        {
-          UserId: String(userIdValue),
-          EncryptedSecret: protocolBytes(peerWrapped.encryptedSecret),
-          KemCiphertext: protocolBytes(peerWrapped.kemCiphertext),
-        },
-      ],
-    };
-    requireRelaySuccess(
-      await sendSealedRelay("SetChatSecret", payload, {
-        nextHop: { kind: "iota", id: ownIota.IotaId },
-        finalRecipientId: userIdValue,
-        metadataRecipients: [
-          { value: ownIota.PublicKey, encoding: "base64" },
-          { value: peerIota.PublicKey, encoding: "base64" },
-        ],
-        contentRecipients: [
-          { value: ownIota.PublicKey, encoding: "base64" },
-          { value: peerIota.PublicKey, encoding: "base64" },
-        ],
-      }),
-    );
-    const committed = await waitForChatSecret(userIdValue, version);
-    setCurrentChatSecretState({
-      userId: userIdValue,
-      value: committed,
-      version,
-    });
-  }, [
-    currentChatSecret,
-    currentChatSecretState.version,
-    getRelayIota,
-    getFreshUser,
-    load,
-    ownId,
-    sendSealedRelay,
-    userIdValue,
-    waitForChatSecret,
-  ]);
-
   const decryptMessages = useCallback(
     async (messages: RawMessages) => {
       return Promise.all(
@@ -1341,7 +1248,6 @@ export default function Provider({ children }: { children: ReactNode }) {
           chatSecret: currentChatSecret,
           chatSecretVersion: currentChatSecretState.version,
           ensureChatSecret: createInitialChatSecret,
-          rotateChatSecret,
           ownId,
           userId: userIdValue,
           inputBoxRef,
@@ -1378,7 +1284,6 @@ type contextType = {
   chatSecret: Uint8Array | null;
   chatSecretVersion: number;
   ensureChatSecret: (userId: number) => Promise<Uint8Array | null>;
-  rotateChatSecret: () => Promise<void>;
   ownId: number;
   userId: number;
   inputBoxRef: React.RefObject<HTMLDivElement | null>;

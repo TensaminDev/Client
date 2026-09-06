@@ -12,6 +12,7 @@ export const contactSchema = z.object({
 });
 export const contactsSchema = z.array(contactSchema);
 export const userProfileSchema = mtp.GetUserData.response;
+export const iotaDataSchema = mtp.GetIotaData.response;
 
 // Content remains the protocol base64 ciphertext. This package never decrypts messages.
 export const cachedMessageSchema = mtp.MessageGet.response;
@@ -28,6 +29,7 @@ export const chatDraftSchema = z.object({
 
 export type Contact = z.infer<typeof contactSchema>;
 export type UserProfile = z.infer<typeof userProfileSchema>;
+export type IotaData = z.infer<typeof iotaDataSchema>;
 export type CachedMessage = z.infer<typeof cachedMessageSchema>;
 export type ConversationWindow = z.infer<typeof conversationWindowSchema>;
 export type ChatDraft = z.infer<typeof chatDraftSchema>;

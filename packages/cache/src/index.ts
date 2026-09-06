@@ -16,17 +16,20 @@ import {
   chatDraftSchema,
   contactsSchema,
   conversationWindowSchema,
+  iotaDataSchema,
   userProfileSchema,
   type ChatDraft,
   type Contact,
   type ConversationWindow,
+  type IotaData,
   type UserProfile,
 } from "./schemas";
 
 export * from "./helpers";
 export * from "./schemas";
 
-type CacheStore = "contacts" | "profiles" | "conversations" | "drafts";
+type CacheStore =
+  "contacts" | "profiles" | "iotas" | "conversations" | "drafts";
 
 export interface SecureValueCodec {
   encode(value: unknown): unknown | Promise<unknown>;
@@ -146,6 +149,12 @@ export function createCache(accountId: string, options: CacheOptions = {}) {
         write("profiles", String(profile.UserId), userProfileSchema, profile),
       delete: (userId: number) => remove("profiles", String(userId)),
     },
+    iotas: {
+      get: (userId: number) => read("iotas", String(userId), iotaDataSchema),
+      put: (userId: number, iota: IotaData) =>
+        write("iotas", String(userId), iotaDataSchema, iota),
+      delete: (userId: number) => remove("iotas", String(userId)),
+    },
     conversations: {
       list: listConversations,
       get: (userId: number) =>
@@ -249,7 +258,13 @@ export function createCache(accountId: string, options: CacheOptions = {}) {
       ensureOpen();
       await Promise.all(
         (
-          ["contacts", "profiles", "conversations", "drafts"] as CacheStore[]
+          [
+            "contacts",
+            "profiles",
+            "iotas",
+            "conversations",
+            "drafts",
+          ] as CacheStore[]
         ).map(async (store) => {
           const storedEntries = await entries(store);
           await Promise.all(

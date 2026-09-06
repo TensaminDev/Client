@@ -18,6 +18,7 @@ import {
 } from "@tensamin/shared/data";
 import type z from "zod";
 import { createCache } from "@tensamin/cache";
+import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 import { useSession } from "./session";
 import { getChangedUserFields, selectUserFields } from "./selection";
@@ -239,6 +240,9 @@ export default function UserProvider(props: { children: ReactNode }) {
         const cached = cachedResult.success ? cachedResult.data : undefined;
         if (cached) {
           installProfile(cached);
+          log(2, "identity", "yellow", "Loaded UserData from cache", {
+            userId,
+          });
           const checkedAt = checkedAtRef.current[userId];
           if (checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
             checkedAtRef.current[userId] = Date.now();
@@ -266,8 +270,17 @@ export default function UserProvider(props: { children: ReactNode }) {
           ) {
             return storageRef.current[userId];
           }
-          installProfile(userData.data);
+          const profile = schemas.GetUserData.response.parse(userData.data);
+          installProfile(profile);
           checkedAtRef.current[userId] = Date.now();
+          try {
+            await cache.profiles.put(profile);
+            log(2, "identity", "orange", "Cached UserData", { userId });
+          } catch (cacheError) {
+            log(1, "identity", "red", "Failed to cache UserData", cacheError, {
+              userId,
+            });
+          }
           return storageRef.current[userId];
         } catch (error) {
           if (cached && storageRef.current[userId]) {
@@ -314,9 +327,17 @@ export default function UserProvider(props: { children: ReactNode }) {
       const user = schemas.GetUserData.response.parse(response.data);
       installProfile(user);
       checkedAtRef.current[userId] = Date.now();
+      try {
+        await createCache(String(await getAccountId())).profiles.put(user);
+        log(2, "identity", "orange", "Cached UserData", { userId });
+      } catch (cacheError) {
+        log(1, "identity", "red", "Failed to cache UserData", cacheError, {
+          userId,
+        });
+      }
       return selectUserFields(user, fields);
     },
-    [installProfile, send],
+    [getAccountId, installProfile, send],
   );
 
   const getIota = useCallback(
@@ -330,13 +351,21 @@ export default function UserProvider(props: { children: ReactNode }) {
         return pendingIota;
       }
 
-      const cached = iotaStorageRef.current[userId];
-      const checkedAt = iotaCheckedAtRef.current[userId];
-      if (cached && checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
-        return cached;
-      }
-
       const request = (async () => {
+        const cache = createCache(String(await getAccountId()));
+        const cached =
+          iotaStorageRef.current[userId] ?? (await cache.iotas.get(userId));
+        if (cached) {
+          iotaStorageRef.current[userId] = cached;
+          log(2, "identity", "yellow", "Loaded IotaData from cache", {
+            userId,
+          });
+          const checkedAt = iotaCheckedAtRef.current[userId];
+          if (checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
+            return cached;
+          }
+        }
+
         try {
           const response = await send("GetIotaData", { UserId: userId });
           if (response.type !== "GetIotaData") {
@@ -345,6 +374,14 @@ export default function UserProvider(props: { children: ReactNode }) {
           const iota = schemas.GetIotaData.response.parse(response.data);
           iotaStorageRef.current[userId] = iota;
           iotaCheckedAtRef.current[userId] = Date.now();
+          try {
+            await cache.iotas.put(userId, iota);
+            log(2, "identity", "yellow", "Cached IotaData", { userId });
+          } catch (cacheError) {
+            log(1, "identity", "red", "Failed to cache IotaData", cacheError, {
+              userId,
+            });
+          }
           return iota;
         } catch (error) {
           if (cached) {
@@ -362,30 +399,10 @@ export default function UserProvider(props: { children: ReactNode }) {
         delete pendingIotaRef.current[userId];
       }
     },
-    [send],
+    [getAccountId, send],
   );
 
-  const getRelayIota = useCallback(
-    async (userId: number): Promise<Iota> => {
-      if (!Number.isSafeInteger(userId) || userId <= 0) {
-        throw new Error("userId must be a positive integer");
-      }
-      const cached = iotaStorageRef.current[userId];
-      const checkedAt = iotaCheckedAtRef.current[userId];
-      if (cached && checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
-        return cached;
-      }
-      const response = await send("GetIotaData", { UserId: userId });
-      if (response.type !== "GetIotaData") {
-        throw new Error(`GetIotaData failed: ${response.type}`);
-      }
-      const iota = schemas.GetIotaData.response.parse(response.data);
-      iotaStorageRef.current[userId] = iota;
-      iotaCheckedAtRef.current[userId] = Date.now();
-      return iota;
-    },
-    [send],
-  );
+  const getRelayIota = getIota;
 
   const peek = useCallback(
     <const Fields extends UserFields>(userId: number, fields: Fields) => {
