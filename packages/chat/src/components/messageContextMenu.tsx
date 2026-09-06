@@ -576,6 +576,10 @@ export default function MessageContextMenu({
     setPickerOpen(false);
     setPickerClosing(false);
   }
+  function selectMiniReaction(emoji: string) {
+    void onReact(emoji);
+    setActiveMiniMenu(messageId);
+  }
   function setPickerVisibility(open: boolean) {
     setPickerOpen(open);
     setPickerClosing(!isMobile && !open);
@@ -624,7 +628,7 @@ export default function MessageContextMenu({
                 onOpenMenu={openMenu}
                 onOpenPicker={() => setPickerVisibility(true)}
                 usePickerTrigger={!isMobile}
-                onReact={selectReaction}
+                onReact={selectMiniReaction}
                 quickReactions={quickReactions}
                 onReply={() => setReplyTo(messageId)}
                 shiftIsPressed={shiftIsPressed}

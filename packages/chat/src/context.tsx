@@ -166,6 +166,30 @@ function updateMessageReaction<T extends EditableMessage>(
   return { ...message, Reactions: next };
 }
 
+function updateMessageReactionBySendTime<T extends EditableMessage>(
+  messages: T[],
+  sendTime: number,
+  reaction: string,
+  senderId: number,
+  accepted: boolean,
+): { next: T[]; updated: boolean } {
+  const index = messages.findIndex((message) => message.SendTime === sendTime);
+  if (index === -1) return { next: messages, updated: false };
+
+  const message = messages[index];
+  const nextMessage = updateMessageReaction(
+    message,
+    reaction,
+    senderId,
+    accepted,
+  );
+  if (nextMessage === message) return { next: messages, updated: false };
+
+  const next = [...messages];
+  next[index] = nextMessage;
+  return { next, updated: true };
+}
+
 function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   return new Uint8Array(bytes);
 }
@@ -944,13 +968,16 @@ export default function Provider({ children }: { children: ReactNode }) {
       senderId: number,
       accepted: boolean,
     ) => {
-      setLiveMessagesState((current) =>
-        current.map((message) =>
-          message.SendTime === sendTime
-            ? updateMessageReaction(message, reaction, senderId, accepted)
-            : message,
-        ),
-      );
+      setLiveMessagesState((current) => {
+        const { next, updated } = updateMessageReactionBySendTime(
+          current,
+          sendTime,
+          reaction,
+          senderId,
+          accepted,
+        );
+        return updated ? next : current;
+      });
 
       const queryKey = [
         "chat-messages",
@@ -959,24 +986,24 @@ export default function Provider({ children }: { children: ReactNode }) {
       ] as const;
       queryClient.setQueryData<InfiniteData<RawMessages>>(
         queryKey,
-        (current) =>
-          current
-            ? {
-                ...current,
-                pages: current.pages.map((page) =>
-                  page.map((message) =>
-                    message.SendTime === sendTime
-                      ? updateMessageReaction(
-                          message,
-                          reaction,
-                          senderId,
-                          accepted,
-                        )
-                      : message,
-                  ),
-                ),
-              }
-            : current,
+        (current) => {
+          if (!current) return current;
+
+          let updated = false;
+          const pages = current.pages.map((page) => {
+            const nextPage = updateMessageReactionBySendTime(
+              page,
+              sendTime,
+              reaction,
+              senderId,
+              accepted,
+            );
+            updated ||= nextPage.updated;
+            return nextPage.next;
+          });
+
+          return updated ? { ...current, pages } : current;
+        },
       );
     },
     [currentChatSecret, userIdValue],
@@ -1020,25 +1047,25 @@ export default function Provider({ children }: { children: ReactNode }) {
       let previousReactions: RawMessage["Reactions"];
       let foundMessage = false;
 
-      const applyOptimisticUpdate = (message: EditableMessage) => {
-        const current = message.Reactions ?? [];
-        previousReactions = current;
-        foundMessage = true;
+      const rememberPreviousReactions = (messages: EditableMessage[]) => {
+        const message = messages.find((item) => item.SendTime === sendTime);
+        if (!message) return;
 
-        return add
-          ? [...current, { Reaction: reaction, SenderId: ownId }]
-          : current.filter(
-              (item) => item.Reaction !== reaction || item.SenderId !== ownId,
-            );
+        previousReactions ??= message.Reactions;
+        foundMessage = true;
       };
 
-      setLiveMessagesState((current) =>
-        current.map((message) =>
-          message.SendTime === sendTime
-            ? { ...message, Reactions: applyOptimisticUpdate(message) }
-            : message,
-        ),
-      );
+      setLiveMessagesState((current) => {
+        rememberPreviousReactions(current);
+        const { next, updated } = updateMessageReactionBySendTime(
+          current,
+          sendTime,
+          reaction,
+          ownId,
+          add,
+        );
+        return updated ? next : current;
+      });
 
       const queryKey = [
         "chat-messages",
@@ -1047,22 +1074,25 @@ export default function Provider({ children }: { children: ReactNode }) {
       ] as const;
       queryClient.setQueryData<InfiniteData<RawMessages>>(
         queryKey,
-        (current) =>
-          current
-            ? {
-                ...current,
-                pages: current.pages.map((page) =>
-                  page.map((message) =>
-                    message.SendTime === sendTime
-                      ? {
-                          ...message,
-                          Reactions: applyOptimisticUpdate(message),
-                        }
-                      : message,
-                  ),
-                ),
-              }
-            : current,
+        (current) => {
+          if (!current) return current;
+
+          let updated = false;
+          const pages = current.pages.map((page) => {
+            rememberPreviousReactions(page);
+            const nextPage = updateMessageReactionBySendTime(
+              page,
+              sendTime,
+              reaction,
+              ownId,
+              add,
+            );
+            updated ||= nextPage.updated;
+            return nextPage.next;
+          });
+
+          return updated ? { ...current, pages } : current;
+        },
       );
 
       try {

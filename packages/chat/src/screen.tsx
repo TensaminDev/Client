@@ -284,7 +284,6 @@ export default function Screen() {
   });
   const totalSize = virtualizer.getTotalSize();
   const contentHeight = Math.max(totalSize, viewportHeight);
-  const verticalOffset = Math.max(0, viewportHeight - totalSize);
 
   const editLastMessage = useCallback(() => {
     if (editingMessageId !== null) return;
@@ -572,7 +571,7 @@ export default function Screen() {
                       top: 0,
                       left: 0,
                       width: "100%",
-                      transform: `translateY(${verticalOffset + virtualRow.start}px)`,
+                      transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
                     <div className="flex flex-col scale-y-[-1]">
