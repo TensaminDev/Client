@@ -871,6 +871,9 @@ async fn notify_message(
         .ok_or("MessageLive omitted Content")?;
     let message_version = container_value_by_name(message, "VersionNumber")
         .and_then(DataValue::as_number)
+        .map(u128::try_from)
+        .transpose()
+        .map_err(|_| "MessageLive VersionNumber must be nonnegative")?
         .unwrap_or(1);
     let keyring_bytes = decode_browser_base64(&config.keyring)?;
     let keyring = Keyring::from_bytes(&keyring_bytes).map_err(|error| error.to_string())?;
