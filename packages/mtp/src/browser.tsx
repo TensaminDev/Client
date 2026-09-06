@@ -25,13 +25,14 @@ import {
   INITIAL_SYNC_TIMEOUT,
   RECONNECT_JITTER,
   RECONNECT_LONG_INTERVAL,
-  RECONNECT_RESET,
   RECONNECT_TRIES,
   RETRY_INTERVAL,
   STATE_ACK_TIMEOUT,
 } from "./values";
 
 type BrowserMtpClient = Awaited<ReturnType<typeof createBrowserClient>>;
+
+const CONNECTION_TOAST_ID = "mtp-connection-toast";
 
 function createBrowserClient(
   options: Omit<Parameters<typeof MTPClient.create>[0], "schemas">,
@@ -172,6 +173,11 @@ export function BrowserProvider(props: {
   );
   const [identified, setIdentified] = useState(false);
   const [identifying, setIdentifying] = useState(false);
+  const [connectionToast, setConnectionToast] = useState<
+    | { kind: "reconnecting"; attempt: number }
+    | { kind: "failed"; description: string }
+    | null
+  >(null);
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
@@ -179,6 +185,27 @@ export function BrowserProvider(props: {
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
     useMessageHandlers();
   const connected = readyState === ConnectionState.Connected;
+
+  useEffect(() => {
+    if (!connectionToast) {
+      sonnerToast.dismiss(CONNECTION_TOAST_ID);
+      return;
+    }
+    if (connectionToast.kind === "reconnecting") {
+      sonnerToast.loading(
+        `Reconnecting to server... (attempt ${connectionToast.attempt} of ${RECONNECT_TRIES})`,
+        { id: CONNECTION_TOAST_ID, duration: Infinity },
+      );
+      return;
+    }
+    sonnerToast.error("Connection failed", {
+      id: CONNECTION_TOAST_ID,
+      description: connectionToast.description,
+      icon: null,
+      duration: Infinity,
+      closeButton: true,
+    });
+  }, [connectionToast]);
 
   const [mtpUrl, setMtpUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -240,7 +267,6 @@ export function BrowserProvider(props: {
     if (!mtpUrl) return;
     let attempts = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let reconnectResetTimer: ReturnType<typeof setTimeout> | null = null;
     let reconnectScheduled = false;
     let disposed = false;
     let connectionGeneration = 0;
@@ -252,33 +278,21 @@ export function BrowserProvider(props: {
       reconnectTimer = null;
       reconnectScheduled = false;
     };
-    const clearReconnectResetTimer = () => {
-      if (!reconnectResetTimer) return;
-      clearTimeout(reconnectResetTimer);
-      reconnectResetTimer = null;
-    };
     const scheduleReconnect = (error: unknown) => {
       if (disposed || reconnectScheduled) return;
       attempts += 1;
       const shortRetry = attempts <= RECONNECT_TRIES;
       if (!shortRetry) {
         log(0, "mtp", "red", "Reconnection attempts exhausted", error);
-        sonnerToast.error("Connection failed", {
-          id: "mtp-connection-toast",
+        setConnectionToast({
+          kind: "failed",
           description:
             error instanceof Error
               ? `${error.message.split(":")[0]}. Retrying in the background.`
               : "Connection lost. Retrying in the background.",
-          icon: null,
-          duration: Infinity,
-          closeButton: true,
-          promise: null,
-        } as unknown as Parameters<typeof sonnerToast.error>[1]);
+        });
       } else {
-        sonnerToast.loading(
-          `Reconnecting to server... (attempt ${attempts} of ${RECONNECT_TRIES})`,
-          { id: "mtp-connection-toast" },
-        );
+        setConnectionToast({ kind: "reconnecting", attempt: attempts });
       }
       const baseDelay = shortRetry ? RETRY_INTERVAL : RECONNECT_LONG_INTERVAL;
       const jitter = 1 + (Math.random() * 2 - 1) * RECONNECT_JITTER;
@@ -310,7 +324,6 @@ export function BrowserProvider(props: {
         detachSubscriptions();
         client?.disconnect();
         if (clientRef.current === client) clientRef.current = null;
-        clearReconnectResetTimer();
         if (generation === connectionGeneration) {
           setReadyState(ConnectionState.Disconnected);
           setIdentified(false);
@@ -378,7 +391,8 @@ export function BrowserProvider(props: {
               const state = client?.state ?? ConnectionState.Disconnected;
               setReadyState(state);
               if (
-                state === ConnectionState.Disconnected &&
+                (state === ConnectionState.Disconnected ||
+                  state === ConnectionState.Failed) &&
                 clientRef.current === client &&
                 !failed
               ) {
@@ -448,11 +462,8 @@ export function BrowserProvider(props: {
         setIdentifying(false);
         setIdentified(true);
         clearReconnectTimer();
-        clearReconnectResetTimer();
-        reconnectResetTimer = setTimeout(() => {
-          attempts = 0;
-          reconnectResetTimer = null;
-        }, RECONNECT_RESET * 1_000);
+        attempts = 0;
+        setConnectionToast(null);
         resolveConnectionRef.current?.();
       } catch (connectError) {
         if (disposed || generation !== connectionGeneration) {
@@ -480,12 +491,12 @@ export function BrowserProvider(props: {
     return () => {
       disposed = true;
       clearReconnectTimer();
-      clearReconnectResetTimer();
       cleanupConnection();
       setReadyState(ConnectionState.Disconnected);
       setIdentified(false);
       setIdentifying(false);
-      sonnerToast.dismiss("mtp-connection-toast");
+      setConnectionToast(null);
+      sonnerToast.dismiss(CONNECTION_TOAST_ID);
     };
   }, [attachSubscriptions, load, mtpUrl, props.blockConnection, subscribe]);
 
