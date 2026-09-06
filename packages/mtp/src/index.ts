@@ -10,3 +10,10 @@ export type {
   SealedRelayResult,
   SealedRelaySend,
 } from "./mtpContext";
+export { createSettingsClient } from "./settings";
+export type {
+  MessageStoragePolicy,
+  ReceiptPolicy,
+  SettingsClient,
+  UserBlob,
+} from "./settings";

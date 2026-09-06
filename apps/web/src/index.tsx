@@ -102,6 +102,8 @@ function LoginWrapper({ children }: { children: ReactNode }) {
 
 function ThemeStorageBridge() {
   const { load, save } = useStorage();
+  const { subscribe } = useStorage();
+  const [profileRevision, setProfileRevision] = useState(0);
   const {
     themeColor,
     setThemeColor,
@@ -124,6 +126,17 @@ function ThemeStorageBridge() {
     setThemeDesign,
   } = useTheme();
   const loadedRef = useRef(false);
+
+  useEffect(
+    () =>
+      subscribe((keys, bulk) => {
+        if (bulk && keys.some((key) => key.startsWith("theme_"))) {
+          loadedRef.current = false;
+          setProfileRevision((revision) => revision + 1);
+        }
+      }),
+    [subscribe],
+  );
 
   useEffect(() => {
     let active = true;
@@ -183,6 +196,7 @@ function ThemeStorageBridge() {
     setThemePolarity,
     setThemePrimaryColor,
     setThemeTint,
+    profileRevision,
   ]);
 
   useEffect(() => {

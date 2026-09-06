@@ -563,6 +563,9 @@ importers:
       "@tensamin/shared":
         specifier: workspace:*
         version: link:../shared
+      "@tensamin/settings":
+        specifier: workspace:*
+        version: link:../settings
       "@tensamin/storage":
         specifier: workspace:*
         version: link:../storage
@@ -575,9 +578,6 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
 
   packages/settings:
     dependencies:
@@ -611,6 +611,9 @@ importers:
       lucide-react:
         specifier: ^1.29.0
         version: 1.30.0(react@19.2.8)
+      mtp:
+        specifier: https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-b399e0b/mtp-0.3.0.tgz
+        version: https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-b399e0b/mtp-0.3.0.tgz
       react:
         specifier: ^19.2.8
         version: 19.2.8

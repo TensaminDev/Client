@@ -166,9 +166,10 @@ export default function Page() {
           value={draftUser.Username || ""}
         />
         <MDInput
+          className="bg-card p-1.5 px-2.5 rounded-lg border"
           paddingY="4px"
           paddingX="10px"
-          fontSize=".875rem"
+          fontSize=".9rem"
           placeholder="About Me"
           setValue={(value) =>
             updateDraftUser((previous) => ({ ...previous, About: value }))

@@ -37,6 +37,10 @@ export interface StorageContextValue {
     value: StorageSchema[K],
     options?: SaveOptions,
   ): Promise<void>;
+  apply(values: Partial<StorageSchema>): Promise<void>;
+  subscribe(
+    handler: (keys: (keyof StorageSchema)[], bulk: boolean) => void,
+  ): () => void;
   clear: () => Promise<void>;
   secureStorage: SecureStorageStatus | null;
 }
@@ -60,6 +64,9 @@ export default function StorageProvider(props: { children: ReactNode }) {
     new Map<keyof StorageSchema, Promise<StorageSchema[keyof StorageSchema]>>(),
   );
   const generations = useRef(new Map<keyof StorageSchema, number>());
+  const subscribers = useRef(
+    new Set<(keys: (keyof StorageSchema)[], bulk: boolean) => void>(),
+  );
   const [secureStorage, setSecureStorage] =
     useState<SecureStorageStatus | null>(null);
   const secureStorageRef = useRef<SecureStorageStatus | null>(null);
@@ -80,6 +87,7 @@ export default function StorageProvider(props: { children: ReactNode }) {
       storageRef.current = next;
       loadedKeys.current.add(key);
       setStorage(next);
+      for (const handler of subscribers.current) handler([key], false);
     },
     [],
   );
@@ -198,16 +206,49 @@ export default function StorageProvider(props: { children: ReactNode }) {
     loadPromises.current.clear();
     storageRef.current = defaults;
     setStorage(defaults);
+    for (const handler of subscribers.current) handler(keys, true);
   }, []);
+
+  const apply = useCallback(async (values: Partial<StorageSchema>) => {
+    const entries = Object.entries(values) as [
+      keyof StorageSchema,
+      StorageSchema[keyof StorageSchema],
+    ][];
+    await Promise.all(
+      entries.map(async ([key, value]) => {
+        generations.current.set(key, (generations.current.get(key) ?? 0) + 1);
+        if (JSON.stringify(value) === JSON.stringify(defaults[key])) {
+          await deleteDatabaseEntry("storage", key);
+        } else {
+          await setDatabaseEntry("storage", key, value);
+        }
+        loadedKeys.current.add(key);
+      }),
+    );
+    storageRef.current = { ...storageRef.current, ...values };
+    setStorage(storageRef.current);
+    const keys = entries.map(([key]) => key);
+    for (const handler of subscribers.current) handler(keys, true);
+  }, []);
+
+  const subscribe = useCallback(
+    (handler: (keys: (keyof StorageSchema)[], bulk: boolean) => void) => {
+      subscribers.current.add(handler);
+      return () => subscribers.current.delete(handler);
+    },
+    [],
+  );
 
   const value = useMemo<StorageContextValue>(
     () => ({
       load,
       save,
+      apply,
+      subscribe,
       clear,
       secureStorage,
     }),
-    [clear, load, save, secureStorage],
+    [apply, clear, load, save, secureStorage, subscribe],
   );
 
   if (error !== "" && errorDescription !== "") {

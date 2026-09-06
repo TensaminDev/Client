@@ -30,7 +30,7 @@ export default function Page() {
 
   return (
     <div
-      className={`px-3 flex flex-col gap-3 ${!(isTauri() && isMobile) && "pt-3"}`}
+      className={`relative h-full px-3 flex flex-col gap-3 ${!(isTauri() && isMobile) && "pt-3"}`}
     >
       <div className="flex gap-2">
         <AddConversationButton />

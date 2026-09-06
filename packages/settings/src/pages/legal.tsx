@@ -16,6 +16,7 @@ import {
   packageCount,
   packages,
 } from "../../../../licenses/third-party-credits.json";
+import { ExternalLink } from "lucide-react";
 
 const licenseTexts = import.meta.glob("../../../../licenses/**/*", {
   eager: true,
@@ -34,13 +35,32 @@ function getLicenseFiles(licensePackage: (typeof packages)[number]) {
 
 export default function Page() {
   return (
-    <div className="flex h-full min-h-0 flex-col gap-7">
+    <div className="flex h-full min-h-0 flex-col gap-5">
+      <div className="flex gap-2">
+        <a
+          className="underline"
+          href="https://legal.methanium.net/tensamin/privacy-policy/"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Privacy Policy
+        </a>
+        <a
+          className="underline"
+          href="https://legal.methanium.net/tensamin/terms-of-service/"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Terms of Service
+        </a>
+      </div>
+      <p className="text-xl font-semibold">Licenses</p>
       <div className="flex flex-col">
         <p>Last generated: {generatedAt}</p>
         <p>Package Count: {packageCount}</p>
       </div>
-      <div className="min-h-0 flex-1 max-h-[calc(100vh-180px)] overflow-auto pr-2">
-        <div className="flex flex-col gap-5 p-px">
+      <div className="min-h-0 flex-1 max-h-[calc(100vh-180px)] overflow-auto px-1">
+        <div className="flex flex-col gap-5 p-px pb-14!">
           {packages.map((licensePackage) => (
             <Card
               className="pb-0!"
@@ -60,7 +80,7 @@ export default function Page() {
                   </CardDescription>
                 </CardContent>
               )}
-              <CardFooter className="gap-2">
+              <CardFooter className="gap-2 px-0! flex md:pl-3! justify-center md:justify-start!">
                 <LicenseDialog licensePackage={licensePackage} />
                 {licensePackage.repository ? (
                   <a
@@ -71,12 +91,12 @@ export default function Page() {
                       .replace(".git", "")}
                   >
                     <Button variant="outline" className="cursor-pointer">
-                      Open Repository
+                      Repository <ExternalLink />
                     </Button>
                   </a>
                 ) : (
                   <Button disabled variant="outline" className="cursor-pointer">
-                    Open Repository
+                    Repository <ExternalLink />
                   </Button>
                 )}
                 {licensePackage.homepage ? (
@@ -86,12 +106,12 @@ export default function Page() {
                     href={licensePackage.homepage}
                   >
                     <Button variant="outline" className="cursor-pointer">
-                      Open Homepage
+                      Homepage <ExternalLink />
                     </Button>
                   </a>
                 ) : (
                   <Button disabled variant="outline" className="cursor-pointer">
-                    Open Homepage
+                    Homepage <ExternalLink />
                   </Button>
                 )}
               </CardFooter>
@@ -118,11 +138,11 @@ function LicenseDialog({
             disabled={!licenseFiles.some(({ text }) => text)}
             className="cursor-pointer"
           >
-            Open License
+            View Text
           </Button>
         )}
       />
-      <DialogContent className="flex max-h-[85vh] min-h-0 flex-col overflow-hidden sm:max-w-3xl">
+      <DialogContent className="flex max-h-[80vh] min-h-0 flex-col overflow-hidden sm:max-w-3xl">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2">
           {licenseFiles.map(({ fileName, text }, index) => (
             <section key={fileName} className="border-b last:border-b-0">

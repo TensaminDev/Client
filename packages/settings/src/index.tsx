@@ -3,6 +3,10 @@ import { createRoute, type AnyRoute } from "@tanstack/react-router";
 import SettingsLayout from "./layout";
 import { settingsPages } from "./manifest";
 
+export { SettingsProfilesProvider, useSettingsProfiles } from "./profiles";
+export type { SettingsProfile } from "./profiles";
+export { SettingsProfileOnboarding } from "./profileOnboarding";
+
 export function createSettingsRoute(parentRoute: AnyRoute) {
   const settingsRoute = createRoute({
     getParentRoute: () => parentRoute,

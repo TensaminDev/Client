@@ -14,6 +14,7 @@ import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
 import Session from "@tensamin/identity/session";
 import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
 import TAuthWrapper from "@tensamin/tauth/context";
+import { SettingsProfilesProvider } from "@tensamin/settings";
 
 function DeeplinkNavigator() {
   const { deeplinks } = useDeeplinks();
@@ -47,29 +48,31 @@ function DeeplinkNavigator() {
 
 export default function AppShell() {
   return (
-    <OnboardingGate>
-      <Crypto>
-        <DesktopMediaProvider>
-          <MTPProvider>
-            <CacheSync />
-            <DeeplinkNavigator />
-            <Session>
-              <UserProvider>
-                <CallInit />
-                <TAuthWrapper>
-                  <AppLayout>
-                    <ChatContext>
-                      <NotificationsProvider>
-                        <Outlet />
-                      </NotificationsProvider>
-                    </ChatContext>
-                  </AppLayout>
-                </TAuthWrapper>
-              </UserProvider>
-            </Session>
-          </MTPProvider>
-        </DesktopMediaProvider>
-      </Crypto>
-    </OnboardingGate>
+    <Crypto>
+      <DesktopMediaProvider>
+        <MTPProvider>
+          <SettingsProfilesProvider>
+            <OnboardingGate>
+              <CacheSync />
+              <DeeplinkNavigator />
+              <Session>
+                <UserProvider>
+                  <CallInit />
+                  <TAuthWrapper>
+                    <AppLayout>
+                      <ChatContext>
+                        <NotificationsProvider>
+                          <Outlet />
+                        </NotificationsProvider>
+                      </ChatContext>
+                    </AppLayout>
+                  </TAuthWrapper>
+                </UserProvider>
+              </Session>
+            </OnboardingGate>
+          </SettingsProfilesProvider>
+        </MTPProvider>
+      </DesktopMediaProvider>
+    </Crypto>
   );
 }

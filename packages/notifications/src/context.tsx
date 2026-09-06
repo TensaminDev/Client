@@ -185,6 +185,7 @@ export default function Provider(props: { children: React.ReactNode }) {
     subscribe,
     getChatSecret,
     userId,
+    chatSecretVersion,
   ]);
 
   return (

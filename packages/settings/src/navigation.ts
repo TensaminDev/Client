@@ -25,7 +25,7 @@ export const settingsNavigation = [
   },
   {
     category: "application",
-    path: "licenses",
-    label: "Licenses",
+    path: "legal",
+    label: "Legal",
   },
 ] as const;

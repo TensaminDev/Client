@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.tsx"
+    ".": "./src/index.tsx",
+    "./profiles": "./src/profileExports.ts"
   },
   "scripts": {
     "format": "pnpm exec prettier --write .",
@@ -23,7 +24,8 @@
     "@tensamin/identity": "workspace:*",
     "lucide-react": "^1.29.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "mtp": "*"
   },
   "devDependencies": {
     "vite": "^8.2.1"

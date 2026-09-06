@@ -1,7 +1,6 @@
 import { z } from "zod";
 import type { ThemeDesign } from "@methanium/ui";
 
-import { legalDocsSchema } from "./features/legal/schema";
 import {
   settingsStorageDefaults,
   type SettingsStorageDefaults,
@@ -32,6 +31,36 @@ function bytesFromProtocol(value: z.infer<typeof bytesLike>): Uint8Array {
 }
 
 const protocolBytesResponse = bytesLike.transform(bytesFromProtocol);
+
+const blobId = z.string().refine((value) => {
+  const length = new TextEncoder().encode(value).byteLength;
+  return length >= 1 && length <= 256;
+}, "BlobId must be between 1 and 256 UTF-8 bytes");
+const revision = z.number().int().nonnegative();
+const userBlobResponse = z.object({
+  BlobId: blobId,
+  Blob: protocolBytesResponse.refine(
+    (value) => value.byteLength <= 1_048_576,
+    "Blob must not exceed 1 MiB",
+  ),
+  VersionNumber: revision,
+  UpdatedAt: z.number(),
+});
+const receiptPolicyResponse = z.object({
+  SendReadReceipts: z.boolean(),
+  SendReceivedReceipts: z.boolean(),
+  VersionNumber: revision,
+});
+const messageStoragePolicyResponse = z.object({
+  MessageHistoryMode: z.enum(["retain", "delete_after_client_delivery"]),
+  MessageRetentionDuration: z
+    .number()
+    .int()
+    .min(60_000)
+    .max(31_536_000_000)
+    .optional(),
+  VersionNumber: revision,
+});
 
 const chatSecretResponse = z.object({
   UserId: z.string(),
@@ -142,6 +171,20 @@ const clientStateSync = authPayload.extend({
   Messages: z.array(Message).default([]),
   DeletedMessageIds: z.array(z.number()).default([]),
   DeletedContactIds: z.array(z.number()).default([]),
+  Blobs: z.array(userBlobResponse).default([]),
+  DeletedBlobIds: z.array(blobId).default([]),
+  BlockedUserIds: z.array(z.number().int().positive()).default([]),
+  SendReadReceipts: z.boolean().default(true),
+  SendReceivedReceipts: z.boolean().default(false),
+  MessageHistoryMode: z
+    .enum(["retain", "delete_after_client_delivery"])
+    .default("retain"),
+  MessageRetentionDuration: z
+    .number()
+    .int()
+    .min(60_000)
+    .max(31_536_000_000)
+    .optional(),
 });
 
 export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
@@ -237,6 +280,83 @@ export const mtp = {
       VersionNumber: z.number().int().nonnegative(),
     }),
     response: z.object({}),
+  },
+  UserBlobPut: {
+    request: z.object({
+      BlobId: blobId,
+      Blob: protocolBytes.refine((value) => value.byteLength <= 1_048_576),
+      ExpectedRevision: revision.optional(),
+    }),
+    response: userBlobResponse,
+  },
+  UserBlobGet: {
+    request: z.object({ BlobId: blobId }),
+    response: userBlobResponse,
+  },
+  UserBlobList: {
+    request: z.object({}).optional(),
+    response: z.object({ Blobs: z.array(userBlobResponse) }),
+  },
+  UserBlobDelete: {
+    request: z.object({ BlobId: blobId, ExpectedRevision: revision }),
+    response: z.object({ VersionNumber: revision.optional() }),
+  },
+  UserBlobChanged: {
+    request: z.object({}).optional(),
+    response: z.object({
+      BlobId: blobId,
+      VersionNumber: revision,
+      Deleted: z.boolean(),
+    }),
+  },
+  UserBlock: {
+    request: z.object({ BlockedUserId: z.number().int().positive() }),
+    response: z.object({
+      BlockedUserId: z.number().int().positive(),
+      VersionNumber: revision,
+    }),
+  },
+  UserUnblock: {
+    request: z.object({ BlockedUserId: z.number().int().positive() }),
+    response: z.object({}),
+  },
+  BlockedUsersGet: {
+    request: z.object({}).optional(),
+    response: z.object({
+      BlockedUserIds: z.array(z.number().int().positive()),
+    }),
+  },
+  BlockedUsersChanged: {
+    request: z.object({}).optional(),
+    response: z.object({
+      BlockedUserId: z.number().int().positive(),
+      VersionNumber: revision,
+      Deleted: z.boolean(),
+    }),
+  },
+  ReceiptPolicyGet: {
+    request: z.object({}).optional(),
+    response: receiptPolicyResponse,
+  },
+  ReceiptPolicySet: {
+    request: receiptPolicyResponse.omit({ VersionNumber: true }),
+    response: receiptPolicyResponse,
+  },
+  ReceiptPolicyChanged: {
+    request: z.object({}).optional(),
+    response: receiptPolicyResponse,
+  },
+  MessageStoragePolicyGet: {
+    request: z.object({}).optional(),
+    response: messageStoragePolicyResponse,
+  },
+  MessageStoragePolicySet: {
+    request: messageStoragePolicyResponse.omit({ VersionNumber: true }),
+    response: messageStoragePolicyResponse,
+  },
+  MessageStoragePolicyChanged: {
+    request: z.object({}).optional(),
+    response: messageStoragePolicyResponse,
   },
   GetUserData: {
     request: z.object({
@@ -531,14 +651,12 @@ export interface Storage extends SettingsStorageDefaults {
   mtp_keyring: string;
   onboarding_done: boolean;
   onboarding_started: boolean;
+  active_settings_profile_id: string;
+  settings_profile_prompted_session_id: number;
   tauri_permissions_done: boolean;
-  ppandtos_done: boolean;
-  accepted_terms_of_service: boolean;
-  accepted_privacy_policy: boolean;
   analytics_crash_reports: boolean;
   analytics_usage_data: boolean;
   analytics_done: boolean;
-  legal_docs: z.infer<typeof legalDocsSchema>;
   cached_contacts: Contacts;
   cached_communities: Communities;
   cache_contacts: number;
@@ -593,22 +711,13 @@ export const storageDefaults: Storage = {
   mtp_keyring: "",
   onboarding_done: false,
   onboarding_started: false,
+  active_settings_profile_id: "",
+  settings_profile_prompted_session_id: 0,
   tauri_permissions_done: false,
-  ppandtos_done: false,
-  accepted_terms_of_service: false,
-  accepted_privacy_policy: false,
   analytics_crash_reports: true,
   analytics_usage_data: true,
   analytics_done: false,
   ...settingsStorageDefaults,
-  legal_docs: {
-    tos: {
-      hash: "0000000000000000000000000000000000000000000000000000000000000000",
-    },
-    pp: {
-      hash: "0000000000000000000000000000000000000000000000000000000000000000",
-    },
-  },
   cached_contacts: [],
   cached_communities: [],
   cache_contacts: 5,

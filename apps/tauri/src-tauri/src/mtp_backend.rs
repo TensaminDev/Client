@@ -1102,7 +1102,7 @@ fn number_to_data(value: i128) -> DataValue {
 fn is_bytes_field(field: &str) -> bool {
     matches!(
         field,
-        "EncryptedSecret" | "KemCiphertext" | "Payload" | "PublicKeys"
+        "Blob" | "EncryptedSecret" | "KemCiphertext" | "Payload" | "PublicKeys"
     )
 }
 

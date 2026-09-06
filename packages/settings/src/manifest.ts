@@ -9,7 +9,7 @@ import Cache from "./pages/cache";
 import Theme from "./pages/theme";
 import Accessibility from "./pages/accessibility";
 import Hotkeys from "./pages/hotkeys";
-import Licenses from "./pages/licenses";
+import Legal from "./pages/legal";
 
 const pageComponents = {
   profile: Profile,
@@ -20,7 +20,7 @@ const pageComponents = {
   theme: Theme,
   accessibility: Accessibility,
   hotkeys: Hotkeys,
-  licenses: Licenses,
+  legal: Legal,
 } as const;
 
 export const settingsPages = [

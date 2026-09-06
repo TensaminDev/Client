@@ -43,7 +43,7 @@ const HotkeysContext = createContext<HotkeysContextValue | undefined>(
 );
 
 export function HotkeysProvider({ children }: { children: ReactNode }) {
-  const { load, save } = useStorage();
+  const { load, save, subscribe } = useStorage();
   const [overrides, setOverrides] = useState<Record<string, Hotkey | null>>({});
   const [handlersRevision, setHandlersRevision] = useState(0);
   const [globalStatuses, setGlobalStatuses] = useState<
@@ -51,6 +51,17 @@ export function HotkeysProvider({ children }: { children: ReactNode }) {
   >({});
   const handlers = useRef(new Map<string, Set<() => void>>());
   const overridesRef = useRef<Record<string, Hotkey | null>>({});
+
+  const [profileRevision, setProfileRevision] = useState(0);
+  useEffect(
+    () =>
+      subscribe((keys, bulk) => {
+        if (bulk && keys.includes("hotkey_overrides")) {
+          setProfileRevision((revision) => revision + 1);
+        }
+      }),
+    [subscribe],
+  );
 
   useEffect(() => {
     let active = true;
@@ -67,7 +78,7 @@ export function HotkeysProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [load]);
+  }, [load, profileRevision]);
 
   const persist = useCallback(
     (next: Record<string, Hotkey | null>) => {

@@ -28,11 +28,7 @@ export default function Page() {
         label="Sidebar message preview"
         id="settings.show_start_of_last_message_in_sidebar"
       />
-      <p className="text-destructive pt-6">
-        Trusted embed domains can get your IP-Address! Only add domains if you
-        really trust them!
-      </p>
-      <div>
+      <div className="pt-3">
         <Button
           variant="outline"
           onClick={() => void save("reactions", storageDefaults.reactions)}
@@ -40,6 +36,10 @@ export default function Page() {
           Reset Emoji Ranks
         </Button>
       </div>
+      <p className="text-destructive pt-4">
+        Trusted embed domains can get your IP-Address! Only add domains if you
+        really trust them!
+      </p>
       <List label="Trusted embed domains" id="chat_trusted_domains" />
     </div>
   );
