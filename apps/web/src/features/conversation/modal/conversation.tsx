@@ -1,6 +1,7 @@
 import { Basic, Loading } from "@/components/modals/basic";
 import Wrapper from "@tensamin/identity/wrapper";
 import {
+  cn,
   ContextMenu,
   ContextMenuContent,
   ContextMenuGroup,
@@ -9,7 +10,6 @@ import {
   useSidebar,
 } from "@methanium/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { Bell } from "lucide-react";
 import { useSession } from "@tensamin/identity/session";
 
 export default function ConversationModal({ userId }: { userId: number }) {
@@ -24,7 +24,7 @@ export default function ConversationModal({ userId }: { userId: number }) {
       <ContextMenuTrigger
         render={
           <div
-            className="select-none cursor-pointer"
+            className="relative select-none cursor-pointer"
             onClick={() => {
               navigate({ to: "/chat", search: { id: userId } });
               setOpenMobile(false);
@@ -40,23 +40,17 @@ export default function ConversationModal({ userId }: { userId: number }) {
                 "OnlineStatus",
                 "Status",
               ]}
-              component={(user) => (
-                <Basic
-                  user={user}
-                  extra={
-                    notifications > 0 ? (
-                      <span
-                        className="absolute right-2 top-2 flex min-w-5 items-center justify-center gap-1 rounded-full border border-primary/40 bg-primary px-1.5 py-0.5 text-[10px] leading-none text-primary-foreground"
-                        aria-label={`${notifications} unread ${notifications === 1 ? "message" : "messages"}`}
-                      >
-                        <Bell className="size-2.5" aria-hidden="true" />
-                        {notifications > 99 ? "99+" : notifications}
-                      </span>
-                    ) : null
-                  }
-                />
-              )}
+              component={(user) => <Basic user={user} />}
             />
+            <span
+              hidden={notifications === 0}
+              className={cn(
+                "h-4 absolute -left-1 -top-1 flex items-center justify-center text-[10.5px] leading-none text-primary-foreground bg-(--destructive) rounded-full",
+                notifications < 10 ? "w-4" : "w-auto",
+              )}
+            >
+              {notifications > 99 ? "99+" : notifications}
+            </span>
           </div>
         }
       />

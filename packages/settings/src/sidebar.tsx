@@ -18,7 +18,9 @@ export function SettingsSidebar({
   return (
     <div
       className={cn(
-        mobile ? "w-full p-1" : "p-3 rounded-tl-2xl border-r bg-input/15 w-50",
+        mobile
+          ? "w-full p-1"
+          : "h-full min-h-0 w-auto shrink-0 overflow-y-auto rounded-tl-2xl border-r bg-input/15 p-3",
         "flex flex-col gap-6",
         className,
       )}
@@ -33,7 +35,7 @@ export function SettingsSidebar({
             .map((page) => (
               <Button
                 key={page.path}
-                className="w-full"
+                className="w-full px-4!"
                 variant="outline"
                 onClick={() => navigate({ to: `/settings/${page.path}` })}
               >
@@ -42,9 +44,7 @@ export function SettingsSidebar({
             ))}
         </div>
       ))}
-      <div className="mt-auto">
-        <ClearStorageButton className="w-full" />
-      </div>
+      <ClearStorageButton />
     </div>
   );
 }

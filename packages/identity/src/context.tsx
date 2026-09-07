@@ -240,9 +240,6 @@ export default function UserProvider(props: { children: ReactNode }) {
         const cached = cachedResult.success ? cachedResult.data : undefined;
         if (cached) {
           installProfile(cached);
-          log(2, "identity", "yellow", "Loaded UserData from cache", {
-            userId,
-          });
           const checkedAt = checkedAtRef.current[userId];
           if (checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
             checkedAtRef.current[userId] = Date.now();

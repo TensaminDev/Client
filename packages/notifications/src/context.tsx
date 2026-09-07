@@ -53,6 +53,7 @@ export default function Provider(props: { children: React.ReactNode }) {
       const latest = latestReadRef.current.get(contactUserId) ?? -1;
       if (latest >= through) return;
       latestReadRef.current.set(contactUserId, through);
+      setNotifications(contactUserId, 0, through);
 
       try {
         const response = await send("ReadNotification", {
@@ -162,11 +163,14 @@ export default function Provider(props: { children: React.ReactNode }) {
           if (!data.Message || !content || !data.SenderId) return;
 
           if (isCurrentChat) {
-            addLiveMessage({
-              ...data.Message,
-              Content: content ?? "Failed to decrypt message",
-              decryptionFailed: content === null,
-            });
+            addLiveMessage(
+              {
+                ...data.Message,
+                Content: content ?? "Failed to decrypt message",
+                decryptionFailed: content === null,
+              },
+              !appFocused,
+            );
           }
 
           if (!shouldAlert) return;

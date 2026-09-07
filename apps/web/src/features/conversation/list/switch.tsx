@@ -23,7 +23,7 @@ export default function Switch(props: {
   return (
     <div
       role="tablist"
-      className="border relative grid grid-cols-2 rounded-4xl bg-card p-1 select-none"
+      className="border relative grid grid-cols-2 rounded-4xl bg-card p-1 select-none mx-2"
     >
       <div
         className="absolute top-1 bottom-1 rounded-4xl bg-input shadow-sm transition-all duration-300 ease-in-out"

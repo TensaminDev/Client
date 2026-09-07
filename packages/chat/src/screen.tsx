@@ -97,6 +97,21 @@ function DateSeparator({ label }: { label: string }) {
   );
 }
 
+function NewMessagesSeparator() {
+  return (
+    <div
+      className="my-3 flex w-full items-center gap-3 px-3"
+      role="separator"
+    >
+      <div className="h-px flex-1 bg-(--destructive)" />
+      <span className="shrink-0 text-xs font-medium text-destructive">
+        New messages
+      </span>
+      <div className="h-px flex-1 bg-(--destructive)" />
+    </div>
+  );
+}
+
 function buildMessageChunks(
   messages: Array<RawMessage | LiveMessage>,
   keyPrefix: string,
@@ -133,6 +148,7 @@ export default function Screen() {
   const {
     getMessages,
     liveMessages,
+    newMessagesStart,
     clearLiveMessages,
     userId,
     chatSecret,
@@ -585,9 +601,12 @@ export default function Screen() {
                         const dateLabel = startsNewDay
                           ? formatMessageDate(message.SendTime)
                           : null;
+                        const startsNewMessages =
+                          message.SendTime === newMessagesStart;
                         const isGrouped =
                           lastMessage &&
                           !startsNewDay &&
+                          !startsNewMessages &&
                           !message.ReplyId &&
                           lastMessage.SenderId === message.SenderId &&
                           Math.round(lastMessage.SendTime / 10000) ===
@@ -604,6 +623,7 @@ export default function Screen() {
                                 {dateLabel && (
                                   <DateSeparator label={dateLabel} />
                                 )}
+                                {startsNewMessages && <NewMessagesSeparator />}
                                 <Message
                                   editing={
                                     editingMessageId === message.SendTime

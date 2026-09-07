@@ -296,6 +296,7 @@ export default function Provider({ children }: { children: ReactNode }) {
   const [errorDescription, setErrorDescription] = useState("");
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
+  const [newMessagesStart, setNewMessagesStart] = useState<number | null>(null);
   const [ownId, setOwnId] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, StoredDraftState>>({});
   const draftsRef = useRef<Record<string, StoredDraftState>>({});
@@ -1151,13 +1152,21 @@ export default function Provider({ children }: { children: ReactNode }) {
   );
 
   const addLiveMessage = useCallback(
-    (message: RawMessage) => {
+    (message: RawMessage, markAsNew = false) => {
       const localId =
         globalThis.crypto?.randomUUID?.() ??
         `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       if (message.SenderId !== ownId) {
         moveUserIdToTop(userIdValue);
+      }
+
+      if (markAsNew) {
+        setNewMessagesStart((current) =>
+          current === null
+            ? message.SendTime
+            : Math.min(current, message.SendTime),
+        );
       }
 
       setLiveMessagesState((prev) => [
@@ -1183,6 +1192,7 @@ export default function Provider({ children }: { children: ReactNode }) {
 
   const clearLiveMessages = useCallback(() => {
     setLiveMessagesState([]);
+    setNewMessagesStart(null);
   }, []);
 
   // Get live updates for message states
@@ -1269,6 +1279,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           getMessages,
           getChatSecret,
           liveMessages: () => liveMessagesState,
+          newMessagesStart,
           addLiveMessage,
           editMessage,
           deleteMessage,
@@ -1302,7 +1313,11 @@ type contextType = {
     version?: number,
   ) => Promise<Uint8Array | null>;
   liveMessages: () => LiveMessage[];
-  addLiveMessage: (message: RawMessage) => {
+  newMessagesStart: number | null;
+  addLiveMessage: (
+    message: RawMessage,
+    markAsNew?: boolean,
+  ) => {
     setFailed: (failed: boolean) => void;
     setMessageState: (messageState: RawMessage["MessageState"]) => void;
   };

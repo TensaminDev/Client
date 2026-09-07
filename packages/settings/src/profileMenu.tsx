@@ -86,7 +86,7 @@ export function SettingsProfileMenu() {
 
   return (
     <>
-      <div className="flex gap-2">
+      <div className="flex gap-2 w-full">
         <Button
           aria-label="Create profile"
           className="size-9 p-0"
@@ -100,7 +100,7 @@ export function SettingsProfileMenu() {
           value={activeProfile?.id ?? ""}
           onValueChange={(id) => id && void selectProfile(id)}
         >
-          <SelectTrigger className="min-w-50 flex-1 md:max-w-20">
+          <SelectTrigger className="w-full md:max-w-43">
             <SelectValue>{activeProfile?.name ?? "Local settings"}</SelectValue>
           </SelectTrigger>
           <SelectContent className="p-1">

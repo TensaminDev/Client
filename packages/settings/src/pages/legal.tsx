@@ -35,7 +35,7 @@ function getLicenseFiles(licensePackage: (typeof packages)[number]) {
 
 export default function Page() {
   return (
-    <div className="flex h-full min-h-0 flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div className="flex gap-2">
         <a
           className="underline"
@@ -59,8 +59,8 @@ export default function Page() {
         <p>Last generated: {generatedAt}</p>
         <p>Package Count: {packageCount}</p>
       </div>
-      <div className="min-h-0 flex-1 max-h-[calc(100vh-180px)] overflow-auto px-1">
-        <div className="flex flex-col gap-5 p-px pb-14!">
+      <div className="px-1">
+        <div className="flex flex-col gap-5 p-px">
           {packages.map((licensePackage) => (
             <Card
               className="pb-0!"

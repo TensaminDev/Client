@@ -26,12 +26,12 @@ export default function List() {
   });
 
   return (
-    <div className="flex flex-col gap-3 h-full">
+    <div className="flex flex-col h-full">
       <Switch category={category} setCategory={setCategory} />
       <div
         ref={scrollRef}
         id="conversation-list"
-        className="overflow-y-auto flex-1 h-full p-px"
+        className="overflow-y-auto flex-1 h-full p-1 px-2 pt-3"
       >
         {items === null ? (
           <div className="flex items-center justify-center pt-5">

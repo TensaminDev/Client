@@ -123,15 +123,14 @@ export function updateContactNotifications(
     ];
   }
 
-  return contacts.map((item) =>
-    item.UserId === userId
-      ? {
-          ...item,
-          LastMessageAt: lastMessageAt,
-          notifications: nextNotifications,
-        }
-      : item,
-  );
+  return [
+    {
+      ...contact,
+      LastMessageAt: lastMessageAt,
+      notifications: nextNotifications,
+    },
+    ...contacts.filter((item) => item.UserId !== userId),
+  ];
 }
 
 export function useMessageHandlers() {
