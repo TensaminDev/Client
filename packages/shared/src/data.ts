@@ -699,9 +699,6 @@ export interface Storage extends SettingsStorageDefaults {
   active_settings_profile_id: string;
   settings_profile_prompted_session_id: number;
   tauri_permissions_done: boolean;
-  analytics_crash_reports: boolean;
-  analytics_usage_data: boolean;
-  analytics_done: boolean;
   cached_contacts: Contacts;
   cached_communities: Communities;
   cache_contacts: number;
@@ -759,9 +756,6 @@ export const storageDefaults: Storage = {
   active_settings_profile_id: "",
   settings_profile_prompted_session_id: 0,
   tauri_permissions_done: false,
-  analytics_crash_reports: true,
-  analytics_usage_data: true,
-  analytics_done: false,
   ...settingsStorageDefaults,
   cached_contacts: [],
   cached_communities: [],

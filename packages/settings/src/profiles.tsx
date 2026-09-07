@@ -29,7 +29,6 @@ export const profileStorageKeys = (
       key !== "settings.read_confirmations" &&
       key !== "settings.receive_confirmations") ||
     key.startsWith("theme_") ||
-    key.startsWith("analytics_") ||
     key.startsWith("call_mute_range_") ||
     key.startsWith("chat_picker_") ||
     [

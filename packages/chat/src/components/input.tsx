@@ -119,7 +119,6 @@ export default function InputComponent({
   useHotkey(editLastMessageHotkey, onEditLastMessage, {
     enabled: value.length === 0,
     ignoreInputs: false,
-    target: inputBoxRef,
   });
 
   useEffect(() => {
