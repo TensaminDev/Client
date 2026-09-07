@@ -707,8 +707,10 @@ export function SettingsProfilesProvider({
           return;
         }
         try {
-          if (!event.blob) throw new Error("Blob change omitted its contents");
-          const remote = await decryptProfile(event.blob, keyringRef.current);
+          const remote = await decryptProfile(
+            await client.getBlob(event.id),
+            keyringRef.current,
+          );
           const localSettings = await readSettings();
           const current = profilesRef.current.find(
             (profile) => profile.id === activeIdRef.current,
@@ -740,7 +742,7 @@ export function SettingsProfilesProvider({
 
   useEffect(
     () =>
-      client.subscribeBlobChanges((event) => {
+      client.subscribeBlobChanges(async (event) => {
         if (
           event.id !== LEGAL_BLOB_ID ||
           event.revision <= legalRevision.current
@@ -752,31 +754,27 @@ export function SettingsProfilesProvider({
           setLegalRequired(true);
           return;
         }
-        const blob = event.blob;
-        if (!blob) {
-          setLegalError("Blob change omitted its contents");
-          return;
+        try {
+          const acceptance = await decryptLegal(
+            await client.getBlob(event.id),
+            keyringRef.current,
+          );
+          legalRevision.current = event.revision;
+          const changed =
+            acceptance.privacyPolicyHash !==
+              legalHashes.current.privacyPolicyHash ||
+            acceptance.termsOfServiceHash !==
+              legalHashes.current.termsOfServiceHash;
+          setLegalChanged(changed);
+          setLegalRequired(changed);
+          setLegalError("");
+        } catch (caught) {
+          setLegalError(
+            caught instanceof Error
+              ? caught.message
+              : "Failed to apply legal acceptance",
+          );
         }
-        void (async () => {
-          try {
-            const acceptance = await decryptLegal(blob, keyringRef.current);
-            legalRevision.current = event.revision;
-            const changed =
-              acceptance.privacyPolicyHash !==
-                legalHashes.current.privacyPolicyHash ||
-              acceptance.termsOfServiceHash !==
-                legalHashes.current.termsOfServiceHash;
-            setLegalChanged(changed);
-            setLegalRequired(changed);
-            setLegalError("");
-          } catch (caught) {
-            setLegalError(
-              caught instanceof Error
-                ? caught.message
-                : "Failed to apply legal acceptance",
-            );
-          }
-        })();
       }),
     [client],
   );
