@@ -179,12 +179,6 @@ const clientStateSync = authPayload.extend({
   Messages: z.array(Message).default([]),
   DeletedMessageIds: z.array(z.number()).default([]),
   DeletedContactIds: z.array(z.number()).default([]),
-  Blobs: z
-    .array(
-      userBlobMetadata.extend({ Blob: userBlobResponse.shape.Blob.optional() }),
-    )
-    .default([]),
-  DeletedBlobIds: z.array(blobId).default([]),
   BlockedUserIds: z.array(z.number().int().positive()).default([]),
   SendReadReceipts: z.boolean().default(true),
   SendReceivedReceipts: z.boolean().default(false),
@@ -299,7 +293,7 @@ export const mtp = {
       Blob: protocolBytes.refine((value) => value.byteLength <= 1_048_576),
       ExpectedRevision: revision.optional(),
     }),
-    response: userBlobResponse,
+    response: userBlobMetadata,
   },
   UserBlobGet: {
     request: z.object({ BlobId: blobId }),
@@ -307,7 +301,7 @@ export const mtp = {
   },
   UserBlobList: {
     request: z.object({}).optional(),
-    response: z.object({ Blobs: z.array(userBlobResponse) }),
+    response: z.object({ Blobs: z.array(userBlobMetadata) }),
   },
   UserBlobDelete: {
     request: z.object({ BlobId: blobId, ExpectedRevision: revision }),
@@ -315,11 +309,11 @@ export const mtp = {
   },
   UserBlobChanged: {
     request: z.object({}).optional(),
-    response: userBlobMetadata.extend({
-      Blob: userBlobResponse.shape.Blob.optional(),
-      UpdatedAt: z.number().optional(),
-      Deleted: z.boolean(),
-    }),
+    response: userBlobMetadata
+      .pick({ BlobId: true, VersionNumber: true })
+      .extend({
+        Deleted: z.boolean(),
+      }),
   },
   UserBlock: {
     request: z.object({ BlockedUserId: z.number().int().positive() }),

@@ -46,11 +46,10 @@ function blob(data: ProtocolMessage<"UserBlobGet">["data"]): UserBlob {
 }
 
 function blobMetadata(
-  data: ProtocolMessage<"ClientStateSync">["data"]["Blobs"][number],
+  data: ProtocolMessage<"UserBlobList">["data"]["Blobs"][number],
 ): UserBlobMetadata {
   return {
     id: data.BlobId,
-    ...(data.Blob ? { ciphertext: data.Blob } : {}),
     revision: data.VersionNumber,
     updatedAt: data.UpdatedAt,
   };
@@ -114,16 +113,20 @@ export function createSettingsClient({
       change: { reason: string; value: unknown },
     ) {
       logBlobPut({ id, ...change });
-      return blob(
-        expect(
-          "UserBlobPut",
-          await send("UserBlobPut", {
-            BlobId: id,
-            Blob: ownedBytes(ciphertext),
-            ExpectedRevision: 0,
-          }),
-        ).data,
-      );
+      const stored = expect(
+        "UserBlobPut",
+        await send("UserBlobPut", {
+          BlobId: id,
+          Blob: ownedBytes(ciphertext),
+          ExpectedRevision: 0,
+        }),
+      ).data;
+      return {
+        id: stored.BlobId,
+        ciphertext,
+        revision: stored.VersionNumber,
+        updatedAt: stored.UpdatedAt,
+      };
     },
     async updateBlob(
       id: string,
@@ -132,16 +135,20 @@ export function createSettingsClient({
       change: { reason: string; value: unknown },
     ) {
       logBlobPut({ id, ...change });
-      return blob(
-        expect(
-          "UserBlobPut",
-          await send("UserBlobPut", {
-            BlobId: id,
-            Blob: ownedBytes(ciphertext),
-            ExpectedRevision: expectedRevision,
-          }),
-        ).data,
-      );
+      const stored = expect(
+        "UserBlobPut",
+        await send("UserBlobPut", {
+          BlobId: id,
+          Blob: ownedBytes(ciphertext),
+          ExpectedRevision: expectedRevision,
+        }),
+      ).data;
+      return {
+        id: stored.BlobId,
+        ciphertext,
+        revision: stored.VersionNumber,
+        updatedAt: stored.UpdatedAt,
+      };
     },
     async getBlob(id: string) {
       return blob(
@@ -149,8 +156,10 @@ export function createSettingsClient({
       );
     },
     async listBlobs() {
-      if (!clientState) throw new Error("Client state is unavailable");
-      return clientState.Blobs.map(blobMetadata);
+      return expect(
+        "UserBlobList",
+        await send("UserBlobList", {}),
+      ).data.Blobs.map(blobMetadata);
     },
     async deleteBlob(id: string, expectedRevision: number) {
       return (
@@ -237,7 +246,6 @@ export function createSettingsClient({
         id: string;
         revision: number;
         deleted: boolean;
-        blob?: UserBlob;
       }) => void,
     ) {
       return subscribe("UserBlobChanged", ({ data }) =>
@@ -245,16 +253,6 @@ export function createSettingsClient({
           id: data.BlobId,
           revision: data.VersionNumber,
           deleted: data.Deleted,
-          ...(data.Blob
-            ? {
-                blob: {
-                  id: data.BlobId,
-                  ciphertext: data.Blob,
-                  revision: data.VersionNumber,
-                  updatedAt: data.UpdatedAt ?? 0,
-                },
-              }
-            : {}),
         }),
       );
     },
