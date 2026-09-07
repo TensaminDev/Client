@@ -99,10 +99,7 @@ function DateSeparator({ label }: { label: string }) {
 
 function NewMessagesSeparator() {
   return (
-    <div
-      className="my-3 flex w-full items-center gap-3 px-3"
-      role="separator"
-    >
+    <div className="my-3 flex w-full items-center gap-3 px-3" role="separator">
       <div className="h-px flex-1 bg-(--destructive)" />
       <span className="shrink-0 text-xs font-medium text-destructive">
         New messages
