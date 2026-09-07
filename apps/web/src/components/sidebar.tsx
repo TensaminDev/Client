@@ -194,8 +194,8 @@ export default function Sidebar() {
   const content = (
     <>
       <SidebarContent className="pt-2">
-        <div className="h-full w-full flex flex-col gap-3 p-2 pt-0!">
-          <div>
+        <div className="h-full w-full flex flex-col gap-3 pt-0!">
+          <div className="px-2">
             <Wrapper
               loading={<Loading />}
               userId={"own"}

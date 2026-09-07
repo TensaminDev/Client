@@ -5,6 +5,7 @@ import {
   useState,
   useContext,
   useEffect,
+  useCallback,
 } from "react";
 import { useStorage } from "@tensamin/storage/context";
 import type { Contacts, Communities, Calls } from "@tensamin/shared/data";
@@ -16,6 +17,11 @@ interface SessionContextType {
   communities: Communities;
   calls: Calls;
   moveUserIdToTop: (userId: number) => void;
+  setNotifications: (
+    userId: number,
+    notifications: number,
+    lastMessageAt: number,
+  ) => void;
   insertContact: (userId: number) => void;
   insertCall: (call: Calls[number]) => void;
 }
@@ -43,14 +49,18 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
 
   // Cached contacts seed the session, then authenticated server data replaces them.
   useEffect(() => {
-    if (!accountId) return;
+    if (!accountId || contextReady) return;
+    let active = true;
     const cache = createCache(String(accountId), {
       codec: secureValueCodec,
     });
     void cache.contacts.get().then((cached) => {
-      if (cached) setContacts(cached);
+      if (active && cached) setContacts(cached);
     });
-  }, [accountId]);
+    return () => {
+      active = false;
+    };
+  }, [accountId, contextReady]);
 
   useEffect(() => {
     if (!accountId || !contextReady) return;
@@ -91,6 +101,33 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const setNotifications = useCallback(
+    (userId: number, notifications: number, lastMessageAt: number) => {
+      setContacts((previous) => {
+        const contact = previous.find((item) => item.UserId === userId);
+        if (!contact) {
+          return [
+            {
+              UserId: userId,
+              LastMessageAt: lastMessageAt,
+              Messages: [],
+              notifications,
+            },
+            ...previous,
+          ];
+        }
+
+        const next = {
+          ...contact,
+          LastMessageAt: lastMessageAt,
+          notifications,
+        };
+        return previous.map((item) => (item.UserId === userId ? next : item));
+      });
+    },
+    [],
+  );
+
   const insertContact = (userId: number) => {
     setContacts((prevContacts) => {
       if (prevContacts.some((contact) => contact.UserId === userId)) {
@@ -101,6 +138,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         UserId: userId,
         LastMessageAt: new Date().getTime(),
         Messages: [],
+        notifications: 0,
       } satisfies Contacts[0];
 
       return [newUser, ...prevContacts];
@@ -124,6 +162,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         communities,
         calls,
         moveUserIdToTop,
+        setNotifications,
         insertContact,
         insertCall,
       }}

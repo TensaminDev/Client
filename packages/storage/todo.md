@@ -1,1 +1,0 @@
-- Add `notifications: number` to contacts

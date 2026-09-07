@@ -1,8 +1,13 @@
-import { useStorage } from "@tensamin/storage/context";
 import { useUser } from "@tensamin/identity/context";
 import { useChat } from "@tensamin/chat/context";
 import { useMTP } from "@tensamin/mtp";
-import { createContext, useEffect, useContext } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useContext,
+  useRef,
+} from "react";
 import { toast as sonnerToast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@methanium/ui";
 import { invoke, isTauri } from "@tauri-apps/api/core";
@@ -29,8 +34,7 @@ async function requestNotificationPermission() {
 }
 
 export default function Provider(props: { children: React.ReactNode }) {
-  const { subscribe } = useMTP();
-  const { load } = useStorage();
+  const { send, subscribe } = useMTP();
   const { get } = useUser();
   const {
     addLiveMessage,
@@ -39,19 +43,105 @@ export default function Provider(props: { children: React.ReactNode }) {
     getChatSecret,
     userId,
   } = useChat();
-  const { moveUserIdToTop } = useSession();
+  const { contacts, moveUserIdToTop, setNotifications } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
+  const latestReadRef = useRef(new Map<number, number>());
+
+  const readNotifications = useCallback(
+    async (contactUserId: number, through: number) => {
+      const latest = latestReadRef.current.get(contactUserId) ?? -1;
+      if (latest >= through) return;
+      latestReadRef.current.set(contactUserId, through);
+      setNotifications(contactUserId, 0, through);
+
+      try {
+        const response = await send("ReadNotification", {
+          ChatPartnerId: contactUserId,
+          LastMessageAt: through,
+        });
+        if (
+          response.type === "ReadNotification" &&
+          latestReadRef.current.get(contactUserId) === through
+        ) {
+          setNotifications(
+            response.data.ChatPartnerId,
+            response.data.notifications,
+            response.data.LastMessageAt,
+          );
+        }
+      } catch (error) {
+        log(
+          1,
+          "notifications",
+          "red",
+          "Failed to mark conversation notifications as read",
+          error,
+          { userId: contactUserId },
+        );
+      } finally {
+        if (latestReadRef.current.get(contactUserId) === through) {
+          latestReadRef.current.delete(contactUserId);
+        }
+      }
+    },
+    [send, setNotifications],
+  );
+
+  useEffect(() => {
+    const readCurrentConversation = () => {
+      if (
+        location.pathname !== "/chat" ||
+        !document.hasFocus() ||
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+      const contact = contacts.find((item) => item.UserId === userId);
+      if (!contact || contact.notifications === 0) return;
+      void readNotifications(contact.UserId, contact.LastMessageAt);
+    };
+
+    readCurrentConversation();
+    document.addEventListener("visibilitychange", readCurrentConversation);
+    window.addEventListener("focus", readCurrentConversation);
+    return () => {
+      document.removeEventListener("visibilitychange", readCurrentConversation);
+      window.removeEventListener("focus", readCurrentConversation);
+    };
+  }, [contacts, location.pathname, readNotifications, userId]);
+
+  useEffect(
+    () =>
+      subscribe("PushNotification", ({ data }) => {
+        setNotifications(
+          data.ChatPartnerId,
+          data.notifications,
+          data.LastMessageAt,
+        );
+      }),
+    [setNotifications, subscribe],
+  );
 
   useEffect(() => {
     return subscribe("MessageLive", async ({ data }) => {
-      if (!data.SenderId) return;
+      if (!data.SenderId || !data.Message) return;
 
       const isCurrentChat =
         location.pathname === "/chat" && userId === data.SenderId;
       const appFocused =
         document.hasFocus() && document.visibilityState === "visible";
       const shouldAlert = !isCurrentChat || !appFocused;
+      const notifications =
+        data.notifications ??
+        (contacts.find((contact) => contact.UserId === data.SenderId)
+          ?.notifications ?? 0) + 1;
+
+      setNotifications(data.SenderId, notifications, data.LastMessageAt);
+      if (!isCurrentChat) moveUserIdToTop(data.SenderId);
+      if (!shouldAlert) {
+        void readNotifications(data.SenderId, data.LastMessageAt);
+      }
 
       const messageVersion = data.Message?.VersionNumber ?? 1;
       const messageSecret =
@@ -59,7 +149,7 @@ export default function Provider(props: { children: React.ReactNode }) {
           ? chatSecret
           : await getChatSecret(data.SenderId, messageVersion);
 
-      if (!data.Message || !messageSecret) return;
+      if (!messageSecret) return;
       if (shouldAlert) playSound("message");
 
       void decryptChatText(messageSecret, data.Message.Content, messageVersion)
@@ -73,19 +163,17 @@ export default function Provider(props: { children: React.ReactNode }) {
           if (!data.Message || !content || !data.SenderId) return;
 
           if (isCurrentChat) {
-            addLiveMessage({
-              ...data.Message,
-              Content: content ?? "Failed to decrypt message",
-              decryptionFailed: content === null,
-            });
+            addLiveMessage(
+              {
+                ...data.Message,
+                Content: content ?? "Failed to decrypt message",
+                decryptionFailed: content === null,
+              },
+              !appFocused,
+            );
           }
 
           if (!shouldAlert) return;
-
-          if (!isCurrentChat) {
-            // todo: add notification symbol to conversation cards (incl. message start)
-            moveUserIdToTop(data.SenderId);
-          }
 
           const user = await get(data.SenderId, [
             "UserId",
@@ -177,8 +265,8 @@ export default function Provider(props: { children: React.ReactNode }) {
   }, [
     addLiveMessage,
     chatSecret,
+    contacts,
     get,
-    load,
     location.pathname,
     navigate,
     moveUserIdToTop,
@@ -186,6 +274,8 @@ export default function Provider(props: { children: React.ReactNode }) {
     getChatSecret,
     userId,
     chatSecretVersion,
+    readNotifications,
+    setNotifications,
   ]);
 
   return (

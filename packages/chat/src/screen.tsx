@@ -75,17 +75,10 @@ function formatMessageDate(sendTime: number) {
 }
 
 function DateSeparator({ label }: { label: string }) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setVisible(true), 100);
-    return () => window.clearTimeout(timeout);
-  }, []);
-
   return (
     <div
       aria-label={label}
-      className={`my-3 flex w-full items-center gap-3 px-3 transition-opacity duration-150 ${visible ? "opacity-100" : "opacity-0"}`}
+      className="my-3 flex w-full items-center gap-3 px-3"
       role="separator"
     >
       <div className="h-px flex-1 bg-border" />
@@ -93,6 +86,18 @@ function DateSeparator({ label }: { label: string }) {
         {label}
       </span>
       <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
+function NewMessagesSeparator() {
+  return (
+    <div className="my-3 flex w-full items-center gap-3 px-3" role="separator">
+      <div className="h-px flex-1 bg-(--destructive)" />
+      <span className="shrink-0 text-xs font-medium text-destructive">
+        New messages
+      </span>
+      <div className="h-px flex-1 bg-(--destructive)" />
     </div>
   );
 }
@@ -133,6 +138,7 @@ export default function Screen() {
   const {
     getMessages,
     liveMessages,
+    newMessagesStart,
     clearLiveMessages,
     userId,
     chatSecret,
@@ -585,9 +591,12 @@ export default function Screen() {
                         const dateLabel = startsNewDay
                           ? formatMessageDate(message.SendTime)
                           : null;
+                        const startsNewMessages =
+                          message.SendTime === newMessagesStart;
                         const isGrouped =
                           lastMessage &&
                           !startsNewDay &&
+                          !startsNewMessages &&
                           !message.ReplyId &&
                           lastMessage.SenderId === message.SenderId &&
                           Math.round(lastMessage.SendTime / 10000) ===
@@ -604,6 +613,7 @@ export default function Screen() {
                                 {dateLabel && (
                                   <DateSeparator label={dateLabel} />
                                 )}
+                                {startsNewMessages && <NewMessagesSeparator />}
                                 <Message
                                   editing={
                                     editingMessageId === message.SendTime

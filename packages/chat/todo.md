@@ -2,9 +2,6 @@
   - Forward
   - Pin Message
 - Placeholder image if media fails to load
-- Signature verifications via ed25519 key
-- Confirmation when exiting with text in the input box.
 - Drop any unique reactions above 10
 - Reply jumping
 - Add emoji picker
-- Improve arrow-up hotkey

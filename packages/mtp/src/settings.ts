@@ -1,12 +1,17 @@
 import type { BoundSendFn, ProtocolMessage } from "./mtpContext";
 import type { MTPSubscriptionFunction } from "mtp";
 import { mtp as schemas } from "@tensamin/shared/data";
+import { log } from "@tensamin/shared/log";
 
 export type UserBlob = {
   id: string;
   ciphertext: Uint8Array;
   revision: number;
   updatedAt: number;
+};
+
+export type UserBlobMetadata = Omit<UserBlob, "ciphertext"> & {
+  ciphertext?: Uint8Array;
 };
 
 export type ReceiptPolicy = {
@@ -40,10 +45,36 @@ function blob(data: ProtocolMessage<"UserBlobGet">["data"]): UserBlob {
   };
 }
 
+function blobMetadata(
+  data: ProtocolMessage<"UserBlobList">["data"]["Blobs"][number],
+): UserBlobMetadata {
+  return {
+    id: data.BlobId,
+    revision: data.VersionNumber,
+    updatedAt: data.UpdatedAt,
+  };
+}
+
 function ownedBytes(value: Uint8Array): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(value.byteLength);
   bytes.set(value);
   return bytes;
+}
+
+function logBlobPut({
+  id,
+  reason,
+  value,
+}: {
+  id: string;
+  reason: string;
+  value: unknown;
+}) {
+  log(0, "settings", "cyan", "Executing UserBlobPut", {
+    blobId: id,
+    reason,
+    value,
+  });
 }
 
 function receipt(
@@ -69,38 +100,55 @@ function storage(
 export function createSettingsClient({
   send,
   subscribe,
+  clientState,
 }: {
   send: BoundSendFn;
   subscribe: MTPSubscriptionFunction<typeof schemas>;
+  clientState: ProtocolMessage<"ClientStateSync">["data"] | null;
 }) {
   return {
-    async createBlob(id: string, ciphertext: Uint8Array) {
-      return blob(
-        expect(
-          "UserBlobPut",
-          await send("UserBlobPut", {
-            BlobId: id,
-            Blob: ownedBytes(ciphertext),
-            ExpectedRevision: 0,
-          }),
-        ).data,
-      );
+    async createBlob(
+      id: string,
+      ciphertext: Uint8Array,
+      change: { reason: string; value: unknown },
+    ) {
+      logBlobPut({ id, ...change });
+      const stored = expect(
+        "UserBlobPut",
+        await send("UserBlobPut", {
+          BlobId: id,
+          Blob: ownedBytes(ciphertext),
+          ExpectedRevision: 0,
+        }),
+      ).data;
+      return {
+        id: stored.BlobId,
+        ciphertext,
+        revision: stored.VersionNumber,
+        updatedAt: stored.UpdatedAt,
+      };
     },
     async updateBlob(
       id: string,
       ciphertext: Uint8Array,
       expectedRevision: number,
+      change: { reason: string; value: unknown },
     ) {
-      return blob(
-        expect(
-          "UserBlobPut",
-          await send("UserBlobPut", {
-            BlobId: id,
-            Blob: ownedBytes(ciphertext),
-            ExpectedRevision: expectedRevision,
-          }),
-        ).data,
-      );
+      logBlobPut({ id, ...change });
+      const stored = expect(
+        "UserBlobPut",
+        await send("UserBlobPut", {
+          BlobId: id,
+          Blob: ownedBytes(ciphertext),
+          ExpectedRevision: expectedRevision,
+        }),
+      ).data;
+      return {
+        id: stored.BlobId,
+        ciphertext,
+        revision: stored.VersionNumber,
+        updatedAt: stored.UpdatedAt,
+      };
     },
     async getBlob(id: string) {
       return blob(
@@ -111,7 +159,7 @@ export function createSettingsClient({
       return expect(
         "UserBlobList",
         await send("UserBlobList", {}),
-      ).data.Blobs.map(blob);
+      ).data.Blobs.map(blobMetadata);
     },
     async deleteBlob(id: string, expectedRevision: number) {
       return (
@@ -142,9 +190,12 @@ export function createSettingsClient({
         .BlockedUserIds;
     },
     async getReceiptPolicy() {
-      return receipt(
-        expect("ReceiptPolicyGet", await send("ReceiptPolicyGet", {})).data,
-      );
+      if (!clientState) throw new Error("Client state is unavailable");
+      return {
+        sendReadReceipts: clientState.SendReadReceipts,
+        sendReceivedReceipts: clientState.SendReceivedReceipts,
+        revision: clientState.VersionNumber,
+      };
     },
     async setReceiptPolicy(policy: Omit<ReceiptPolicy, "revision">) {
       return receipt(

@@ -240,9 +240,6 @@ export default function UserProvider(props: { children: ReactNode }) {
         const cached = cachedResult.success ? cachedResult.data : undefined;
         if (cached) {
           installProfile(cached);
-          log(2, "identity", "yellow", "Loaded UserData from cache", {
-            userId,
-          });
           const checkedAt = checkedAtRef.current[userId];
           if (checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
             checkedAtRef.current[userId] = Date.now();
@@ -357,9 +354,6 @@ export default function UserProvider(props: { children: ReactNode }) {
           iotaStorageRef.current[userId] ?? (await cache.iotas.get(userId));
         if (cached) {
           iotaStorageRef.current[userId] = cached;
-          log(2, "identity", "yellow", "Loaded IotaData from cache", {
-            userId,
-          });
           const checkedAt = iotaCheckedAtRef.current[userId];
           if (checkedAt && Date.now() - checkedAt < DATA_CACHE_MAX_AGE) {
             return cached;

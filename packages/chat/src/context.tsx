@@ -249,12 +249,16 @@ export async function fetchReplyMessage({
   replyTo,
   ownId,
   chatUserId,
+  currentChatSecret,
+  currentChatSecretVersion,
   send,
   getChatSecret,
 }: {
   replyTo: number;
   ownId: number;
   chatUserId: number;
+  currentChatSecret?: Uint8Array | null;
+  currentChatSecretVersion?: number;
   send: SendMessageGet;
   getChatSecret: (
     userId: number,
@@ -267,7 +271,10 @@ export async function fetchReplyMessage({
     chatPartnerId: chatUserId,
     send,
   });
-  const chatSecret = await getChatSecret(chatUserId, message.VersionNumber);
+  const chatSecret =
+    currentChatSecret && message.VersionNumber === currentChatSecretVersion
+      ? currentChatSecret
+      : await getChatSecret(chatUserId, message.VersionNumber);
 
   if (!chatSecret) {
     throw new Error("Missing chat secret");
@@ -287,8 +294,7 @@ export async function fetchReplyMessage({
 
 export default function Provider({ children }: { children: ReactNode }) {
   const { load } = useStorage();
-  const { send, sendSealedRelay, subscribe, freshContacts, contextReady } =
-    useMTP();
+  const { send, sendSealedRelay, subscribe, contextReady } = useMTP();
   const { getFresh: getFreshUser, getRelayIota } = useUser();
   const { insertContact, moveUserIdToTop } = useSession();
 
@@ -296,6 +302,7 @@ export default function Provider({ children }: { children: ReactNode }) {
   const [errorDescription, setErrorDescription] = useState("");
 
   const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
+  const [newMessagesStart, setNewMessagesStart] = useState<number | null>(null);
   const [ownId, setOwnId] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, StoredDraftState>>({});
   const draftsRef = useRef<Record<string, StoredDraftState>>({});
@@ -540,7 +547,10 @@ export default function Provider({ children }: { children: ReactNode }) {
   );
 
   const createInitialChatSecret = useCallback(
-    (peerId: number): Promise<Uint8Array | null> => {
+    (
+      peerId: number,
+      shouldCheckExisting = true,
+    ): Promise<Uint8Array | null> => {
       const inFlight = secretInitializationsRef.current.get(String(peerId));
       if (inFlight) return inFlight;
 
@@ -548,8 +558,10 @@ export default function Provider({ children }: { children: ReactNode }) {
         const ownUserId = Number(await load("user_id"));
         if (ownUserId !== Math.min(ownUserId, peerId)) return null;
 
-        const existing = await getChatSecret(peerId, CHAT_SECRET_VERSION);
-        if (existing) return existing;
+        if (shouldCheckExisting) {
+          const existing = await getChatSecret(peerId, CHAT_SECRET_VERSION);
+          if (existing) return existing;
+        }
         const chatId = deriveChatId(ownUserId, peerId);
         const secretId = deriveChatSecretId(chatId);
 
@@ -649,7 +661,7 @@ export default function Provider({ children }: { children: ReactNode }) {
         let secret = await getChatSecretState(userIdValue);
 
         if (!secret && ownUserId === Math.min(ownUserId, userIdValue)) {
-          const value = await createInitialChatSecret(userIdValue);
+          const value = await createInitialChatSecret(userIdValue, false);
           secret = value ? { value, version: CHAT_SECRET_VERSION } : null;
         }
 
@@ -689,25 +701,6 @@ export default function Provider({ children }: { children: ReactNode }) {
     load,
     userIdValue,
   ]);
-
-  useEffect(() => {
-    if (!contextReady || ownId <= 0) return;
-    for (const contact of freshContacts) {
-      if (ownId >= contact.UserId) continue;
-      void createInitialChatSecret(contact.UserId).catch((error) => {
-        log(
-          1,
-          "chat",
-          "red",
-          "Failed to initialize synced chat secret",
-          error,
-          {
-            peerId: contact.UserId,
-          },
-        );
-      });
-    }
-  }, [contextReady, createInitialChatSecret, freshContacts, ownId]);
 
   useEffect(() => {
     return subscribe("ChatSecretForward", ({ data }) => {
@@ -1100,7 +1093,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           getRelayIota(ownId),
           getRelayIota(userIdValue),
         ]);
-        const response = await sendSealedRelay(
+        await sendSealedRelay(
           add ? "MessageReactionAdd" : "MessageReactionRemove",
           {
             ChatPartnerId: userIdValue,
@@ -1120,7 +1113,6 @@ export default function Provider({ children }: { children: ReactNode }) {
             ],
           },
         );
-        requireRelaySuccess(response);
       } catch (err) {
         if (foundMessage) {
           editMessage(sendTime, { Reactions: previousReactions });
@@ -1151,13 +1143,21 @@ export default function Provider({ children }: { children: ReactNode }) {
   );
 
   const addLiveMessage = useCallback(
-    (message: RawMessage) => {
+    (message: RawMessage, markAsNew = false) => {
       const localId =
         globalThis.crypto?.randomUUID?.() ??
         `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       if (message.SenderId !== ownId) {
         moveUserIdToTop(userIdValue);
+      }
+
+      if (markAsNew) {
+        setNewMessagesStart((current) =>
+          current === null
+            ? message.SendTime
+            : Math.min(current, message.SendTime),
+        );
       }
 
       setLiveMessagesState((prev) => [
@@ -1183,6 +1183,7 @@ export default function Provider({ children }: { children: ReactNode }) {
 
   const clearLiveMessages = useCallback(() => {
     setLiveMessagesState([]);
+    setNewMessagesStart(null);
   }, []);
 
   // Get live updates for message states
@@ -1269,6 +1270,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           getMessages,
           getChatSecret,
           liveMessages: () => liveMessagesState,
+          newMessagesStart,
           addLiveMessage,
           editMessage,
           deleteMessage,
@@ -1302,7 +1304,11 @@ type contextType = {
     version?: number,
   ) => Promise<Uint8Array | null>;
   liveMessages: () => LiveMessage[];
-  addLiveMessage: (message: RawMessage) => {
+  newMessagesStart: number | null;
+  addLiveMessage: (
+    message: RawMessage,
+    markAsNew?: boolean,
+  ) => {
     setFailed: (failed: boolean) => void;
     setMessageState: (messageState: RawMessage["MessageState"]) => void;
   };
@@ -1336,7 +1342,14 @@ export function useChat(): contextType {
 export function useReplyMessage() {
   const { send } = useMTP();
   const { load } = useStorage();
-  const { replyTo, setReplyTo, getChatSecret, userId } = useChat();
+  const {
+    chatSecret,
+    chatSecretVersion,
+    replyTo,
+    setReplyTo,
+    getChatSecret,
+    userId,
+  } = useChat();
   const [ownId, setOwnId] = useState(0);
   const [replyMessage, setReplyMessage] = useState<RawMessage | undefined>();
 
@@ -1369,6 +1382,8 @@ export function useReplyMessage() {
       replyTo,
       ownId,
       chatUserId: userId,
+      currentChatSecret: chatSecret,
+      currentChatSecretVersion: chatSecretVersion,
       send,
       getChatSecret,
     })
@@ -1386,7 +1401,16 @@ export function useReplyMessage() {
     return () => {
       active = false;
     };
-  }, [replyTo, ownId, userId, send, getChatSecret, handleReplyError]);
+  }, [
+    chatSecret,
+    chatSecretVersion,
+    getChatSecret,
+    handleReplyError,
+    ownId,
+    replyTo,
+    send,
+    userId,
+  ]);
 
   return {
     ownId,

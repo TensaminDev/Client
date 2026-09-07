@@ -18,13 +18,7 @@ import {
   useHotkeysContext,
   type HotkeyDefinition,
 } from "@tensamin/hotkeys";
-import {
-  AlertTriangle,
-  Edit,
-  Info,
-  Trash,
-  Undo2,
-} from "lucide-react";
+import { AlertTriangle, Edit, Info, Trash, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 function HotkeyRow({

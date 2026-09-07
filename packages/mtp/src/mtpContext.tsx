@@ -89,6 +89,7 @@ export type MTPContextType = {
   freshContacts: Contacts;
   freshCommunities: Communities;
   freshCalls: Calls;
+  clientState: ProtocolMessage<"ClientStateSync">["data"] | null;
   contextReady: boolean;
   loadingDescription: string;
 };
@@ -101,6 +102,36 @@ export function removeMissingContacts(
 ): Contacts {
   const missing = new Set(message.data.MissingUserIds ?? []);
   return contacts.filter((contact) => !missing.has(contact.UserId));
+}
+
+export function updateContactNotifications(
+  contacts: Contacts,
+  userId: number,
+  notifications: number | undefined,
+  lastMessageAt: number,
+): Contacts {
+  const contact = contacts.find((item) => item.UserId === userId);
+  const nextNotifications = notifications ?? (contact?.notifications ?? 0) + 1;
+  if (!contact) {
+    return [
+      {
+        UserId: userId,
+        LastMessageAt: lastMessageAt,
+        Messages: [],
+        notifications: nextNotifications,
+      },
+      ...contacts,
+    ];
+  }
+
+  return [
+    {
+      ...contact,
+      LastMessageAt: lastMessageAt,
+      notifications: nextNotifications,
+    },
+    ...contacts.filter((item) => item.UserId !== userId),
+  ];
 }
 
 export function useMessageHandlers() {

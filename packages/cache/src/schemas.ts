@@ -5,6 +5,7 @@ export const accountIdSchema = z.string().min(1);
 export const contactSchema = z.object({
   LastMessageAt: z.number(),
   UserId: z.number(),
+  notifications: z.number().int().nonnegative().default(0),
   LastMessage: z
     .object({ Content: z.base64(), SenderId: z.number() })
     .optional(),

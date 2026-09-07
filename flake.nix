@@ -14,7 +14,10 @@
       ...
     }:
     let
-      systems = [ "x86_64-linux" ];
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
       version = "0.0.11";
     in
@@ -72,6 +75,8 @@
             libxcb
           ];
           electron = pkgs.electron;
+          electronArch = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "x64";
+          electronUnpackedDir = if electronArch == "arm64" then "linux-arm64-unpacked" else "linux-unpacked";
           pnpm = pkgs.pnpm;
           mtpTypeMaps = pkgs.fetchgit {
             url = "https://git.methanium.net/tensamin/mtp-type-maps";
@@ -160,7 +165,7 @@
               pnpm run build:web
               pnpm --dir apps/tauri run gen-icons
               pnpm --dir apps/electron run build
-              pnpm --dir apps/electron exec electron-builder --dir --linux --publish never \
+              pnpm --dir apps/electron exec electron-builder --dir --linux --${electronArch} --publish never \
                 --config.electronDist=${electron.dist} \
                 --config.electronVersion=${electron.version}
 
@@ -171,7 +176,7 @@
               runHook preInstall
 
               mkdir -p "$out/lib/tensamin" "$out/bin"
-              cp -r apps/electron/release/linux-unpacked/. "$out/lib/tensamin/"
+              cp -r apps/electron/release/${electronUnpackedDir}/. "$out/lib/tensamin/"
 
               makeWrapper "$out/lib/tensamin/tensamin" "$out/bin/tensamin" \
                 --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath electronRuntimeLibs}"
@@ -210,6 +215,8 @@
               android_sdk.accept_license = true;
             };
           };
+
+          electronArch = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "x64";
 
           electronRuntimeLibs = with pkgs; [
             alsa-lib
@@ -344,7 +351,7 @@
               export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath electronRuntimeLibs}:$LD_LIBRARY_PATH"
               export ELECTRON_ENABLE_LOGGING=1
               export ELECTRON_OZONE_PLATFORM_HINT="''${ELECTRON_OZONE_PLATFORM_HINT:-auto}"
-              export NPM_CONFIG_TARGET_ARCH="''${NPM_CONFIG_TARGET_ARCH:-x64}"
+              export NPM_CONFIG_TARGET_ARCH="''${NPM_CONFIG_TARGET_ARCH:-${electronArch}}"
               export npm_config_build_from_source=true
               export USE_SYSTEM_FPM=true
               export ELECTRON_BUILDER_7ZIP_PATH="${pkgs.p7zip}/bin/7za"

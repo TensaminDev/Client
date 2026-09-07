@@ -37,14 +37,16 @@ const blobId = z.string().refine((value) => {
   return length >= 1 && length <= 256;
 }, "BlobId must be between 1 and 256 UTF-8 bytes");
 const revision = z.number().int().nonnegative();
-const userBlobResponse = z.object({
+const userBlobMetadata = z.object({
   BlobId: blobId,
+  VersionNumber: revision,
+  UpdatedAt: z.number(),
+});
+const userBlobResponse = userBlobMetadata.extend({
   Blob: protocolBytesResponse.refine(
     (value) => value.byteLength <= 1_048_576,
     "Blob must not exceed 1 MiB",
   ),
-  VersionNumber: revision,
-  UpdatedAt: z.number(),
 });
 const receiptPolicyResponse = z.object({
   SendReadReceipts: z.boolean(),
@@ -138,18 +140,24 @@ const authPayload = z.object({
   Communities: z.array(z.object({})).default([]),
   Contacts: z
     .array(
-      z.object({
-        LastMessageAt: z.number().default(0),
-        CreatedAt: z.number().optional(),
-        UserId: z.number(),
-        LastMessage: z
-          .object({
-            Content: z.base64(),
-            SenderId: z.number(),
-          })
-          .optional(),
-        Messages: z.array(Message).default([]),
-      }),
+      z
+        .object({
+          LastMessageAt: z.number().default(0),
+          CreatedAt: z.number().optional(),
+          UserId: z.number(),
+          Notifications: z.number().int().nonnegative().default(0),
+          LastMessage: z
+            .object({
+              Content: z.base64(),
+              SenderId: z.number(),
+            })
+            .optional(),
+          Messages: z.array(Message).default([]),
+        })
+        .transform(({ Notifications, ...contact }) => ({
+          ...contact,
+          notifications: Notifications,
+        })),
     )
     .default([]),
   Calls: z
@@ -171,8 +179,6 @@ const clientStateSync = authPayload.extend({
   Messages: z.array(Message).default([]),
   DeletedMessageIds: z.array(z.number()).default([]),
   DeletedContactIds: z.array(z.number()).default([]),
-  Blobs: z.array(userBlobResponse).default([]),
-  DeletedBlobIds: z.array(blobId).default([]),
   BlockedUserIds: z.array(z.number().int().positive()).default([]),
   SendReadReceipts: z.boolean().default(true),
   SendReceivedReceipts: z.boolean().default(false),
@@ -287,7 +293,7 @@ export const mtp = {
       Blob: protocolBytes.refine((value) => value.byteLength <= 1_048_576),
       ExpectedRevision: revision.optional(),
     }),
-    response: userBlobResponse,
+    response: userBlobMetadata,
   },
   UserBlobGet: {
     request: z.object({ BlobId: blobId }),
@@ -295,7 +301,7 @@ export const mtp = {
   },
   UserBlobList: {
     request: z.object({}).optional(),
-    response: z.object({ Blobs: z.array(userBlobResponse) }),
+    response: z.object({ Blobs: z.array(userBlobMetadata) }),
   },
   UserBlobDelete: {
     request: z.object({ BlobId: blobId, ExpectedRevision: revision }),
@@ -303,11 +309,11 @@ export const mtp = {
   },
   UserBlobChanged: {
     request: z.object({}).optional(),
-    response: z.object({
-      BlobId: blobId,
-      VersionNumber: revision,
-      Deleted: z.boolean(),
-    }),
+    response: userBlobMetadata
+      .pick({ BlobId: true, VersionNumber: true })
+      .extend({
+        Deleted: z.boolean(),
+      }),
   },
   UserBlock: {
     request: z.object({ BlockedUserId: z.number().int().positive() }),
@@ -483,11 +489,44 @@ export const mtp = {
     response: z
       .object({
         SenderId: z.number(),
+        LastMessageAt: z.number().optional(),
+        Notifications: z.number().int().nonnegative().optional(),
         Message: Message.extend({ SenderId: z.number().optional() }),
       })
-      .transform(({ SenderId, Message }) => ({
+      .transform(({ SenderId, LastMessageAt, Notifications, Message }) => ({
         SenderId,
+        LastMessageAt: LastMessageAt ?? Message.SendTime,
+        notifications: Notifications,
         Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
+      })),
+  },
+  ReadNotification: {
+    request: z.object({
+      ChatPartnerId: z.number().int().positive(),
+      LastMessageAt: z.number().nonnegative(),
+    }),
+    response: z
+      .object({
+        ChatPartnerId: z.number().int().positive(),
+        LastMessageAt: z.number().nonnegative(),
+        Notifications: z.number().int().nonnegative(),
+      })
+      .transform(({ Notifications, ...contact }) => ({
+        ...contact,
+        notifications: Notifications,
+      })),
+  },
+  PushNotification: {
+    request: z.object({}).optional(),
+    response: z
+      .object({
+        ChatPartnerId: z.number().int().positive(),
+        LastMessageAt: z.number().nonnegative(),
+        Notifications: z.number().int().nonnegative(),
+      })
+      .transform(({ Notifications, ...contact }) => ({
+        ...contact,
+        notifications: Notifications,
       })),
   },
   MessageGet: {
@@ -654,9 +693,6 @@ export interface Storage extends SettingsStorageDefaults {
   active_settings_profile_id: string;
   settings_profile_prompted_session_id: number;
   tauri_permissions_done: boolean;
-  analytics_crash_reports: boolean;
-  analytics_usage_data: boolean;
-  analytics_done: boolean;
   cached_contacts: Contacts;
   cached_communities: Communities;
   cache_contacts: number;
@@ -714,9 +750,6 @@ export const storageDefaults: Storage = {
   active_settings_profile_id: "",
   settings_profile_prompted_session_id: 0,
   tauri_permissions_done: false,
-  analytics_crash_reports: true,
-  analytics_usage_data: true,
-  analytics_done: false,
   ...settingsStorageDefaults,
   cached_contacts: [],
   cached_communities: [],

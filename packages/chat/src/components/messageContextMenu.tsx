@@ -35,7 +35,6 @@ import {
   Reply,
   Trash,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
 import { cloneElement, useMemo, useState, useSyncExternalStore } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
@@ -312,10 +311,8 @@ function MiniMessageMenu({
   shiftIsPressed: boolean;
 }) {
   return (
-    <motion.div
-      className="absolute right-4 -top-3 z-10"
-      exit={fadeOut ? { opacity: 0 } : undefined}
-      transition={fadeOut ? { duration: 0.048 } : undefined}
+    <div
+      className={`absolute right-4 -top-3 z-10 transition-opacity duration-50 ${fadeOut ? "opacity-0" : "opacity-100"}`}
     >
       <Card className="flex flex-row justify-end gap-0! rounded-lg! p-px! shadow-lg">
         {quickReactions.map((emoji) => (
@@ -419,7 +416,7 @@ function MiniMessageMenu({
           />
         )}
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -613,28 +610,26 @@ export default function MessageContextMenu({
         onPointerLeave={scheduleMiniMenuClose}
       >
         {children}
-        <AnimatePresence onExitComplete={() => setFadeMiniMenu(false)}>
-          {!isMobile &&
-            !hideMiniMenu &&
-            (activeMenuId === messageId ||
-              contextMenuOpen ||
-              pickerOpen ||
-              pickerClosing) && (
-              <MiniMessageMenu
-                fadeOut={fadeMiniMenu}
-                isOwnMessage={isOwnMessage}
-                onDelete={() => deleteMessage(messageId)}
-                onEdit={() => onSetEditing(true)}
-                onOpenMenu={openMenu}
-                onOpenPicker={() => setPickerVisibility(true)}
-                usePickerTrigger={!isMobile}
-                onReact={selectMiniReaction}
-                quickReactions={quickReactions}
-                onReply={() => setReplyTo(messageId)}
-                shiftIsPressed={shiftIsPressed}
-              />
-            )}
-        </AnimatePresence>
+        {!isMobile &&
+          !hideMiniMenu &&
+          (activeMenuId === messageId ||
+            contextMenuOpen ||
+            pickerOpen ||
+            pickerClosing) && (
+            <MiniMessageMenu
+              fadeOut={fadeMiniMenu}
+              isOwnMessage={isOwnMessage}
+              onDelete={() => deleteMessage(messageId)}
+              onEdit={() => onSetEditing(true)}
+              onOpenMenu={openMenu}
+              onOpenPicker={() => setPickerVisibility(true)}
+              usePickerTrigger={!isMobile}
+              onReact={selectMiniReaction}
+              quickReactions={quickReactions}
+              onReply={() => setReplyTo(messageId)}
+              shiftIsPressed={shiftIsPressed}
+            />
+          )}
       </div>
     );
   }
@@ -722,7 +717,10 @@ export default function MessageContextMenu({
         setFadeMiniMenu(!open && eventDetails.reason === "outside-press");
       }}
       onOpenChangeComplete={(open) => {
-        if (!open) setPickerClosing(false);
+        if (!open) {
+          setPickerClosing(false);
+          setFadeMiniMenu(false);
+        }
       }}
     >
       <ContextMenu onOpenChange={setContextMenuOpen}>

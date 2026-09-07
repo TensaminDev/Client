@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { SettingsSidebar } from "./sidebar";
 import { SettingsProfileMenu } from "./profileMenu";
 import { useSettingsProfiles } from "./profiles";
+import { ClearStorageButton } from "@methanium/ui";
 
 export default function SettingsLayout() {
   const isMobile = useIsMobile();
@@ -12,13 +13,16 @@ export default function SettingsLayout() {
   const { activeProfile } = useSettingsProfiles();
 
   return (
-    <div className="flex h-full w-full flex-col">
-      <div className="w-full p-2">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+      <div className="flex w-full shrink-0 justify-between p-2">
         <SettingsProfileMenu />
+        <div className="hidden md:block!">
+          <ClearStorageButton />
+        </div>
       </div>
-      <div className="flex h-full w-full border-t">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden border-t">
         <SettingsSidebar className="hidden md:flex" />
-        <div className="bg-background flex h-full w-full flex-col gap-3 overflow-y-auto p-3">
+        <div className="bg-background flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
           <div className="flex items-center gap-2">
             {isMobile && !/^\/settings\/?$/.test(location.pathname) && (
               <Button
@@ -38,10 +42,7 @@ export default function SettingsLayout() {
                 .replace(/\b\w/g, (letter) => letter.toUpperCase())}
             </h1>
           </div>
-          <div
-            className="flex min-h-0 flex-1 flex-col"
-            key={activeProfile?.id ?? "local"}
-          >
+          <div className="flex flex-col" key={activeProfile?.id ?? "local"}>
             <Outlet />
           </div>
         </div>

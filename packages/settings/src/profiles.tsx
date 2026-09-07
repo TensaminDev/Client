@@ -12,6 +12,7 @@ import { base64ToBytes, crypto, MTPProtocolError } from "mtp";
 import { createSettingsClient, type UserBlob } from "@tensamin/mtp";
 import { storageDefaults, type Storage } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
+import { persistMtpCredentials } from "@tensamin/storage/credentials";
 import { useMTP } from "@tensamin/mtp";
 
 const PROFILE_PREFIX = "settings-profile:";
@@ -28,7 +29,6 @@ export const profileStorageKeys = (
       key !== "settings.read_confirmations" &&
       key !== "settings.receive_confirmations") ||
     key.startsWith("theme_") ||
-    key.startsWith("analytics_") ||
     key.startsWith("call_mute_range_") ||
     key.startsWith("chat_picker_") ||
     [
@@ -45,6 +45,11 @@ type ProfileDocument = {
   id: string;
   name: string;
   settings: Partial<Storage>;
+  account?: {
+    userId: number;
+    privateKey: string;
+    domain: string | null;
+  };
 };
 
 type LegalAcceptance = {
@@ -77,7 +82,11 @@ type ProfilesContextValue = {
   legalError: string;
   selectProfile(id: string): Promise<void>;
   continueLocal(): Promise<void>;
-  createProfile(name: string, sourceId?: string): Promise<void>;
+  createProfile(
+    name: string,
+    sourceId?: string,
+    account?: { userId: number; privateKey: string; domain: string | null },
+  ): Promise<void>;
   renameProfile(id: string, name: string): Promise<void>;
   deleteProfile(id: string): Promise<void>;
   retry(): Promise<void>;
@@ -118,6 +127,17 @@ async function decryptProfile(blob: UserBlob, keyring: string) {
       throw new Error("Unsupported profile document");
     }
     const raw = parsed as ProfileDocument;
+    if (
+      raw.account !== undefined &&
+      (typeof raw.account !== "object" ||
+        !Number.isSafeInteger(raw.account.userId) ||
+        raw.account.userId <= 0 ||
+        typeof raw.account.privateKey !== "string" ||
+        !raw.account.privateKey ||
+        (raw.account.domain !== null && typeof raw.account.domain !== "string"))
+    ) {
+      throw new Error("Unsupported profile account");
+    }
     const settings = Object.fromEntries(
       Object.entries(raw.settings).filter(([key, value]) => {
         if (!profileStorageKeys.includes(key as keyof Storage)) return false;
@@ -205,10 +225,10 @@ export function SettingsProfilesProvider({
   children: ReactNode;
 }) {
   const storage = useStorage();
-  const { send, subscribe, identified } = useMTP();
+  const { send, subscribe, identified, clientState } = useMTP();
   const client = useMemo(
-    () => createSettingsClient({ send, subscribe }),
-    [send, subscribe],
+    () => createSettingsClient({ send, subscribe, clientState }),
+    [clientState, send, subscribe],
   );
   const [profiles, setProfiles] = useState<SettingsProfile[]>([]);
   const profilesRef = useRef(profiles);
@@ -252,12 +272,17 @@ export function SettingsProfilesProvider({
   }, [storage]);
 
   const persistDocument = useCallback(
-    async (profile: SettingsProfile, document: ProfileDocument) => {
+    async (
+      profile: SettingsProfile,
+      document: ProfileDocument,
+      reason: string,
+    ) => {
       const ciphertext = await encryptProfile(document, keyringRef.current);
       const saved = await client.updateBlob(
         PROFILE_PREFIX + profile.id,
         ciphertext,
         profile.revision,
+        { reason, value: document },
       );
       const update = (current: SettingsProfile[]) =>
         current.map((item) =>
@@ -285,7 +310,11 @@ export function SettingsProfilesProvider({
     if (!profile?.document) return;
     const settings = await readSettings();
     try {
-      await persistDocument(profile, { ...profile.document, settings });
+      await persistDocument(
+        profile,
+        { ...profile.document, settings },
+        "settings changed",
+      );
     } catch (caught) {
       setSyncError(
         caught instanceof Error
@@ -359,7 +388,12 @@ export function SettingsProfilesProvider({
       const decoded = await Promise.all(
         relevant.map(async (item) => {
           try {
-            return await decryptProfile(item, keyring);
+            return await decryptProfile(
+              item.ciphertext
+                ? (item as UserBlob)
+                : await client.getBlob(item.id),
+              keyring,
+            );
           } catch {
             return {
               id: item.id.slice(PROFILE_PREFIX.length),
@@ -382,6 +416,7 @@ export function SettingsProfilesProvider({
         const created = await client.createBlob(
           PROFILE_PREFIX + id,
           await encryptProfile(document, keyring),
+          { reason: "default profile created", value: document },
         );
         next = [
           {
@@ -421,15 +456,25 @@ export function SettingsProfilesProvider({
     setLegalLoading(true);
     setLegalError("");
     try {
-      const [keyring, privacyPolicyHash, termsOfServiceHash] =
+      const [keyring, privacyPolicyHash, termsOfServiceHash, blobs] =
         await Promise.all([
           storage.load("mtp_keyring"),
           fetchLegalHash("privacy-policy"),
           fetchLegalHash("terms-of-service"),
+          client.listBlobs(),
         ]);
       legalHashes.current = { privacyPolicyHash, termsOfServiceHash };
       try {
-        const blob = await client.getBlob(LEGAL_BLOB_ID);
+        const metadata = blobs.find((item) => item.id === LEGAL_BLOB_ID);
+        if (!metadata) {
+          legalRevision.current = 0;
+          setLegalChanged(false);
+          setLegalRequired(true);
+          return;
+        }
+        const blob = metadata.ciphertext
+          ? (metadata as UserBlob)
+          : await client.getBlob(LEGAL_BLOB_ID);
         const acceptance = await decryptLegal(blob, keyring);
         legalRevision.current = blob.revision;
         const changed =
@@ -467,21 +512,23 @@ export function SettingsProfilesProvider({
 
   const acceptLegal = useCallback(async () => {
     const keyring = await storage.load("mtp_keyring");
-    const ciphertext = await encryptLegal(
-      {
-        version: 1,
-        ...legalHashes.current,
-        acceptedAt: Date.now(),
-      },
-      keyring,
-    );
+    const acceptance: LegalAcceptance = {
+      version: 1,
+      ...legalHashes.current,
+      acceptedAt: Date.now(),
+    };
+    const ciphertext = await encryptLegal(acceptance, keyring);
     const saved = legalRevision.current
       ? await client.updateBlob(
           LEGAL_BLOB_ID,
           ciphertext,
           legalRevision.current,
+          { reason: "legal documents accepted", value: acceptance },
         )
-      : await client.createBlob(LEGAL_BLOB_ID, ciphertext);
+      : await client.createBlob(LEGAL_BLOB_ID, ciphertext, {
+          reason: "legal documents accepted",
+          value: acceptance,
+        });
     legalRevision.current = saved.revision;
     setLegalRequired(false);
     setLegalChanged(false);
@@ -510,6 +557,24 @@ export function SettingsProfilesProvider({
         await markSelected();
         setRemoteChange(null);
         setSyncError("");
+        if (profile.document.account) {
+          const [userId, keyring] = await Promise.all([
+            storage.load("user_id"),
+            storage.load("mtp_keyring"),
+          ]);
+          if (
+            userId !== profile.document.account.userId ||
+            keyring !== profile.document.account.privateKey
+          ) {
+            await persistMtpCredentials({
+              storage,
+              userId: profile.document.account.userId,
+              keyring: profile.document.account.privateKey,
+              domain: profile.document.account.domain,
+            });
+            globalThis.location.reload();
+          }
+        }
       } finally {
         applying.current = false;
       }
@@ -524,7 +589,11 @@ export function SettingsProfilesProvider({
   }, [markSelected, storage]);
 
   const createProfile = useCallback(
-    async (name: string, sourceId?: string) => {
+    async (
+      name: string,
+      sourceId?: string,
+      account?: { userId: number; privateKey: string; domain: string | null },
+    ) => {
       const trimmed = name.trim();
       const validation = validateName(trimmed);
       if (validation) throw new Error(validation);
@@ -538,10 +607,12 @@ export function SettingsProfilesProvider({
         id,
         name: trimmed,
         settings: source?.document?.settings ?? (await readSettings()),
+        ...(account ? { account } : {}),
       };
       const created = await client.createBlob(
         PROFILE_PREFIX + id,
         await encryptProfile(document, keyringRef.current),
+        { reason: "profile created", value: document },
       );
       const profile = {
         id,
@@ -565,7 +636,11 @@ export function SettingsProfilesProvider({
       if (validation) throw new Error(validation);
       if (!profile?.document) throw new Error("Profile is unavailable");
       await flush();
-      await persistDocument(profile, { ...profile.document, name: trimmed });
+      await persistDocument(
+        profile,
+        { ...profile.document, name: trimmed },
+        "profile renamed",
+      );
     },
     [flush, persistDocument, validateName],
   );
@@ -667,15 +742,41 @@ export function SettingsProfilesProvider({
 
   useEffect(
     () =>
-      client.subscribeBlobChanges((event) => {
+      client.subscribeBlobChanges(async (event) => {
         if (
           event.id !== LEGAL_BLOB_ID ||
           event.revision <= legalRevision.current
         )
           return;
-        void loadLegal();
+        if (event.deleted) {
+          legalRevision.current = 0;
+          setLegalChanged(false);
+          setLegalRequired(true);
+          return;
+        }
+        try {
+          const acceptance = await decryptLegal(
+            await client.getBlob(event.id),
+            keyringRef.current,
+          );
+          legalRevision.current = event.revision;
+          const changed =
+            acceptance.privacyPolicyHash !==
+              legalHashes.current.privacyPolicyHash ||
+            acceptance.termsOfServiceHash !==
+              legalHashes.current.termsOfServiceHash;
+          setLegalChanged(changed);
+          setLegalRequired(changed);
+          setLegalError("");
+        } catch (caught) {
+          setLegalError(
+            caught instanceof Error
+              ? caught.message
+              : "Failed to apply legal acceptance",
+          );
+        }
       }),
-    [client, loadLegal],
+    [client],
   );
 
   useEffect(() => {

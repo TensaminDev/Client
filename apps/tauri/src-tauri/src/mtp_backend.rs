@@ -12,6 +12,7 @@ use mtp::client::{ClientConfig, MTPClient, MTPConnection, Policy, SendMode};
 use mtp::codec::{
     CommunicationType, CommunicationValue, DataType, DataValue, SealedRelayBuilder, TypeMap,
 };
+use mtp::common::MessageId;
 use mtp::crypto::{
     derive_encryption_key, AeadDecrypt, ChaCha20Poly1305, DualSigner, HybridKem, Keyring,
     PublicKeyBundle,
@@ -783,6 +784,7 @@ async fn send_sealed_relay(request: SealedRelayRequest) -> Result<Value, String>
     .map_err(|error| format!("invalid MTP signing key: {error}"))?;
     let next_hop_id = request.next_hop.wire_id()?;
     let type_map = TypeMap::latest();
+    let message_type = communication_type(&request.type_name)?;
     let content = json_to_frame(&request.type_name, request.data, 1)?.into_payload();
     let metadata_recipients = request
         .metadata_recipients
@@ -796,17 +798,15 @@ async fn send_sealed_relay(request: SealedRelayRequest) -> Result<Value, String>
         .collect::<Result<Vec<_>, _>>()?;
     let created_at = mtp::common::unix_time_millis()
         .map_err(|error| format!("failed to get relay timestamp: {error}"))?;
-    let request_id = connection.next_request_id().await?;
-    let message_id = format!("tensamin-relay-{created_at}-{request_id}");
     let frame = SealedRelayBuilder::new(
-        request.type_name,
+        message_type,
         content,
         config.user_id,
         request.final_recipient_id,
         next_hop_id,
         &signer,
     )
-    .message_id(message_id)
+    .message_id(MessageId::random())
     .created_at(created_at)
     .metadata_recipients(metadata_recipients)
     .content_recipients(content_recipients)

@@ -1,6 +1,4 @@
 - Add a bunch of tests
 - Full accessability
-- Add settings saving & update onboarding to use it
-- Add onboarding page to load one profile during onboarding
 
 -> Most folders in packages/ have specific todos
