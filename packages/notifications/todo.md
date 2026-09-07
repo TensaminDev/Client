@@ -1,1 +1,0 @@
-- Add notification symbol / outline to user modal

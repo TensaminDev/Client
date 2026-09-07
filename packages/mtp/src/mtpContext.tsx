@@ -103,6 +103,37 @@ export function removeMissingContacts(
   return contacts.filter((contact) => !missing.has(contact.UserId));
 }
 
+export function updateContactNotifications(
+  contacts: Contacts,
+  userId: number,
+  notifications: number | undefined,
+  lastMessageAt: number,
+): Contacts {
+  const contact = contacts.find((item) => item.UserId === userId);
+  const nextNotifications = notifications ?? (contact?.notifications ?? 0) + 1;
+  if (!contact) {
+    return [
+      {
+        UserId: userId,
+        LastMessageAt: lastMessageAt,
+        Messages: [],
+        notifications: nextNotifications,
+      },
+      ...contacts,
+    ];
+  }
+
+  return contacts.map((item) =>
+    item.UserId === userId
+      ? {
+          ...item,
+          LastMessageAt: lastMessageAt,
+          notifications: nextNotifications,
+        }
+      : item,
+  );
+}
+
 export function useMessageHandlers() {
   const interceptorsRef = useRef(new Set<MTPInterceptor>());
   const subscriptionHandlersRef = useRef(

@@ -138,18 +138,24 @@ const authPayload = z.object({
   Communities: z.array(z.object({})).default([]),
   Contacts: z
     .array(
-      z.object({
-        LastMessageAt: z.number().default(0),
-        CreatedAt: z.number().optional(),
-        UserId: z.number(),
-        LastMessage: z
-          .object({
-            Content: z.base64(),
-            SenderId: z.number(),
-          })
-          .optional(),
-        Messages: z.array(Message).default([]),
-      }),
+      z
+        .object({
+          LastMessageAt: z.number().default(0),
+          CreatedAt: z.number().optional(),
+          UserId: z.number(),
+          Notifications: z.number().int().nonnegative().default(0),
+          LastMessage: z
+            .object({
+              Content: z.base64(),
+              SenderId: z.number(),
+            })
+            .optional(),
+          Messages: z.array(Message).default([]),
+        })
+        .transform(({ Notifications, ...contact }) => ({
+          ...contact,
+          notifications: Notifications,
+        })),
     )
     .default([]),
   Calls: z
@@ -483,11 +489,44 @@ export const mtp = {
     response: z
       .object({
         SenderId: z.number(),
+        LastMessageAt: z.number().optional(),
+        Notifications: z.number().int().nonnegative().optional(),
         Message: Message.extend({ SenderId: z.number().optional() }),
       })
-      .transform(({ SenderId, Message }) => ({
+      .transform(({ SenderId, LastMessageAt, Notifications, Message }) => ({
         SenderId,
+        LastMessageAt: LastMessageAt ?? Message.SendTime,
+        notifications: Notifications,
         Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
+      })),
+  },
+  ReadNotification: {
+    request: z.object({
+      ChatPartnerId: z.number().int().positive(),
+      LastMessageAt: z.number().nonnegative(),
+    }),
+    response: z
+      .object({
+        ChatPartnerId: z.number().int().positive(),
+        LastMessageAt: z.number().nonnegative(),
+        Notifications: z.number().int().nonnegative(),
+      })
+      .transform(({ Notifications, ...contact }) => ({
+        ...contact,
+        notifications: Notifications,
+      })),
+  },
+  PushNotification: {
+    request: z.object({}).optional(),
+    response: z
+      .object({
+        ChatPartnerId: z.number().int().positive(),
+        LastMessageAt: z.number().nonnegative(),
+        Notifications: z.number().int().nonnegative(),
+      })
+      .transform(({ Notifications, ...contact }) => ({
+        ...contact,
+        notifications: Notifications,
       })),
   },
   MessageGet: {

@@ -54,6 +54,43 @@ export default function CacheSync() {
     [secureCache],
   );
 
+  const updateNotifications = useCallback(
+    async (
+      userId: number,
+      notifications: number | undefined,
+      lastMessageAt: number,
+    ) => {
+      const cache = secureCache();
+      const contacts = (await cache.contacts.get()) ?? [];
+      const contact = contacts.find((item) => item.UserId === userId);
+      const nextNotifications =
+        Number.isSafeInteger(notifications) && (notifications ?? -1) >= 0
+          ? (notifications as number)
+          : (contact?.notifications ?? 0) + 1;
+      const next = contact
+        ? contacts.map((item) =>
+            item.UserId === userId
+              ? {
+                  ...item,
+                  LastMessageAt: lastMessageAt,
+                  notifications: nextNotifications,
+                }
+              : item,
+          )
+        : [
+            {
+              UserId: userId,
+              LastMessageAt: lastMessageAt,
+              Messages: [],
+              notifications: nextNotifications,
+            },
+            ...contacts,
+          ];
+      await cache.contacts.replace(next);
+    },
+    [secureCache],
+  );
+
   const replaceMessage = useCallback(
     async (
       partnerId: number,
@@ -132,6 +169,15 @@ export default function CacheSync() {
           result.MissingUserIds.filter(
             (userId): userId is number => typeof userId === "number",
           ),
+        );
+        return;
+      }
+
+      if (type === "ReadNotification") {
+        await updateNotifications(
+          Number(result.ChatPartnerId),
+          Number(result.notifications),
+          Number(result.LastMessageAt),
         );
         return;
       }
@@ -223,6 +269,7 @@ export default function CacheSync() {
       removeMessage,
       replaceMessage,
       secureCache,
+      updateNotifications,
     ],
   );
 
@@ -249,6 +296,21 @@ export default function CacheSync() {
         await insertMessage(
           Number(data.SenderId),
           data.Message as CachedMessage,
+        );
+        await updateNotifications(
+          Number(data.SenderId),
+          typeof data.notifications === "number"
+            ? data.notifications
+            : undefined,
+          Number(data.LastMessageAt),
+        );
+        return;
+      }
+      if (message.type === "PushNotification") {
+        await updateNotifications(
+          Number(data.ChatPartnerId),
+          Number(data.notifications),
+          Number(data.LastMessageAt),
         );
         return;
       }
@@ -305,6 +367,7 @@ export default function CacheSync() {
       removeMissingContacts,
       replaceMessage,
       secureCache,
+      updateNotifications,
     ],
   );
 
@@ -316,6 +379,7 @@ export default function CacheSync() {
     const unsubscribers = [
       subscribe("GetStates", handleMessage),
       subscribe("MessageLive", handleMessage),
+      subscribe("PushNotification", handleMessage),
       subscribe("MessageEditLive", handleMessage),
       subscribe("MessageDeleteLive", handleMessage),
       subscribe("MessageState", handleMessage),

@@ -26,6 +26,7 @@ import {
   MTPContext,
   type ProtocolMessage,
   removeMissingContacts,
+  updateContactNotifications,
   type SealedRelayResult,
   type SealedRelaySend,
   useMessageHandlers,
@@ -147,6 +148,33 @@ export function TauriProvider(props: {
       }),
     [subscribe],
   );
+
+  useEffect(() => {
+    const messageLive = subscribe("MessageLive", ({ data }) => {
+      setFreshContacts((contacts) =>
+        updateContactNotifications(
+          contacts,
+          data.SenderId,
+          data.notifications,
+          data.LastMessageAt,
+        ),
+      );
+    });
+    const notificationChanged = subscribe("PushNotification", ({ data }) => {
+      setFreshContacts((contacts) =>
+        updateContactNotifications(
+          contacts,
+          data.ChatPartnerId,
+          data.notifications,
+          data.LastMessageAt,
+        ),
+      );
+    });
+    return () => {
+      messageLive();
+      notificationChanged();
+    };
+  }, [subscribe]);
 
   useEffect(() => {
     if (props.blockConnection) return;

@@ -17,6 +17,7 @@ import {
   type MTPContextType,
   type ProtocolMessage,
   removeMissingContacts,
+  updateContactNotifications,
   type SealedRelaySend,
   useMessageHandlers,
 } from "./mtpContext";
@@ -524,6 +525,33 @@ export function BrowserProvider(props: {
       }),
     [subscribe],
   );
+
+  useEffect(() => {
+    const messageLive = subscribe("MessageLive", ({ data }) => {
+      setFreshContacts((contacts) =>
+        updateContactNotifications(
+          contacts,
+          data.SenderId,
+          data.notifications,
+          data.LastMessageAt,
+        ),
+      );
+    });
+    const notificationChanged = subscribe("PushNotification", ({ data }) => {
+      setFreshContacts((contacts) =>
+        updateContactNotifications(
+          contacts,
+          data.ChatPartnerId,
+          data.notifications,
+          data.LastMessageAt,
+        ),
+      );
+    });
+    return () => {
+      messageLive();
+      notificationChanged();
+    };
+  }, [subscribe]);
 
   const loadingDescription = useMemo(() => {
     if (!mtpUrl) return "Loading connection details";
