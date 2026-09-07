@@ -605,9 +605,12 @@ export const mtp = {
   CallToken: {
     request: z.object({
       CallId: z.string(),
+      CallSecret: callSecretEnvelopeRequest.optional(),
     }),
     response: z.object({
       CallToken: z.string(),
+      CallEndpoint: z.string(),
+      OmikronId: z.number(),
     }),
   },
   CallData: {
@@ -628,6 +631,8 @@ export const mtp = {
       CallId: z.string().optional(),
       CallSecret: callSecretEnvelopeResponse.optional(),
       SenderId: z.number().optional(),
+      ReceiverId: z.number().optional(),
+      OmikronId: z.number().optional(),
     }),
   },
   SetChatSecret: {
