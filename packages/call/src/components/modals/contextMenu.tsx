@@ -5,8 +5,13 @@ import {
   ContextMenuSeparator,
   Slider,
 } from "@methanium/ui";
-import { setParticipantCameraDisabled, useCall } from "../../store";
+import {
+  disconnectUser,
+  setParticipantCameraDisabled,
+  useCall,
+} from "../../store";
 import { useState } from "react";
+import { log, toast } from "@tensamin/shared/log";
 
 function EmptyCheckboxIndicator({ checked }: { checked: boolean }) {
   if (checked) {
@@ -104,7 +109,17 @@ export default function ContextMenu({
         <p>Server Mute</p>
         <EmptyCheckboxIndicator checked={serverMuted} />
       </ContextMenuCheckboxItem>
-      <ContextMenuItem variant="destructive">Disconnect</ContextMenuItem>
+      <ContextMenuItem
+        variant="destructive"
+        onClick={() => {
+          void disconnectUser(user.UserId).catch((error) => {
+            toast("error", "Failed to disconnect user.");
+            log(1, "call", "red", "Failed to disconnect call user", error);
+          });
+        }}
+      >
+        Disconnect
+      </ContextMenuItem>
     </ContextMenuContent>
   );
 }

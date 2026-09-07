@@ -635,6 +635,40 @@ export const mtp = {
       OmikronId: z.number().optional(),
     }),
   },
+  CallDisconnectUser: {
+    request: z.object({
+      CallId: z.string(),
+      UserId: z.number(),
+    }),
+    response: z.object({}),
+  },
+  CallTimeoutUser: {
+    request: z.object({
+      CallId: z.string(),
+      UserId: z.number(),
+      Untill: z.number(),
+    }),
+    response: z.object({
+      Timeout: z.number().optional(),
+    }),
+  },
+  CallSetAnonymousJoining: {
+    request: z.object({
+      CallId: z.string(),
+      Enabled: z.boolean(),
+    }),
+    response: z.object({
+      CallId: z.string().optional(),
+      Enabled: z.boolean().optional(),
+      Link: z.string().optional(),
+    }),
+  },
+  EndCall: {
+    request: z.object({
+      CallId: z.string(),
+    }),
+    response: z.object({}),
+  },
   SetChatSecret: {
     request: z.object({
       ChatId: z.string(),

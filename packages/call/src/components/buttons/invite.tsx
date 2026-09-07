@@ -73,7 +73,9 @@ export default function InviteButton({
                     void sendCallInvite(contact.UserId).catch((err) => {
                       toast(
                         "error",
-                        "Failed to send call invite. Check console for details.",
+                        err instanceof Error
+                          ? `Call invitation unavailable: ${err.message}`
+                          : "Call invitation unavailable.",
                       );
                       log(1, "call", "red", "Failed to send call invite", err);
                     });

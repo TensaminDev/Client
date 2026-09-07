@@ -4,7 +4,7 @@ import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
 import { mtp } from "@tensamin/shared/data";
 import { playSound, stopSound } from "@tensamin/shared/sounds";
-import { bytesToBase64 } from "mtp";
+import { bytesToBase64, MTPProtocolError } from "mtp";
 import {
   deriveCallSecretId,
   kemPublicKeyFromPublicKeyBundle,
@@ -41,6 +41,7 @@ import {
   useCall,
   type CallRuntime as Runtime,
   type CallView,
+  type CurrentCallData,
   type WrappedCallSecret,
 } from "./state";
 
@@ -56,6 +57,10 @@ setLogExtension(
 );
 
 type ProtocolCallSecret = NonNullable<
+  z.infer<typeof mtp.CallToken.request>["CallSecret"]
+>;
+
+type ProtocolCallSecretResponse = NonNullable<
   z.infer<typeof mtp.CallInvite.response>["CallSecret"]
 >;
 
@@ -136,7 +141,8 @@ function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
 }
 
 function normalizeWrappedCallSecret(
-  callSecret: WrappedCallSecret | ProtocolCallSecret,
+  callSecret:
+    WrappedCallSecret | ProtocolCallSecret | ProtocolCallSecretResponse,
 ): WrappedCallSecret {
   if ("secretId" in callSecret) {
     return callSecret;
@@ -610,10 +616,7 @@ export function setCallId(callId: string | null) {
 }
 
 // Cache server call metadata used by the preview screen.
-export function setCurrentCallData(currentCallData: {
-  UserIds: number[];
-  exists: boolean;
-}) {
+export function setCurrentCallData(currentCallData: CurrentCallData) {
   useCall.setState({ currentCallData });
 }
 
@@ -627,18 +630,47 @@ export async function openCallPage(callId: string) {
 }
 
 // Request the LiveKit token that authorizes this client to join a call.
-export async function getCallToken(callId: string): Promise<string> {
+export async function getCallToken(
+  callId: string,
+  callSecret?: ProtocolCallSecret,
+) {
   const response = await requireRuntime(useCall.getState().runtime)
-    .send("CallToken", {
+    .callControl.request("CallToken", {
       CallId: callId,
+      ...(callSecret ? { CallSecret: callSecret } : {}),
     })
     .catch((err) => {
-      log(1, "call", "red", "Failed to get call secret", err);
+      log(1, "call", "red", "Failed to get call token", err);
       throw err;
     });
 
-  const data = response.data as { CallToken: string };
-  return data.CallToken;
+  return mtp.CallToken.response.parse(response.data);
+}
+
+async function wrapCallSecretForUser(
+  userId: number,
+  callId: string,
+  callSecret: string,
+): Promise<ProtocolCallSecret> {
+  const remotePublicKey = await requireRuntime(
+    useCall.getState().runtime,
+  ).getPublicKey(userId);
+  const secretId = deriveCallSecretId(callId);
+  const wrapped = await wrapCallSecret({
+    callSecret,
+    recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(remotePublicKey),
+    callId,
+    secretId,
+    version: CALL_SECRET_VERSION,
+  });
+
+  return {
+    SecretId: secretId,
+    VersionNumber: CALL_SECRET_VERSION,
+    EncryptedSecret: protocolBytes(wrapped.encryptedSecret),
+    KemCiphertext: protocolBytes(wrapped.kemCiphertext),
+    WrappingScheme: wrapped.wrappingScheme,
+  };
 }
 
 // Encrypt the active call secret for a recipient and send the call invite.
@@ -650,27 +682,27 @@ export async function sendCallInvite(userId: number) {
     throw new Error("Cannot send call invite without an active call.");
   }
 
-  const remotePublicKey = await runtime.getPublicKey(userId);
-  const secretId = deriveCallSecretId(callId);
-  const wrapped = await wrapCallSecret({
-    callSecret,
-    recipientKemPublicKey: kemPublicKeyFromPublicKeyBundle(remotePublicKey),
-    callId,
-    secretId,
-    version: CALL_SECRET_VERSION,
-  });
+  useCall.setState({ invitedUserId: userId });
+  void startCallJingle(() => useCall.getState().invitedUserId === userId);
 
-  await runtime.send("CallInvite", {
-    ReceiverId: userId,
-    CallId: callId,
-    CallSecret: {
-      SecretId: secretId,
-      VersionNumber: CALL_SECRET_VERSION,
-      EncryptedSecret: protocolBytes(wrapped.encryptedSecret),
-      KemCiphertext: protocolBytes(wrapped.kemCiphertext),
-      WrappingScheme: wrapped.wrappingScheme,
-    },
-  });
+  try {
+    const response = await runtime.callControl.request("CallInvite", {
+      ReceiverId: userId,
+      CallId: callId,
+      CallSecret: await wrapCallSecretForUser(userId, callId, callSecret),
+    });
+
+    if (response.type.startsWith("Error")) {
+      throw new Error(`Call invitation failed: ${response.type}`);
+    }
+    mtp.CallInvite.response.parse(response.data);
+  } catch (error) {
+    if (useCall.getState().invitedUserId === userId) {
+      useCall.setState({ invitedUserId: null });
+      stopCallJingle();
+    }
+    throw error;
+  }
 }
 
 // Start tracking a participant's shared screen in the call UI.
@@ -842,9 +874,11 @@ function getMediaShareController() {
 }
 
 // Connect to LiveKit, enable the microphone, and move the UI into the live call.
-export async function connect(callId: string) {
-  const token = await getCallToken(callId);
-
+export async function connect(
+  callId: string,
+  token: string,
+  callEndpoint: string,
+) {
   useCall.setState({
     state: "connecting",
     callId,
@@ -857,7 +891,7 @@ export async function connect(callId: string) {
   });
 
   await getRoom()
-    .connect("wss://call.tensamin.net", token, {
+    .connect(callEndpoint, token, {
       autoSubscribe: false,
     })
     .catch((error) => {
@@ -905,6 +939,7 @@ export async function disconnect() {
     state: "closing",
     invitedUserId: null,
     callId: null,
+    callRoute: null,
     incomingCallInvite: null,
     callSecret: null,
     livekitToken: null,
@@ -921,7 +956,6 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
-    ownCallSecretInvitePending: false,
     callIsFullscreen: false,
     lastFocusedParticipantId: null,
   });
@@ -940,34 +974,118 @@ export async function disconnect() {
   }
 }
 
+// Leave by revoking this user's backend membership before closing local media.
+export async function leaveCall() {
+  const runtime = requireRuntime(useCall.getState().runtime);
+  const { callId } = useCall.getState();
+
+  try {
+    if (callId) {
+      const ownUserId = Number(await runtime.load("user_id"));
+      await runtime.callControl.request("CallDisconnectUser", {
+        CallId: callId,
+        UserId: ownUserId,
+      });
+    }
+  } finally {
+    await disconnect();
+    if (callId) {
+      runtime.removeCall(callId);
+    }
+  }
+}
+
+export async function endCall() {
+  const runtime = requireRuntime(useCall.getState().runtime);
+  const { callId } = useCall.getState();
+
+  if (!callId) {
+    throw new Error("Cannot end a call without an active call id.");
+  }
+
+  await runtime.callControl.request("EndCall", { CallId: callId });
+  await disconnect();
+  runtime.removeCall(callId);
+}
+
+export async function disconnectUser(userId: number) {
+  const { callId } = useCall.getState();
+  if (!callId) {
+    throw new Error("Cannot disconnect a user without an active call.");
+  }
+
+  await requireRuntime(useCall.getState().runtime).callControl.request(
+    "CallDisconnectUser",
+    { CallId: callId, UserId: userId },
+  );
+}
+
+export async function timeoutUser(userId: number, timeout: number) {
+  const { callId } = useCall.getState();
+  if (!callId) {
+    throw new Error("Cannot timeout a user without an active call.");
+  }
+
+  const response = await requireRuntime(
+    useCall.getState().runtime,
+  ).callControl.request("CallTimeoutUser", {
+    CallId: callId,
+    UserId: userId,
+    Untill: timeout,
+  });
+  return mtp.CallTimeoutUser.response.parse(response.data).Timeout;
+}
+
+export async function setAnonymousJoining(enabled: boolean) {
+  const { callId } = useCall.getState();
+  if (!callId) {
+    throw new Error("Cannot change joining settings without an active call.");
+  }
+
+  const response = await requireRuntime(
+    useCall.getState().runtime,
+  ).callControl.request("CallSetAnonymousJoining", {
+    CallId: callId,
+    Enabled: enabled,
+  });
+  return mtp.CallSetAnonymousJoining.response.parse(response.data);
+}
+
 // Prepare encryption and join or create a call with another user.
 export async function joinCall(
   userId: number,
-  callSecret?: WrappedCallSecret | ProtocolCallSecret,
+  callSecret?:
+    WrappedCallSecret | ProtocolCallSecret | ProtocolCallSecretResponse,
   existingCallId?: string,
   sendInvite = true,
+  ownerOmikronId?: number,
 ) {
   const runtime = requireRuntime(useCall.getState().runtime);
   const state = useCall.getState().state;
 
   if (state !== "closed") {
-    await disconnect();
+    await leaveCall();
   }
 
   log(2, "call", "purple", "Call creation initialised");
   const isNewCall = !callSecret && !existingCallId;
+  const finalId = existingCallId || crypto.randomUUID();
   useCall.setState({
     state: "encrypting",
     invitedUserId: sendInvite && !existingCallId ? userId : null,
-    ownCallSecretInvitePending: isNewCall,
+    callId: finalId,
+    callRoute:
+      ownerOmikronId != null ? { ownerOmikronId, livekitUrl: null } : null,
   });
 
   if (sendInvite && !existingCallId) {
     void startCallJingle(() => useCall.getState().invitedUserId != null);
   }
 
-  if (callSecret) {
-    try {
+  try {
+    let creatorEnvelope: ProtocolCallSecret | undefined;
+
+    if (callSecret) {
       if (!existingCallId) {
         throw new Error("Cannot unwrap call secret without a call id");
       }
@@ -986,27 +1104,147 @@ export async function joinCall(
       await getKeyProvider().setKey(decryptedSecret);
       await getRoom().setE2EEEnabled(true);
       useCall.setState({ callSecret: decryptedSecret });
-    } catch (err) {
-      log(1, "call", "red", "Failed getting call secret", err);
-      disconnect();
-      return;
-    }
-  } else {
-    const random = randomCallSecret();
+    } else {
+      const random = randomCallSecret();
 
-    await getKeyProvider().setKey(random);
-    await getRoom().setE2EEEnabled(true);
-    useCall.setState({ callSecret: random });
+      await getKeyProvider().setKey(random);
+      await getRoom().setE2EEEnabled(true);
+      useCall.setState({ callSecret: random });
+
+      const ownUserId = Number(await runtime.load("user_id"));
+      creatorEnvelope = await wrapCallSecretForUser(ownUserId, finalId, random);
+    }
+
+    const token = await getCallToken(finalId, creatorEnvelope);
+    if (ownerOmikronId != null && token.OmikronId !== ownerOmikronId) {
+      throw new Error(
+        `Call owner mismatch: expected ${ownerOmikronId}, received ${token.OmikronId}`,
+      );
+    }
+    if (!token.CallEndpoint) {
+      throw new Error("CallToken response did not include a LiveKit endpoint.");
+    }
+
+    useCall.setState({
+      view: "grid",
+      callRoute: {
+        ownerOmikronId: token.OmikronId,
+        livekitUrl: token.CallEndpoint,
+      },
+      livekitToken: token.CallToken,
+    });
+    await openCallPage(finalId);
+    await connect(finalId, token.CallToken, token.CallEndpoint);
+
+    if (isNewCall && sendInvite) {
+      try {
+        await sendCallInvite(userId);
+      } catch (error) {
+        toast(
+          "error",
+          error instanceof Error
+            ? `Call invitation unavailable: ${error.message}`
+            : "Call invitation unavailable.",
+        );
+        log(1, "call", "red", "Failed to send call invite", error);
+      }
+    }
+  } catch (err) {
+    log(1, "call", "red", "Failed to join call", err);
+    await disconnect();
+    throw err;
+  }
+}
+
+export async function receiveCallInvite(data: unknown, ownUserId: number) {
+  const parsed = mtp.CallInvite.response.parse(data);
+  const { CallId, CallSecret, SenderId, OmikronId } = parsed;
+
+  if (!CallId || !CallSecret || !SenderId || OmikronId == null) {
+    return;
+  }
+  if (SenderId === ownUserId) {
+    return;
   }
 
-  const finalId = existingCallId || crypto.randomUUID();
+  const currentCall = useCall.getState();
+  if (currentCall.callId === CallId && currentCall.state !== "closed") {
+    return;
+  }
+
+  useCall.setState({
+    incomingCallInvite: {
+      callId: CallId,
+      callSecret: normalizeWrappedCallSecret(CallSecret),
+      senderId: SenderId,
+      ownerOmikronId: OmikronId,
+    },
+  });
+  void startCallJingle(() => useCall.getState().incomingCallInvite != null);
+}
+
+export async function respondToCallInvite(accepted: boolean) {
+  const invite = useCall.getState().incomingCallInvite;
+
+  stopCallJingle();
+  useCall.setState({ incomingCallInvite: null });
+
+  if (!invite) {
+    return;
+  }
+  if (!accepted) {
+    log(2, "call", "purple", "Declined call invite", {
+      callId: invite.callId,
+      senderId: invite.senderId,
+    });
+    return;
+  }
+
+  const runtime = requireRuntime(useCall.getState().runtime);
+  await joinCall(
+    invite.senderId,
+    invite.callSecret,
+    invite.callId,
+    false,
+    invite.ownerOmikronId,
+  );
+  runtime.upsertCall({
+    CallId: invite.callId,
+    CallSecret: protocolCallSecret(invite.callSecret),
+    CallMembers: [invite.senderId],
+  });
+}
+
+export async function loadCallData(callId: string) {
+  setCurrentCallData({ status: "loading" });
 
   try {
-    useCall.setState({ view: "grid", callId: finalId });
-    await openCallPage(finalId);
-    await connect(finalId);
-  } catch (err) {
-    log(1, "call", "red", "Failed to join call [navbar level]", err);
+    const response = await requireRuntime(
+      useCall.getState().runtime,
+    ).callControl.request("CallData", { CallId: callId });
+    const parsed = mtp.CallData.response.parse(response.data);
+    setCurrentCallData({ status: "ready", userIds: parsed.UserIds });
+  } catch (error) {
+    if (error instanceof MTPProtocolError) {
+      if (error.type === "ErrorNotFound") {
+        setCurrentCallData({ status: "not-found" });
+        return;
+      }
+      if (error.type === "ErrorNotAuthenticated") {
+        setCurrentCallData({ status: "forbidden" });
+        return;
+      }
+    }
+
+    log(1, "call", "red", "Failed to get call data", {
+      callId,
+      error,
+    });
+    setCurrentCallData({
+      status: "error",
+      message:
+        error instanceof Error ? error.message : "Failed to load call data.",
+    });
   }
 }
 
@@ -1082,6 +1320,7 @@ export function resetCallState() {
     view: "preview",
     invitedUserId: null,
     callId: null,
+    callRoute: null,
     incomingCallInvite: null,
     callSecret: null,
     livekitToken: null,
@@ -1139,7 +1378,7 @@ export function useInitializeCall() {
   const location = useLocation();
   const { send, subscribe } = useMTP();
   const { load } = useStorage();
-  const { insertCall } = useSession();
+  const { upsertCall, removeCall } = useSession();
   const { get } = useUser();
 
   const callId = useCall((state) => state.callId);
@@ -1164,25 +1403,14 @@ export function useInitializeCall() {
   useEffect(() => {
     setCallRuntime({
       navigate,
-      send: send as (
-        type: string,
-        data: Record<string, unknown>,
-      ) => Promise<{ data: unknown }>,
+      callControl: { request: send },
       load: load as (key: string) => Promise<unknown>,
       getPublicKey: (userId) =>
         get(userId, ["PublicKey"]).then((user) => user.PublicKey),
+      upsertCall,
+      removeCall,
     });
-  }, [get, load, navigate, send]);
-
-  const showCallingScreen = useCallback(
-    (callId: string, callSecret: WrappedCallSecret, senderId: number) => {
-      useCall.setState({
-        incomingCallInvite: { callId, callSecret, senderId },
-      });
-      void startCallJingle(() => useCall.getState().incomingCallInvite != null);
-    },
-    [],
-  );
+  }, [get, load, navigate, removeCall, send, upsertCall]);
 
   const setInvitePopupOpen = useCallback((open: boolean) => {
     if (!open) {
@@ -1191,65 +1419,18 @@ export function useInitializeCall() {
     }
   }, []);
 
-  const respondToInvite = useCallback(
-    (accepted: boolean) => {
-      const invite = useCall.getState().incomingCallInvite;
-
-      stopCallJingle();
-      useCall.setState({ incomingCallInvite: null });
-
-      if (!invite) {
-        return;
-      }
-
-      insertCall({
-        CallId: invite.callId,
-        CallSecret: protocolCallSecret(invite.callSecret),
-        CallMembers: [invite.senderId],
-      });
-
-      if (accepted) {
-        joinCall(
-          invite.senderId,
-          invite.callSecret,
-          invite.callId,
-          false,
-        ).catch((err) => {
-          log(1, "call", "red", "Failed to join call", err);
-        });
-        return;
-      }
-
-      log(2, "call", "purple", "Declined call invite", {
-        callId: invite.callId,
-        senderId: invite.senderId,
-      });
-    },
-    [insertCall],
-  );
+  const respondToInvite = useCallback((accepted: boolean) => {
+    void respondToCallInvite(accepted).catch((error) => {
+      log(1, "call", "red", "Failed to join call", error);
+    });
+  }, []);
 
   // listen to call invites
   useEffect(() => {
     return subscribe("CallInvite", async ({ data }) => {
-      const { CallId, CallSecret, SenderId } = data;
-      if (!CallId || !CallSecret || !SenderId) return;
-
-      if (SenderId === Number(await load("user_id"))) {
-        return;
-      }
-
-      const currentCall = useCall.getState();
-      if (currentCall.callId === CallId && currentCall.state !== "closed") {
-        return;
-      }
-
-      showCallingScreen(
-        CallId,
-        normalizeWrappedCallSecret(CallSecret),
-        SenderId,
-      );
+      await receiveCallInvite(data, Number(await load("user_id")));
     });
-  }, [load, subscribe, showCallingScreen]);
+  }, [load, subscribe]);
 
   // get callId from url
   useEffect(() => {
@@ -1348,34 +1529,6 @@ export function useInitializeCall() {
             }
           }
         }
-      }
-
-      const invitedUserId = useCall.getState().invitedUserId;
-      const ownCallSecretInvitePending =
-        useCall.getState().ownCallSecretInvitePending;
-
-      if (ownCallSecretInvitePending) {
-        useCall.setState({ ownCallSecretInvitePending: false });
-        void load("user_id")
-          .then((ownUserId) => sendCallInvite(Number(ownUserId)))
-          .catch((error) => {
-            log(
-              1,
-              "call",
-              "red",
-              "Failed to send own call secret invite",
-              error,
-            );
-          });
-      }
-
-      if (invitedUserId != null) {
-        setTimeout(async () => {
-          void sendCallInvite(invitedUserId).catch((error) => {
-            toast("error", "Failed to send call invite.");
-            log(1, "call", "red", "Failed to send call invite", error);
-          });
-        }, 1000);
       }
 
       log(2, "call", "purple", "Connected to call", {
@@ -1597,36 +1750,8 @@ export function useInitializeCall() {
       return;
     }
 
-    send("CallData", { CallId: callId })
-      .then((data) => {
-        if (data.type === "ErrorNotFound") {
-          setCurrentCallData({
-            UserIds: [],
-            exists: false,
-          });
-          return;
-        }
-
-        if (data.type.startsWith("Error")) {
-          throw new Error(`CallData failed: ${data.type}`);
-        }
-
-        setCurrentCallData({
-          ...mtp.CallData.response.parse(data.data),
-          exists: true,
-        });
-      })
-      .catch((err) => {
-        log(1, "call", "red", "Failed to get call data", {
-          callId,
-          error: err,
-        });
-        setCurrentCallData({
-          UserIds: [],
-          exists: false,
-        });
-      });
-  }, [callId, send, view]);
+    void loadCallData(callId);
+  }, [callId, view]);
 
   return incomingCallInvite ? (
     <InvitePopup

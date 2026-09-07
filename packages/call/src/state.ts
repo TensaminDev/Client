@@ -1,5 +1,7 @@
 import type { RefObject } from "react";
 import { create } from "zustand";
+import type { BoundSendFn } from "@tensamin/mtp";
+import type { Calls } from "@tensamin/shared/data";
 
 import type { LocalMediaShareSession } from "./mediaShare/controller";
 
@@ -13,17 +15,32 @@ export type WrappedCallSecret = {
   wrappingScheme: string;
 };
 
+export type CallRoute = {
+  ownerOmikronId: number;
+  livekitUrl: string | null;
+};
+
+export type CurrentCallData =
+  | { status: "loading" }
+  | { status: "ready"; userIds: number[] }
+  | { status: "not-found" }
+  | { status: "forbidden" }
+  | { status: "error"; message: string };
+
+export type CallControlTransport = {
+  request: BoundSendFn;
+};
+
 export type CallRuntime = {
   navigate: (options: {
     to: string;
     search?: Record<string, unknown>;
   }) => Promise<void>;
-  send: (
-    type: string,
-    data: Record<string, unknown>,
-  ) => Promise<{ data: unknown }>;
+  callControl: CallControlTransport;
   load: (key: string) => Promise<unknown>;
   getPublicKey: (userId: number) => Promise<string>;
+  upsertCall: (call: Calls[number]) => void;
+  removeCall: (callId: string) => void;
 };
 
 export const useCall = create<{
@@ -31,14 +48,16 @@ export const useCall = create<{
   view: CallView;
   invitedUserId: number | null;
   callId: string | null;
+  callRoute: CallRoute | null;
   incomingCallInvite: {
     callId: string;
     callSecret: WrappedCallSecret;
     senderId: number;
+    ownerOmikronId: number;
   } | null;
   callSecret: string | null;
   livekitToken: string | null;
-  currentCallData: { UserIds: number[]; exists: boolean } | null;
+  currentCallData: CurrentCallData | null;
   deaf: boolean;
   micEnabled: boolean;
   cameraEnabled: boolean;
@@ -53,7 +72,6 @@ export const useCall = create<{
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
   isEncrypted: boolean;
-  ownCallSecretInvitePending: boolean;
   callIsFullscreen: boolean;
   callIsPopout: boolean;
   layoutVersion: number;
@@ -65,6 +83,7 @@ export const useCall = create<{
   view: "preview",
   invitedUserId: null,
   callId: null,
+  callRoute: null,
   incomingCallInvite: null,
   callSecret: null,
   livekitToken: null,
@@ -83,7 +102,6 @@ export const useCall = create<{
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],
   isEncrypted: false,
-  ownCallSecretInvitePending: false,
   callIsFullscreen: false,
   callIsPopout: false,
   layoutVersion: 0,
