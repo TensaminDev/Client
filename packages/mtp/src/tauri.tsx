@@ -76,6 +76,9 @@ export function TauriProvider(props: {
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
+  const [clientState, setClientState] = useState<
+    ProtocolMessage<"ClientStateSync">["data"] | null
+  >(null);
   const generationRef = useRef(0);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
     useMessageHandlers();
@@ -93,12 +96,14 @@ export function TauriProvider(props: {
     };
   });
 
+  // The server sends ClientStateSync automatically after every login.
   const applySnapshot = useCallback(async (next: NativeSnapshot) => {
     if (next.generation < generationRef.current) return;
     generationRef.current = next.generation;
     if (next.error)
       log(0, "android", "orange", "MTP connection failed", next.error);
     if (!next.identified) {
+      setClientState(null);
       setSnapshot(next);
       return;
     }
@@ -117,6 +122,7 @@ export function TauriProvider(props: {
       setFreshContacts(state.Contacts);
       setFreshCommunities(state.Communities);
       setFreshCalls(state.Calls);
+      setClientState(state);
       setSnapshot(next);
     } catch (error) {
       log(0, "mtp", "red", "Invalid native MTP state", error);
@@ -292,6 +298,7 @@ export function TauriProvider(props: {
         freshContacts,
         freshCommunities,
         freshCalls,
+        clientState,
         contextReady: connected && snapshot.identified,
         loadingDescription: connected
           ? "Waiting for authenticated session"

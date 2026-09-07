@@ -1,12 +1,17 @@
 import type { BoundSendFn, ProtocolMessage } from "./mtpContext";
 import type { MTPSubscriptionFunction } from "mtp";
 import { mtp as schemas } from "@tensamin/shared/data";
+import { log } from "@tensamin/shared/log";
 
 export type UserBlob = {
   id: string;
   ciphertext: Uint8Array;
   revision: number;
   updatedAt: number;
+};
+
+export type UserBlobMetadata = Omit<UserBlob, "ciphertext"> & {
+  ciphertext?: Uint8Array;
 };
 
 export type ReceiptPolicy = {
@@ -40,10 +45,37 @@ function blob(data: ProtocolMessage<"UserBlobGet">["data"]): UserBlob {
   };
 }
 
+function blobMetadata(
+  data: ProtocolMessage<"ClientStateSync">["data"]["Blobs"][number],
+): UserBlobMetadata {
+  return {
+    id: data.BlobId,
+    ...(data.Blob ? { ciphertext: data.Blob } : {}),
+    revision: data.VersionNumber,
+    updatedAt: data.UpdatedAt,
+  };
+}
+
 function ownedBytes(value: Uint8Array): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(value.byteLength);
   bytes.set(value);
   return bytes;
+}
+
+function logBlobPut({
+  id,
+  reason,
+  value,
+}: {
+  id: string;
+  reason: string;
+  value: unknown;
+}) {
+  log(0, "settings", "cyan", "Executing UserBlobPut", {
+    blobId: id,
+    reason,
+    value,
+  });
 }
 
 function receipt(
@@ -69,12 +101,19 @@ function storage(
 export function createSettingsClient({
   send,
   subscribe,
+  clientState,
 }: {
   send: BoundSendFn;
   subscribe: MTPSubscriptionFunction<typeof schemas>;
+  clientState: ProtocolMessage<"ClientStateSync">["data"] | null;
 }) {
   return {
-    async createBlob(id: string, ciphertext: Uint8Array) {
+    async createBlob(
+      id: string,
+      ciphertext: Uint8Array,
+      change: { reason: string; value: unknown },
+    ) {
+      logBlobPut({ id, ...change });
       return blob(
         expect(
           "UserBlobPut",
@@ -90,7 +129,9 @@ export function createSettingsClient({
       id: string,
       ciphertext: Uint8Array,
       expectedRevision: number,
+      change: { reason: string; value: unknown },
     ) {
+      logBlobPut({ id, ...change });
       return blob(
         expect(
           "UserBlobPut",
@@ -108,10 +149,8 @@ export function createSettingsClient({
       );
     },
     async listBlobs() {
-      return expect(
-        "UserBlobList",
-        await send("UserBlobList", {}),
-      ).data.Blobs.map(blob);
+      if (!clientState) throw new Error("Client state is unavailable");
+      return clientState.Blobs.map(blobMetadata);
     },
     async deleteBlob(id: string, expectedRevision: number) {
       return (
@@ -142,9 +181,12 @@ export function createSettingsClient({
         .BlockedUserIds;
     },
     async getReceiptPolicy() {
-      return receipt(
-        expect("ReceiptPolicyGet", await send("ReceiptPolicyGet", {})).data,
-      );
+      if (!clientState) throw new Error("Client state is unavailable");
+      return {
+        sendReadReceipts: clientState.SendReadReceipts,
+        sendReceivedReceipts: clientState.SendReceivedReceipts,
+        revision: clientState.VersionNumber,
+      };
     },
     async setReceiptPolicy(policy: Omit<ReceiptPolicy, "revision">) {
       return receipt(
@@ -195,6 +237,7 @@ export function createSettingsClient({
         id: string;
         revision: number;
         deleted: boolean;
+        blob?: UserBlob;
       }) => void,
     ) {
       return subscribe("UserBlobChanged", ({ data }) =>
@@ -202,6 +245,16 @@ export function createSettingsClient({
           id: data.BlobId,
           revision: data.VersionNumber,
           deleted: data.Deleted,
+          ...(data.Blob
+            ? {
+                blob: {
+                  id: data.BlobId,
+                  ciphertext: data.Blob,
+                  revision: data.VersionNumber,
+                  updatedAt: data.UpdatedAt ?? 0,
+                },
+              }
+            : {}),
         }),
       );
     },

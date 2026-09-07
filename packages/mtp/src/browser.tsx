@@ -93,6 +93,7 @@ async function completeInitialSynchronization(
   syncTimeoutMs = INITIAL_SYNC_TIMEOUT,
   ackTimeoutMs = STATE_ACK_TIMEOUT,
 ): Promise<ProtocolMessage<"ClientStateSync">> {
+  // The server sends ClientStateSync automatically after every login.
   const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
     (resolve, reject) => {
       let unsubscribeStateSync = () => {};
@@ -182,6 +183,9 @@ export function BrowserProvider(props: {
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
+  const [clientState, setClientState] = useState<
+    ProtocolMessage<"ClientStateSync">["data"] | null
+  >(null);
   const clientRef = useRef<BrowserMtpClient | null>(null);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
     useMessageHandlers();
@@ -335,6 +339,7 @@ export function BrowserProvider(props: {
       try {
         setIdentified(false);
         setIdentifying(false);
+        setClientState(null);
         const [userId, keyring] = await Promise.all([
           load("user_id"),
           load("mtp_keyring"),
@@ -459,6 +464,7 @@ export function BrowserProvider(props: {
         setFreshContacts(finalResponse.data.Contacts);
         setFreshCommunities(finalResponse.data.Communities);
         setFreshCalls(finalResponse.data.Calls);
+        setClientState(finalResponse.data);
         connectionReady = true;
         setIdentifying(false);
         setIdentified(true);
@@ -597,6 +603,7 @@ export function BrowserProvider(props: {
         freshContacts,
         freshCommunities,
         freshCalls,
+        clientState,
         contextReady,
         loadingDescription,
       }}

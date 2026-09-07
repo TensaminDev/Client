@@ -14,8 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@methanium/ui";
-import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { parseTuFileContent } from "@tensamin/storage/credentials";
 import { useSettingsProfiles } from "./profiles";
 
 export function SettingsProfileMenu() {
@@ -23,15 +24,10 @@ export function SettingsProfileMenu() {
     profiles,
     activeProfile,
     loading,
-    syncError,
-    remoteChange,
     selectProfile,
     createProfile,
     renameProfile,
     deleteProfile,
-    reloadRemote,
-    keepLocal,
-    retrySave,
     validateName,
   } = useSettingsProfiles();
   const [dialog, setDialog] = useState<"create" | "rename" | "delete" | null>(
@@ -40,10 +36,12 @@ export function SettingsProfileMenu() {
   const [name, setName] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [accountFile, setAccountFile] = useState<File | null>(null);
 
   function openNameDialog(kind: "create" | "rename") {
     setName(kind === "rename" ? (activeProfile?.name ?? "") : "");
     setDialogError("");
+    setAccountFile(null);
     setDialog(kind);
   }
 
@@ -61,7 +59,10 @@ export function SettingsProfileMenu() {
       if (dialog === "rename" && activeProfile) {
         await renameProfile(activeProfile.id, name);
       } else {
-        await createProfile(name);
+        const account = accountFile
+          ? parseTuFileContent(await accountFile.text())
+          : undefined;
+        await createProfile(name, undefined, account);
       }
       setDialog(null);
     } catch (caught) {
@@ -136,43 +137,6 @@ export function SettingsProfileMenu() {
         >
           <Trash2 className="size-4" />
         </Button>
-        {syncError && (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-destructive">
-            <span>Local changes are not synced. {syncError}</span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void retrySave()}
-            >
-              Retry
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => void reloadRemote()}
-            >
-              Reload remote
-            </Button>
-          </div>
-        )}
-        {remoteChange && (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-            <span>
-              This profile was{" "}
-              {remoteChange === "deleted" ? "deleted" : "updated"} elsewhere.
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void reloadRemote()}
-            >
-              <RotateCcw className="size-4" /> Reload
-            </Button>
-            <Button size="sm" variant="ghost" onClick={keepLocal}>
-              Keep local
-            </Button>
-          </div>
-        )}
       </div>
 
       <Dialog
@@ -207,6 +171,19 @@ export function SettingsProfileMenu() {
                   if (event.key === "Enter") void submitName();
                 }}
               />
+              {dialog === "create" && (
+                <>
+                  <Label htmlFor="settings-profile-account">Account file</Label>
+                  <Input
+                    accept=".tu"
+                    id="settings-profile-account"
+                    type="file"
+                    onChange={(event) =>
+                      setAccountFile(event.currentTarget.files?.[0] ?? null)
+                    }
+                  />
+                </>
+              )}
             </div>
           )}
           {dialogError && (

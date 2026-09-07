@@ -75,17 +75,10 @@ function formatMessageDate(sendTime: number) {
 }
 
 function DateSeparator({ label }: { label: string }) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setVisible(true), 100);
-    return () => window.clearTimeout(timeout);
-  }, []);
-
   return (
     <div
       aria-label={label}
-      className={`my-3 flex w-full items-center gap-3 px-3 transition-opacity duration-150 ${visible ? "opacity-100" : "opacity-0"}`}
+      className="my-3 flex w-full items-center gap-3 px-3"
       role="separator"
     >
       <div className="h-px flex-1 bg-border" />

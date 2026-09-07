@@ -53,23 +53,26 @@ function MessageComponent({
     (message.failed && message.MessageState === "awaiting") ||
     message.decryptionFailed;
 
-  // Fade-in
-  const [hasFadedIn, setHasFadedIn] = useState(false);
-  const opacityClass = !hasFadedIn
-    ? "opacity-0"
-    : message.MessageState === "awaiting"
-      ? "opacity-50"
-      : "opacity-100";
+  const isLiveMessage = "localId" in message;
+  const [hasFadedIn, setHasFadedIn] = useState(!isLiveMessage);
+  const opacityClass =
+    isLiveMessage && !hasFadedIn
+      ? "opacity-0"
+      : message.MessageState === "awaiting"
+        ? "opacity-50"
+        : "opacity-100";
   const messageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
+    if (!isLiveMessage) return;
+
+    const frame = requestAnimationFrame(() => {
       setHasFadedIn(true);
-    }, 100);
+    });
 
     return () => {
-      window.clearTimeout(timeout);
+      cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [isLiveMessage]);
 
   // Message states
   const { load } = useStorage();
@@ -174,6 +177,7 @@ function MessageComponent({
   const {
     addReaction,
     chatSecret,
+    chatSecretVersion,
     editMessage,
     getChatSecret,
     userId,
@@ -199,7 +203,10 @@ function MessageComponent({
       send,
     })
       .then(async (reply) => {
-        const replySecret = await getChatSecret(userId, reply.VersionNumber);
+        const replySecret =
+          reply.VersionNumber === chatSecretVersion
+            ? chatSecret
+            : await getChatSecret(userId, reply.VersionNumber);
         if (!replySecret) throw new Error("Reply secret is unavailable");
         const Content = await decryptChatText(
           replySecret,
@@ -218,7 +225,15 @@ function MessageComponent({
     return () => {
       active = false;
     };
-  }, [chatSecret, getChatSecret, message.ReplyId, ownId, send, userId]);
+  }, [
+    chatSecret,
+    chatSecretVersion,
+    getChatSecret,
+    message.ReplyId,
+    ownId,
+    send,
+    userId,
+  ]);
   const recordUse = useRecordEmojiUse();
   const editingRef = useRef(editing);
   const onSetEditingRef = useRef(onSetEditing);
@@ -250,7 +265,10 @@ function MessageComponent({
     async (newContent: string) => {
       if (!chatSecret) return;
 
-      const editSecret = await getChatSecret(userId, message.VersionNumber);
+      const editSecret =
+        message.VersionNumber === chatSecretVersion
+          ? chatSecret
+          : await getChatSecret(userId, message.VersionNumber);
       if (!editSecret) return;
       const encryptedContent = await encryptChatText(
         editSecret,
@@ -303,6 +321,7 @@ function MessageComponent({
     },
     [
       chatSecret,
+      chatSecretVersion,
       getChatSecret,
       editMessage,
       userId,

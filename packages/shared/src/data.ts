@@ -37,14 +37,16 @@ const blobId = z.string().refine((value) => {
   return length >= 1 && length <= 256;
 }, "BlobId must be between 1 and 256 UTF-8 bytes");
 const revision = z.number().int().nonnegative();
-const userBlobResponse = z.object({
+const userBlobMetadata = z.object({
   BlobId: blobId,
+  VersionNumber: revision,
+  UpdatedAt: z.number(),
+});
+const userBlobResponse = userBlobMetadata.extend({
   Blob: protocolBytesResponse.refine(
     (value) => value.byteLength <= 1_048_576,
     "Blob must not exceed 1 MiB",
   ),
-  VersionNumber: revision,
-  UpdatedAt: z.number(),
 });
 const receiptPolicyResponse = z.object({
   SendReadReceipts: z.boolean(),
@@ -177,7 +179,11 @@ const clientStateSync = authPayload.extend({
   Messages: z.array(Message).default([]),
   DeletedMessageIds: z.array(z.number()).default([]),
   DeletedContactIds: z.array(z.number()).default([]),
-  Blobs: z.array(userBlobResponse).default([]),
+  Blobs: z
+    .array(
+      userBlobMetadata.extend({ Blob: userBlobResponse.shape.Blob.optional() }),
+    )
+    .default([]),
   DeletedBlobIds: z.array(blobId).default([]),
   BlockedUserIds: z.array(z.number().int().positive()).default([]),
   SendReadReceipts: z.boolean().default(true),
@@ -309,9 +315,9 @@ export const mtp = {
   },
   UserBlobChanged: {
     request: z.object({}).optional(),
-    response: z.object({
-      BlobId: blobId,
-      VersionNumber: revision,
+    response: userBlobMetadata.extend({
+      Blob: userBlobResponse.shape.Blob.optional(),
+      UpdatedAt: z.number().optional(),
       Deleted: z.boolean(),
     }),
   },
