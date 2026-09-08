@@ -98,9 +98,9 @@ export const MTPContext = createContext<MTPContextType | undefined>(undefined);
 
 export function removeMissingContacts(
   contacts: Contacts,
-  message: ProtocolMessage<"GetStates">,
+  missingUserIds: readonly number[],
 ): Contacts {
-  const missing = new Set(message.data.MissingUserIds ?? []);
+  const missing = new Set(missingUserIds);
   return contacts.filter((contact) => !missing.has(contact.UserId));
 }
 
@@ -144,7 +144,6 @@ export function useMessageHandlers() {
   } | null>(null);
   const transportGenerationRef = useRef(0);
   const transportUnsubscribersRef = useRef(new Map<string, () => void>());
-  const lastInitialStateRef = useRef<ProtocolMessage<"GetStates"> | null>(null);
 
   const attachType = useCallback(
     <Type extends keyof typeof mtpSchemas & string>(type: Type) => {
@@ -157,9 +156,6 @@ export function useMessageHandlers() {
           transportGenerationRef.current !== generation
         )
           return;
-        if (type === "GetStates") {
-          lastInitialStateRef.current = message as ProtocolMessage<"GetStates">;
-        }
         for (const handler of [
           ...(subscriptionHandlersRef.current.get(type) ?? []),
         ]) {
@@ -214,12 +210,6 @@ export function useMessageHandlers() {
       handlers.add(untypedHandler);
       subscriptionHandlersRef.current.set(type, handlers);
       attachType(type);
-      const initialState = lastInitialStateRef.current;
-      if (type === "GetStates" && initialState) {
-        void Promise.resolve(untypedHandler(initialState)).catch(
-          () => undefined,
-        );
-      }
       return () => {
         handlers.delete(untypedHandler);
         if (handlers.size !== 0) return;

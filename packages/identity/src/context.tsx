@@ -99,7 +99,7 @@ export default function UserProvider(props: { children: ReactNode }) {
   );
   const revisionsRef = useRef(new Map<number, Map<UserField, number>>());
 
-  const { send, subscribe: subscribeMTP } = useMTP();
+  const { send, subscribe: subscribeMTP, clientState } = useMTP();
   const { load } = useStorage();
   const { contacts } = useSession();
   const [accountId, setAccountId] = useState<number | null>(null);
@@ -218,6 +218,18 @@ export default function UserProvider(props: { children: ReactNode }) {
       unsubscribeChanged();
     };
   }, [accountId, applyUserState, removePresence, subscribeMTP]);
+
+  useEffect(() => {
+    if (!accountId || !clientState?.PresenceSnapshotComplete) return;
+    for (const userId of clientState.MissingUserIds) removePresence(userId);
+    for (const entry of clientState.UserStates) {
+      if (!entry || entry.UserId === accountId) continue;
+      initialStatesRef.current.set(entry.UserId, entry.UserState);
+      if (applyUserState(entry.UserId, entry.UserState)) {
+        initialStatesRef.current.delete(entry.UserId);
+      }
+    }
+  }, [accountId, applyUserState, clientState, removePresence]);
 
   const loadUser = useCallback(
     async (userId: number): Promise<User> => {

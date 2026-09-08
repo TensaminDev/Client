@@ -191,6 +191,28 @@ const clientStateSync = authPayload.extend({
     .min(60_000)
     .max(31_536_000_000)
     .optional(),
+  UserStates: z
+    .array(
+      z
+        .object({
+          UserId: z.number().int().positive(),
+          UserState: z.enum([
+            "user_online",
+            "user_idle",
+            "user_dnd",
+            "user_wc",
+            "user_offline",
+            "iota_offline",
+            "user_borked",
+            "iota_online",
+            "iota_borked",
+          ]),
+        })
+        .nullable(),
+    )
+    .default([]),
+  MissingUserIds: z.array(z.number().int().positive()).default([]),
+  PresenceSnapshotComplete: z.boolean().default(false),
 });
 
 export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
@@ -276,12 +298,22 @@ export const mtp = {
     }),
     response: clientStateSync,
   },
+  ClientStateGet: {
+    request: z.object({
+      DeviceId: z.uuidv4(),
+      VersionNumber: z.number().int().nonnegative(),
+      CacheValid: z.boolean(),
+      CacheSchemaVersion: z.number().int().nonnegative(),
+    }),
+    response: clientStateSync,
+  },
   ClientStateSync: {
     request: z.object({}).optional(),
     response: clientStateSync,
   },
   ClientStateAck: {
     request: z.object({
+      DeviceId: z.uuidv4(),
       SessionId: z.number().int().positive(),
       VersionNumber: z.number().int().nonnegative(),
     }),
@@ -309,11 +341,12 @@ export const mtp = {
   },
   UserBlobChanged: {
     request: z.object({}).optional(),
-    response: userBlobMetadata
-      .pick({ BlobId: true, VersionNumber: true })
-      .extend({
-        Deleted: z.boolean(),
+    response: z.discriminatedUnion("Deleted", [
+      userBlobResponse.extend({ Deleted: z.literal(false) }),
+      userBlobMetadata.pick({ BlobId: true, VersionNumber: true }).extend({
+        Deleted: z.literal(true),
       }),
+    ]),
   },
   UserBlock: {
     request: z.object({ BlockedUserId: z.number().int().positive() }),
@@ -727,6 +760,12 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
+  mtp_device_id: string;
+  mtp_sync_state: {
+    userId: number;
+    versionNumber: number;
+    cacheSchemaVersion: number;
+  } | null;
   onboarding_done: boolean;
   onboarding_started: boolean;
   active_settings_profile_id: string;
@@ -784,6 +823,8 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
+  mtp_device_id: "",
+  mtp_sync_state: null,
   onboarding_done: false,
   onboarding_started: false,
   active_settings_profile_id: "",

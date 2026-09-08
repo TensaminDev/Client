@@ -149,11 +149,19 @@ export function TauriProvider(props: {
     () =>
       subscribe("GetStates", (message) => {
         setFreshContacts((contacts) =>
-          removeMissingContacts(contacts, message),
+          removeMissingContacts(contacts, message.data.MissingUserIds ?? []),
         );
       }),
     [subscribe],
   );
+
+  useEffect(() => {
+    if (clientState?.PresenceSnapshotComplete) {
+      setFreshContacts((contacts) =>
+        removeMissingContacts(contacts, clientState.MissingUserIds),
+      );
+    }
+  }, [clientState]);
 
   useEffect(() => {
     const messageLive = subscribe("MessageLive", ({ data }) => {
@@ -252,10 +260,7 @@ export function TauriProvider(props: {
       const response = await connection.request(type, data, options);
       if (response.type === "GetStates") {
         setFreshContacts((contacts) =>
-          removeMissingContacts(
-            contacts,
-            response as ProtocolMessage<"GetStates">,
-          ),
+          removeMissingContacts(contacts, response.data.MissingUserIds ?? []),
         );
       }
       for (const interceptor of interceptorsRef.current) {

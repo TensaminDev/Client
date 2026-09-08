@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc;
+use uuid::Uuid;
 
 const EVENT_NAME: &str = "mtp://event";
 const DISCONNECTED: u8 = 0;
@@ -30,7 +31,6 @@ const CHAT_SECRET_SALT: &[u8] = b"tensamin-chat-secret-v1";
 const CHAT_MESSAGE_SALT: &[u8] = b"tensamin-chat-message-v1";
 const CHAT_SECRET_SCHEME: &str = "mtp-chat-secret-kem-chacha20poly1305-hkdf-sha256-v1";
 const INITIAL_SYNC_TIMEOUT: Duration = Duration::from_secs(30);
-const MAX_BUFFERED_INITIAL_FRAMES: usize = 1_000;
 const NOTIFICATION_QUEUE_CAPACITY: usize = 32;
 const ROUTE_TARGET_ID_MASK: u64 = (1_u64 << 48) - 1;
 const USER_ROUTE_TARGET_KIND: u64 = 0x4000_0000_0000_0000;
@@ -71,6 +71,12 @@ VKu6saHmHEynI7ysIPd8zQsK1HdmhlHKlw9Z5GpGvA==\n\
 pub struct MtpConfig {
     pub user_id: u64,
     pub keyring: String,
+    #[serde(default)]
+    pub device_id: String,
+    #[serde(default)]
+    pub sync_version: u64,
+    #[serde(default)]
+    pub cache_schema_version: u64,
     pub omega_url: String,
     pub forced_omikron_url: Option<String>,
     pub forced_omikron_public_key: Option<String>,
@@ -337,6 +343,15 @@ impl MtpManager {
     }
 }
 
+fn migrate_config(mut config: MtpConfig) -> Result<MtpConfig, String> {
+    if config.device_id.is_empty() {
+        config.device_id = Uuid::new_v4().to_string();
+        let serialized = serde_json::to_string(&config).map_err(|error| error.to_string())?;
+        android_store_config(&serialized)?;
+    }
+    Ok(config)
+}
+
 async fn supervise(generation: u64) {
     let manager = manager();
     let mut delay = Duration::from_secs(1);
@@ -510,9 +525,24 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
     .map_err(|error| format!("transport authentication failed: {error}"))?;
     manager().log(2, "Native MTP authentication completed", None);
 
-    let (state, buffered_frames) = await_initial_state(&connection).await?;
     let request_ids = RequestIdAllocator::new();
-    let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids)?;
+    if config.device_id.is_empty() {
+        return Err("MTP device identity is missing".into());
+    }
+    let request = CommunicationValue::new(communication_type("ClientStateGet")?)
+        .with_id(request_ids.next()?)
+        .add_typed_default(DataType::DeviceId, DataValue::Str(config.device_id.clone()))
+        .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(config.sync_version.into()))
+        .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(config.cache_schema_version.into()))
+        .add_typed_default(DataType::CacheValid, DataValue::Bool(false));
+    let state = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&request, None))
+        .await
+        .map_err(|_| "initial state synchronization timed out".to_string())?
+        .map_err(|error| format!("initial state synchronization failed: {error}"))?;
+    if !state.is_type(CommunicationType::ClientStateSync) {
+        return Err(format!("expected ClientStateSync, received {state}"));
+    }
+    let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids, &config.device_id)?;
     let response = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&ack, None))
         .await
         .map_err(|_| "state acknowledgement timed out".to_string())?
@@ -527,13 +557,14 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
         connection,
         request_ids,
         initial_state,
-        buffered_frames,
+        buffered_frames: Vec::new(),
     })
 }
 
 fn prepare_initial_state_ack(
     state: &CommunicationValue,
     request_ids: &RequestIdAllocator,
+    device_id: &str,
 ) -> Result<(Value, CommunicationValue), String> {
     let initial_state = frame_data_to_json(state)?;
     validate_client_state_sync(&initial_state)?;
@@ -544,6 +575,7 @@ fn prepare_initial_state_ack(
     let version = required_integer(data, "VersionNumber")?;
     let ack = CommunicationValue::new(communication_type("ClientStateAck")?)
         .with_id(request_ids.next()?)
+        .add_typed_default(DataType::DeviceId, DataValue::Str(device_id.to_owned()))
         .add_typed_default(DataType::SessionId, number_to_data(session_id))
         .add_typed_default(DataType::VersionNumber, number_to_data(version));
     Ok((initial_state, ack))
@@ -672,33 +704,6 @@ fn required_integer(data: &Map<String, Value>, field: &str) -> Result<i128, Stri
         .as_u64()
         .map(|value| value as i128)
         .ok_or_else(|| format!("ClientStateSync {field} must be an integer"))
-}
-
-async fn await_initial_state(
-    connection: &MTPConnection,
-) -> Result<(CommunicationValue, Vec<CommunicationValue>), String> {
-    let mut buffered = Vec::new();
-    let deadline = tokio::time::Instant::now() + INITIAL_SYNC_TIMEOUT;
-
-    loop {
-        let frame = tokio::time::timeout_at(deadline, connection.receive())
-            .await
-            .map_err(|_| "initial state synchronization timed out".to_string())?
-            .map_err(|error| format!("initial state synchronization failed: {error}"))?;
-
-        if frame.is_type(CommunicationType::ErrorNoIota) {
-            return Err("No Iota is currently connected".into());
-        }
-
-        if frame.get_type_name() == Some("ClientStateSync") {
-            return Ok((frame, buffered));
-        }
-
-        if buffered.len() == MAX_BUFFERED_INITIAL_FRAMES {
-            return Err("initial state synchronization buffered too many frames".into());
-        }
-        buffered.push(frame);
-    }
 }
 
 async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String> {
@@ -1296,7 +1301,7 @@ mod tests {
     #[test]
     fn valid_initial_state_is_prepared_before_ack() {
         let ids = RequestIdAllocator::new();
-        let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids).unwrap();
+        let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids, "00000000-0000-4000-8000-000000000000").unwrap();
 
         assert_eq!(state["SyncMode"], "full");
         assert_eq!(ack.get_type_name(), Some("ClientStateAck"));
@@ -1309,7 +1314,7 @@ mod tests {
         let malformed = valid_initial_state()
             .add_typed_default(DataType::SyncMode, DataValue::Str("invalid".into()));
 
-        assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
+        assert!(prepare_initial_state_ack(&malformed, &ids, "00000000-0000-4000-8000-000000000000").is_err());
         assert_eq!(
             ids.next().unwrap(),
             1,
@@ -1333,7 +1338,7 @@ mod tests {
             .add_typed_default(DataType::Calls, DataValue::Array(vec![]))
             .add_typed_default(DataType::Messages, DataValue::Array(vec![]));
 
-        assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
+        assert!(prepare_initial_state_ack(&malformed, &ids, "00000000-0000-4000-8000-000000000000").is_err());
         assert_eq!(
             ids.next().unwrap(),
             1,
@@ -1359,6 +1364,7 @@ pub fn mtp_status() -> MtpSnapshot {
 
 #[tauri::command]
 pub fn mtp_store_credentials(config: MtpConfig) -> Result<(), String> {
+    let config = migrate_config(config)?;
     let serialized = serde_json::to_string(&config).map_err(|error| error.to_string())?;
     android_store_config(&serialized)?;
     *manager().config.write().expect("config lock poisoned") = Some(config);
@@ -1662,8 +1668,12 @@ mod android {
     ) {
         let _ = env.with_env(|env| {
             if let Ok(config) = config.mutf8_chars(env) {
-                if let Ok(config) = serde_json::from_str(config.to_str().as_ref()) {
-                    super::manager().configure_and_start(config);
+                match serde_json::from_str(config.to_str().as_ref()) {
+                    Ok(config) => match super::migrate_config(config) {
+                        Ok(config) => super::manager().configure_and_start(config),
+                        Err(error) => eprintln!("failed to migrate native MTP config: {error}"),
+                    },
+                    Err(error) => eprintln!("failed to deserialize native MTP config: {error}"),
                 }
             }
             Ok::<_, jni::errors::Error>(())

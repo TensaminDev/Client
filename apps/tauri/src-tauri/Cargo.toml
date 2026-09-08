@@ -29,6 +29,7 @@ webpki-root-certs = "1"
 tauri-plugin-deep-link = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-log = "2"
+uuid = { version = "1", features = ["v4"] }
 
 [target.'cfg(target_os = "android")'.dependencies.tauri]
 version = "2"

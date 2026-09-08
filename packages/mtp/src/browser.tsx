@@ -88,56 +88,44 @@ function withDeadline<T>(
 
 async function completeInitialSynchronization(
   client: BrowserMtpClient,
-  subscribe: MTPContextType["subscribe"],
+  storage: Pick<ReturnType<typeof useStorage>, "load" | "save">,
   signal: AbortSignal,
   syncTimeoutMs = INITIAL_SYNC_TIMEOUT,
   ackTimeoutMs = STATE_ACK_TIMEOUT,
 ): Promise<ProtocolMessage<"ClientStateSync">> {
-  // The server sends ClientStateSync automatically after every login.
-  const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
-    (resolve, reject) => {
-      let unsubscribeStateSync = () => {};
-      let unsubscribeNoIota = () => {};
-      const cleanup = () => {
-        clearTimeout(timeout);
-        unsubscribeStateSync();
-        unsubscribeNoIota();
-        signal.removeEventListener("abort", onAbort);
-      };
-      const onAbort = () => {
-        cleanup();
-        reject(abortError(signal));
-      };
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error("Initial state synchronization timed out"));
-      }, syncTimeoutMs);
-      signal.addEventListener("abort", onAbort, { once: true });
-      if (signal.aborted) {
-        onAbort();
-        return;
-      }
-      unsubscribeStateSync = subscribe("ClientStateSync", (message) => {
-        cleanup();
-        resolve(message);
-      });
-      unsubscribeNoIota = subscribe("ErrorNoIota", () => {
-        cleanup();
-        reject(new Error("No Iota is currently connected"));
-      });
-    },
+  await withDeadline(
+    client.auth(),
+    syncTimeoutMs,
+    "MTP authentication timed out",
+    signal,
   );
-  const [, state] = await Promise.all([
-    withDeadline(
-      client.auth(),
-      syncTimeoutMs,
-      "MTP authentication timed out",
-      signal,
-    ),
-    stateSync,
-  ]);
+  let deviceId = await storage.load("mtp_device_id");
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    await storage.save("mtp_device_id", deviceId);
+  }
+  const userId = await storage.load("user_id");
+  const cached = await storage.load("mtp_sync_state");
+  const usableCursor = cached?.userId === userId ? cached : null;
+  const state = (await withDeadline(
+    client.request("ClientStateGet", {
+      DeviceId: deviceId,
+      VersionNumber: usableCursor?.versionNumber ?? 0,
+      CacheSchemaVersion: usableCursor?.cacheSchemaVersion ?? 0,
+      CacheValid: false,
+    }),
+    syncTimeoutMs,
+    "Initial state synchronization timed out",
+    signal,
+  )) as ProtocolMessage<"ClientStateSync">;
+  await storage.save("mtp_sync_state", {
+    userId,
+    versionNumber: state.data.VersionNumber,
+    cacheSchemaVersion: state.data.CacheSchemaVersion,
+  });
   await withDeadline(
     client.request("ClientStateAck", {
+      DeviceId: deviceId,
       SessionId: state.data.SessionId,
       VersionNumber: state.data.VersionNumber,
     }),
@@ -165,11 +153,36 @@ function protocolErrorDetails(error: unknown) {
   };
 }
 
+function protocolEventForLog(event: {
+  type?: unknown;
+  data?: unknown;
+}): unknown {
+  if (
+    (event.type === "UserBlobChanged" ||
+      event.type === "UserBlobGet" ||
+      event.type === "UserBlobPut") &&
+    event.data &&
+    typeof event.data === "object" &&
+    "Blob" in event.data
+  ) {
+    const data = event.data as { Blob?: unknown };
+    const { Blob: blob, ...metadata } = data;
+    return {
+      ...event,
+      data: {
+        ...metadata,
+        BlobBytes: blob instanceof Uint8Array ? blob.byteLength : undefined,
+      },
+    };
+  }
+  return event;
+}
+
 export function BrowserProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
-  const { load } = useStorage();
+  const { load, save } = useStorage();
   const [readyState, setReadyState] = useState<number>(
     ConnectionState.Disconnected,
   );
@@ -233,7 +246,8 @@ export function BrowserProvider(props: {
           setFreshContacts((contacts) =>
             removeMissingContacts(
               contacts,
-              response as ProtocolMessage<"GetStates">,
+              (response as ProtocolMessage<"GetStates">).data.MissingUserIds ??
+                [],
             ),
           );
         }
@@ -433,7 +447,7 @@ export function BrowserProvider(props: {
                     : event.direction === "send"
                       ? "> " + event.type
                       : event.type,
-                event,
+                protocolEventForLog(event),
               );
             }
           },
@@ -457,11 +471,16 @@ export function BrowserProvider(props: {
         setIdentifying(true);
         const finalResponse = await completeInitialSynchronization(
           activeClient,
-          subscribe,
+          { load, save },
           attemptAbort.signal,
         );
         if (disposed || clientRef.current !== activeClient) return;
         setFreshContacts(finalResponse.data.Contacts);
+        if (finalResponse.data.PresenceSnapshotComplete) {
+          setFreshContacts((contacts) =>
+            removeMissingContacts(contacts, finalResponse.data.MissingUserIds),
+          );
+        }
         setFreshCommunities(finalResponse.data.Communities);
         setFreshCalls(finalResponse.data.Calls);
         setClientState(finalResponse.data);
@@ -526,7 +545,7 @@ export function BrowserProvider(props: {
     () =>
       subscribe("GetStates", (message) => {
         setFreshContacts((contacts) =>
-          removeMissingContacts(contacts, message),
+          removeMissingContacts(contacts, message.data.MissingUserIds ?? []),
         );
       }),
     [subscribe],

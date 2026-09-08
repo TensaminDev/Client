@@ -242,18 +242,30 @@ export function createSettingsClient({
       return { blobs, blockedUserIds, receiptPolicy, messageStoragePolicy };
     },
     subscribeBlobChanges(
-      handler: (event: {
-        id: string;
-        revision: number;
-        deleted: boolean;
-      }) => void,
+      handler: (
+        event:
+          | { id: string; revision: number; deleted: true }
+          | {
+              id: string;
+              revision: number;
+              updatedAt: number;
+              ciphertext: Uint8Array;
+              deleted: false;
+            },
+      ) => void,
     ) {
       return subscribe("UserBlobChanged", ({ data }) =>
-        handler({
-          id: data.BlobId,
-          revision: data.VersionNumber,
-          deleted: data.Deleted,
-        }),
+        handler(
+          data.Deleted
+            ? { id: data.BlobId, revision: data.VersionNumber, deleted: true }
+            : {
+                id: data.BlobId,
+                revision: data.VersionNumber,
+                updatedAt: data.UpdatedAt,
+                ciphertext: data.Blob,
+                deleted: false,
+              },
+        ),
       );
     },
     subscribeBlockedUserChanges(

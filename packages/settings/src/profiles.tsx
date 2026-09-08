@@ -708,7 +708,12 @@ export function SettingsProfilesProvider({
         }
         try {
           const remote = await decryptProfile(
-            await client.getBlob(event.id),
+            {
+              id: event.id,
+              ciphertext: event.ciphertext,
+              revision: event.revision,
+              updatedAt: event.updatedAt,
+            },
             keyringRef.current,
           );
           const localSettings = await readSettings();
@@ -756,7 +761,12 @@ export function SettingsProfilesProvider({
         }
         try {
           const acceptance = await decryptLegal(
-            await client.getBlob(event.id),
+            {
+              id: event.id,
+              ciphertext: event.ciphertext,
+              revision: event.revision,
+              updatedAt: event.updatedAt,
+            },
             keyringRef.current,
           );
           legalRevision.current = event.revision;
