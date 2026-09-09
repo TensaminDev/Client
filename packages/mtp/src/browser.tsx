@@ -86,53 +86,23 @@ function withDeadline<T>(
   });
 }
 
-async function completeInitialSynchronization(
+async function initializeAccountState(
   client: BrowserMtpClient,
-  storage: Pick<ReturnType<typeof useStorage>, "load" | "save">,
   signal: AbortSignal,
   syncTimeoutMs = INITIAL_SYNC_TIMEOUT,
-  ackTimeoutMs = STATE_ACK_TIMEOUT,
-): Promise<ProtocolMessage<"ClientStateSync">> {
+): Promise<ProtocolMessage<"AccountStateSnapshot">> {
   await withDeadline(
     client.auth(),
     syncTimeoutMs,
     "MTP authentication timed out",
     signal,
   );
-  let deviceId = await storage.load("mtp_device_id");
-  if (!deviceId) {
-    deviceId = crypto.randomUUID();
-    await storage.save("mtp_device_id", deviceId);
-  }
-  const userId = await storage.load("user_id");
-  const cached = await storage.load("mtp_sync_state");
-  const usableCursor = cached?.userId === userId ? cached : null;
   const state = (await withDeadline(
-    client.request("ClientStateGet", {
-      DeviceId: deviceId,
-      VersionNumber: usableCursor?.versionNumber ?? 0,
-      CacheSchemaVersion: usableCursor?.cacheSchemaVersion ?? 0,
-      CacheValid: false,
-    }),
+    client.request("AccountStateRequest", {}),
     syncTimeoutMs,
     "Initial state synchronization timed out",
     signal,
-  )) as ProtocolMessage<"ClientStateSync">;
-  await storage.save("mtp_sync_state", {
-    userId,
-    versionNumber: state.data.VersionNumber,
-    cacheSchemaVersion: state.data.CacheSchemaVersion,
-  });
-  await withDeadline(
-    client.request("ClientStateAck", {
-      DeviceId: deviceId,
-      SessionId: state.data.SessionId,
-      VersionNumber: state.data.VersionNumber,
-    }),
-    ackTimeoutMs,
-    "State acknowledgement timed out",
-    signal,
-  );
+  )) as ProtocolMessage<"AccountStateSnapshot">;
   if (signal.aborted) throw abortError(signal);
   return state;
 }
@@ -197,7 +167,7 @@ export function BrowserProvider(props: {
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
   const [clientState, setClientState] = useState<
-    ProtocolMessage<"ClientStateSync">["data"] | null
+    ProtocolMessage<"AccountStateSnapshot">["data"] | null
   >(null);
   const clientRef = useRef<BrowserMtpClient | null>(null);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
@@ -469,9 +439,8 @@ export function BrowserProvider(props: {
         });
         setReadyState(activeClient.state);
         setIdentifying(true);
-        const finalResponse = await completeInitialSynchronization(
+        const finalResponse = await initializeAccountState(
           activeClient,
-          { load, save },
           attemptAbort.signal,
         );
         if (disposed || clientRef.current !== activeClient) return;
@@ -484,6 +453,12 @@ export function BrowserProvider(props: {
         setFreshCommunities(finalResponse.data.Communities);
         setFreshCalls(finalResponse.data.Calls);
         setClientState(finalResponse.data);
+        await withDeadline(
+          activeClient.request("AccountStateApplied", {}),
+          STATE_ACK_TIMEOUT,
+          "Account state acknowledgement timed out",
+          attemptAbort.signal,
+        );
         connectionReady = true;
         setIdentifying(false);
         setIdentified(true);

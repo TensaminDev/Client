@@ -171,11 +171,7 @@ const authPayload = z.object({
     .default([]),
 });
 
-const clientStateSync = authPayload.extend({
-  SessionId: z.number().int().positive(),
-  VersionNumber: z.number().int().nonnegative(),
-  CacheSchemaVersion: z.number().int().nonnegative(),
-  SyncMode: z.enum(["full", "delta"]),
+const accountStateSnapshot = authPayload.extend({
   Messages: z.array(Message).default([]),
   DeletedMessageIds: z.array(z.number()).default([]),
   DeletedContactIds: z.array(z.number()).default([]),
@@ -289,34 +285,16 @@ export const mtp = {
     request: z.object({}).optional(),
     response: authPayload,
   },
-  ClientConnected: {
-    request: z.object({
-      SessionId: z.number().int().positive(),
-      VersionNumber: z.number().int().nonnegative(),
-      CacheValid: z.boolean(),
-      CacheSchemaVersion: z.number().int().nonnegative(),
-    }),
-    response: clientStateSync,
+  AccountStateRequest: {
+    request: z.object({}),
+    response: accountStateSnapshot,
   },
-  ClientStateGet: {
-    request: z.object({
-      DeviceId: z.uuidv4(),
-      VersionNumber: z.number().int().nonnegative(),
-      CacheValid: z.boolean(),
-      CacheSchemaVersion: z.number().int().nonnegative(),
-    }),
-    response: clientStateSync,
-  },
-  ClientStateSync: {
+  AccountStateSnapshot: {
     request: z.object({}).optional(),
-    response: clientStateSync,
+    response: accountStateSnapshot,
   },
-  ClientStateAck: {
-    request: z.object({
-      DeviceId: z.uuidv4(),
-      SessionId: z.number().int().positive(),
-      VersionNumber: z.number().int().nonnegative(),
-    }),
+  AccountStateApplied: {
+    request: z.object({}),
     response: z.object({}),
   },
   UserBlobPut: {
@@ -760,12 +738,6 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
-  mtp_device_id: string;
-  mtp_sync_state: {
-    userId: number;
-    versionNumber: number;
-    cacheSchemaVersion: number;
-  } | null;
   onboarding_done: boolean;
   onboarding_started: boolean;
   active_settings_profile_id: string;
@@ -823,8 +795,6 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
-  mtp_device_id: "",
-  mtp_sync_state: null,
   onboarding_done: false,
   onboarding_started: false,
   active_settings_profile_id: "",

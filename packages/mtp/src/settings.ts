@@ -104,7 +104,7 @@ export function createSettingsClient({
 }: {
   send: BoundSendFn;
   subscribe: MTPSubscriptionFunction<typeof schemas>;
-  clientState: ProtocolMessage<"ClientStateSync">["data"] | null;
+  clientState: ProtocolMessage<"AccountStateSnapshot">["data"] | null;
 }) {
   return {
     async createBlob(

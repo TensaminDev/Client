@@ -45,12 +45,6 @@ export async function persistMtpCredentials({
     ? `https://${domain}/`
     : await storage.load("omega_url");
   if (domain) await storage.save("omega_url", omegaUrl);
-  let deviceId = await storage.load("mtp_device_id");
-  if (!deviceId) {
-    deviceId = crypto.randomUUID();
-    await storage.save("mtp_device_id", deviceId);
-  }
-
   if (isTauri()) {
     const [forcedOmikronUrl, forcedOmikronPublicKey] = await Promise.all([
       storage.load("forced_omikron_url"),
@@ -60,7 +54,6 @@ export async function persistMtpCredentials({
       config: {
         userId,
         keyring,
-        deviceId,
         omegaUrl,
         forcedOmikronUrl,
         forcedOmikronPublicKey,

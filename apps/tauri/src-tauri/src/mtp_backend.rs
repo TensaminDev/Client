@@ -71,12 +71,6 @@ VKu6saHmHEynI7ysIPd8zQsK1HdmhlHKlw9Z5GpGvA==\n\
 pub struct MtpConfig {
     pub user_id: u64,
     pub keyring: String,
-    #[serde(default)]
-    pub device_id: String,
-    #[serde(default)]
-    pub sync_version: u64,
-    #[serde(default)]
-    pub cache_schema_version: u64,
     pub omega_url: String,
     pub forced_omikron_url: Option<String>,
     pub forced_omikron_public_key: Option<String>,
@@ -343,12 +337,7 @@ impl MtpManager {
     }
 }
 
-fn migrate_config(mut config: MtpConfig) -> Result<MtpConfig, String> {
-    if config.device_id.is_empty() {
-        config.device_id = Uuid::new_v4().to_string();
-        let serialized = serde_json::to_string(&config).map_err(|error| error.to_string())?;
-        android_store_config(&serialized)?;
-    }
+fn migrate_config(config: MtpConfig) -> Result<MtpConfig, String> {
     Ok(config)
 }
 
@@ -526,23 +515,16 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
     manager().log(2, "Native MTP authentication completed", None);
 
     let request_ids = RequestIdAllocator::new();
-    if config.device_id.is_empty() {
-        return Err("MTP device identity is missing".into());
-    }
-    let request = CommunicationValue::new(communication_type("ClientStateGet")?)
-        .with_id(request_ids.next()?)
-        .add_typed_default(DataType::DeviceId, DataValue::Str(config.device_id.clone()))
-        .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(config.sync_version.into()))
-        .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(config.cache_schema_version.into()))
-        .add_typed_default(DataType::CacheValid, DataValue::Bool(false));
+    let request = CommunicationValue::new(communication_type("AccountStateRequest")?)
+        .with_id(request_ids.next()?);
     let state = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&request, None))
         .await
-        .map_err(|_| "initial state synchronization timed out".to_string())?
-        .map_err(|error| format!("initial state synchronization failed: {error}"))?;
-    if !state.is_type(CommunicationType::ClientStateSync) {
-        return Err(format!("expected ClientStateSync, received {state}"));
+        .map_err(|_| "account state request timed out".to_string())?
+        .map_err(|error| format!("account state request failed: {error}"))?;
+    if !state.is_type(CommunicationType::AccountStateSnapshot) {
+        return Err(format!("expected AccountStateSnapshot, received {state}"));
     }
-    let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids, &config.device_id)?;
+    let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids)?;
     let response = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&ack, None))
         .await
         .map_err(|_| "state acknowledgement timed out".to_string())?
@@ -551,7 +533,7 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
         .get_type_name()
         .is_some_and(|name| name.starts_with("Error"))
     {
-        return Err(format!("ClientStateAck failed: {response}"));
+        return Err(format!("AccountStateApplied failed: {response}"));
     }
     Ok(PreparedConnection {
         connection,
@@ -564,39 +546,21 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
 fn prepare_initial_state_ack(
     state: &CommunicationValue,
     request_ids: &RequestIdAllocator,
-    device_id: &str,
 ) -> Result<(Value, CommunicationValue), String> {
     let initial_state = frame_data_to_json(state)?;
-    validate_client_state_sync(&initial_state)?;
+    validate_account_state_snapshot(&initial_state)?;
     let data = initial_state
         .as_object()
-        .ok_or("ClientStateSync payload is not an object")?;
-    let session_id = required_integer(data, "SessionId")?;
-    let version = required_integer(data, "VersionNumber")?;
-    let ack = CommunicationValue::new(communication_type("ClientStateAck")?)
-        .with_id(request_ids.next()?)
-        .add_typed_default(DataType::DeviceId, DataValue::Str(device_id.to_owned()))
-        .add_typed_default(DataType::SessionId, number_to_data(session_id))
-        .add_typed_default(DataType::VersionNumber, number_to_data(version));
+        .ok_or("AccountStateSnapshot payload is not an object")?;
+    let ack = CommunicationValue::new(communication_type("AccountStateApplied")?)
+        .with_id(request_ids.next()?);
     Ok((initial_state, ack))
 }
 
-fn validate_client_state_sync(state: &Value) -> Result<(), String> {
+fn validate_account_state_snapshot(state: &Value) -> Result<(), String> {
     let data = state
         .as_object()
-        .ok_or("ClientStateSync payload is not an object")?;
-    if required_integer(data, "SessionId")? <= 0 {
-        return Err("ClientStateSync SessionId must be a positive integer".into());
-    }
-    for field in ["VersionNumber", "CacheSchemaVersion"] {
-        if required_integer(data, field)? < 0 {
-            return Err(format!("ClientStateSync {field} must be nonnegative"));
-        }
-    }
-    match data.get("SyncMode").and_then(Value::as_str) {
-        Some("full" | "delta") => {}
-        _ => return Err("ClientStateSync SyncMode must be 'full' or 'delta'".into()),
-    }
+        .ok_or("AccountStateSnapshot payload is not an object")?;
     for field in ["Contacts", "Communities", "Calls", "Messages"] {
         if !data.get(field).is_some_and(Value::is_array) {
             return Err(format!("ClientStateSync {field} must be an array"));

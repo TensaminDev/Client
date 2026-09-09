@@ -89,7 +89,7 @@ export type MTPContextType = {
   freshContacts: Contacts;
   freshCommunities: Communities;
   freshCalls: Calls;
-  clientState: ProtocolMessage<"ClientStateSync">["data"] | null;
+  clientState: ProtocolMessage<"AccountStateSnapshot">["data"] | null;
   contextReady: boolean;
   loadingDescription: string;
 };

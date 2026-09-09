@@ -77,7 +77,7 @@ export function TauriProvider(props: {
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
   const [clientState, setClientState] = useState<
-    ProtocolMessage<"ClientStateSync">["data"] | null
+    ProtocolMessage<"AccountStateSnapshot">["data"] | null
   >(null);
   const generationRef = useRef(0);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
@@ -96,7 +96,7 @@ export function TauriProvider(props: {
     };
   });
 
-  // The server sends ClientStateSync automatically after every login.
+  // The native backend loads an AccountStateSnapshot after every login.
   const applySnapshot = useCallback(async (next: NativeSnapshot) => {
     if (next.generation < generationRef.current) return;
     generationRef.current = next.generation;
@@ -116,7 +116,7 @@ export function TauriProvider(props: {
       return;
     }
     try {
-      const state = await mtpSchemas.ClientStateSync.response.parseAsync(
+      const state = await mtpSchemas.AccountStateSnapshot.response.parseAsync(
         next.state,
       );
       setFreshContacts(state.Contacts);
@@ -129,7 +129,7 @@ export function TauriProvider(props: {
       setSnapshot({
         ...next,
         identified: false,
-        error: "Invalid ClientStateSync payload",
+        error: "Invalid AccountStateSnapshot payload",
       });
     }
   }, []);
