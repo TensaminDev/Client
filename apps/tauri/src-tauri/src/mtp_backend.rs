@@ -21,7 +21,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc;
-use uuid::Uuid;
 
 const EVENT_NAME: &str = "mtp://event";
 const DISCONNECTED: u8 = 0;
@@ -515,14 +514,14 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
     manager().log(2, "Native MTP authentication completed", None);
 
     let request_ids = RequestIdAllocator::new();
-    let request = CommunicationValue::new(communication_type("AccountStateRequest")?)
+    let request = CommunicationValue::new(communication_type("ClientStateSync")?)
         .with_id(request_ids.next()?);
     let state = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&request, None))
         .await
         .map_err(|_| "account state request timed out".to_string())?
         .map_err(|error| format!("account state request failed: {error}"))?;
-    if !state.is_type(CommunicationType::AccountStateSnapshot) {
-        return Err(format!("expected AccountStateSnapshot, received {state}"));
+    if !state.is_type(communication_type("ClientStateSync")?) {
+        return Err(format!("expected ClientStateSync, received {state}"));
     }
     let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids)?;
     let response = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&ack, None))
@@ -533,7 +532,7 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
         .get_type_name()
         .is_some_and(|name| name.starts_with("Error"))
     {
-        return Err(format!("AccountStateApplied failed: {response}"));
+        return Err(format!("ClientStateAck failed: {response}"));
     }
     Ok(PreparedConnection {
         connection,
@@ -549,11 +548,8 @@ fn prepare_initial_state_ack(
 ) -> Result<(Value, CommunicationValue), String> {
     let initial_state = frame_data_to_json(state)?;
     validate_account_state_snapshot(&initial_state)?;
-    let data = initial_state
-        .as_object()
-        .ok_or("AccountStateSnapshot payload is not an object")?;
-    let ack = CommunicationValue::new(communication_type("AccountStateApplied")?)
-        .with_id(request_ids.next()?);
+    let ack =
+        CommunicationValue::new(communication_type("ClientStateAck")?).with_id(request_ids.next()?);
     Ok((initial_state, ack))
 }
 
@@ -1153,9 +1149,9 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        container_value_by_name, decode_browser_base64, decode_sdk_bytes, frame_to_json,
-        jittered_retry_delay, json_to_frame, prepare_initial_state_ack, RelayTargetDto,
-        RequestIdAllocator,
+        communication_type, container_value_by_name, decode_browser_base64, decode_sdk_bytes,
+        frame_to_json, jittered_retry_delay, json_to_frame, prepare_initial_state_ack,
+        RelayTargetDto, RequestIdAllocator,
     };
 
     #[test]
@@ -1265,7 +1261,7 @@ mod tests {
     #[test]
     fn valid_initial_state_is_prepared_before_ack() {
         let ids = RequestIdAllocator::new();
-        let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids, "00000000-0000-4000-8000-000000000000").unwrap();
+        let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids).unwrap();
 
         assert_eq!(state["SyncMode"], "full");
         assert_eq!(ack.get_type_name(), Some("ClientStateAck"));
@@ -1275,10 +1271,10 @@ mod tests {
     #[test]
     fn malformed_initial_state_does_not_prepare_ack() {
         let ids = RequestIdAllocator::new();
-        let malformed = valid_initial_state()
-            .add_typed_default(DataType::SyncMode, DataValue::Str("invalid".into()));
+        let malformed = CommunicationValue::new(communication_type("ClientStateSync").unwrap())
+            .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1));
 
-        assert!(prepare_initial_state_ack(&malformed, &ids, "00000000-0000-4000-8000-000000000000").is_err());
+        assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
         assert_eq!(
             ids.next().unwrap(),
             1,
@@ -1302,7 +1298,7 @@ mod tests {
             .add_typed_default(DataType::Calls, DataValue::Array(vec![]))
             .add_typed_default(DataType::Messages, DataValue::Array(vec![]));
 
-        assert!(prepare_initial_state_ack(&malformed, &ids, "00000000-0000-4000-8000-000000000000").is_err());
+        assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
         assert_eq!(
             ids.next().unwrap(),
             1,

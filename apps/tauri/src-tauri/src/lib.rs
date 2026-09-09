@@ -50,11 +50,11 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|_app, event| {
+    app.run(|_app, _event| {
         #[cfg(target_os = "android")]
         if let tauri::RunEvent::ExitRequested {
             api, code: None, ..
-        } = event
+        } = _event
         {
             if mtp_backend::manager().is_enabled() {
                 api.prevent_exit();
