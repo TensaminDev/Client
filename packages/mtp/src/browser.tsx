@@ -14,7 +14,6 @@ import { useStorage } from "@tensamin/storage/context";
 import {
   type BoundSendFn,
   MTPContext,
-  type MTPContextType,
   type ProtocolMessage,
   removeMissingContacts,
   updateContactNotifications,
@@ -152,7 +151,7 @@ export function BrowserProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
 }) {
-  const { load, save } = useStorage();
+  const { load } = useStorage();
   const [readyState, setReadyState] = useState<number>(
     ConnectionState.Disconnected,
   );
