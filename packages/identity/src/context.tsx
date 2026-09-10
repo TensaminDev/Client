@@ -11,11 +11,7 @@ import {
 } from "react";
 import { useMTP } from "@tensamin/mtp";
 
-import {
-  clientUserStateSchema,
-  mtp as schemas,
-  publicUserStateSchema,
-} from "@tensamin/shared/data";
+import { mtp as schemas } from "@tensamin/shared/data";
 import type z from "zod";
 import { createCache } from "@tensamin/cache";
 import { log } from "@tensamin/shared/log";
@@ -27,7 +23,7 @@ export { getChangedUserFields, selectUserFields } from "./selection";
 
 export type User = z.infer<typeof schemas.GetUserData.response>;
 export type Iota = z.infer<typeof schemas.GetIotaData.response>;
-type ClientUserState = z.infer<typeof clientUserStateSchema>;
+type ClientUserState = User["OnlineStatus"];
 export type UserField = keyof User;
 export type UserFields = readonly [UserField, ...UserField[]];
 export type SelectedUser<Fields extends readonly UserField[]> = Readonly<
@@ -105,9 +101,7 @@ export default function UserProvider(props: { children: ReactNode }) {
   const [accountId, setAccountId] = useState<number | null>(null);
   const accountIdRef = useRef<number | null>(null);
   const contactsRef = useRef(contacts);
-  const initialStatesRef = useRef(
-    new Map<number, z.infer<typeof publicUserStateSchema>>(),
-  );
+  const initialStatesRef = useRef(new Map<number, ClientUserState>());
 
   useEffect(() => {
     contactsRef.current = contacts;

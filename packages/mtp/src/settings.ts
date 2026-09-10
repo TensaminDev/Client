@@ -100,11 +100,9 @@ function storage(
 export function createSettingsClient({
   send,
   subscribe,
-  clientState,
 }: {
   send: BoundSendFn;
   subscribe: MTPSubscriptionFunction<typeof schemas>;
-  clientState: ProtocolMessage<"AccountStateSnapshot">["data"] | null;
 }) {
   return {
     async createBlob(
@@ -190,12 +188,9 @@ export function createSettingsClient({
         .BlockedUserIds;
     },
     async getReceiptPolicy() {
-      if (!clientState) throw new Error("Client state is unavailable");
-      return {
-        sendReadReceipts: clientState.SendReadReceipts,
-        sendReceivedReceipts: clientState.SendReceivedReceipts,
-        revision: clientState.VersionNumber,
-      };
+      return receipt(
+        expect("ReceiptPolicyGet", await send("ReceiptPolicyGet", {})).data,
+      );
     },
     async setReceiptPolicy(policy: Omit<ReceiptPolicy, "revision">) {
       return receipt(

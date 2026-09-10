@@ -260,7 +260,11 @@ export function TauriProvider(props: {
       const response = await connection.request(type, data, options);
       if (response.type === "GetStates") {
         setFreshContacts((contacts) =>
-          removeMissingContacts(contacts, response.data.MissingUserIds ?? []),
+          removeMissingContacts(
+            contacts,
+            (response as ProtocolMessage<"GetStates">).data.MissingUserIds ??
+              [],
+          ),
         );
       }
       for (const interceptor of interceptorsRef.current) {
