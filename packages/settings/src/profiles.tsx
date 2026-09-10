@@ -225,10 +225,10 @@ export function SettingsProfilesProvider({
   children: ReactNode;
 }) {
   const storage = useStorage();
-  const { send, subscribe, identified } = useMTP();
+  const { send, subscribe, identified, clientState } = useMTP();
   const client = useMemo(
-    () => createSettingsClient({ send, subscribe }),
-    [send, subscribe],
+    () => createSettingsClient({ send, subscribe, clientState }),
+    [clientState, send, subscribe],
   );
   const [profiles, setProfiles] = useState<SettingsProfile[]>([]);
   const profilesRef = useRef(profiles);

@@ -172,6 +172,7 @@ const authPayload = z.object({
 });
 
 const accountStateSnapshot = authPayload.extend({
+  VersionNumber: revision,
   Messages: z.array(Message).default([]),
   DeletedMessageIds: z.array(z.number()).default([]),
   DeletedContactIds: z.array(z.number()).default([]),
