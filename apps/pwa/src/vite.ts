@@ -135,6 +135,7 @@ export function tensaminPwa(): Plugin[] {
       registerType: "prompt",
       buildBase: "/",
       manifestFilename: "manifest.json",
+      useCredentials: true,
       includeAssets: ["favicon.ico", "icons/*.png"],
       manifest: {
         id: "/",

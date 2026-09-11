@@ -19,6 +19,7 @@ import {
   persistMtpCredentials,
 } from "@tensamin/storage/credentials";
 import { useNavigate } from "@tanstack/react-router";
+import { isTauri } from "@tauri-apps/api/core";
 
 const fetchedUser = z.object({
   id: z.uuidv4(),
@@ -264,7 +265,7 @@ export default function Form() {
         </div>
       )}
       <input
-        accept=".tu"
+        accept={isTauri() && isMobile ? "application/octet-stream,.tu" : ".tu"}
         onChange={handleFileInputChange}
         type="file"
         ref={uploadRef}

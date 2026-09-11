@@ -9,6 +9,7 @@ import Cache from "./pages/cache";
 import Theme from "./pages/theme";
 import Accessibility from "./pages/accessibility";
 import Hotkeys from "./pages/hotkeys";
+import Developer from "./pages/developer";
 import Legal from "./pages/legal";
 
 const pageComponents = {
@@ -20,6 +21,7 @@ const pageComponents = {
   theme: Theme,
   accessibility: Accessibility,
   hotkeys: Hotkeys,
+  developer: Developer,
   legal: Legal,
 } as const;
 

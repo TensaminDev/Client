@@ -71,6 +71,17 @@ export async function deleteDatabaseEntry(store: TensaminStore, key: string) {
   });
 }
 
+export async function clearDatabaseStore(store: TensaminStore) {
+  const database = await openTensaminDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(store, "readwrite");
+    transaction.objectStore(store).clear();
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
 export async function listDatabaseEntries(
   store: TensaminStore,
   keyPrefix: string,

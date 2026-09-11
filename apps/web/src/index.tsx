@@ -51,7 +51,7 @@ if (localStorage.getItem("log_level") === null) {
 }
 
 // @ts-expect-error Declare global function
-window.setLogLevelToMax = () => {
+window.enableDev = () => {
   localStorage.setItem("log_level", String(1000));
   location.reload();
 };

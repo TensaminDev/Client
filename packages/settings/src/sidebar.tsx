@@ -1,4 +1,4 @@
-import { Button, ClearStorageButton, cn } from "@methanium/ui";
+import { Button, ClearStorageButton, cn, useIsMobile } from "@methanium/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { settingsNavigation } from "./navigation";
@@ -14,6 +14,8 @@ export function SettingsSidebar({
   const categories = [
     ...new Set(settingsNavigation.map((page) => page.category)),
   ];
+
+  const isMobile = useIsMobile();
 
   return (
     <div
@@ -44,7 +46,9 @@ export function SettingsSidebar({
             ))}
         </div>
       ))}
-      <ClearStorageButton />
+      <div hidden={!isMobile}>
+        <ClearStorageButton className="w-full" />
+      </div>
     </div>
   );
 }

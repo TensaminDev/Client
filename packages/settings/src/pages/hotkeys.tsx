@@ -182,15 +182,6 @@ export default function Page() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          Click Record, then press the replacement shortcut. Conflicting
-          shortcuts are allowed and will run together when their scopes overlap.
-        </p>
-        <Button variant="outline" onClick={resetAll}>
-          Reset All
-        </Button>
-      </div>
       {categories.map((category) => (
         <section className="flex flex-col gap-3" key={category}>
           <h2 className="text-lg font-semibold">{category}</h2>
@@ -235,6 +226,11 @@ export default function Page() {
           No configurable hotkeys are registered.
         </p>
       )}
+      <div className="flex items-center justify-between gap-4">
+        <Button variant="outline" onClick={resetAll}>
+          Reset All
+        </Button>
+      </div>
     </div>
   );
 }

@@ -23,6 +23,15 @@ export const settingsNavigation = [
     path: "hotkeys",
     label: "Hotkeys",
   },
+  ...(Number(localStorage.getItem("log_level")) >= 1000
+    ? ([
+        {
+          category: "application",
+          path: "developer",
+          label: "Developer",
+        },
+      ] as const)
+    : []),
   {
     category: "application",
     path: "legal",
