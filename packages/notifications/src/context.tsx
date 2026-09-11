@@ -21,6 +21,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { decryptChatText } from "@tensamin/crypto/chatSecret";
 import { log } from "@tensamin/shared/log";
 import { playSound } from "@tensamin/shared/sounds";
+import { getAppFocused, useAppFocused } from "@tensamin/shared/focus";
 
 export const context = createContext<contextType | undefined>(undefined);
 
@@ -41,12 +42,15 @@ export default function Provider(props: { children: React.ReactNode }) {
     chatSecret,
     chatSecretVersion,
     getChatSecret,
+    markMessagesAsNew,
+    newMessageCount,
     userId,
   } = useChat();
   const { contacts, moveUserIdToTop, setNotifications } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
   const latestReadRef = useRef(new Map<number, number>());
+  const appFocused = useAppFocused();
 
   const readNotifications = useCallback(
     async (contactUserId: number, through: number) => {
@@ -89,27 +93,22 @@ export default function Provider(props: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    const readCurrentConversation = () => {
-      if (
-        location.pathname !== "/chat" ||
-        !document.hasFocus() ||
-        document.visibilityState !== "visible"
-      ) {
-        return;
-      }
-      const contact = contacts.find((item) => item.UserId === userId);
-      if (!contact || contact.notifications === 0) return;
-      void readNotifications(contact.UserId, contact.LastMessageAt);
-    };
-
-    readCurrentConversation();
-    document.addEventListener("visibilitychange", readCurrentConversation);
-    window.addEventListener("focus", readCurrentConversation);
-    return () => {
-      document.removeEventListener("visibilitychange", readCurrentConversation);
-      window.removeEventListener("focus", readCurrentConversation);
-    };
-  }, [contacts, location.pathname, readNotifications, userId]);
+    if (location.pathname !== "/chat" || !appFocused) return;
+    const contact = contacts.find((item) => item.UserId === userId);
+    if (!contact || contact.notifications === 0) return;
+    if (newMessageCount === 0) {
+      markMessagesAsNew(contact.UserId, contact.notifications);
+    }
+    void readNotifications(contact.UserId, contact.LastMessageAt);
+  }, [
+    appFocused,
+    contacts,
+    location.pathname,
+    markMessagesAsNew,
+    newMessageCount,
+    readNotifications,
+    userId,
+  ]);
 
   useEffect(
     () =>
@@ -129,8 +128,7 @@ export default function Provider(props: { children: React.ReactNode }) {
 
       const isCurrentChat =
         location.pathname === "/chat" && userId === data.SenderId;
-      const appFocused =
-        document.hasFocus() && document.visibilityState === "visible";
+      const appFocused = getAppFocused();
       const shouldAlert = !isCurrentChat || !appFocused;
       const notifications =
         data.notifications ??
@@ -169,7 +167,7 @@ export default function Provider(props: { children: React.ReactNode }) {
                 Content: content ?? "Failed to decrypt message",
                 decryptionFailed: content === null,
               },
-              !appFocused,
+              appFocused ? 0 : notifications,
             );
           }
 

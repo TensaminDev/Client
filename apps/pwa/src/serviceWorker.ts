@@ -150,7 +150,10 @@ self.addEventListener("notificationclick", (event) => {
         includeUncontrolled: true,
       });
       for (const client of windows) {
-        if ("navigate" in client) await client.navigate(target.href);
+        client.postMessage({
+          type: "NAVIGATE",
+          url: `${target.pathname}${target.search}${target.hash}`,
+        });
         return client.focus();
       }
       return self.clients.openWindow(target.href);

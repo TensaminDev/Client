@@ -301,8 +301,15 @@ export default function Provider({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
 
-  const [liveMessagesState, setLiveMessagesState] = useState<LiveMessage[]>([]);
-  const [newMessagesStart, setNewMessagesStart] = useState<number | null>(null);
+  const [liveMessagesByUser, setLiveMessagesByUser] = useState<
+    Record<number, LiveMessage[]>
+  >({});
+  const [newMessageCounts, setNewMessageCounts] = useState<
+    Record<number, number>
+  >({});
+  const [newMessageStarts, setNewMessageStarts] = useState<
+    Record<number, number | undefined>
+  >({});
   const [ownId, setOwnId] = useState(0);
   const [drafts, setDrafts] = useState<Record<string, StoredDraftState>>({});
   const draftsRef = useRef<Record<string, StoredDraftState>>({});
@@ -326,12 +333,18 @@ export default function Provider({ children }: { children: ReactNode }) {
   const locationSearch = useRouterState({
     select: (state) => state.location.search,
   });
+  const locationPathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   // User ID compare to clear shared secret
   const userIdValue = useMemo(() => {
     const rawId = (locationSearch as unknown as { id?: unknown })?.id;
     return Number(rawId ?? 0);
   }, [locationSearch]);
+  const activeChatUserId =
+    locationPathname === "/chat" && userIdValue > 0 ? userIdValue : null;
+  const previousActiveChatUserIdRef = useRef(activeChatUserId);
 
   const currentChatSecret = useMemo(() => {
     if (currentChatSecretState.userId !== userIdValue) {
@@ -833,12 +846,15 @@ export default function Provider({ children }: { children: ReactNode }) {
       if (sorted.length > 0) {
         const fetchedSendTimes = new Set(sorted.map((item) => item.SendTime));
 
-        setLiveMessagesState((prev) => {
-          const filtered = prev.filter(
+        setLiveMessagesByUser((previous) => {
+          const current = previous[userIdValue] ?? [];
+          const filtered = current.filter(
             (liveMessage) => !fetchedSendTimes.has(liveMessage.SendTime),
           );
 
-          return filtered.length === prev.length ? prev : filtered;
+          return filtered.length === current.length
+            ? previous
+            : { ...previous, [userIdValue]: filtered };
         });
       }
 
@@ -859,21 +875,24 @@ export default function Provider({ children }: { children: ReactNode }) {
     });
   }, [currentChatSecret, getCachedMessages, ownId, userIdValue]);
 
-  const editMessage = useCallback(
-    (sendTime: number, edit: MessageEdit) => {
-      setLiveMessagesState((prev) => {
+  const editMessageForUser = useCallback(
+    (chatUserId: number, sendTime: number, edit: MessageEdit) => {
+      setLiveMessagesByUser((previous) => {
+        const current = previous[chatUserId] ?? [];
         const { next, updated } = updateMessagesBySendTime(
-          prev,
+          current,
           sendTime,
           edit,
         );
-        return updated ? next : prev;
+        return updated
+          ? { ...previous, [chatUserId]: next }
+          : previous;
       });
 
       const queryKey = [
         "chat-messages",
-        String(userIdValue),
-        currentChatSecret !== null,
+        String(chatUserId),
+        true,
       ] as const;
       queryClient.setQueryData<InfiniteData<RawMessages>>(
         queryKey,
@@ -905,14 +924,24 @@ export default function Provider({ children }: { children: ReactNode }) {
         },
       );
     },
-    [currentChatSecret, userIdValue],
+    [],
+  );
+
+  const editMessage = useCallback(
+    (sendTime: number, edit: MessageEdit) => {
+      editMessageForUser(userIdValue, sendTime, edit);
+    },
+    [editMessageForUser, userIdValue],
   );
 
   const removeMessage = useCallback(
     (sendTime: number) => {
-      setLiveMessagesState((prev) =>
-        prev.filter((message) => message.SendTime !== sendTime),
-      );
+      setLiveMessagesByUser((previous) => ({
+        ...previous,
+        [userIdValue]: (previous[userIdValue] ?? []).filter(
+          (message) => message.SendTime !== sendTime,
+        ),
+      }));
       const queryKey = [
         "chat-messages",
         String(userIdValue),
@@ -961,7 +990,8 @@ export default function Provider({ children }: { children: ReactNode }) {
       senderId: number,
       accepted: boolean,
     ) => {
-      setLiveMessagesState((current) => {
+      setLiveMessagesByUser((previous) => {
+        const current = previous[userIdValue] ?? [];
         const { next, updated } = updateMessageReactionBySendTime(
           current,
           sendTime,
@@ -969,7 +999,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           senderId,
           accepted,
         );
-        return updated ? next : current;
+        return updated ? { ...previous, [userIdValue]: next } : previous;
       });
 
       const queryKey = [
@@ -1048,7 +1078,8 @@ export default function Provider({ children }: { children: ReactNode }) {
         foundMessage = true;
       };
 
-      setLiveMessagesState((current) => {
+      setLiveMessagesByUser((previous) => {
+        const current = previous[userIdValue] ?? [];
         rememberPreviousReactions(current);
         const { next, updated } = updateMessageReactionBySendTime(
           current,
@@ -1057,7 +1088,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           ownId,
           add,
         );
-        return updated ? next : current;
+        return updated ? { ...previous, [userIdValue]: next } : previous;
       });
 
       const queryKey = [
@@ -1143,48 +1174,92 @@ export default function Provider({ children }: { children: ReactNode }) {
   );
 
   const addLiveMessage = useCallback(
-    (message: RawMessage, markAsNew = false) => {
+    (message: RawMessage, unreadCount = 0) => {
+      const chatUserId = userIdValue;
       const localId =
         globalThis.crypto?.randomUUID?.() ??
         `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       if (message.SenderId !== ownId) {
-        moveUserIdToTop(userIdValue);
+        moveUserIdToTop(chatUserId);
       }
 
-      if (markAsNew) {
-        setNewMessagesStart((current) =>
-          current === null
-            ? message.SendTime
-            : Math.min(current, message.SendTime),
+      if (unreadCount > 0) {
+        setNewMessageCounts((current) => ({
+          ...current,
+          [chatUserId]: Math.max(current[chatUserId] ?? 0, unreadCount),
+        }));
+        setNewMessageStarts((current) =>
+          current[chatUserId] === undefined
+            ? { ...current, [chatUserId]: message.SendTime }
+            : current,
         );
       }
 
-      setLiveMessagesState((prev) => [
-        ...prev,
-        {
-          ...message,
-          localId,
-          failed: false,
-        },
-      ]);
+      setLiveMessagesByUser((previous) => ({
+        ...previous,
+        [chatUserId]: [
+          ...(previous[chatUserId] ?? []),
+          {
+            ...message,
+            localId,
+            failed: false,
+          },
+        ],
+      }));
 
       return {
         setFailed: (failed: boolean) => {
-          editMessage(message.SendTime, { failed });
+          editMessageForUser(chatUserId, message.SendTime, { failed });
         },
         setMessageState: (MessageState: RawMessage["MessageState"]) => {
-          editMessage(message.SendTime, { MessageState });
+          editMessageForUser(chatUserId, message.SendTime, { MessageState });
         },
       };
     },
-    [editMessage, userIdValue, moveUserIdToTop, ownId],
+    [editMessageForUser, userIdValue, moveUserIdToTop, ownId],
   );
 
-  const clearLiveMessages = useCallback(() => {
-    setLiveMessagesState([]);
-    setNewMessagesStart(null);
+  const markMessagesAsNew = useCallback((chatUserId: number, count: number) => {
+    if (count <= 0) return;
+    setNewMessageCounts((current) => ({
+      ...current,
+      [chatUserId]: Math.max(current[chatUserId] ?? 0, count),
+    }));
   }, []);
+
+  const clearNewMessages = useCallback((chatUserId: number) => {
+    setNewMessageCounts((current) => {
+      if (!current[chatUserId]) return current;
+      return { ...current, [chatUserId]: 0 };
+    });
+    setNewMessageStarts((current) => {
+      if (current[chatUserId] === undefined) return current;
+      return { ...current, [chatUserId]: undefined };
+    });
+  }, []);
+
+  const setNewMessagesStart = useCallback(
+    (chatUserId: number, sendTime: number) => {
+      setNewMessageStarts((current) =>
+        current[chatUserId] === undefined
+          ? { ...current, [chatUserId]: sendTime }
+          : current,
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const previousChatUserId = previousActiveChatUserIdRef.current;
+    previousActiveChatUserIdRef.current = activeChatUserId;
+    if (
+      previousChatUserId !== null &&
+      previousChatUserId !== activeChatUserId
+    ) {
+      clearNewMessages(previousChatUserId);
+    }
+  }, [activeChatUserId, clearNewMessages]);
 
   // Get live updates for message states
   useEffect(() => {
@@ -1269,14 +1344,17 @@ export default function Provider({ children }: { children: ReactNode }) {
         value={{
           getMessages,
           getChatSecret,
-          liveMessages: () => liveMessagesState,
-          newMessagesStart,
+          liveMessages: () => liveMessagesByUser[userIdValue] ?? [],
+          newMessageCount: newMessageCounts[userIdValue] ?? 0,
+          newMessagesStart: newMessageStarts[userIdValue] ?? null,
           addLiveMessage,
+          markMessagesAsNew,
+          setNewMessagesStart,
+          clearNewMessages,
           editMessage,
           deleteMessage,
           addReaction,
           removeReaction,
-          clearLiveMessages,
           chatSecret: currentChatSecret,
           chatSecretVersion: currentChatSecretState.version,
           ensureChatSecret: createInitialChatSecret,
@@ -1304,19 +1382,22 @@ type contextType = {
     version?: number,
   ) => Promise<Uint8Array | null>;
   liveMessages: () => LiveMessage[];
+  newMessageCount: number;
   newMessagesStart: number | null;
   addLiveMessage: (
     message: RawMessage,
-    markAsNew?: boolean,
+    unreadCount?: number,
   ) => {
     setFailed: (failed: boolean) => void;
     setMessageState: (messageState: RawMessage["MessageState"]) => void;
   };
+  markMessagesAsNew: (userId: number, count: number) => void;
+  setNewMessagesStart: (userId: number, sendTime: number) => void;
+  clearNewMessages: (userId: number) => void;
   editMessage: (sendTime: number, edit: MessageEdit) => void;
   deleteMessage: (sendTime: number) => void;
   addReaction: (sendTime: number, reaction: string) => Promise<void>;
   removeReaction: (sendTime: number, reaction: string) => Promise<void>;
-  clearLiveMessages: () => void;
   chatSecret: Uint8Array | null;
   chatSecretVersion: number;
   ensureChatSecret: (userId: number) => Promise<Uint8Array | null>;

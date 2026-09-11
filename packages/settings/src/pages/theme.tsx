@@ -2,7 +2,7 @@ import { ThemeCustomizer } from "@methanium/ui";
 
 export default function Page() {
   return (
-    <div className="p-5 md:p-8">
+    <div className="md:p-8">
       <ThemeCustomizer />
       <a
         className="mt-8 block max-w-md text-xs text-muted-foreground"

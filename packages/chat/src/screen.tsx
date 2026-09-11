@@ -106,6 +106,7 @@ function buildMessageChunks(
   messages: Array<RawMessage | LiveMessage>,
   keyPrefix: string,
   startOffset = 0,
+  chunkSize = MESSAGES_PER_VIRTUAL_ROW,
 ) {
   const chunks: {
     key: string;
@@ -113,8 +114,8 @@ function buildMessageChunks(
     startIndex: number;
   }[] = [];
 
-  for (let end = messages.length; end > 0; end -= MESSAGES_PER_VIRTUAL_ROW) {
-    const start = Math.max(0, end - MESSAGES_PER_VIRTUAL_ROW);
+  for (let end = messages.length; end > 0; end -= chunkSize) {
+    const start = Math.max(0, end - chunkSize);
     const chunkMessages = messages.slice(start, end);
     const firstMessage = chunkMessages[0];
 
@@ -138,8 +139,9 @@ export default function Screen() {
   const {
     getMessages,
     liveMessages,
+    newMessageCount,
     newMessagesStart,
-    clearLiveMessages,
+    setNewMessagesStart,
     userId,
     chatSecret,
     ownId,
@@ -212,14 +214,13 @@ export default function Screen() {
   }, [fetchMessagesNextPage, hasMessagesNextPage, isFetchingMessagesNextPage]);
 
   useEffect(() => {
-    clearLiveMessages();
     didInitialScrollRef.current = false;
     userScrolledUpRef.current = false;
     isAtBottomRef.current = true;
     setDidInitialScroll(false);
     setLastLiveMessageCount(0);
     setEditingMessageId(null);
-  }, [clearLiveMessages, userId]);
+  }, [userId]);
 
   const historicalMessages = useMemo(() => {
     const pages = messagesQuery.data?.pages ?? [];
@@ -251,24 +252,41 @@ export default function Screen() {
   }, [historicalMessages, liveMessagesSnapshot]);
 
   const messages = useMemo(() => {
-    return [...historicalMessages, ...liveWithoutDuplicates];
+    return [...historicalMessages, ...liveWithoutDuplicates].sort(
+      (first, second) => first.SendTime - second.SendTime,
+    );
   }, [historicalMessages, liveWithoutDuplicates]);
 
-  const historicalMessageChunks = useMemo(() => {
-    return buildMessageChunks(historicalMessages, "history");
-  }, [historicalMessages]);
-
-  const liveMessageChunks = useMemo(() => {
-    return buildMessageChunks(
-      liveWithoutDuplicates,
-      "live",
-      historicalMessages.length,
+  const pendingNewMessagesStart = useMemo(() => {
+    if (newMessagesStart !== null || newMessageCount === 0) return null;
+    const incomingMessages = messages.filter(
+      (message) => message.SenderId === userId,
     );
-  }, [historicalMessages.length, liveWithoutDuplicates]);
+    if (incomingMessages.length >= newMessageCount) {
+      return incomingMessages[incomingMessages.length - newMessageCount]
+        ?.SendTime;
+    }
+    if (messagesQuery.hasNextPage === false) {
+      return incomingMessages[0]?.SendTime ?? null;
+    }
+    return null;
+  }, [
+    messages,
+    messagesQuery.hasNextPage,
+    newMessageCount,
+    newMessagesStart,
+    userId,
+  ]);
+
+  useEffect(() => {
+    if (pendingNewMessagesStart !== null) {
+      setNewMessagesStart(userId, pendingNewMessagesStart);
+    }
+  }, [pendingNewMessagesStart, setNewMessagesStart, userId]);
 
   const messageChunks = useMemo(() => {
-    return [...liveMessageChunks, ...historicalMessageChunks];
-  }, [historicalMessageChunks, liveMessageChunks]);
+    return buildMessageChunks(messages, "messages", 0, 1);
+  }, [messages]);
 
   const virtualRowCount = messageChunks.length;
 
@@ -394,6 +412,19 @@ export default function Screen() {
     virtualRowCount,
     virtualizer,
   ]);
+
+  useEffect(() => {
+    const loadedIncomingMessages = messages.filter(
+      (message) => message.SenderId === userId,
+    ).length;
+    if (
+      newMessageCount > loadedIncomingMessages &&
+      messagesQuery.hasNextPage &&
+      !messagesQuery.isFetchingNextPage
+    ) {
+      void messagesQuery.fetchNextPage();
+    }
+  }, [messages, messagesQuery, newMessageCount, userId]);
 
   useEffect(() => {
     if (

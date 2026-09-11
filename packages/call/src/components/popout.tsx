@@ -11,7 +11,6 @@ import {
   Card,
   cn,
   useIsMobile,
-  useSidebar,
 } from "@methanium/ui";
 import { ScreenShareOff } from "lucide-react";
 import { useUserFields } from "@tensamin/identity/context";
@@ -63,7 +62,6 @@ function MobileCallPill({
   active: boolean;
   callId: string;
 }) {
-  const { setOpenMobile } = useSidebar();
   const lastSpeakingParticipantId = useLastSpeakingParticipantId();
   const isSpeaking = useIsSpeaking(lastSpeakingParticipantId ?? -1);
   const { data: lastSpeakingUser } = useUserFields(
@@ -180,7 +178,6 @@ function MobileCallPill({
             return;
           }
 
-          setOpenMobile(false);
           void openCallPage(callId);
         }}
         onPointerDown={(event) => {
@@ -683,7 +680,6 @@ export function Popout({ participant }: { participant: Participant }) {
 export default function Wrapper() {
   const room = getRoom();
   const { pathname } = useLocation();
-  const { openMobile } = useSidebar();
   const isMobile = useIsMobile();
   const state = useCall((state) => state.state);
   const callId = useCall((state) => state.callId);
@@ -700,9 +696,7 @@ export default function Wrapper() {
   if (isMobile) {
     return (
       <MobileCallPill
-        active={
-          (!pathname.startsWith("/call") || openMobile) && state === "open"
-        }
+        active={!pathname.startsWith("/call") && state === "open"}
         callId={callId ?? ""}
       />
     );

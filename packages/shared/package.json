@@ -7,6 +7,7 @@
     "./asyncQueue": "./src/asyncQueue.ts",
     "./code": "./src/code.ts",
     "./errors": "./src/errors.ts",
+    "./focus": "./src/focus.ts",
     "./data": "./src/data.ts",
     "./desktopMedia": "./src/desktopMedia.tsx",
     "./log": "./src/log.tsx",

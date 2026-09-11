@@ -7,14 +7,12 @@ import {
   ContextMenuGroup,
   ContextMenuItem,
   ContextMenuTrigger,
-  useSidebar,
 } from "@methanium/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useSession } from "@tensamin/identity/session";
 
 export default function ConversationModal({ userId }: { userId: number }) {
   const navigate = useNavigate();
-  const { setOpenMobile } = useSidebar();
   const { contacts } = useSession();
   const notifications =
     contacts.find((contact) => contact.UserId === userId)?.notifications ?? 0;
@@ -27,7 +25,6 @@ export default function ConversationModal({ userId }: { userId: number }) {
             className="relative select-none cursor-pointer"
             onClick={() => {
               navigate({ to: "/chat", search: { id: userId } });
-              setOpenMobile(false);
             }}
           >
             <Wrapper

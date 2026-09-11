@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { setDatabaseEntry } from "@tensamin/shared/indexedDb";
 import { isTauri } from "@tauri-apps/api/core";
+import { useNavigate } from "@tanstack/react-router";
 
 import "./style.css";
 
@@ -62,6 +63,29 @@ async function enablePush() {
 }
 
 function InstalledPwaRuntime() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handleMessage = (event: MessageEvent<unknown>) => {
+      const data = event.data as { type?: unknown; url?: unknown } | undefined;
+      if (data?.type !== "NAVIGATE" || typeof data.url !== "string") return;
+      const target = new URL(data.url, window.location.origin);
+      const id = Number(target.searchParams.get("id"));
+      if (
+        target.origin === window.location.origin &&
+        target.pathname === "/chat" &&
+        Number.isSafeInteger(id) &&
+        id > 0
+      ) {
+        void navigate({ to: "/chat", search: { id } });
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handleMessage);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", handleMessage);
+  }, [navigate]);
+
   useEffect(() => {
     if (
       !("serviceWorker" in navigator) ||

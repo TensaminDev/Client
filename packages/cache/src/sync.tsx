@@ -187,14 +187,23 @@ export default function CacheSync() {
         const messages = result.Messages as CachedMessage[];
         const cache = secureCache();
         const previous = await cache.conversations.get(partnerId);
+        const fetchedSendTimes = new Set(
+          messages.map((message) => message.SendTime),
+        );
+        const pendingMessages = (previous?.Messages ?? []).filter(
+          (message) =>
+            message.SenderId === accountId &&
+            !fetchedSendTimes.has(message.SendTime),
+        );
         await cache.conversations.replace({
           UserId: partnerId,
           LastMessageAt: Math.max(
             previous?.LastMessageAt ?? 0,
             ...messages.map((message) => message.SendTime),
           ),
-          // This replacement is authoritative: absent server messages are deleted.
-          Messages: messages,
+          Messages: [...messages, ...pendingMessages].sort(
+            (first, second) => first.SendTime - second.SendTime,
+          ),
         });
         return;
       }

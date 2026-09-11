@@ -12,7 +12,7 @@ export function createSettingsRoute(parentRoute: AnyRoute) {
     getParentRoute: () => parentRoute,
     path: "settings",
     component: SettingsLayout,
-    staticData: { showMobileNavbar: true },
+    staticData: { showMobileNavbar: false },
   });
 
   return settingsRoute.addChildren(
@@ -21,7 +21,7 @@ export function createSettingsRoute(parentRoute: AnyRoute) {
         getParentRoute: () => settingsRoute,
         path: page.path,
         component: page.component,
-        staticData: { showMobileNavbar: true },
+        staticData: { showMobileNavbar: false },
       }),
     ),
   );

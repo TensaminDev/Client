@@ -11,7 +11,6 @@ import {
   House,
   Phone,
   Settings,
-  User,
 } from "lucide-react";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/state";
@@ -25,7 +24,6 @@ import {
 } from "@methanium/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useState } from "react";
-import { SidebarTrigger, useSidebar } from "@methanium/ui";
 import { WindowControls as Controls } from "@methanium/ui";
 import { useSession } from "@tensamin/identity/session";
 import { joinCall } from "@tensamin/call/store";
@@ -58,17 +56,14 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
     >
       <div className="flex items-center justify-center gap-2">
         {forMobile ? (
-          <SidebarTrigger
-            render={({ onClick }) => (
-              <Button
-                onClick={onClick}
-                className="w-9 h-9! ml-2"
-                variant="ghost"
-              >
-                <ArrowLeft className="size-4.5" />
-              </Button>
-            )}
-          />
+          <Button
+            aria-label="Go home"
+            onClick={() => void navigate({ to: "/" })}
+            className="w-9 h-9! ml-2"
+            variant="ghost"
+          >
+            <ArrowLeft className="size-4.5" />
+          </Button>
         ) : (
           <>
             <Button
@@ -199,47 +194,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           </Button>
         )}
         <Controls className="mr-2" />
-      </div>
-    </div>
-  );
-}
-
-export function MobileNavbar() {
-  const navigate = useNavigate();
-  const { setOpenMobile } = useSidebar();
-
-  return (
-    <div className="z-51 w-full shrink-0 pb-[env(safe-area-inset-bottom)] bg-card border-t">
-      <div className="z-51 w-full h-15 grid grid-cols-3 items-center place-items-center px-5">
-        <SidebarTrigger
-          className="text-foreground w-12! h-12! aspect-square rounded-xl flex flex-col gap-1 border-0!"
-          variant="link"
-        >
-          <User className="size-4.5" />
-          <p className="text-xs">Chats</p>
-        </SidebarTrigger>
-        <Button
-          onClick={() => {
-            navigate({ to: "/" });
-            setOpenMobile(false);
-          }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! bg-none! bg-transparent!"
-          variant="link"
-        >
-          <House className="size-4.5" />
-          <p className="text-xs">Home</p>
-        </Button>
-        <Button
-          onClick={() => {
-            navigate({ to: "/settings" });
-            setOpenMobile(false);
-          }}
-          className="text-foreground w-12 h-12 aspect-square rounded-xl flex flex-col gap-1 border-0! bg-none! bg-transparent!"
-          variant="link"
-        >
-          <Settings className="size-4.5" />
-          <p className="text-xs">Settings</p>
-        </Button>
       </div>
     </div>
   );

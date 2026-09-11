@@ -20,6 +20,10 @@ import {
   type Contacts,
 } from "@tensamin/shared/data";
 import { log } from "@tensamin/shared/log";
+import {
+  getAppFocused,
+  subscribeAppFocus,
+} from "@tensamin/shared/focus";
 
 import {
   type BoundSendFn,
@@ -240,17 +244,13 @@ export function TauriProvider(props: {
     if (props.blockConnection) return;
     const updateVisibility = () => {
       void invoke("mtp_set_ui_visible", {
-        visible: document.visibilityState === "visible" && document.hasFocus(),
+        visible: getAppFocused(),
       });
     };
     updateVisibility();
-    document.addEventListener("visibilitychange", updateVisibility);
-    window.addEventListener("focus", updateVisibility);
-    window.addEventListener("blur", updateVisibility);
+    const unsubscribe = subscribeAppFocus(updateVisibility);
     return () => {
-      document.removeEventListener("visibilitychange", updateVisibility);
-      window.removeEventListener("focus", updateVisibility);
-      window.removeEventListener("blur", updateVisibility);
+      unsubscribe();
       void invoke("mtp_set_ui_visible", { visible: false });
     };
   }, [props.blockConnection]);

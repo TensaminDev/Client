@@ -230,8 +230,6 @@ export default function InputComponent({
     }
   }
 
-  const isMobile = useIsMobile();
-
   function handleGifPopoverResizeStart(
     event: React.PointerEvent<HTMLDivElement>,
   ) {
@@ -285,6 +283,7 @@ export default function InputComponent({
 
   const { ownId, replyMessage, replyUserId } = useReplyMessage();
 
+  const isMobile = useIsMobile();
   return (
     <div className="flex flex-col">
       {/* reply */}
@@ -301,8 +300,8 @@ export default function InputComponent({
       <Card
         ref={inputBoxRef}
         className={cn(
-          "ring-0! rounded-none border-b-0 border-t border-x border-input/70 pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
-          isMobile ? "border-0 border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
+          "ring-0! rounded-none border-b-0 border-t border-x border-(--border)/40! pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
+          isMobile ? "border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
         )}
       >
         <CardHeader className="relative p-0 flex flex-col">

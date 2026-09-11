@@ -300,7 +300,7 @@ const homeRoute = createRoute({
   path: "/",
   component: Home,
   staticData: {
-    showMobileNavbar: true,
+    showMobileNavbar: false,
   },
 });
 
@@ -312,7 +312,7 @@ const chatRoute = createRoute({
     id: z.number().optional(),
   }),
   staticData: {
-    showMobileNavbar: false,
+    showMobileNavbar: true,
   },
 });
 
@@ -321,7 +321,7 @@ const callRoute = createRoute({
   path: "call",
   component: CallScreen,
   staticData: {
-    showMobileNavbar: false,
+    showMobileNavbar: true,
   },
 });
 
