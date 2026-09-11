@@ -23,7 +23,6 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
     needsSelection,
     activeProfileHasTheme,
     loading,
-    legalLoading,
     legalRequired,
     legalChanged,
     legalError,
@@ -76,7 +75,7 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
     void save("onboarding_done", true).then(() => setOnboarding(false));
   }, [activeProfileHasTheme, loading, needsSelection, onboarding, ready, save]);
 
-  if (!ready || loading || legalLoading) return null;
+  if (!ready) return null;
 
   const steps: OnboardingStep[] = [];
   if (legalRequired) {
