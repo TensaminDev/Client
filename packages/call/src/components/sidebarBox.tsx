@@ -54,6 +54,9 @@ function ConnectionBar() {
   const state = useCall((store) => store.state);
   const isEncrypted = useCall((store) => store.isEncrypted);
   const callId = useCall((store) => store.callId);
+  const isConnecting = state === "encrypting" || state === "connecting";
+  const hasConnectionError =
+    state === "closed" || (state === "open" && !isEncrypted);
 
   return (
     <Tooltip>
@@ -66,10 +69,8 @@ function ConnectionBar() {
               openCallPage(callId || "");
             }}
             size="lg"
-            variant={
-              state === "open" && isEncrypted ? "subtleDefault" : "destructive"
-            }
-            className="flex items-center justify-between px-2!"
+            variant={hasConnectionError ? "destructive" : "subtleDefault"}
+            className={`flex items-center justify-between px-2! ${isConnecting ? "bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 dark:bg-amber-400/15 dark:text-amber-400 dark:hover:bg-amber-400/25" : ""}`}
           >
             {state === "encrypting" && "Encrypting..."}
             {state === "connecting" && "Connecting..."}
@@ -80,9 +81,9 @@ function ConnectionBar() {
             <TinyPingGraph />
 
             {isEncrypted ? (
-              <Lock color="var(--primary-foreground-alt)" />
+              <Lock color="currentColor" />
             ) : (
-              <LockOpen color="var(--destructive)" />
+              <LockOpen color="currentColor" />
             )}
           </Button>
         )}
@@ -188,9 +189,10 @@ export function TinyPingGraph() {
 
 export default function SidebarBox() {
   const state = useCall((store) => store.state);
+  const callId = useCall((store) => store.callId);
   const isMobile = useIsMobile();
 
-  return state === "closed" ? null : (
+  return state === "closed" && callId === null ? null : (
     <Card className="p-1.5 gap-2" hidden={isMobile}>
       <CardHeader className="p-0! pb-2! border-b-2">
         <ConnectionBar />

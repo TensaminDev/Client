@@ -169,6 +169,13 @@ export function BrowserProvider(props: {
     ProtocolMessage<"AccountStateSnapshot">["data"] | null
   >(null);
   const clientRef = useRef<BrowserMtpClient | null>(null);
+  const callControlRequestRef = useRef<
+    | ((
+        ownerOmikronId: number | undefined,
+        ...args: Parameters<BoundSendFn>
+      ) => ReturnType<BoundSendFn>)
+    | null
+  >(null);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
     useMessageHandlers();
   const connected = readyState === ConnectionState.Connected;
@@ -233,6 +240,18 @@ export function BrowserProvider(props: {
         throw error;
       }
     },
+    [],
+  );
+  const sendToCallOwner = useMemo(
+    () =>
+      async (
+        ownerOmikronId: number | undefined,
+        ...args: Parameters<BoundSendFn>
+      ) => {
+        const request = callControlRequestRef.current;
+        if (!request) throw new Error("mtp call control is not connected");
+        return request(ownerOmikronId, ...args);
+      },
     [],
   );
   const sendSealedRelay: SealedRelaySend = useMemo(
@@ -303,6 +322,7 @@ export function BrowserProvider(props: {
       let connectionReady = false;
       let detachSubscriptions = () => {};
       let unsubscribeNoIota = () => {};
+      const ownerClients = new Map<number, BrowserMtpClient>();
       const attemptAbort = new AbortController();
       const cleanup = () => {
         attemptAbort.abort(
@@ -310,6 +330,10 @@ export function BrowserProvider(props: {
         );
         unsubscribeNoIota();
         detachSubscriptions();
+        for (const ownerClient of ownerClients.values())
+          ownerClient.disconnect();
+        ownerClients.clear();
+        callControlRequestRef.current = null;
         client?.disconnect();
         if (clientRef.current === client) clientRef.current = null;
         if (generation === connectionGeneration) {
@@ -332,6 +356,7 @@ export function BrowserProvider(props: {
         const forcedOmikronPublicKey = await load("forced_omikron_public_key");
         let url = null;
         let omikronPublicKey = null;
+        let primaryOmikronId: number | undefined;
         if (forcedOmikronUrl && forcedOmikronPublicKey) {
           url = forcedOmikronUrl;
           omikronPublicKey = forcedOmikronPublicKey;
@@ -349,6 +374,7 @@ export function BrowserProvider(props: {
           if (!data.ok)
             throw new Error(`Omikron discovery failed: HTTP ${data.status}`);
           const omikronData = (await data.json()) as {
+            id: number;
             ip_address: string;
             port: number;
             public_key: string;
@@ -356,12 +382,14 @@ export function BrowserProvider(props: {
           if (
             !omikronData.ip_address ||
             !omikronData.port ||
+            !omikronData.id ||
             !omikronData.public_key
           ) {
             throw new Error("Invalid Omikron data");
           }
           url = `https://${omikronData.ip_address}:${omikronData.port}`;
           omikronPublicKey = omikronData.public_key;
+          primaryOmikronId = omikronData.id;
         }
         if (!url || !omikronPublicKey) {
           throw new Error("Missing Omikron URL or Public Key");
@@ -427,6 +455,76 @@ export function BrowserProvider(props: {
         }
         const activeClient = client;
         clientRef.current = activeClient;
+        callControlRequestRef.current = async (
+          ownerOmikronId,
+          type,
+          data,
+          options,
+        ) => {
+          if (ownerOmikronId == null || ownerOmikronId === primaryOmikronId) {
+            return activeClient.request(type, data, options);
+          }
+
+          let ownerClient = ownerClients.get(ownerOmikronId);
+          if (!ownerClient) {
+            const response = await fetch(
+              `${mtpUrl}api/get/omikron/${ownerOmikronId}`,
+              {
+                signal: attemptAbort.signal,
+              },
+            );
+            if (!response.ok) {
+              throw new Error(
+                `Call owner discovery failed: HTTP ${response.status}`,
+              );
+            }
+            const owner = (await response.json()) as {
+              id: number;
+              ip_address: string;
+              port: number;
+              public_key: string;
+            };
+            if (
+              owner.id !== ownerOmikronId ||
+              !owner.ip_address ||
+              !owner.port ||
+              !owner.public_key
+            ) {
+              throw new Error(
+                "Call owner discovery returned an invalid Omikron",
+              );
+            }
+            ownerClient = await createBrowserClient({
+              url: `https://${owner.ip_address}:${owner.port}`,
+              credentials: {
+                clientId: userId,
+                keyring: base64ToBytes(keyring),
+              },
+              hostPublicKey: { value: owner.public_key, encoding: "base64" },
+              descriptor: "client-call-control",
+              pings: true,
+              securityProfile: { protectedSignatureSuite: "dual" },
+              logger: (event) => {
+                if (event.type !== "Ping" && event.type !== "Pong") {
+                  log(
+                    2,
+                    "mtp",
+                    "purple",
+                    `call owner ${ownerOmikronId}: ${event.type}`,
+                  );
+                }
+              },
+            });
+            try {
+              await ownerClient.auth();
+            } catch (error) {
+              ownerClient.disconnect();
+              throw error;
+            }
+            ownerClients.set(ownerOmikronId, ownerClient);
+          }
+          return ownerClient.request(type, data, options);
+        };
         detachSubscriptions = attachSubscriptions(activeClient);
         unsubscribeNoIota = subscribe("ErrorNoIota", () => {
           if (clientRef.current !== activeClient || failed) return;
@@ -588,6 +686,7 @@ export function BrowserProvider(props: {
     <MTPContext.Provider
       value={{
         send: sendQueued,
+        sendCallControl: sendToCallOwner,
         sendSealedRelay,
         subscribe,
         addInterceptor,

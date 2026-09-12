@@ -28,7 +28,10 @@ export type CurrentCallData =
   | { status: "error"; message: string };
 
 export type CallControlTransport = {
-  request: BoundSendFn;
+  request: (
+    ownerOmikronId: number | undefined,
+    ...args: Parameters<BoundSendFn>
+  ) => ReturnType<BoundSendFn>;
 };
 
 export type CallRuntime = {

@@ -69,6 +69,7 @@ type RemoteVideoTrackSelector = Track.Kind | Track.Source;
 let _keyProvider: ExternalE2EEKeyProvider | null = null;
 let _e2eeWorker: Worker | null = null;
 let _room: Room | null = null;
+let callAttemptGeneration = 0;
 
 function getKeyProvider(): ExternalE2EEKeyProvider {
   if (!_keyProvider) {
@@ -629,13 +630,18 @@ export async function openCallPage(callId: string) {
   });
 }
 
+function callRouteOwner(): number | undefined {
+  return useCall.getState().callRoute?.ownerOmikronId;
+}
+
 // Request the LiveKit token that authorizes this client to join a call.
 export async function getCallToken(
   callId: string,
   callSecret?: ProtocolCallSecret,
+  ownerOmikronId?: number,
 ) {
   const response = await requireRuntime(useCall.getState().runtime)
-    .callControl.request("CallToken", {
+    .callControl.request(ownerOmikronId, "CallToken", {
       CallId: callId,
       ...(callSecret ? { CallSecret: callSecret } : {}),
     })
@@ -683,14 +689,17 @@ export async function sendCallInvite(userId: number) {
   }
 
   useCall.setState({ invitedUserId: userId });
-  void startCallJingle(() => useCall.getState().invitedUserId === userId);
 
   try {
-    const response = await runtime.callControl.request("CallInvite", {
-      ReceiverId: userId,
-      CallId: callId,
-      CallSecret: await wrapCallSecretForUser(userId, callId, callSecret),
-    });
+    const response = await runtime.callControl.request(
+      useCall.getState().callRoute?.ownerOmikronId,
+      "CallInvite",
+      {
+        ReceiverId: userId,
+        CallId: callId,
+        CallSecret: await wrapCallSecretForUser(userId, callId, callSecret),
+      },
+    );
 
     if (response.type.startsWith("Error")) {
       throw new Error(`Call invitation failed: ${response.type}`);
@@ -878,6 +887,7 @@ export async function connect(
   callId: string,
   token: string,
   callEndpoint: string,
+  attemptGeneration = callAttemptGeneration,
 ) {
   useCall.setState({
     state: "connecting",
@@ -895,6 +905,10 @@ export async function connect(
       autoSubscribe: false,
     })
     .catch((error) => {
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
+
       useCall.setState({ state: "closed", livekitToken: null });
       log(1, "call", "red", "Failed to connect to room", error);
       toast(
@@ -903,6 +917,13 @@ export async function connect(
       );
       throw error;
     });
+
+  if (
+    attemptGeneration !== callAttemptGeneration ||
+    useCall.getState().callId !== callId
+  ) {
+    return;
+  }
 
   syncAllRemoteTrackSubscriptions();
 
@@ -919,6 +940,7 @@ export async function connect(
 
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
+  callAttemptGeneration += 1;
   stopCallJingle();
   disposeSpeakingDetector();
   await clearScreenSharePreview();
@@ -976,16 +998,21 @@ export async function disconnect() {
 
 // Leave by revoking this user's backend membership before closing local media.
 export async function leaveCall() {
+  callAttemptGeneration += 1;
   const runtime = requireRuntime(useCall.getState().runtime);
   const { callId } = useCall.getState();
 
   try {
     if (callId) {
       const ownUserId = Number(await runtime.load("user_id"));
-      await runtime.callControl.request("CallDisconnectUser", {
-        CallId: callId,
-        UserId: ownUserId,
-      });
+      await runtime.callControl.request(
+        callRouteOwner(),
+        "CallDisconnectUser",
+        {
+          CallId: callId,
+          UserId: ownUserId,
+        },
+      );
     }
   } finally {
     await disconnect();
@@ -996,6 +1023,7 @@ export async function leaveCall() {
 }
 
 export async function endCall() {
+  callAttemptGeneration += 1;
   const runtime = requireRuntime(useCall.getState().runtime);
   const { callId } = useCall.getState();
 
@@ -1003,7 +1031,9 @@ export async function endCall() {
     throw new Error("Cannot end a call without an active call id.");
   }
 
-  await runtime.callControl.request("EndCall", { CallId: callId });
+  await runtime.callControl.request(callRouteOwner(), "EndCall", {
+    CallId: callId,
+  });
   await disconnect();
   runtime.removeCall(callId);
 }
@@ -1015,6 +1045,7 @@ export async function disconnectUser(userId: number) {
   }
 
   await requireRuntime(useCall.getState().runtime).callControl.request(
+    callRouteOwner(),
     "CallDisconnectUser",
     { CallId: callId, UserId: userId },
   );
@@ -1028,7 +1059,7 @@ export async function timeoutUser(userId: number, timeout: number) {
 
   const response = await requireRuntime(
     useCall.getState().runtime,
-  ).callControl.request("CallTimeoutUser", {
+  ).callControl.request(callRouteOwner(), "CallTimeoutUser", {
     CallId: callId,
     UserId: userId,
     Untill: timeout,
@@ -1044,7 +1075,7 @@ export async function setAnonymousJoining(enabled: boolean) {
 
   const response = await requireRuntime(
     useCall.getState().runtime,
-  ).callControl.request("CallSetAnonymousJoining", {
+  ).callControl.request(callRouteOwner(), "CallSetAnonymousJoining", {
     CallId: callId,
     Enabled: enabled,
   });
@@ -1067,6 +1098,7 @@ export async function joinCall(
     await leaveCall();
   }
 
+  const attemptGeneration = ++callAttemptGeneration;
   log(2, "call", "purple", "Call creation initialised");
   const isNewCall = !callSecret && !existingCallId;
   const finalId = existingCallId || crypto.randomUUID();
@@ -1077,10 +1109,6 @@ export async function joinCall(
     callRoute:
       ownerOmikronId != null ? { ownerOmikronId, livekitUrl: null } : null,
   });
-
-  if (sendInvite && !existingCallId) {
-    void startCallJingle(() => useCall.getState().invitedUserId != null);
-  }
 
   try {
     let creatorEnvelope: ProtocolCallSecret | undefined;
@@ -1100,22 +1128,46 @@ export async function joinCall(
         version: wrappedCallSecret.versionNumber,
         wrappingScheme: wrappedCallSecret.wrappingScheme,
       });
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
 
       await getKeyProvider().setKey(decryptedSecret);
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
       await getRoom().setE2EEEnabled(true);
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
       useCall.setState({ callSecret: decryptedSecret });
     } else {
       const random = randomCallSecret();
 
       await getKeyProvider().setKey(random);
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
       await getRoom().setE2EEEnabled(true);
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
       useCall.setState({ callSecret: random });
 
       const ownUserId = Number(await runtime.load("user_id"));
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
       creatorEnvelope = await wrapCallSecretForUser(ownUserId, finalId, random);
+      if (attemptGeneration !== callAttemptGeneration) {
+        return;
+      }
     }
 
-    const token = await getCallToken(finalId, creatorEnvelope);
+    const token = await getCallToken(finalId, creatorEnvelope, ownerOmikronId);
+    if (attemptGeneration !== callAttemptGeneration) {
+      return;
+    }
     if (ownerOmikronId != null && token.OmikronId !== ownerOmikronId) {
       throw new Error(
         `Call owner mismatch: expected ${ownerOmikronId}, received ${token.OmikronId}`,
@@ -1134,7 +1186,19 @@ export async function joinCall(
       livekitToken: token.CallToken,
     });
     await openCallPage(finalId);
-    await connect(finalId, token.CallToken, token.CallEndpoint);
+    if (attemptGeneration !== callAttemptGeneration) {
+      return;
+    }
+    await connect(
+      finalId,
+      token.CallToken,
+      token.CallEndpoint,
+      attemptGeneration,
+    );
+
+    if (attemptGeneration !== callAttemptGeneration) {
+      return;
+    }
 
     if (isNewCall && sendInvite) {
       try {
@@ -1150,6 +1214,9 @@ export async function joinCall(
       }
     }
   } catch (err) {
+    if (attemptGeneration !== callAttemptGeneration) {
+      return;
+    }
     log(1, "call", "red", "Failed to join call", err);
     await disconnect();
     throw err;
@@ -1210,6 +1277,7 @@ export async function respondToCallInvite(accepted: boolean) {
   );
   runtime.upsertCall({
     CallId: invite.callId,
+    OmikronId: invite.ownerOmikronId,
     CallSecret: protocolCallSecret(invite.callSecret),
     CallMembers: [invite.senderId],
   });
@@ -1221,7 +1289,7 @@ export async function loadCallData(callId: string) {
   try {
     const response = await requireRuntime(
       useCall.getState().runtime,
-    ).callControl.request("CallData", { CallId: callId });
+    ).callControl.request(callRouteOwner(), "CallData", { CallId: callId });
     const parsed = mtp.CallData.response.parse(response.data);
     setCurrentCallData({ status: "ready", userIds: parsed.UserIds });
   } catch (error) {
@@ -1376,7 +1444,7 @@ async function ensureNoiseFilter(
 export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { send, subscribe } = useMTP();
+  const { sendCallControl, subscribe } = useMTP();
   const { load } = useStorage();
   const { upsertCall, removeCall } = useSession();
   const { get } = useUser();
@@ -1403,14 +1471,17 @@ export function useInitializeCall() {
   useEffect(() => {
     setCallRuntime({
       navigate,
-      callControl: { request: send },
+      callControl: {
+        request: (ownerOmikronId, type, data, options) =>
+          sendCallControl(ownerOmikronId, type, data, options),
+      },
       load: load as (key: string) => Promise<unknown>,
       getPublicKey: (userId) =>
         get(userId, ["PublicKey"]).then((user) => user.PublicKey),
       upsertCall,
       removeCall,
     });
-  }, [get, load, navigate, removeCall, send, upsertCall]);
+  }, [get, load, navigate, removeCall, sendCallControl, upsertCall]);
 
   const setInvitePopupOpen = useCallback((open: boolean) => {
     if (!open) {

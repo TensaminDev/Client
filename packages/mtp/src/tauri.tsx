@@ -299,6 +299,7 @@ export function TauriProvider(props: {
     <MTPContext.Provider
       value={{
         send,
+        sendCallControl: (_ownerOmikronId, ...args) => send(...args),
         sendSealedRelay,
         subscribe,
         addInterceptor,

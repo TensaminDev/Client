@@ -212,7 +212,7 @@ export function tensaminPwa(): Plugin[] {
       },
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,wasm,mp3,wav}"],
-        globIgnores: ["assets/v2/**"],
+        globIgnores: ["assets/v3/**"],
         maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
       },
       devOptions: {

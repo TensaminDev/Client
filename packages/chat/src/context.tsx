@@ -340,7 +340,8 @@ export default function Provider({ children }: { children: ReactNode }) {
   // User ID compare to clear shared secret
   const userIdValue = useMemo(() => {
     const rawId = (locationSearch as unknown as { id?: unknown })?.id;
-    return Number(rawId ?? 0);
+    const userId = Number(rawId ?? 0);
+    return Number.isSafeInteger(userId) && userId > 0 ? userId : 0;
   }, [locationSearch]);
   const activeChatUserId =
     locationPathname === "/chat" && userIdValue > 0 ? userIdValue : null;

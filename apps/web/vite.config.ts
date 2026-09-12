@@ -20,14 +20,14 @@ function deepFilterAssetHeaders(rootDir: string): Plugin {
     next: () => void,
   ) => {
     const url = req.url ? new URL(req.url, "http://localhost") : null;
-    if (url?.pathname !== "/assets/v2/models/DeepFilterNet3_onnx.tar.gz") {
+    if (url?.pathname !== "/assets/v3/models/DeepFilterNet3_onnx.tar.gz") {
       next();
       return;
     }
 
     const modelPath = resolve(
       rootDir,
-      "assets/v2/models/DeepFilterNet3_onnx.tar.gz",
+      "assets/v3/models/DeepFilterNet3_onnx.tar.gz",
     );
     const stat = statSync(modelPath);
     res.statusCode = 200;

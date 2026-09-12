@@ -164,6 +164,7 @@ const authPayload = z.object({
     .array(
       z.object({
         CallId: z.string(),
+        OmikronId: z.number(),
         CallSecret: callSecretEnvelopeResponse.optional(),
         CallMembers: z.array(z.number()),
       }),
@@ -739,6 +740,8 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
+  mtp_reset_token: string;
+  pending_invitation_registration: string;
   onboarding_done: boolean;
   onboarding_started: boolean;
   active_settings_profile_id: string;
@@ -796,6 +799,8 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
+  mtp_reset_token: "",
+  pending_invitation_registration: "",
   onboarding_done: false,
   onboarding_started: false,
   active_settings_profile_id: "",

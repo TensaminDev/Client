@@ -149,6 +149,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                     id,
                     currentCalls[0].CallSecret,
                     currentCalls[0].CallId,
+                    true,
+                    currentCalls[0].OmikronId,
                   );
                 }}
                 className="w-9 h-9! aspect-square rounded-lg"
@@ -176,7 +178,13 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                         value={call.CallId}
                         key={call.CallId}
                         onSelect={() =>
-                          void joinCall(id, call.CallSecret, call.CallId)
+                          void joinCall(
+                            id,
+                            call.CallSecret,
+                            call.CallId,
+                            true,
+                            call.OmikronId,
+                          )
                         }
                       >
                         {displayCallId(call.CallId)}

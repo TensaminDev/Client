@@ -81,6 +81,10 @@ export type MTPInterceptor = (exchange: MTPExchange) => void | Promise<void>;
 
 export type MTPContextType = {
   send: BoundSendFn;
+  sendCallControl: (
+    ownerOmikronId: number | undefined,
+    ...args: Parameters<BoundSendFn>
+  ) => ReturnType<BoundSendFn>;
   sendSealedRelay: SealedRelaySend;
   subscribe: MTPSubscriptionFunction<typeof mtpSchemas>;
   addInterceptor: (interceptor: MTPInterceptor) => () => void;

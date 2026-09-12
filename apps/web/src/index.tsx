@@ -16,6 +16,7 @@ import RouteLoader from "@/components/routeLoader";
 import Home from "@/routes/app/home";
 import AppShell from "@/routes/app/shell";
 import Login from "@/routes/screens/login";
+import Register from "@/features/register/register";
 
 import { createSettingsRoute } from "@tensamin/settings";
 import ChatScreen from "@tensamin/chat/screen";
@@ -73,16 +74,21 @@ function LoginWrapper({ children }: { children: ReactNode }) {
         if (!active) return;
         if (userId !== 0 && keyring !== "") {
           setLoggedIn(true);
-          if (location.pathname === "/login") {
+          if (
+            location.pathname === "/login" ||
+            location.pathname === "/register"
+          ) {
             void navigate({ to: "/", replace: true });
           }
           return;
         }
         setLoggedIn(false);
-        void navigate({
-          to: "/login",
-          replace: true,
-        });
+        if (location.pathname !== "/register") {
+          void navigate({
+            to: "/login",
+            replace: true,
+          });
+        }
       })
       .catch((error) => {
         log(0, "login", "red", "Failed to load login state", error);
@@ -93,7 +99,11 @@ function LoginWrapper({ children }: { children: ReactNode }) {
     };
   }, [load, location.pathname, navigate, secureStorage]);
 
-  if (loggedIn !== true && location.pathname !== "/login") {
+  if (
+    loggedIn !== true &&
+    location.pathname !== "/login" &&
+    location.pathname !== "/register"
+  ) {
     return <RouteLoader />;
   }
 
@@ -334,9 +344,19 @@ const loginRoute = createRoute({
   },
 });
 
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "register",
+  component: Register,
+  staticData: {
+    showMobileNavbar: false,
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   appRoute.addChildren([homeRoute, chatRoute, callRoute, settingsRoute]),
   loginRoute,
+  registerRoute,
 ]);
 
 const router = createRouter({

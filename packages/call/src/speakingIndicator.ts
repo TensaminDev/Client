@@ -88,6 +88,9 @@ class SpeakingDetector {
     } catch {
       // ignore
     }
+    if (entry.originalTrack) {
+      entry.track.stop();
+    }
     this.entries.delete(participantId);
 
     removeSpeakingParticipant(participantId);
