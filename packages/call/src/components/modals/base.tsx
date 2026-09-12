@@ -297,7 +297,7 @@ export default function Base({
             <div
               ref={currentCard}
               className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center border-(--border)/40 ${
-                flush ? "rounded-none border-y" : "rounded-lg border"
+                flush ? fill ? "rounded-none" : "rounded-none border-y" : "rounded-lg border"
               }`}
               style={{
                 backgroundColor: avatarBackgroundColor,

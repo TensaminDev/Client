@@ -208,8 +208,9 @@ export default function MediaShareButton({
                   id="screen-share-audio"
                   checked={shareAudio}
                   disabled={
-                    !canCaptureAudio ||
-                    (isScreensharing && !screenShareSession?.audioTrack)
+                    !shareAudio &&
+                    (!canCaptureAudio ||
+                      (isScreensharing && !screenShareSession?.audioTrack))
                   }
                   onCheckedChange={(checked) => {
                     const next = checked === true;

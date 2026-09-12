@@ -78,6 +78,7 @@ export const useCall = create<{
   watchedStreamParticipantIds: number[];
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
+  activeScreenShareAudioParticipantIds: number[];
   isEncrypted: boolean;
   warnings: string[];
   screenShareExpectedCodec: string | null;
@@ -111,6 +112,7 @@ export const useCall = create<{
   watchedStreamParticipantIds: [],
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],
+  activeScreenShareAudioParticipantIds: [],
   isEncrypted: false,
   warnings: [],
   screenShareExpectedCodec: null,

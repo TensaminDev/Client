@@ -769,6 +769,7 @@ export interface Storage extends SettingsStorageDefaults {
   call_screen_share_resolution: number;
   call_screen_share_frame_rate: number;
   call_screen_share_audio: boolean;
+  call_screen_share_volume: number;
   call_screen_share_codec: "auto" | "vp8" | "vp9" | "h264" | "av1" | "h265";
   call_camera_resolution: number;
   call_camera_frame_rate: number;
@@ -845,6 +846,7 @@ export const storageDefaults: Storage = {
   call_screen_share_resolution: 1080,
   call_screen_share_frame_rate: 30,
   call_screen_share_audio: false,
+  call_screen_share_volume: 100,
   call_screen_share_codec: "auto",
   call_camera_resolution: 1080,
   call_camera_frame_rate: 30,

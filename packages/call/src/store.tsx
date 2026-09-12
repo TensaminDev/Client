@@ -79,6 +79,7 @@ let callAttemptGeneration = 0;
 let microphoneDeviceGeneration = 0;
 let latestMicrophoneDeviceId = storageDefaults.call_microphone_device_id;
 let callSettingsGeneration = 0;
+const participantVolumes = new Map<number, number>();
 
 const callSettingKeys = [
   "call_microphone_device_id",
@@ -94,6 +95,7 @@ const callSettingKeys = [
   "call_screen_share_resolution",
   "call_screen_share_frame_rate",
   "call_screen_share_audio",
+  "call_screen_share_volume",
   "call_screen_share_codec",
   "call_camera_resolution",
   "call_camera_frame_rate",
@@ -622,6 +624,14 @@ async function clearScreenSharePreview() {
 
 function syncScreenShareParticipants() {
   const activeScreenShareParticipantIds = getActiveScreenShareParticipantIds();
+  const activeScreenShareAudioParticipantIds = getAllParticipants()
+    .filter(
+      (participant) =>
+        getTrackPublicationBySource(participant, Track.Source.ScreenShareAudio)
+          ?.track != null,
+    )
+    .map((participant) => getParticipantId(participant.identity))
+    .filter((participantId): participantId is number => participantId != null);
   const state = useCall.getState();
   const watchedStreamParticipantIds = state.watchedStreamParticipantIds.filter(
     (participantId) => activeScreenShareParticipantIds.includes(participantId),
@@ -638,6 +648,7 @@ function syncScreenShareParticipants() {
 
   useCall.setState({
     activeScreenShareParticipantIds,
+    activeScreenShareAudioParticipantIds,
     watchedStreamParticipantIds,
     pendingWatchedParticipantIds,
     focusedParticipantId,
@@ -902,6 +913,27 @@ export function setParticipantCameraDisabled(
   setParticipantTrackSubscribed(participantId, Track.Source.Camera, !disabled);
 }
 
+export function getParticipantVolume(participantId: number) {
+  return participantVolumes.get(participantId) ?? 100;
+}
+
+export function setParticipantVolume(participantId: number, volume: number) {
+  const next = Math.max(0, Math.min(100, volume));
+  participantVolumes.set(participantId, next);
+  if (useCall.getState().deaf) return;
+  getRoom()
+    .remoteParticipants.get(String(participantId))
+    ?.setVolume(next / 100, Track.Source.Microphone);
+}
+
+export function setScreenShareVolume(volume: number) {
+  const next = Math.max(0, Math.min(100, volume)) / 100;
+  if (useCall.getState().deaf) return;
+  getRoom().remoteParticipants.forEach((participant) => {
+    participant.setVolume(next, Track.Source.ScreenShareAudio);
+  });
+}
+
 // Focus a participant in the main call view even when they are not sharing a screen.
 export function focusParticipant(
   participantId: number,
@@ -1081,6 +1113,7 @@ async function applyCallSettings(
   const generation = ++callSettingsGeneration;
   updateProcessingWarnings(settings);
   if (callJingle) callJingle.volume = settings.call_sound_volume / 100;
+  setScreenShareVolume(settings.call_screen_share_volume);
   noiseFilter.setSuppressionLevel(settings.call_noise_suppression_level);
   await noiseFilter.setEnabled(settings.call_noise_suppression_enabled);
   if (generation !== callSettingsGeneration) return;
@@ -1349,13 +1382,12 @@ export async function disconnect() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
+    activeScreenShareAudioParticipantIds: [],
     callIsFullscreen: false,
     lastFocusedParticipantId: null,
   });
 
-  getRoom().remoteParticipants.forEach((participant) => {
-    participant.setVolume(1);
-  });
+  participantVolumes.clear();
 
   try {
     await getRoom().disconnect();
@@ -1694,7 +1726,19 @@ export async function toggleDeaf() {
   const nextDeaf = !useCall.getState().deaf;
 
   getRoom().remoteParticipants.forEach((participant) => {
-    participant.setVolume(nextDeaf ? 0 : 1);
+    const participantId = getParticipantId(participant.identity);
+    participant.setVolume(
+      nextDeaf
+        ? 0
+        : participantId == null
+          ? 1
+          : getParticipantVolume(participantId) / 100,
+      Track.Source.Microphone,
+    );
+    participant.setVolume(
+      nextDeaf ? 0 : currentCallSettings.call_screen_share_volume / 100,
+      Track.Source.ScreenShareAudio,
+    );
   });
 
   if (nextDeaf && getRoom().localParticipant.isMicrophoneEnabled) {
@@ -1797,6 +1841,7 @@ export function resetCallState() {
     watchedStreamParticipantIds: [],
     pendingWatchedParticipantIds: [],
     activeScreenShareParticipantIds: [],
+    activeScreenShareAudioParticipantIds: [],
     lastFocusedParticipantId: null,
   });
 
@@ -2207,10 +2252,24 @@ export function useInitializeCall() {
         attachRemoteAudio(track.sid, track.attach());
 
         const participantId = getParticipantId(participant.identity);
+        if (publication.source === Track.Source.ScreenShareAudio) {
+          participant.setVolume(
+            useCall.getState().deaf
+              ? 0
+              : currentCallSettings.call_screen_share_volume / 100,
+            Track.Source.ScreenShareAudio,
+          );
+        }
         if (
           participantId != null &&
           publication.source === Track.Source.Microphone
         ) {
+          participant.setVolume(
+            useCall.getState().deaf
+              ? 0
+              : getParticipantVolume(participantId) / 100,
+            Track.Source.Microphone,
+          );
           getSpeakingDetector().addTrack(participantId, track.mediaStreamTrack);
         }
       }

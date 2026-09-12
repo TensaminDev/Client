@@ -7,10 +7,12 @@ import {
 } from "@methanium/ui";
 import {
   disconnectUser,
+  getParticipantVolume,
   setParticipantCameraDisabled,
+  setParticipantVolume,
   useCall,
 } from "../../store";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { log, toast } from "@tensamin/shared/log";
 
 function EmptyCheckboxIndicator({ checked }: { checked: boolean }) {
@@ -34,6 +36,10 @@ export default function ContextMenu({
   const [soundboardMuted, setSoundboardMuted] = useState(false);
   const [serverDeafened, setServerDeafened] = useState(false);
   const [serverMuted, setServerMuted] = useState(false);
+  const [volume, setVolume] = useState(() => getParticipantVolume(user.UserId));
+  useEffect(() => {
+    setVolume(getParticipantVolume(user.UserId));
+  }, [user.UserId]);
   const watchedStreamParticipantIds = useCall(
     (state) => state.watchedStreamParticipantIds,
   );
@@ -56,6 +62,16 @@ export default function ContextMenu({
       >
         <p>Volume</p>
         <Slider
+          min={0}
+          max={100}
+          step={1}
+          value={[volume]}
+          disabled={user.UserId === ownId}
+          onValueChange={(value) => {
+            const next = typeof value === "number" ? value : (value[0] ?? 100);
+            setVolume(next);
+            setParticipantVolume(user.UserId, next);
+          }}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         />

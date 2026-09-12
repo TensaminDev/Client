@@ -2,6 +2,7 @@ import {
   Card,
   CardContent,
   Button,
+  Slider,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -15,6 +16,7 @@ import CameraShareButton from "./buttons/cameraShare";
 import LeaveButton from "./buttons/leave";
 import {
   setCallIsPopout,
+  setScreenShareVolume,
   setUsersInFocusedViewHidden,
   stopWatchingFocusedStream,
   triggerCallLayoutCalculation,
@@ -29,6 +31,8 @@ import {
   ScreenShareOff,
   SquareArrowOutDownLeft,
   SquareArrowOutUpRight,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useStorage } from "@tensamin/storage/context";
 
@@ -45,15 +49,35 @@ export default function Actions() {
     focusedParticipantId != null &&
     watchedStreamParticipantIds.includes(focusedParticipantId);
 
-  const { load } = useStorage();
+  const { load, save } = useStorage();
   const [ownId, setOwnId] = useState(0);
+  const [screenShareVolume, setScreenShareVolumeState] = useState(100);
   useEffect(() => {
-    load("user_id").then(setOwnId);
+    void Promise.all([load("user_id"), load("call_screen_share_volume")]).then(
+      ([userId, volume]) => {
+        setOwnId(userId);
+        setScreenShareVolumeState(volume);
+      },
+    );
   }, [load]);
 
   // Fullscreen stuff
   const callIsPopout = useCall((state) => state.callIsPopout);
   const callIsFullscreen = useCall((state) => state.callIsFullscreen);
+  const focusedParticipantType = useCall(
+    (state) => state.focusedParticipantType,
+  );
+  const activeScreenShareAudioParticipantIds = useCall(
+    (state) => state.activeScreenShareAudioParticipantIds,
+  );
+  const showScreenShareVolume =
+    isWatchingFocusedStream &&
+    focusedParticipantType === "stream" &&
+    focusedParticipantId != null &&
+    focusedParticipantId !== ownId;
+  const screenShareHasAudio =
+    focusedParticipantId != null &&
+    activeScreenShareAudioParticipantIds.includes(focusedParticipantId);
   const screenRef = useCall((state) => state.screenRef);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
 
@@ -89,7 +113,9 @@ export default function Actions() {
       )}
     >
       {!isMobile && (
-        <div className="w-30 flex justify-start">
+        <div
+          className={`${showScreenShareVolume ? "w-42" : "w-30"} flex justify-start`}
+        >
           {view === "focused" && (
             <Tooltip>
               <TooltipTrigger
@@ -179,7 +205,44 @@ export default function Actions() {
         </CardContent>
       </Card>
       {!isMobile && (
-        <div className="w-30 flex justify-end gap-1.5">
+        <div
+          className={`${showScreenShareVolume ? "w-42" : "w-30"} flex justify-end gap-1.5`}
+        >
+          {showScreenShareVolume ? (
+            <div className="group relative flex items-center">
+              <div className="bg-popover invisible absolute right-0 bottom-full z-50 mb-1 w-40 rounded-md border p-3 opacity-0 shadow-md transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <Slider
+                  aria-label="Screen share volume"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[screenShareVolume]}
+                  disabled={!screenShareHasAudio}
+                  onValueChange={(value) => {
+                    const next =
+                      typeof value === "number"
+                        ? value
+                        : (value[0] ?? screenShareVolume);
+                    setScreenShareVolumeState(next);
+                    setScreenShareVolume(next);
+                    void save("call_screen_share_volume", next);
+                  }}
+                />
+              </div>
+              <Button
+                aria-label="Screen share volume"
+                disabled={!screenShareHasAudio}
+                variant="ghost"
+                className="w-11 h-11! p-0! text-foreground border-0!"
+              >
+                {screenShareVolume === 0 ? (
+                  <VolumeX className="size-6" />
+                ) : (
+                  <Volume2 className="size-6" />
+                )}
+              </Button>
+            </div>
+          ) : null}
           <Tooltip>
             <TooltipTrigger
               render={({ ref, onClick }) => (
