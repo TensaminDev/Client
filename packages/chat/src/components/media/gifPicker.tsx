@@ -559,7 +559,6 @@ function SavedPanel({
                     />
                   </button>
                   <MediaSaveButton
-                    ariaLabel="Unsave media"
                     defaultSaved
                     onSavedMediaChange={onSavedMediaChange}
                     onSavedMediaGroupsChange={onSavedMediaGroupsChange}

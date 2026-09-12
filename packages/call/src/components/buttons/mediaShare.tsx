@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import {
   Button,
   Checkbox,
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
   Label,
   Popover,
   PopoverContent,
@@ -11,6 +16,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  useIsMobile,
 } from "@methanium/ui";
 import { Diamond, MonitorDot, ScreenShare } from "lucide-react";
 import { toast } from "@tensamin/shared/log";
@@ -32,6 +38,7 @@ export default function MediaShareButton({
   defaultPortal?: boolean;
 }) {
   const isScreensharing = useCall((state) => state.screenShareEnabled);
+  const isMobile = useIsMobile();
   const screenShareSession = useCall((state) => state.screenShareSession);
   const screenRef = useCall((state) => state.screenRef);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
@@ -94,6 +101,7 @@ export default function MediaShareButton({
   async function stop() {
     try {
       await stopScreenShare();
+      setMenuOpen(false);
     } catch (error) {
       console.error("Failed to stop screen sharing", error);
       toast("error", "Failed to stop screen sharing.");
@@ -117,137 +125,156 @@ export default function MediaShareButton({
     </Button>
   );
 
+  const menuContent = (
+    <>
+      <div className="flex flex-col gap-2.5">
+        <Label>Resolution</Label>
+        <RadioGroup
+          className="gap-1.5"
+          name="screen-share-resolution"
+          value={String(resolution)}
+          onValueChange={(value) => {
+            const next = Number(value);
+            setResolution(next);
+            void storage.save("call_screen_share_resolution", next);
+          }}
+        >
+          {[720, 1080].map((value) => (
+            <Label
+              key={value}
+              className="flex cursor-pointer items-center gap-2 rounded-md text-sm"
+            >
+              <RadioGroupItem value={String(value)} />
+              {value}p
+            </Label>
+          ))}
+          <Label className="text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-md text-sm">
+            <RadioGroupItem value="1440" disabled />
+            1440p <Diamond className="size-3 fill-current" />
+          </Label>
+        </RadioGroup>
+      </div>
+      <div className="flex flex-col gap-2.5">
+        <Label>Frame rate</Label>
+        <RadioGroup
+          className="gap-1.5"
+          name="screen-share-frame-rate"
+          value={String(frameRate)}
+          onValueChange={(value) => {
+            const next = Number(value);
+            setFrameRate(next);
+            void storage.save("call_screen_share_frame_rate", next);
+          }}
+        >
+          {[30, 60].map((value) => (
+            <Label
+              key={value}
+              className="flex cursor-pointer items-center gap-2 rounded-md text-sm"
+            >
+              <RadioGroupItem value={String(value)} />
+              {value} FPS
+            </Label>
+          ))}
+          <Label className="text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-md text-sm">
+            <RadioGroupItem value="120" disabled />
+            120 FPS <Diamond className="size-3 fill-current" />
+          </Label>
+        </RadioGroup>
+      </div>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="screen-share-audio"
+            checked={shareAudio}
+            disabled={
+              !shareAudio &&
+              (!canCaptureAudio ||
+                (isScreensharing && !screenShareSession?.audioTrack))
+            }
+            onCheckedChange={(checked) => {
+              const next = checked === true;
+              setShareAudio(next);
+              void storage.save("call_screen_share_audio", next);
+            }}
+          />
+          <Label htmlFor="screen-share-audio">Share audio</Label>
+        </div>
+        {isScreensharing ? (
+          <Button variant="destructive" onClick={() => void stop()}>
+            Stop
+          </Button>
+        ) : (
+          <Button
+            onClick={() => {
+              setMenuOpen(false);
+              void beginScreenShare();
+            }}
+          >
+            Start
+          </Button>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <>
-      <Tooltip>
-        <Popover onOpenChange={setMenuOpen} open={menuOpen}>
-          <PopoverTrigger
-            render={({ onClick }) =>
-              tooltip ? (
-                <TooltipTrigger
-                  render={({ ref }) => (
-                    <span
-                      ref={ref as React.Ref<HTMLSpanElement>}
-                      onClick={onClick}
-                      className={className}
-                    >
-                      {trigger}
-                    </span>
-                  )}
-                />
-              ) : (
-                <span className={className} onClick={onClick}>
-                  {trigger}
-                </span>
-              )
-            }
-          />
-          <PopoverContent
-            className="flex w-35 flex-col gap-6"
-            portalProps={{
-              container: defaultPortal ? undefined : portalContainer,
-            }}
-          >
-            <div className="flex flex-col gap-2.5">
-              <Label>Resolution</Label>
-              <RadioGroup
-                className="gap-1.5"
-                name="screen-share-resolution"
-                value={String(resolution)}
-                onValueChange={(value) => {
-                  const next = Number(value);
-                  setResolution(next);
-                  void storage.save("call_screen_share_resolution", next);
-                }}
-              >
-                {[720, 1080].map((value) => (
-                  <Label
-                    key={value}
-                    className="flex cursor-pointer items-center gap-2 rounded-md text-sm"
-                  >
-                    <RadioGroupItem value={String(value)} />
-                    {value}p
-                  </Label>
-                ))}
-                <Label className="text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-md text-sm">
-                  <RadioGroupItem value="1440" disabled />
-                  1440p <Diamond className="size-3 fill-current" />
-                </Label>
-              </RadioGroup>
-            </div>
-            <div className="flex flex-col gap-2.5">
-              <Label>Frame rate</Label>
-              <RadioGroup
-                className="gap-1.5"
-                name="screen-share-frame-rate"
-                value={String(frameRate)}
-                onValueChange={(value) => {
-                  const next = Number(value);
-                  setFrameRate(next);
-                  void storage.save("call_screen_share_frame_rate", next);
-                }}
-              >
-                {[30, 60].map((value) => (
-                  <Label
-                    key={value}
-                    className="flex cursor-pointer items-center gap-2 rounded-md text-sm"
-                  >
-                    <RadioGroupItem value={String(value)} />
-                    {value} FPS
-                  </Label>
-                ))}
-                <Label className="text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-md text-sm">
-                  <RadioGroupItem value="120" disabled />
-                  120 FPS <Diamond className="size-3 fill-current" />
-                </Label>
-              </RadioGroup>
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="screen-share-audio"
-                  checked={shareAudio}
-                  disabled={
-                    !shareAudio &&
-                    (!canCaptureAudio ||
-                      (isScreensharing && !screenShareSession?.audioTrack))
-                  }
-                  onCheckedChange={(checked) => {
-                    const next = checked === true;
-                    setShareAudio(next);
-                    void storage.save("call_screen_share_audio", next);
-                  }}
-                />
-                <Label htmlFor="screen-share-audio">Share audio</Label>
-              </div>
-              {isScreensharing ? (
-                <Button variant="destructive" onClick={() => void stop()}>
-                  Stop
-                </Button>
-              ) : (
-                <Button
-                  disabled={isScreensharing}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    void beginScreenShare();
-                  }}
-                >
-                  Start
-                </Button>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
-        {tooltip ? (
-          <TooltipContent
-            portalProps={{
-              container: defaultPortal ? undefined : portalContainer,
-            }}
-          >
-            {tooltip}
-          </TooltipContent>
-        ) : null}
-      </Tooltip>
+      {isMobile ? (
+        <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
+          <DrawerTrigger asChild>
+            <span className={className}>{trigger}</span>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader className="pb-0">
+              <DrawerTitle>Share your screen</DrawerTitle>
+            </DrawerHeader>
+            <div className="flex flex-col gap-6 p-4">{menuContent}</div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Tooltip>
+          <Popover onOpenChange={setMenuOpen} open={menuOpen}>
+            <PopoverTrigger
+              render={({ onClick }) =>
+                tooltip ? (
+                  <TooltipTrigger
+                    render={({ ref }) => (
+                      <span
+                        ref={ref as React.Ref<HTMLSpanElement>}
+                        onClick={onClick}
+                        className={className}
+                      >
+                        {trigger}
+                      </span>
+                    )}
+                  />
+                ) : (
+                  <span className={className} onClick={onClick}>
+                    {trigger}
+                  </span>
+                )
+              }
+            />
+            <PopoverContent
+              className="flex w-35 flex-col gap-6"
+              portalProps={{
+                container: defaultPortal ? undefined : portalContainer,
+              }}
+            >
+              {menuContent}
+            </PopoverContent>
+          </Popover>
+          {tooltip ? (
+            <TooltipContent
+              portalProps={{
+                container: defaultPortal ? undefined : portalContainer,
+              }}
+            >
+              {tooltip}
+            </TooltipContent>
+          ) : null}
+        </Tooltip>
+      )}
 
       {dialogOpen ? (
         <MediaShareDialog

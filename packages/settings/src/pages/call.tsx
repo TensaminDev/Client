@@ -123,7 +123,7 @@ export default function Page() {
     void refresh();
     void refreshDevices();
     const unsubscribe = storage.subscribe((keys, bulk) => {
-      if (bulk || keys.some((key) => callPageKeys.includes(key as never)))
+      if (bulk && keys.some((key) => callPageKeys.includes(key as never)))
         void refresh();
     });
     navigator.mediaDevices?.addEventListener("devicechange", refreshDevices);

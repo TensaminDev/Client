@@ -8,8 +8,10 @@ import {
 import {
   disconnectUser,
   getParticipantVolume,
+  getRoomMetadata,
   setParticipantCameraDisabled,
   setParticipantVolume,
+  stopWatchingStream,
   useCall,
 } from "../../store";
 import { useEffect, useState } from "react";
@@ -37,6 +39,7 @@ export default function ContextMenu({
   const [serverDeafened, setServerDeafened] = useState(false);
   const [serverMuted, setServerMuted] = useState(false);
   const [volume, setVolume] = useState(() => getParticipantVolume(user.UserId));
+  const isCallAdmin = getRoomMetadata().admins.includes(ownId);
   useEffect(() => {
     setVolume(getParticipantVolume(user.UserId));
   }, [user.UserId]);
@@ -51,7 +54,12 @@ export default function ContextMenu({
     <ContextMenuContent className="p-1">
       {watchedStreamParticipantIds.includes(user.UserId) &&
       user.UserId !== ownId ? (
-        <ContextMenuItem variant="destructive">Stop Watching</ContextMenuItem>
+        <ContextMenuItem
+          variant="destructive"
+          onClick={() => stopWatchingStream(user.UserId)}
+        >
+          Stop Watching
+        </ContextMenuItem>
       ) : null}
       <ContextMenuItem>Profile</ContextMenuItem>
       <ContextMenuItem>Change Nickname</ContextMenuItem>
@@ -107,35 +115,39 @@ export default function ContextMenu({
           <EmptyCheckboxIndicator checked={cameraDisabled} />
         </ContextMenuCheckboxItem>
       ) : null}
-      <ContextMenuCheckboxItem
-        checked={serverDeafened}
-        onCheckedChange={setServerDeafened}
-        onSelect={(e) => e.preventDefault()}
-        className="flex justify-between text-destructive focus:text-destructive"
-      >
-        <p>Server Deaf</p>
-        <EmptyCheckboxIndicator checked={serverDeafened} />
-      </ContextMenuCheckboxItem>
-      <ContextMenuCheckboxItem
-        checked={serverMuted}
-        onCheckedChange={setServerMuted}
-        onSelect={(e) => e.preventDefault()}
-        className="flex justify-between text-destructive focus:text-destructive"
-      >
-        <p>Server Mute</p>
-        <EmptyCheckboxIndicator checked={serverMuted} />
-      </ContextMenuCheckboxItem>
-      <ContextMenuItem
-        variant="destructive"
-        onClick={() => {
-          void disconnectUser(user.UserId).catch((error) => {
-            toast("error", "Failed to disconnect user.");
-            log(1, "call", "red", "Failed to disconnect call user", error);
-          });
-        }}
-      >
-        Disconnect
-      </ContextMenuItem>
+      {isCallAdmin ? (
+        <>
+          <ContextMenuCheckboxItem
+            checked={serverDeafened}
+            onCheckedChange={setServerDeafened}
+            onSelect={(e) => e.preventDefault()}
+            className="flex justify-between text-destructive focus:text-destructive"
+          >
+            <p>Global Deaf</p>
+            <EmptyCheckboxIndicator checked={serverDeafened} />
+          </ContextMenuCheckboxItem>
+          <ContextMenuCheckboxItem
+            checked={serverMuted}
+            onCheckedChange={setServerMuted}
+            onSelect={(e) => e.preventDefault()}
+            className="flex justify-between text-destructive focus:text-destructive"
+          >
+            <p>Global Mute</p>
+            <EmptyCheckboxIndicator checked={serverMuted} />
+          </ContextMenuCheckboxItem>
+          <ContextMenuItem
+            variant="destructive"
+            onClick={() => {
+              void disconnectUser(user.UserId).catch((error) => {
+                toast("error", "Failed to disconnect user.");
+                log(1, "call", "red", "Failed to disconnect call user", error);
+              });
+            }}
+          >
+            Disconnect
+          </ContextMenuItem>
+        </>
+      ) : null}
     </ContextMenuContent>
   );
 }

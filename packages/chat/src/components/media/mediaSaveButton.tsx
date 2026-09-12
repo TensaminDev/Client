@@ -26,14 +26,12 @@ import {
 } from "./mediaGroups";
 
 export default function MediaSaveButton({
-  ariaLabel,
   className,
   defaultSaved = false,
   onSavedMediaChange,
   onSavedMediaGroupsChange,
   url,
 }: {
-  ariaLabel?: string;
   className?: string;
   defaultSaved?: boolean;
   onSavedMediaChange?: (savedMedia: string[]) => void;

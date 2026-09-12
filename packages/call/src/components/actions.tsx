@@ -9,7 +9,7 @@ import {
   useIsMobile,
   cn,
 } from "@methanium/ui";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MuteButton from "./buttons/mute";
 import MediaShareButton from "./buttons/mediaShare";
 import CameraShareButton from "./buttons/cameraShare";
@@ -52,11 +52,14 @@ export default function Actions() {
   const { load, save } = useStorage();
   const [ownId, setOwnId] = useState(0);
   const [screenShareVolume, setScreenShareVolumeState] = useState(100);
+  const [screenShareMuted, setScreenShareMuted] = useState(false);
+  const lastNonzeroScreenShareVolume = useRef(100);
   useEffect(() => {
     void Promise.all([load("user_id"), load("call_screen_share_volume")]).then(
       ([userId, volume]) => {
         setOwnId(userId);
         setScreenShareVolumeState(volume);
+        if (volume > 0) lastNonzeroScreenShareVolume.current = volume;
       },
     );
   }, [load]);
@@ -78,6 +81,10 @@ export default function Actions() {
   const screenShareHasAudio =
     focusedParticipantId != null &&
     activeScreenShareAudioParticipantIds.includes(focusedParticipantId);
+
+  useEffect(() => {
+    setScreenShareMuted(false);
+  }, [focusedParticipantId]);
   const screenRef = useCall((state) => state.screenRef);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
 
@@ -210,32 +217,55 @@ export default function Actions() {
         >
           {showScreenShareVolume ? (
             <div className="group relative flex items-center">
-              <div className="bg-popover invisible absolute right-0 bottom-full z-50 mb-1 w-40 rounded-md border p-3 opacity-0 shadow-md transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-                <Slider
-                  aria-label="Screen share volume"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={[screenShareVolume]}
-                  disabled={!screenShareHasAudio}
-                  onValueChange={(value) => {
-                    const next =
-                      typeof value === "number"
-                        ? value
-                        : (value[0] ?? screenShareVolume);
-                    setScreenShareVolumeState(next);
-                    setScreenShareVolume(next);
-                    void save("call_screen_share_volume", next);
-                  }}
-                />
+              <div className="invisible absolute right-0 bottom-full z-50 pb-1 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <div className="bg-popover flex h-auto w-11 justify-center rounded-md border p-3 shadow-md">
+                  <Slider
+                    orientation="vertical"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[screenShareVolume]}
+                    disabled={!screenShareHasAudio}
+                    onValueChange={(value) => {
+                      const next =
+                        typeof value === "number"
+                          ? value
+                          : (value[0] ?? screenShareVolume);
+                      if (next > 0) {
+                        lastNonzeroScreenShareVolume.current = next;
+                      }
+                      setScreenShareMuted(false);
+                      setScreenShareVolumeState(next);
+                      setScreenShareVolume(next);
+                      void save("call_screen_share_volume", next);
+                    }}
+                  />
+                </div>
               </div>
               <Button
-                aria-label="Screen share volume"
                 disabled={!screenShareHasAudio}
                 variant="ghost"
                 className="w-11 h-11! p-0! text-foreground border-0!"
+                onClick={() => {
+                  if (screenShareMuted) {
+                    const restoredVolume = lastNonzeroScreenShareVolume.current;
+                    setScreenShareMuted(false);
+                    setScreenShareVolumeState(restoredVolume);
+                    setScreenShareVolume(restoredVolume);
+                  } else if (screenShareVolume === 0) {
+                    const restoredVolume = lastNonzeroScreenShareVolume.current;
+                    setScreenShareVolumeState(restoredVolume);
+                    setScreenShareVolume(restoredVolume);
+                    void save("call_screen_share_volume", restoredVolume);
+                  } else {
+                    lastNonzeroScreenShareVolume.current = screenShareVolume;
+                    setScreenShareMuted(true);
+                    setScreenShareVolumeState(0);
+                    setScreenShareVolume(0);
+                  }
+                }}
               >
-                {screenShareVolume === 0 ? (
+                {screenShareMuted || screenShareVolume === 0 ? (
                   <VolumeX className="size-6" />
                 ) : (
                   <Volume2 className="size-6" />
