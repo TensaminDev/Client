@@ -38,7 +38,6 @@ export default function Profile({
       <Button
         className="h-auto justify-start gap-1.5 px-0 py-1 text-base font-medium text-white no-underline hover:no-underline"
         variant="ghost"
-        aria-expanded={showAdvancedInformation}
         onClick={() => setShowAdvancedInformation((show) => !show)}
       >
         {showAdvancedInformation ? (

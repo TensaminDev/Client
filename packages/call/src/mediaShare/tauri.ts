@@ -257,10 +257,10 @@ export class TauriMediaShareAdapter implements MediaShareAdapter {
 
   async start(request: MediaShareRequest): Promise<MediaShareSession> {
     if (request.kind === "screen") {
-      return startMobileScreen(request.includeAudio ?? true);
+      return startMobileScreen(true);
     }
 
     await requestCameraPermission();
-    return startCamera(request.sourceId);
+    return startCamera(request.sourceId, request.resolution, request.frameRate);
   }
 }

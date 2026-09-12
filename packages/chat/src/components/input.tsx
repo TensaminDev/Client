@@ -344,7 +344,6 @@ export default function InputComponent({
                   render={({ onClick }) => (
                     <Button
                       onClick={onClick}
-                      aria-label="Open emoji picker"
                       className="w-9 h-9! p-0"
                       variant="ghost"
                     >
@@ -388,7 +387,6 @@ export default function InputComponent({
                     render={({ onClick }) => (
                       <Button
                         onClick={onClick}
-                        aria-label="Open GIF picker"
                         className="w-9 h-9! p-0"
                         variant="ghost"
                       >

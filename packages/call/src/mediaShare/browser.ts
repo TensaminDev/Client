@@ -31,10 +31,16 @@ export async function listCameraSources(): Promise<MediaShareSource[]> {
 
 export async function startCamera(
   sourceId?: string,
+  resolution = 1080,
+  frameRate = 30,
 ): Promise<MediaShareSession> {
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: false,
-    video: sourceId ? { deviceId: { exact: sourceId } } : true,
+    video: {
+      ...(sourceId ? { deviceId: { exact: sourceId } } : {}),
+      height: { ideal: resolution },
+      frameRate: { ideal: frameRate },
+    },
   });
 
   return streamSession(stream);
@@ -65,16 +71,23 @@ export class BrowserMediaShareAdapter implements MediaShareAdapter {
 
   async start(request: MediaShareRequest): Promise<MediaShareSession> {
     if (request.kind === "camera") {
-      return startCamera(request.sourceId);
+      return startCamera(
+        request.sourceId,
+        request.resolution,
+        request.frameRate,
+      );
     }
 
     const options: DisplayMediaStreamOptions & {
       systemAudio: "include" | "exclude";
       surfaceSwitching: "include" | "exclude";
     } = {
-      audio: request.includeAudio ?? true,
-      video: true,
-      systemAudio: request.includeAudio === false ? "exclude" : "include",
+      audio: true,
+      video: {
+        height: { ideal: request.resolution ?? 1080 },
+        frameRate: { ideal: request.frameRate ?? 30 },
+      },
+      systemAudio: "include",
       surfaceSwitching: "include",
     };
     const stream = await navigator.mediaDevices.getDisplayMedia(options);

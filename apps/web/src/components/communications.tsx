@@ -177,11 +177,7 @@ function StatusDialog({
   );
 }
 
-function ConversationForm({
-  onSuccess,
-}: {
-  onSuccess: () => void;
-}) {
+function ConversationForm({ onSuccess }: { onSuccess: () => void }) {
   const { send, sendSealedRelay } = useMTP();
   const { insertContact } = useSession();
   const { load } = useStorage();
@@ -369,15 +365,11 @@ function MobileCommunicationsHeader() {
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  render={
-                    <Button
-                      aria-label="Open communications menu"
-                      variant="ghost"
-                      className="border-0 ring-0 outline-none focus:ring-0 focus-visible:ring-0"
-                    >
+                  render={({ onClick }) => (
+                    <Button onClick={onClick} variant="ghost">
                       <Ellipsis />
                     </Button>
-                  }
+                  )}
                 />
                 <DropdownMenuContent align="end">
                   <DropdownMenuGroup>
@@ -397,11 +389,7 @@ function MobileCommunicationsHeader() {
               </DropdownMenu>
             </div>
             {statusOpen && (
-              <StatusDialog
-                user={user}
-                open
-                onOpenChange={setStatusOpen}
-              />
+              <StatusDialog user={user} open onOpenChange={setStatusOpen} />
             )}
             {addOpen && (
               <Dialog open onOpenChange={setAddOpen}>
@@ -460,7 +448,6 @@ function DesktopCommunicationsHeader() {
                   render={
                     <button
                       type="button"
-                      aria-label="Open profile menu"
                       className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
                       <Ellipsis />

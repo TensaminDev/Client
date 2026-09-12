@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { create } from "zustand";
 import type { BoundSendFn } from "@tensamin/mtp";
-import type { Calls } from "@tensamin/shared/data";
+import type { Calls, Storage } from "@tensamin/shared/data";
 
 import type { LocalMediaShareSession } from "./mediaShare/controller";
 
@@ -40,7 +40,11 @@ export type CallRuntime = {
     search?: Record<string, unknown>;
   }) => Promise<void>;
   callControl: CallControlTransport;
-  load: (key: string) => Promise<unknown>;
+  load: <K extends keyof Storage>(key: K) => Promise<Storage[K]>;
+  save: <K extends keyof Storage>(key: K, value: Storage[K]) => Promise<void>;
+  subscribeStorage: (
+    handler: (keys: (keyof Storage)[], bulk: boolean) => void,
+  ) => () => void;
   getPublicKey: (userId: number) => Promise<string>;
   upsertCall: (call: Calls[number]) => void;
   removeCall: (callId: string) => void;
@@ -75,6 +79,9 @@ export const useCall = create<{
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
   isEncrypted: boolean;
+  warnings: string[];
+  screenShareExpectedCodec: string | null;
+  screenShareActiveCodec: string | null;
   callIsFullscreen: boolean;
   callIsPopout: boolean;
   layoutVersion: number;
@@ -105,6 +112,9 @@ export const useCall = create<{
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],
   isEncrypted: false,
+  warnings: [],
+  screenShareExpectedCodec: null,
+  screenShareActiveCodec: null,
   callIsFullscreen: false,
   callIsPopout: false,
   layoutVersion: 0,

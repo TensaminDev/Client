@@ -27,6 +27,7 @@ declare global {
     tensaminDesktop?: {
       media?: {
         getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
+        getGpuFeatureStatus?: () => Promise<{ videoEncode: string }>;
         listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
         listScreenShareAudioOutputs?: () => Promise<
           DesktopScreenShareAudioOutput[]

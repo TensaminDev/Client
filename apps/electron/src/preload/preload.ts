@@ -27,6 +27,8 @@ const desktopApi = {
       ipcRenderer.invoke(ipcChannels.listScreenShareAudioOutputs),
     getScreenShareCapabilities: () =>
       ipcRenderer.invoke(ipcChannels.getScreenShareCapabilities),
+    getGpuFeatureStatus: () =>
+      ipcRenderer.invoke(ipcChannels.getGpuFeatureStatus),
     selectScreenShareSource: (sourceId: DesktopScreenShareSource["id"]) => {
       if (typeof sourceId !== "string" || sourceId.length === 0) {
         return Promise.reject(new Error("Invalid screen share source id."));

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
-import { mtp } from "@tensamin/shared/data";
+import { mtp, storageDefaults, type Storage } from "@tensamin/shared/data";
 import { playSound, stopSound } from "@tensamin/shared/sounds";
 import { bytesToBase64, MTPProtocolError } from "mtp";
 import {
@@ -30,7 +30,13 @@ import {
   getLogger,
 } from "livekit-client";
 import z from "zod";
-import { createMediaShareController } from "./mediaShare/controller";
+import {
+  createMediaShareController,
+  getSupportedScreenShareCodecs,
+  isMediaShareReconfiguring,
+  resolveScreenShareCodec,
+  type ScreenShareSettings,
+} from "./mediaShare/controller";
 import type { MediaShareRequest } from "./mediaShare";
 import {
   getSpeakingDetector,
@@ -70,6 +76,35 @@ let _keyProvider: ExternalE2EEKeyProvider | null = null;
 let _e2eeWorker: Worker | null = null;
 let _room: Room | null = null;
 let callAttemptGeneration = 0;
+let microphoneDeviceGeneration = 0;
+let latestMicrophoneDeviceId = storageDefaults.call_microphone_device_id;
+let callSettingsGeneration = 0;
+
+const callSettingKeys = [
+  "call_microphone_device_id",
+  "call_speaker_device_id",
+  "call_noise_suppression_enabled",
+  "call_noise_suppression_level",
+  "call_echo_cancellation",
+  "call_voice_isolation",
+  "call_automatic_gain_control",
+  "call_noise_gate_enabled",
+  "call_event_sounds_enabled",
+  "call_sound_volume",
+  "call_screen_share_resolution",
+  "call_screen_share_frame_rate",
+  "call_screen_share_audio",
+  "call_screen_share_codec",
+  "call_camera_resolution",
+  "call_camera_frame_rate",
+  "call_mute_range_start",
+  "call_mute_range_end",
+] as const satisfies readonly (keyof Storage)[];
+
+type CallSettings = Pick<Storage, (typeof callSettingKeys)[number]>;
+let currentCallSettings: CallSettings = Object.fromEntries(
+  callSettingKeys.map((key) => [key, storageDefaults[key]]),
+) as CallSettings;
 
 function getKeyProvider(): ExternalE2EEKeyProvider {
   if (!_keyProvider) {
@@ -103,6 +138,10 @@ export function getRoom(): Room {
 }
 
 const remoteAudioElements = new Map<string, HTMLMediaElement>();
+const pendingRemoteScreenShareEnds = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
 let callJingle: HTMLAudioElement | null = null;
 let callJingleGeneration = 0;
 
@@ -117,9 +156,11 @@ async function startCallJingle(shouldPlay: () => boolean) {
   stopSound(callJingle);
   callJingle = null;
 
-  const jingle = await requireRuntime(useCall.getState().runtime).load(
-    "settings.call_jingle",
-  );
+  const runtime = requireRuntime(useCall.getState().runtime);
+  const [jingle, volume] = await Promise.all([
+    runtime.load("settings.call_jingle"),
+    runtime.load("call_sound_volume"),
+  ]);
 
   if (generation !== callJingleGeneration || !shouldPlay()) {
     return;
@@ -128,6 +169,7 @@ async function startCallJingle(shouldPlay: () => boolean) {
   callJingle = playSound(
     jingle === "jingle_2" ? "call_jingle_2" : "call_jingle_1",
     true,
+    volume / 100,
   );
 }
 
@@ -135,6 +177,81 @@ function stopCallJingle() {
   callJingleGeneration += 1;
   stopSound(callJingle);
   callJingle = null;
+}
+
+function playCallEvent(sound: Parameters<typeof playSound>[0]) {
+  if (!currentCallSettings.call_event_sounds_enabled) return;
+  playSound(sound, false, currentCallSettings.call_sound_volume / 100);
+}
+
+async function updateScreenShareCodecAndEncoderStatus(
+  publication?: LocalTrackPublication,
+) {
+  const activePublication =
+    publication ??
+    getRoom().localParticipant.getTrackPublication(Track.Source.ScreenShare);
+  const report = await activePublication?.track?.getRTCStatsReport();
+  if (!report) return;
+
+  let codec: string | null = null;
+  let softwareEncoder = false;
+  let hardwareEncoder = false;
+  report.forEach((stat) => {
+    if (stat.type !== "outbound-rtp" || stat.kind !== "video") return;
+    const codecStat = stat.codecId ? report.get(stat.codecId) : undefined;
+    if (codecStat?.mimeType)
+      codec = String(codecStat.mimeType).split("/").pop() ?? null;
+    const implementation = String(
+      (stat as RTCStats & { encoderImplementation?: string })
+        .encoderImplementation ?? "",
+    );
+    if (/software|libvpx|openh264/i.test(implementation))
+      softwareEncoder = true;
+    if (
+      (stat as RTCStats & { powerEfficientEncoder?: boolean })
+        .powerEfficientEncoder === true ||
+      (/hardware/i.test(implementation) && !softwareEncoder)
+    ) {
+      hardwareEncoder = true;
+    }
+  });
+  useCall.setState({ screenShareActiveCodec: codec });
+
+  const gpuStatus =
+    await window.tensaminDesktop?.media?.getGpuFeatureStatus?.();
+  if (!gpuStatus) return;
+  const managed = new Set([
+    "Hardware video encoding is unavailable.",
+    "Hardware video encoding could not be verified.",
+  ]);
+  const warnings = useCall
+    .getState()
+    .warnings.filter((warning) => !managed.has(warning));
+  if (softwareEncoder || gpuStatus.videoEncode !== "enabled") {
+    warnings.push("Hardware video encoding is unavailable.");
+  } else if (!hardwareEncoder) {
+    warnings.push("Hardware video encoding could not be verified.");
+  }
+  useCall.setState({ warnings });
+}
+
+async function updateElectronExpectedEncoderWarning() {
+  const gpuStatus =
+    await window.tensaminDesktop?.media?.getGpuFeatureStatus?.();
+  if (!gpuStatus) return;
+  const managed = new Set([
+    "Hardware video encoding is unavailable.",
+    "Hardware video encoding could not be verified.",
+  ]);
+  const warnings = useCall
+    .getState()
+    .warnings.filter((warning) => !managed.has(warning));
+  warnings.push(
+    gpuStatus.videoEncode === "enabled"
+      ? "Hardware video encoding could not be verified."
+      : "Hardware video encoding is unavailable.",
+  );
+  useCall.setState({ warnings });
 }
 
 function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
@@ -554,8 +671,17 @@ export function getRoomMetadata() {
 
 // Sync local participant flags and screen-share derived state for the active call UI.
 export function syncParticipantState() {
-  const { cameraSession, screenShareSession } = useCall.getState();
+  const state = useCall.getState();
+  const { cameraSession, screenShareSession } = state;
   const room = getRoom();
+  const isEncrypted =
+    room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted;
+  const warnings = state.warnings.filter(
+    (warning) => warning !== "The connected call is not encrypted.",
+  );
+  if (state.state === "open" && !isEncrypted) {
+    warnings.push("The connected call is not encrypted.");
+  }
 
   useCall.setState({
     micEnabled: room.localParticipant.isMicrophoneEnabled,
@@ -563,8 +689,8 @@ export function syncParticipantState() {
       cameraSession != null || room.localParticipant.isCameraEnabled,
     screenShareEnabled:
       screenShareSession != null || room.localParticipant.isScreenShareEnabled,
-    isEncrypted:
-      room.localParticipant.isE2EEEnabled && room.localParticipant.isEncrypted,
+    isEncrypted,
+    warnings,
   });
 
   syncScreenShareParticipants();
@@ -725,7 +851,7 @@ export function startWatchingStream(participantId: number) {
   );
 
   if (!alreadyWatching && participantId !== localParticipantId) {
-    playSound("stream_watch_start");
+    playCallEvent("stream_watch_start");
   }
 
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare);
@@ -799,7 +925,7 @@ export function stopWatchingStream(participantId: number) {
   );
 
   if (wasWatching && participantId !== localParticipantId) {
-    playSound("stream_watch_end");
+    playCallEvent("stream_watch_end");
   }
 
   setParticipantTrackSubscribed(participantId, Track.Source.ScreenShare, false);
@@ -882,6 +1008,233 @@ function getMediaShareController() {
   return mediaShareController;
 }
 
+export async function getCallDevices(kind: "audioinput" | "audiooutput") {
+  return Room.getLocalDevices(kind);
+}
+
+export function canSwitchAudioOutput() {
+  return "setSinkId" in HTMLMediaElement.prototype;
+}
+
+export function getSupportedCallScreenShareCodecs() {
+  return getSupportedScreenShareCodecs();
+}
+
+export async function switchCallDevice(
+  kind: "audioinput" | "audiooutput",
+  deviceId: string,
+) {
+  const generation =
+    kind === "audioinput"
+      ? ++microphoneDeviceGeneration
+      : microphoneDeviceGeneration;
+  if (kind === "audioinput") latestMicrophoneDeviceId = deviceId;
+  const switched = await getRoom().switchActiveDevice(kind, deviceId);
+  if (!switched) return false;
+  if (kind === "audioinput" && generation !== microphoneDeviceGeneration) {
+    await getRoom().switchActiveDevice(kind, latestMicrophoneDeviceId);
+    return false;
+  }
+  return true;
+}
+
+function updateProcessingWarnings(settings: CallSettings) {
+  const managed = new Set([
+    "Automatic gain control may make the user extremely quiet on Linux.",
+    "DeepFilter and voice isolation are enabled together.",
+  ]);
+  const warnings = useCall
+    .getState()
+    .warnings.filter((warning) => !managed.has(warning));
+  if (
+    /Linux/i.test(navigator.userAgent) &&
+    settings.call_automatic_gain_control
+  ) {
+    warnings.push(
+      "Automatic gain control may make the user extremely quiet on Linux.",
+    );
+  }
+  if (
+    settings.call_noise_suppression_enabled &&
+    settings.call_voice_isolation
+  ) {
+    warnings.push("DeepFilter and voice isolation are enabled together.");
+  }
+  useCall.setState({ warnings });
+}
+
+async function loadCallSettings(runtime: Runtime): Promise<CallSettings> {
+  const values = await Promise.all(
+    callSettingKeys.map((key) => runtime.load(key)),
+  );
+  return Object.fromEntries(
+    callSettingKeys.map((key, index) => [key, values[index]]),
+  ) as CallSettings;
+}
+
+async function applyCallSettings(
+  settings: CallSettings,
+  previous: CallSettings,
+  noiseFilter: DeepFilterNoiseFilterProcessor,
+  runtime: Runtime,
+) {
+  const generation = ++callSettingsGeneration;
+  updateProcessingWarnings(settings);
+  if (callJingle) callJingle.volume = settings.call_sound_volume / 100;
+  noiseFilter.setSuppressionLevel(settings.call_noise_suppression_level);
+  await noiseFilter.setEnabled(settings.call_noise_suppression_enabled);
+  if (generation !== callSettingsGeneration) return;
+
+  const detector = getSpeakingDetector();
+  detector.setGateEnabled(settings.call_noise_gate_enabled);
+  detector.setGateThresholds(
+    settings.call_mute_range_start,
+    settings.call_mute_range_end,
+  );
+
+  const microphoneTrack = getRoom().localParticipant.getTrackPublication(
+    Track.Source.Microphone,
+  )?.track;
+  if (microphoneTrack instanceof LocalAudioTrack) {
+    try {
+      await microphoneTrack.applyConstraints({
+        noiseSuppression: false,
+        echoCancellation: settings.call_echo_cancellation,
+        voiceIsolation: settings.call_voice_isolation,
+        autoGainControl: settings.call_automatic_gain_control,
+      });
+    } catch (error) {
+      log(1, "call", "red", "Failed to update microphone processing", error);
+      toast("error", "Failed to update microphone processing.");
+      await Promise.all(
+        (
+          [
+            "call_echo_cancellation",
+            "call_voice_isolation",
+            "call_automatic_gain_control",
+          ] as const
+        ).map((key) =>
+          settings[key] === previous[key]
+            ? undefined
+            : runtime.save(key, previous[key]),
+        ),
+      );
+      return;
+    }
+  }
+
+  const deviceGeneration = ++microphoneDeviceGeneration;
+  if (settings.call_microphone_device_id !== "default") {
+    const devices = await Room.getLocalDevices("audioinput");
+    if (deviceGeneration !== microphoneDeviceGeneration) return;
+    const available = devices.some(
+      (device) => device.deviceId === settings.call_microphone_device_id,
+    );
+    if (!available) {
+      await runtime.save("call_microphone_device_id", "default");
+      settings = { ...settings, call_microphone_device_id: "default" };
+    }
+  }
+  if (
+    settings.call_microphone_device_id !== previous.call_microphone_device_id &&
+    getRoom().localParticipant.isMicrophoneEnabled &&
+    getRoom().getActiveDevice("audioinput") !==
+      settings.call_microphone_device_id
+  ) {
+    const requested = settings.call_microphone_device_id;
+    latestMicrophoneDeviceId = requested;
+    try {
+      const switched = await getRoom().switchActiveDevice(
+        "audioinput",
+        requested,
+      );
+      if (!switched) throw new Error("Microphone switch was rejected.");
+      if (deviceGeneration !== microphoneDeviceGeneration) {
+        await getRoom().switchActiveDevice(
+          "audioinput",
+          latestMicrophoneDeviceId,
+        );
+        return;
+      }
+    } catch (error) {
+      if (deviceGeneration !== microphoneDeviceGeneration) return;
+      log(1, "call", "red", "Failed to switch microphone", error);
+      toast("error", "Failed to switch microphone.");
+      await runtime.save(
+        "call_microphone_device_id",
+        previous.call_microphone_device_id,
+      );
+      return;
+    }
+  }
+
+  if (canSwitchAudioOutput() && settings.call_speaker_device_id !== "default") {
+    const devices = await Room.getLocalDevices("audiooutput");
+    const available = devices.some(
+      (device) => device.deviceId === settings.call_speaker_device_id,
+    );
+    if (!available) {
+      await runtime.save("call_speaker_device_id", "default");
+      settings = { ...settings, call_speaker_device_id: "default" };
+    }
+  }
+  if (
+    canSwitchAudioOutput() &&
+    settings.call_speaker_device_id !== previous.call_speaker_device_id &&
+    getRoom().getActiveDevice("audiooutput") !== settings.call_speaker_device_id
+  ) {
+    const requested = settings.call_speaker_device_id;
+    try {
+      const switched = await getRoom().switchActiveDevice(
+        "audiooutput",
+        requested,
+      );
+      if (!switched) throw new Error("Speaker switch was rejected.");
+    } catch (error) {
+      log(1, "call", "red", "Failed to switch speaker", error);
+      toast("error", "Failed to switch speaker.");
+      await runtime.save(
+        "call_speaker_device_id",
+        previous.call_speaker_device_id,
+      );
+      return;
+    }
+  }
+
+  const shareSettings: ScreenShareSettings = {
+    resolution: settings.call_screen_share_resolution,
+    frameRate: settings.call_screen_share_frame_rate,
+    includeAudio: settings.call_screen_share_audio,
+    codec: settings.call_screen_share_codec,
+  };
+  useCall.setState({
+    screenShareExpectedCodec: await resolveScreenShareCodec(shareSettings),
+  });
+  try {
+    await getMediaShareController().reconfigureScreen(shareSettings);
+    await updateScreenShareCodecAndEncoderStatus();
+  } catch (error) {
+    log(1, "call", "red", "Failed to update screen share", error);
+    toast("error", "Failed to update screen share settings.");
+    await Promise.all(
+      (
+        [
+          "call_screen_share_resolution",
+          "call_screen_share_frame_rate",
+          "call_screen_share_audio",
+          "call_screen_share_codec",
+        ] as const
+      ).map((key) =>
+        settings[key] === previous[key]
+          ? undefined
+          : runtime.save(key, previous[key]),
+      ),
+    );
+    return;
+  }
+  currentCallSettings = settings;
+}
+
 // Connect to LiveKit, enable the microphone, and move the UI into the live call.
 export async function connect(
   callId: string,
@@ -927,23 +1280,40 @@ export async function connect(
 
   syncAllRemoteTrackSubscriptions();
 
+  const runtime = requireRuntime(useCall.getState().runtime);
+  const settings = await loadCallSettings(runtime);
+  if (attemptGeneration !== callAttemptGeneration) return;
+  currentCallSettings = settings;
+
   await getRoom()
-    .localParticipant.setMicrophoneEnabled(true)
+    .localParticipant.setMicrophoneEnabled(true, {
+      deviceId: settings.call_microphone_device_id,
+      noiseSuppression: false,
+      autoGainControl: settings.call_automatic_gain_control,
+      echoCancellation: settings.call_echo_cancellation,
+      voiceIsolation: settings.call_voice_isolation,
+    })
     .catch((error) => {
       log(1, "call", "red", "Failed to enable microphone", error);
       toast("error", "Failed to enable microphone.");
       throw error;
     });
 
+  if (attemptGeneration !== callAttemptGeneration) {
+    await getRoom().localParticipant.setMicrophoneEnabled(false);
+    return;
+  }
+
   syncParticipantState();
 }
 
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
-  callAttemptGeneration += 1;
+  const attemptGeneration = ++callAttemptGeneration;
   stopCallJingle();
   disposeSpeakingDetector();
   await clearScreenSharePreview();
+  if (attemptGeneration !== callAttemptGeneration) return;
 
   try {
     await getMediaShareController().clearAll();
@@ -956,6 +1326,7 @@ export async function disconnect() {
       error,
     );
   }
+  if (attemptGeneration !== callAttemptGeneration) return;
 
   useCall.setState({
     state: "closing",
@@ -991,8 +1362,10 @@ export async function disconnect() {
   } catch (error) {
     log(1, "call", "red", "Failed to disconnect from room", error);
   } finally {
-    useCall.setState({ state: "closed" });
-    syncParticipantState();
+    if (attemptGeneration === callAttemptGeneration) {
+      useCall.setState({ state: "closed" });
+      syncParticipantState();
+    }
   }
 }
 
@@ -1351,18 +1724,38 @@ export async function toggleMute() {
 export async function startScreenShare(
   request: Omit<MediaShareRequest, "kind"> = {},
 ) {
-  await getMediaShareController().start({ ...request, kind: "screen" });
+  await updateElectronExpectedEncoderWarning();
+  const settings = await loadCallSettings(
+    requireRuntime(useCall.getState().runtime),
+  );
+  await getMediaShareController().start({
+    resolution: settings.call_screen_share_resolution,
+    frameRate: settings.call_screen_share_frame_rate,
+    includeAudio: settings.call_screen_share_audio,
+    codec: settings.call_screen_share_codec,
+    ...request,
+    kind: "screen",
+  });
   await publishScreenSharePreview();
 }
 
 export async function startCameraShare(sourceId?: string) {
-  await getMediaShareController().start({ kind: "camera", sourceId });
+  const settings = await loadCallSettings(
+    requireRuntime(useCall.getState().runtime),
+  );
+  await getMediaShareController().start({
+    kind: "camera",
+    sourceId,
+    resolution: settings.call_camera_resolution,
+    frameRate: settings.call_camera_frame_rate,
+  });
 }
 
 // Stop the local participant's active screen share and related previews.
 export async function stopScreenShare() {
   await getMediaShareController().stop("screen");
   await clearScreenSharePreview();
+  useCall.setState({ screenShareActiveCodec: null });
 }
 
 export async function stopCameraShare() {
@@ -1445,7 +1838,7 @@ export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
   const { sendCallControl, subscribe } = useMTP();
-  const { load } = useStorage();
+  const { load, save, subscribe: subscribeStorage } = useStorage();
   const { upsertCall, removeCall } = useSession();
   const { get } = useUser();
 
@@ -1475,13 +1868,57 @@ export function useInitializeCall() {
         request: (ownerOmikronId, type, data, options) =>
           sendCallControl(ownerOmikronId, type, data, options),
       },
-      load: load as (key: string) => Promise<unknown>,
+      load,
+      save,
+      subscribeStorage,
       getPublicKey: (userId) =>
         get(userId, ["PublicKey"]).then((user) => user.PublicKey),
       upsertCall,
       removeCall,
     });
-  }, [get, load, navigate, removeCall, sendCallControl, upsertCall]);
+  }, [
+    get,
+    load,
+    navigate,
+    removeCall,
+    save,
+    sendCallControl,
+    subscribeStorage,
+    upsertCall,
+  ]);
+
+  useEffect(() => {
+    let active = true;
+    let generation = 0;
+    const runtime = requireRuntime(useCall.getState().runtime);
+
+    const refresh = async () => {
+      const refreshGeneration = ++generation;
+      const settings = await loadCallSettings(runtime);
+      if (!active || refreshGeneration !== generation) return;
+      const previous = currentCallSettings;
+      await applyCallSettings(settings, previous, noiseFilter, runtime);
+    };
+
+    const unsubscribe = subscribeStorage((keys, bulk) => {
+      if (bulk || keys.some((key) => callSettingKeys.includes(key as never))) {
+        void refresh();
+      }
+    });
+    const onDeviceChange = () => void refresh();
+    navigator.mediaDevices?.addEventListener("devicechange", onDeviceChange);
+    void refresh();
+
+    return () => {
+      active = false;
+      generation += 1;
+      unsubscribe();
+      navigator.mediaDevices?.removeEventListener(
+        "devicechange",
+        onDeviceChange,
+      );
+    };
+  }, [noiseFilter, subscribeStorage]);
 
   const setInvitePopupOpen = useCallback((open: boolean) => {
     if (!open) {
@@ -1563,7 +2000,7 @@ export function useInitializeCall() {
 
     const onConnected = async () => {
       useCall.setState({ state: "open" });
-      playSound("call_join");
+      playCallEvent("call_join");
       syncParticipantState();
 
       const detector = getSpeakingDetector();
@@ -1610,8 +2047,25 @@ export function useInitializeCall() {
 
     const onDisconnected = () => {
       stopCallJingle();
-      playSound("call_leave");
-      useCall.setState({ state: "closed" });
+      playCallEvent("call_leave");
+      const endedNormally = useCall.getState().state === "closing";
+      useCall.setState((state) => ({
+        state: "closed",
+        warnings: endedNormally
+          ? state.warnings.filter(
+              (warning) =>
+                warning !==
+                "The call disconnected unexpectedly without a correct end sequence.",
+            )
+          : [
+              ...state.warnings.filter(
+                (warning) =>
+                  warning !==
+                  "The call disconnected unexpectedly without a correct end sequence.",
+              ),
+              "The call disconnected unexpectedly without a correct end sequence.",
+            ],
+      }));
       syncParticipantState();
       log(2, "call", "purple", "Disconnected from call", {
         callId: useCall.getState().callId,
@@ -1621,13 +2075,13 @@ export function useInitializeCall() {
 
     const onParticipantConnected = () => {
       stopCallJingle();
-      playSound("call_join");
+      playCallEvent("call_join");
       syncAllRemoteTrackSubscriptions();
       syncParticipantState();
     };
 
     const onParticipantDisconnected = (participant: Participant) => {
-      playSound("call_leave");
+      playCallEvent("call_leave");
       const participantId = getParticipantId(participant.identity);
 
       if (participantId != null) {
@@ -1655,7 +2109,12 @@ export function useInitializeCall() {
 
     const onLocalTrackPublished = (publication: LocalTrackPublication) => {
       if (publication.source === Track.Source.ScreenShare) {
-        playSound("stream_start_self");
+        if (!isMediaShareReconfiguring()) playCallEvent("stream_start_self");
+        void updateScreenShareCodecAndEncoderStatus(publication);
+        setTimeout(
+          () => void updateScreenShareCodecAndEncoderStatus(publication),
+          1000,
+        );
       }
 
       if (
@@ -1680,7 +2139,7 @@ export function useInitializeCall() {
 
     const onLocalTrackUnpublished = (publication: LocalTrackPublication) => {
       if (publication.source === Track.Source.ScreenShare) {
-        playSound("stream_end_self");
+        if (!isMediaShareReconfiguring()) playCallEvent("stream_end_self");
       }
 
       if (
@@ -1700,7 +2159,15 @@ export function useInitializeCall() {
       participant: RemoteParticipant,
     ) => {
       if (publication.source === Track.Source.ScreenShare) {
-        playSound("stream_start_other");
+        const pendingEnd = pendingRemoteScreenShareEnds.get(
+          participant.identity,
+        );
+        if (pendingEnd) {
+          clearTimeout(pendingEnd);
+          pendingRemoteScreenShareEnds.delete(participant.identity);
+        } else {
+          playCallEvent("stream_start_other");
+        }
       }
 
       const participantId = getParticipantId(participant.identity);
@@ -1712,9 +2179,20 @@ export function useInitializeCall() {
       onParticipantStateChange();
     };
 
-    const onTrackUnpublished = (publication: RemoteTrackPublication) => {
+    const onTrackUnpublished = (
+      publication: RemoteTrackPublication,
+      participant: RemoteParticipant,
+    ) => {
       if (publication.source === Track.Source.ScreenShare) {
-        playSound("stream_end_other");
+        const existing = pendingRemoteScreenShareEnds.get(participant.identity);
+        if (existing) clearTimeout(existing);
+        pendingRemoteScreenShareEnds.set(
+          participant.identity,
+          setTimeout(() => {
+            pendingRemoteScreenShareEnds.delete(participant.identity);
+            playCallEvent("stream_end_other");
+          }, 1500),
+        );
       }
 
       onParticipantStateChange();
@@ -1809,6 +2287,10 @@ export function useInitializeCall() {
       room.off(RoomEvent.EncryptionError, onEncryptionError);
       room.off(RoomEvent.ConnectionStateChanged, onParticipantStateChange);
       clearRemoteAudio();
+      for (const timeout of pendingRemoteScreenShareEnds.values()) {
+        clearTimeout(timeout);
+      }
+      pendingRemoteScreenShareEnds.clear();
       listenersRegistered.current = false;
       room.disconnect();
       if (_e2eeWorker) _e2eeWorker.terminate();

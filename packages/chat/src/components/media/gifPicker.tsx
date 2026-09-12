@@ -494,7 +494,6 @@ function SavedPanel({
         <div className="mb-2 flex items-center gap-2">
           <Button
             variant="ghost"
-            aria-label="Back to saved media groups"
             className="h-8 w-8 p-0"
             onClick={() => setSelectedGroupId(null)}
           >

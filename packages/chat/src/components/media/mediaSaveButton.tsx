@@ -148,7 +148,6 @@ export default function MediaSaveButton({
       >
         <Button
           variant="secondary"
-          aria-label={ariaLabel ?? (isSaved ? "Unsave media" : "Save media")}
           className="h-9 w-9 rounded-sm border-0! p-0"
           onClick={handleSaveClick}
         >
@@ -163,7 +162,6 @@ export default function MediaSaveButton({
         {isSaved ? (
           <Button
             variant="secondary"
-            aria-label="Choose saved media group"
             className="h-9 w-9 rounded-sm border-0! p-0"
             onClick={handleGroupClick}
           >

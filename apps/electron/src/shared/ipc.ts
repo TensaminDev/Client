@@ -26,6 +26,10 @@ export type DesktopCallStatus = {
   iconDataUrl?: string;
 };
 
+export type DesktopGpuFeatureStatus = {
+  videoEncode: string;
+};
+
 export type DesktopSecureStorageStatus = {
   available: boolean;
   backend: string | null;
@@ -70,6 +74,7 @@ export const ipcChannels = {
   listScreenShareSources: "desktopMedia:listScreenShareSources",
   listScreenShareAudioOutputs: "desktopMedia:listScreenShareAudioOutputs",
   getScreenShareCapabilities: "desktopMedia:getScreenShareCapabilities",
+  getGpuFeatureStatus: "desktopMedia:getGpuFeatureStatus",
   selectScreenShareSource: "desktopMedia:selectScreenShareSource",
   minimizeWindow: "window:minimize",
   maximizeWindow: "window:maximize",

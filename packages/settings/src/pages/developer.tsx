@@ -141,7 +141,6 @@ function DatabaseViewer() {
               <TableCell className="px-2 py-1.5">
                 <div className="flex gap-1">
                   <Button
-                    aria-label={`Edit ${row.key}`}
                     disabled={busy}
                     size="icon-xs"
                     title={`Edit ${row.key}`}
@@ -157,7 +156,6 @@ function DatabaseViewer() {
                     <Pencil className="size-3.5" />
                   </Button>
                   <Button
-                    aria-label={`Delete ${row.key}`}
                     className="text-destructive hover:text-destructive"
                     disabled={busy}
                     size="icon-xs"

@@ -64,14 +64,13 @@ export default function Layout({ children }: { children: ReactNode }) {
             isMobile && !showMobileNavbar && "bg-background",
           )}
         >
-          {(!isMobile || showMobileNavbar) && (
-            <Navbar forMobile={isMobile} />
-          )}
+          {(!isMobile || showMobileNavbar) && <Navbar forMobile={isMobile} />}
 
           <div
             className={cn(
               "bg-background min-h-0 flex-1 w-full overflow-hidden",
-              !isMobile && "rounded-tl-3xl border-t border-l border-(--border)/40",
+              !isMobile &&
+                "rounded-tl-3xl border-t border-l border-(--border)/40",
             )}
           >
             {children}

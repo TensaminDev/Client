@@ -6,8 +6,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Label,
-  Switch,
 } from "@methanium/ui";
 import { toast } from "@tensamin/shared/log";
 import { Loader2 } from "lucide-react";
@@ -33,8 +31,6 @@ export default function MediaShareDialog({
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<MediaShareSource[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
-  const [shareAudio, setShareAudio] = useState(true);
-  const [canShareAudio, setCanShareAudio] = useState(false);
   const [cameraPreview, setCameraPreview] = useState<MediaStream | null>(null);
   const [cameraPreviewVersion, setCameraPreviewVersion] = useState(0);
   const cameraPreviewRef = useRef<MediaStream | null>(null);
@@ -51,11 +47,9 @@ export default function MediaShareDialog({
     setLoading(true);
     setSelectedSourceId(null);
 
-    Promise.all([
-      getMediaShareAdapter().listSources(kind),
-      getMediaShareAdapter().getCapabilities(),
-    ])
-      .then(([nextSources, capabilities]) => {
+    getMediaShareAdapter()
+      .listSources(kind)
+      .then((nextSources) => {
         if (!active) return;
         const availableSources =
           kind === "camera" && nextSources.length === 0
@@ -69,7 +63,6 @@ export default function MediaShareDialog({
             : nextSources;
         setSources(availableSources);
         setSelectedSourceId(availableSources[0]?.id ?? null);
-        setCanShareAudio(kind === "screen" && capabilities.canShareScreenAudio);
       })
       .catch((error) => {
         console.error("Failed to load media share sources", error);
@@ -129,7 +122,6 @@ export default function MediaShareDialog({
       } else {
         await startScreenShare({
           sourceId: selectedSourceId ?? undefined,
-          includeAudio: canShareAudio && shareAudio,
         });
       }
       onOpenChange(false);
@@ -179,22 +171,6 @@ export default function MediaShareDialog({
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               No {kind === "camera" ? "cameras" : "windows or displays"} found.
             </p>
-          ) : null}
-
-          {canShareAudio ? (
-            <div className="flex items-center justify-between gap-4 rounded-xl border p-4">
-              <div className="space-y-1">
-                <Label htmlFor="share-system-audio">Share audio</Label>
-                <p className="text-xs text-muted-foreground">
-                  Some apps and protected media do not allow audio capture.
-                </p>
-              </div>
-              <Switch
-                id="share-system-audio"
-                checked={shareAudio}
-                onCheckedChange={setShareAudio}
-              />
-            </div>
           ) : null}
 
           {loading ? (

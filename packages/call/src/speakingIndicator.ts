@@ -27,6 +27,7 @@ class SpeakingDetector {
   private deaf = false;
   private gateThresholdStart = -50;
   private gateThresholdEnd = -40;
+  private gateEnabled = true;
   private localParticipantId: number | null = null;
   private localMicGateClosed = false;
 
@@ -47,6 +48,11 @@ class SpeakingDetector {
   setGateThresholds(start: number, end: number) {
     this.gateThresholdStart = start;
     this.gateThresholdEnd = end;
+  }
+
+  setGateEnabled(enabled: boolean) {
+    this.gateEnabled = enabled;
+    if (!enabled && this.localMicGateClosed) this.muteLocalTrack(false);
   }
 
   addTrack(
@@ -184,7 +190,7 @@ class SpeakingDetector {
         nextIsSpeaking = false;
       }
 
-      if (participantId === this.localParticipantId) {
+      if (participantId === this.localParticipantId && this.gateEnabled) {
         this.applyNoiseGate(rms);
         if (this.localMicGateClosed) {
           nextIsSpeaking = false;

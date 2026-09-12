@@ -4,7 +4,7 @@
   - Timeout
   - Disconnect
 - Implement context menu features
-- Add quality selection
 - Good preview page
-- Settings page
 - Make the Three-Dots button open a dialog/context-menu to configure the call for anonymous invites or other admin stuff
+- Stream zooming
+- Update users at the top to the viewers of the user's screenshare

@@ -198,7 +198,6 @@ export default function Media({
                             (level) => (level + 1) % zoomLevels.length,
                           )
                         }
-                        aria-label={`Zoom ${zoomLevel + 1}/4`}
                         className="w-9! h-9!"
                         variant="ghost"
                       >
@@ -218,7 +217,6 @@ export default function Media({
                         <Button
                           ref={ref}
                           onClick={copyImage}
-                          aria-label="Copy image"
                           className="w-9! h-9!"
                           variant="ghost"
                         >

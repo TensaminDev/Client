@@ -22,7 +22,7 @@ export function SettingsSidebar({
       className={cn(
         mobile
           ? "w-full p-1"
-          : "h-full min-h-0 w-auto shrink-0 overflow-y-auto rounded-tl-2xl border-r bg-input/15 p-3",
+          : "h-full min-h-0 w-auto shrink-0 overflow-y-auto rounded-tl-2xl border-r border-(--border)/40 bg-input/15 p-3",
         "flex flex-col gap-6",
         className,
       )}

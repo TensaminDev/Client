@@ -544,7 +544,6 @@ function MessageComponent({
                         ([reaction, { count, reactedByMe }]) => (
                           <Button
                             key={reaction}
-                            aria-label={`${reactedByMe ? "Remove" : "Add"} ${reaction} reaction`}
                             className={cn(
                               "h-7 gap-2 rounded-lg py-3.5 px-1.5! border",
                               reactedByMe

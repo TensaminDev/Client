@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
 import {
   Button,
+  Checkbox,
+  Label,
   Popover,
   PopoverContent,
   PopoverTrigger,
+  RadioGroup,
+  RadioGroupItem,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@methanium/ui";
-import { MonitorDot, ScreenShare } from "lucide-react";
+import { Diamond, MonitorDot, ScreenShare } from "lucide-react";
 import { toast } from "@tensamin/shared/log";
-import {
-  startScreenShare,
-  stopCameraShare,
-  stopScreenShare,
-  useCall,
-} from "../../store";
-import { getMediaShareAdapter, type MediaShareKind } from "../../mediaShare";
+import { storageDefaults } from "@tensamin/shared/data";
+import { useStorage } from "@tensamin/storage/context";
+import { startScreenShare, stopScreenShare, useCall } from "../../store";
+import { getMediaShareAdapter } from "../../mediaShare";
 import MediaShareDialog from "../mediaShareDialog";
 
 export default function MediaShareButton({
@@ -31,23 +32,53 @@ export default function MediaShareButton({
   defaultPortal?: boolean;
 }) {
   const isScreensharing = useCall((state) => state.screenShareEnabled);
-  const cameraEnabled = useCall((state) => state.cameraEnabled);
+  const screenShareSession = useCall((state) => state.screenShareSession);
   const screenRef = useCall((state) => state.screenRef);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
-  const [dialogKind, setDialogKind] = useState<MediaShareKind | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const storage = useStorage();
+  const [resolution, setResolution] = useState(
+    storageDefaults.call_screen_share_resolution,
+  );
+  const [frameRate, setFrameRate] = useState(
+    storageDefaults.call_screen_share_frame_rate,
+  );
+  const [shareAudio, setShareAudio] = useState(
+    storageDefaults.call_screen_share_audio,
+  );
+  const [canCaptureAudio, setCanCaptureAudio] = useState(true);
 
   useEffect(() => {
     if (!defaultPortal) setPortalContainer(screenRef?.current ?? undefined);
   }, [screenRef, defaultPortal]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    void Promise.all([
+      storage.load("call_screen_share_resolution"),
+      storage.load("call_screen_share_frame_rate"),
+      storage.load("call_screen_share_audio"),
+      getMediaShareAdapter().getCapabilities(),
+    ]).then(([nextResolution, nextFrameRate, nextShareAudio, capabilities]) => {
+      setResolution(nextResolution);
+      setFrameRate(nextFrameRate);
+      setShareAudio(nextShareAudio);
+      setCanCaptureAudio(capabilities.canShareScreenAudio);
+    });
+  }, [menuOpen, storage]);
+
   async function beginScreenShare() {
     try {
       const capabilities = await getMediaShareAdapter().getCapabilities();
       if (capabilities.screenPicker === "sources") {
-        setDialogKind("screen");
+        setDialogOpen(true);
       } else {
-        await startScreenShare({ includeAudio: true });
+        await startScreenShare({
+          includeAudio: shareAudio,
+          resolution,
+          frameRate,
+        });
       }
     } catch (error) {
       console.error("Failed to start screen sharing", error);
@@ -60,21 +91,21 @@ export default function MediaShareButton({
     }
   }
 
-  async function stop(kind: MediaShareKind) {
+  async function stop() {
     try {
-      await (kind === "screen" ? stopScreenShare() : stopCameraShare());
+      await stopScreenShare();
     } catch (error) {
-      console.error(`Failed to stop ${kind} sharing`, error);
-      toast("error", `Failed to stop ${kind} sharing.`);
+      console.error("Failed to stop screen sharing", error);
+      toast("error", "Failed to stop screen sharing.");
     }
   }
 
   const trigger = (
     <Button
-      variant={isScreensharing || cameraEnabled ? "subtleDefault" : "default"}
+      variant={isScreensharing ? "subtleDefault" : "default"}
       className="w-full! h-full!"
     >
-      {isScreensharing || cameraEnabled ? (
+      {isScreensharing ? (
         <MonitorDot
           style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
         />
@@ -112,39 +143,98 @@ export default function MediaShareButton({
             }
           />
           <PopoverContent
-            className="flex w-48 flex-col gap-2"
+            className="flex w-35 flex-col gap-6"
             portalProps={{
               container: defaultPortal ? undefined : portalContainer,
             }}
           >
-            <Button
-              disabled={isScreensharing}
-              onClick={() => {
-                setMenuOpen(false);
-                void beginScreenShare();
-              }}
-            >
-              Share screen
-            </Button>
-            <Button
-              disabled={cameraEnabled}
-              onClick={() => {
-                setMenuOpen(false);
-                setDialogKind("camera");
-              }}
-            >
-              Share camera
-            </Button>
-            {isScreensharing ? (
-              <Button variant="destructive" onClick={() => void stop("screen")}>
-                Stop screen sharing
-              </Button>
-            ) : null}
-            {cameraEnabled ? (
-              <Button variant="destructive" onClick={() => void stop("camera")}>
-                Stop camera
-              </Button>
-            ) : null}
+            <div className="flex flex-col gap-2.5">
+              <Label>Resolution</Label>
+              <RadioGroup
+                className="gap-1.5"
+                name="screen-share-resolution"
+                value={String(resolution)}
+                onValueChange={(value) => {
+                  const next = Number(value);
+                  setResolution(next);
+                  void storage.save("call_screen_share_resolution", next);
+                }}
+              >
+                {[720, 1080].map((value) => (
+                  <Label
+                    key={value}
+                    className="flex cursor-pointer items-center gap-2 rounded-md text-sm"
+                  >
+                    <RadioGroupItem value={String(value)} />
+                    {value}p
+                  </Label>
+                ))}
+                <Label className="text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-md text-sm">
+                  <RadioGroupItem value="1440" disabled />
+                  1440p <Diamond className="size-3 fill-current" />
+                </Label>
+              </RadioGroup>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              <Label>Frame rate</Label>
+              <RadioGroup
+                className="gap-1.5"
+                name="screen-share-frame-rate"
+                value={String(frameRate)}
+                onValueChange={(value) => {
+                  const next = Number(value);
+                  setFrameRate(next);
+                  void storage.save("call_screen_share_frame_rate", next);
+                }}
+              >
+                {[30, 60].map((value) => (
+                  <Label
+                    key={value}
+                    className="flex cursor-pointer items-center gap-2 rounded-md text-sm"
+                  >
+                    <RadioGroupItem value={String(value)} />
+                    {value} FPS
+                  </Label>
+                ))}
+                <Label className="text-muted-foreground flex cursor-not-allowed items-center gap-2 rounded-md text-sm">
+                  <RadioGroupItem value="120" disabled />
+                  120 FPS <Diamond className="size-3 fill-current" />
+                </Label>
+              </RadioGroup>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="screen-share-audio"
+                  checked={shareAudio}
+                  disabled={
+                    !canCaptureAudio ||
+                    (isScreensharing && !screenShareSession?.audioTrack)
+                  }
+                  onCheckedChange={(checked) => {
+                    const next = checked === true;
+                    setShareAudio(next);
+                    void storage.save("call_screen_share_audio", next);
+                  }}
+                />
+                <Label htmlFor="screen-share-audio">Share audio</Label>
+              </div>
+              {isScreensharing ? (
+                <Button variant="destructive" onClick={() => void stop()}>
+                  Stop
+                </Button>
+              ) : (
+                <Button
+                  disabled={isScreensharing}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void beginScreenShare();
+                  }}
+                >
+                  Start
+                </Button>
+              )}
+            </div>
           </PopoverContent>
         </Popover>
         {tooltip ? (
@@ -158,11 +248,11 @@ export default function MediaShareButton({
         ) : null}
       </Tooltip>
 
-      {dialogKind ? (
+      {dialogOpen ? (
         <MediaShareDialog
-          kind={dialogKind}
+          kind="screen"
           open
-          onOpenChange={(open) => !open && setDialogKind(null)}
+          onOpenChange={setDialogOpen}
           portalContainer={portalContainer}
         />
       ) : null}

@@ -89,7 +89,6 @@ export function SettingsProfileMenu() {
     <>
       <div className="flex gap-2 w-full">
         <Button
-          aria-label="Create profile"
           className="size-9 p-0"
           variant="outline"
           onClick={() => openNameDialog("create")}
@@ -117,7 +116,6 @@ export function SettingsProfileMenu() {
           </SelectContent>
         </Select>
         <Button
-          aria-label="Rename profile"
           className="size-9 p-0"
           disabled={!activeProfile?.available}
           variant="outline"
@@ -126,7 +124,6 @@ export function SettingsProfileMenu() {
           <Pencil className="size-4" />
         </Button>
         <Button
-          aria-label="Delete profile"
           className="size-9 p-0"
           disabled={!activeProfile}
           variant="outline"

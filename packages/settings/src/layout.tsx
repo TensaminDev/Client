@@ -22,13 +22,12 @@ export default function SettingsLayout() {
           <ClearStorageButton />
         </div>
       </div>
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden border-t">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden border-t border-(--border)/40">
         <SettingsSidebar className="hidden md:flex" />
         <div className="bg-background flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
           <div className="flex items-center gap-2">
             {isMobile && (
               <Button
-                aria-label={isSettingsRoot ? "Go home" : "Go to settings"}
                 className="h-8 w-8 shrink-0 p-0"
                 variant="ghost"
                 onClick={() =>

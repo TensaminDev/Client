@@ -20,10 +20,7 @@ import {
   type Contacts,
 } from "@tensamin/shared/data";
 import { log } from "@tensamin/shared/log";
-import {
-  getAppFocused,
-  subscribeAppFocus,
-} from "@tensamin/shared/focus";
+import { getAppFocused, subscribeAppFocus } from "@tensamin/shared/focus";
 
 import {
   type BoundSendFn,

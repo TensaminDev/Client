@@ -54,10 +54,8 @@ function ConnectionBar() {
   const state = useCall((store) => store.state);
   const isEncrypted = useCall((store) => store.isEncrypted);
   const callId = useCall((store) => store.callId);
+  const warnings = useCall((store) => store.warnings);
   const isConnecting = state === "encrypting" || state === "connecting";
-  const hasConnectionError =
-    state === "closed" || (state === "open" && !isEncrypted);
-
   return (
     <Tooltip>
       <TooltipTrigger
@@ -69,8 +67,10 @@ function ConnectionBar() {
               openCallPage(callId || "");
             }}
             size="lg"
-            variant={hasConnectionError ? "destructive" : "subtleDefault"}
-            className={`flex items-center justify-between px-2! ${isConnecting ? "bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 dark:bg-amber-400/15 dark:text-amber-400 dark:hover:bg-amber-400/25" : ""}`}
+            variant={
+              isConnecting || warnings.length > 0 ? "warning" : "subtleDefault"
+            }
+            className="flex items-center justify-between px-2!"
           >
             {state === "encrypting" && "Encrypting..."}
             {state === "connecting" && "Connecting..."}
@@ -88,7 +88,12 @@ function ConnectionBar() {
           </Button>
         )}
       />
-      <TooltipContent>Click to open call page</TooltipContent>
+      <TooltipContent className="flex flex-col gap-2 items-start">
+        <p>Click to open call page</p>
+        {warnings.map((warning, index) => (
+          <p key={index}>{warning}</p>
+        ))}
+      </TooltipContent>
     </Tooltip>
   );
 }

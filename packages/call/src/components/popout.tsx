@@ -581,8 +581,6 @@ export function Popout({ participant }: { participant: Participant }) {
         </div>
       </div>
       <div
-        aria-label="Resize popout from top edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "inset-x-4 -top-1 h-2 cursor-n-resize",
@@ -593,8 +591,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from right edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "-right-1 inset-y-4 w-2 cursor-e-resize",
@@ -605,8 +601,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from bottom edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "inset-x-4 -bottom-1 h-2 cursor-s-resize",
@@ -617,8 +611,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from left edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "-left-1 inset-y-4 w-2 cursor-w-resize",
@@ -629,8 +621,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from top left corner"
-        role="separator"
         className={cn(resizeCornerClassName, "-left-1 -top-1 cursor-nw-resize")}
         onPointerDown={(e) => startResize(e, "top-left")}
         onPointerMove={resizePopout}
@@ -638,8 +628,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from top right corner"
-        role="separator"
         className={cn(
           resizeCornerClassName,
           "-right-1 -top-1 cursor-ne-resize",
@@ -650,8 +638,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from bottom right corner"
-        role="separator"
         className={cn(
           resizeCornerClassName,
           "-bottom-1 -right-1 cursor-se-resize",
@@ -662,8 +648,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from bottom left corner"
-        role="separator"
         className={cn(
           resizeCornerClassName,
           "-bottom-1 -left-1 cursor-sw-resize",

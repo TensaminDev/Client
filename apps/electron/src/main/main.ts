@@ -223,6 +223,9 @@ function registerIpc() {
     ipcChannels.getScreenShareCapabilities,
     getScreenShareCapabilities,
   );
+  ipcMain.handle(ipcChannels.getGpuFeatureStatus, () => ({
+    videoEncode: app.getGPUFeatureStatus().video_encode,
+  }));
   ipcMain.handle(
     ipcChannels.selectScreenShareSource,
     (_event, sourceId: unknown) => {

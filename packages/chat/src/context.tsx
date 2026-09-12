@@ -885,16 +885,10 @@ export default function Provider({ children }: { children: ReactNode }) {
           sendTime,
           edit,
         );
-        return updated
-          ? { ...previous, [chatUserId]: next }
-          : previous;
+        return updated ? { ...previous, [chatUserId]: next } : previous;
       });
 
-      const queryKey = [
-        "chat-messages",
-        String(chatUserId),
-        true,
-      ] as const;
+      const queryKey = ["chat-messages", String(chatUserId), true] as const;
       queryClient.setQueryData<InfiniteData<RawMessages>>(
         queryKey,
         (current) => {

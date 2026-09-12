@@ -19,6 +19,9 @@ export type MediaShareRequest = {
   kind: MediaShareKind;
   sourceId?: string;
   includeAudio?: boolean;
+  resolution?: number;
+  frameRate?: number;
+  codec?: "auto" | "vp8" | "vp9" | "h264" | "av1" | "h265";
 };
 
 export type MediaShareSession = {

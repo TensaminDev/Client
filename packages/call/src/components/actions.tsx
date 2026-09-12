@@ -10,8 +10,8 @@ import {
 } from "@methanium/ui";
 import { useEffect, useState } from "react";
 import MuteButton from "./buttons/mute";
-import DeafButton from "./buttons/deaf";
 import MediaShareButton from "./buttons/mediaShare";
+import CameraShareButton from "./buttons/cameraShare";
 import LeaveButton from "./buttons/leave";
 import {
   setCallIsPopout,
@@ -126,16 +126,16 @@ export default function Actions() {
             tooltip="Mute"
             portalContainer={portalContainer}
           />
-          <DeafButton
-            className={sharedClasses}
-            iconSize={sharedIconSize}
-            tooltip="Deafen"
-            portalContainer={portalContainer}
-          />
           <MediaShareButton
             className={sharedClasses}
             iconSize={sharedIconSize}
-            tooltip="Share media"
+            tooltip="Share screen"
+          />
+          <CameraShareButton
+            className={sharedClasses}
+            iconSize={sharedIconSize}
+            tooltip="Camera"
+            portalContainer={portalContainer}
           />
           <InviteButton
             className={sharedClasses}

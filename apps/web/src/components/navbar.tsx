@@ -57,7 +57,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
       <div className="flex items-center justify-center gap-2">
         {forMobile ? (
           <Button
-            aria-label="Go home"
             onClick={() => void navigate({ to: "/" })}
             className="w-9 h-9! ml-2"
             variant="ghost"

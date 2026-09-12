@@ -26,10 +26,10 @@ export const profileStorageKeys = (
 ).filter(
   (key) =>
     (key.startsWith("settings.") &&
+      key !== "settings.call_jingle" &&
       key !== "settings.read_confirmations" &&
       key !== "settings.receive_confirmations") ||
     key.startsWith("theme_") ||
-    key.startsWith("call_mute_range_") ||
     key.startsWith("chat_picker_") ||
     [
       "cache_contacts",

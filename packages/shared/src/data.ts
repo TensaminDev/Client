@@ -756,6 +756,22 @@ export interface Storage extends SettingsStorageDefaults {
   forced_omikron_public_key: string | undefined;
   call_mute_range_start: number;
   call_mute_range_end: number;
+  call_microphone_device_id: string;
+  call_speaker_device_id: string;
+  call_noise_suppression_enabled: boolean;
+  call_noise_suppression_level: number;
+  call_echo_cancellation: boolean;
+  call_voice_isolation: boolean;
+  call_automatic_gain_control: boolean;
+  call_noise_gate_enabled: boolean;
+  call_event_sounds_enabled: boolean;
+  call_sound_volume: number;
+  call_screen_share_resolution: number;
+  call_screen_share_frame_rate: number;
+  call_screen_share_audio: boolean;
+  call_screen_share_codec: "auto" | "vp8" | "vp9" | "h264" | "av1" | "h265";
+  call_camera_resolution: number;
+  call_camera_frame_rate: number;
   theme_color: string;
   theme_palette: Record<
     | "base00"
@@ -816,6 +832,22 @@ export const storageDefaults: Storage = {
   forced_omikron_public_key: undefined,
   call_mute_range_start: -55,
   call_mute_range_end: -45,
+  call_microphone_device_id: "default",
+  call_speaker_device_id: "default",
+  call_noise_suppression_enabled: true,
+  call_noise_suppression_level: 60,
+  call_echo_cancellation: true,
+  call_voice_isolation: false,
+  call_automatic_gain_control: false,
+  call_noise_gate_enabled: true,
+  call_event_sounds_enabled: true,
+  call_sound_volume: 100,
+  call_screen_share_resolution: 1080,
+  call_screen_share_frame_rate: 30,
+  call_screen_share_audio: false,
+  call_screen_share_codec: "auto",
+  call_camera_resolution: 1080,
+  call_camera_frame_rate: 30,
   theme_color: "",
   theme_palette: null,
   theme_primary_color: "",
