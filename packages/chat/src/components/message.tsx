@@ -496,7 +496,6 @@ function MessageComponent({
                       <div className="flex gap-1">
                         <Button
                           size="xs"
-                          variant="subtleDefault"
                           onClick={() => {
                             if (!editDraft.trim()) return;
                             if (editDraft !== message.Content) {
@@ -552,7 +551,7 @@ function MessageComponent({
                             )}
                             onClick={() => void toggleReaction(reaction)}
                             size="xs"
-                            variant={reactedByMe ? "subtleDefault" : "outline"}
+                            variant={reactedByMe ? "default" : "secondary"}
                           >
                             <Emoji className="h-5 w-5" shortcode={reaction} />
                             <span className="text-sm">{count}</span>

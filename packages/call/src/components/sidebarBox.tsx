@@ -68,7 +68,7 @@ function ConnectionBar() {
             }}
             size="lg"
             variant={
-              isConnecting || warnings.length > 0 ? "warning" : "subtleDefault"
+              isConnecting || warnings.length > 0 ? "warning" : "default"
             }
             className="flex items-center justify-between px-2!"
           >

@@ -19,7 +19,7 @@ export default function CameraShareButton({
   const button = (
     <Button
       className={className}
-      variant={enabled ? "subtleDefault" : "default"}
+      variant={enabled ? "default" : "secondary"}
       onClick={() => {
         void (enabled ? stopCameraShare() : startCameraShare()).catch(
           (error) => {

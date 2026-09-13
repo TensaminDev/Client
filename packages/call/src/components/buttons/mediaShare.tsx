@@ -110,7 +110,7 @@ export default function MediaShareButton({
 
   const trigger = (
     <Button
-      variant={isScreensharing ? "subtleDefault" : "default"}
+      variant={isScreensharing ? "default" : "secondary"}
       className="w-full! h-full!"
     >
       {isScreensharing ? (
