@@ -300,14 +300,14 @@ export default function InputComponent({
       <Card
         ref={inputBoxRef}
         className={cn(
-          "ring-0! rounded-none border-b-0 border-t border-x border-(--border)/40! pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
+          "rounded-none border-1! border-b-0! border-(--input)! pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
           isMobile ? "border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
         )}
       >
         <CardHeader className="relative p-0 flex flex-col">
           <div className="w-full flex items-center">
             <Input
-              className="w-full p-2"
+              className="w-full p-2 px-3"
               onControllerChange={setComposer}
               paddingY="13px"
               paddingX="13px"

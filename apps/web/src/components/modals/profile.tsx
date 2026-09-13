@@ -36,7 +36,7 @@ export default function Profile({
       </div>
       <Text value={user.About || ""} />
       <Button
-        className="h-auto justify-start gap-1.5 px-0 py-1 text-base font-medium text-white no-underline hover:no-underline"
+        className="flex justify-start"
         variant="outline"
         onClick={() => setShowAdvancedInformation((show) => !show)}
       >
@@ -45,7 +45,7 @@ export default function Profile({
         ) : (
           <ChevronDown className="size-4" />
         )}
-        <span>Advanced Information</span>
+        Advanced Information
       </Button>
       {showAdvancedInformation && (
         <div className="flex flex-col">

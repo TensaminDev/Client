@@ -47,7 +47,7 @@ export default function InviteButton({
   }, [screenRef]);
 
   const trigger = (
-    <Button className={className}>
+    <Button variant="secondary" className={className}>
       <Mail style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }} />
     </Button>
   );
@@ -106,7 +106,7 @@ export default function InviteButton({
             tooltip ? (
               <TooltipTrigger
                 render={({ ref, onClick }) => (
-                  <Button ref={ref} onClick={onClick} className={className}>
+                  <Button variant="secondary" ref={ref} onClick={onClick} className={className}>
                     <Mail
                       style={{
                         scale: (iconSize ? iconSize + 100 : 100) + "%",

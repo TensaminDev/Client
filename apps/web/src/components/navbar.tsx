@@ -27,14 +27,16 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { WindowControls as Controls } from "@methanium/ui";
 import { useSession } from "@tensamin/identity/session";
 import { joinCall } from "@tensamin/call/store";
-import { SettingsProfileMenu } from "@tensamin/settings";
+import { NavbarTarget } from "@tensamin/shared/navbar";
 import Profile from "./modals/profile";
 
 function NavbarSection({
   children,
+  cutout = true,
   side,
 }: {
   children: ReactNode;
+  cutout?: boolean;
   side: "left" | "right";
 }) {
   const content = useRef<HTMLDivElement>(null);
@@ -67,60 +69,72 @@ function NavbarSection({
 
   return (
     <div
-      className="relative z-10 h-12 min-w-0 shrink-0 overflow-hidden"
-      style={{ width: width == null ? 0 : width + edgeReserve }}
+      className={`relative z-10 min-w-0 shrink-0 ${
+        cutout
+          ? "h-12 overflow-hidden transition-[width] duration-200 ease-in-out motion-reduce:transition-none"
+          : "h-full"
+      }`}
+      style={
+        cutout ? { width: width == null ? 0 : width + edgeReserve } : undefined
+      }
     >
-      <div
-        className="absolute inset-y-0 z-0 border-b border-(--border)/40 bg-sidebar"
-        style={
-          side === "left"
-            ? { left: 0, right: edgeWidth }
-            : { right: 0, left: edgeWidth }
-        }
-      />
-
-      <svg
-        aria-hidden="true"
-        className={`pointer-events-none absolute top-0 z-1 h-12 ${
-          side === "left" ? "right-0 -scale-x-100" : "left-0"
-        }`}
-        style={{ width: edgeWidth }}
-        viewBox="0 0 18 48"
-      >
-        <path
-          d="
-            M0 0
-            V6.5
-            C1.2 6.5 2 7 3 8
-            C4.5 9.5 7.2 22.05 9 27
-            C10.8 31.95 13.5 44.5 15 46
-            C16 47 16.8 47.5 18 47.5
-            V0
-            Z
-          "
-          fill="var(--sidebar)"
-        />
-
-        <path
-          d="
-            M0 6.5
-            C1.2 6.5 2 7 3 8
-            C4.5 9.5 7.2 22.05 9 27
-            C10.8 31.95 13.5 44.5 15 46
-            C16 47 16.8 47.5 18 47.5
-          "
-          fill="none"
-          className="opacity-40"
-          stroke="var(--border)"
-          strokeWidth="1"
-          strokeLinecap="butt"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
+      {cutout && (
+        <>
+          <div
+            className={`absolute inset-y-0 z-0 bg-sidebar after:absolute after:right-0 after:bottom-0 after:border-b after:border-(--border)/40 after:content-[''] ${
+              side === "left" ? "after:left-[19px]" : "after:left-0"
+            }`}
+            style={
+              side === "left"
+                ? { left: 0, right: edgeWidth }
+                : { right: 0, left: edgeWidth }
+            }
+          />
+          <svg
+            aria-hidden="true"
+            className={`pointer-events-none absolute top-0 z-1 h-12 ${
+              side === "left" ? "right-0 -scale-x-100" : "left-0"
+            }`}
+            style={{ width: edgeWidth }}
+            viewBox="0 0 18 48"
+          >
+            <path
+              d="
+                M0 0
+                V6.5
+                C1.2 6.5 2 7 3 8
+                C4.5 9.5 7.2 22.05 9 27
+                C10.8 31.95 13.5 44.5 15 46
+                C16 47 16.8 47.5 18 47.5
+                V0
+                Z
+              "
+              fill="var(--sidebar)"
+            />
+            <path
+              d="
+                M0 6.5
+                C1.2 6.5 2 7 3 8
+                C4.5 9.5 7.2 22.05 9 27
+                C10.8 31.95 13.5 44.5 15 46
+                C16 47 16.8 47.5 18 47.5
+              "
+              fill="none"
+              className="opacity-40"
+              stroke="var(--border)"
+              strokeWidth="1"
+              strokeLinecap="butt"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+        </>
+      )}
       <div
         ref={content}
         className="relative z-10 flex h-full w-max items-center gap-2"
-        style={side === "right" ? { marginLeft: edgeReserve } : undefined}
+        style={
+          cutout && side === "right" ? { marginLeft: edgeReserve } : undefined
+        }
       >
         {children}
       </div>
@@ -128,13 +142,7 @@ function NavbarSection({
   );
 }
 
-export default function Navbar({
-  forMobile,
-  children,
-}: {
-  forMobile: boolean;
-  children?: ReactNode;
-}) {
+export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
   const callState = useCall((state) => state.state);
   const { calls } = useSession();
@@ -148,7 +156,6 @@ export default function Navbar({
   );
 
   const isMobile = useIsMobile();
-
   const [userInfoOpen, setUserInfoOpen] = useState(false);
 
   const { callId } = useCall();
@@ -157,10 +164,16 @@ export default function Navbar({
     <div
       data-tauri-drag-region
       data-pwa-navbar
-      className="relative flex h-13.5 w-full shrink-0 items-start justify-between"
+      className={`relative flex h-13.5 w-full shrink-0 justify-between ${
+        forMobile
+          ? "items-center border-b border-(--border)/40 bg-sidebar"
+          : "items-start"
+      }`}
     >
-      <div className="absolute inset-x-0 top-0 h-[7px] border-b border-(--border)/40 bg-sidebar" />
-      <NavbarSection side="left">
+      {!forMobile && (
+        <div className="absolute inset-x-0 top-0 h-[7px] border-b border-(--border)/40 bg-sidebar" />
+      )}
+      <NavbarSection cutout={!forMobile} side="left">
         {forMobile ? (
           <Button
             onClick={() => void navigate({ to: "/" })}
@@ -233,15 +246,8 @@ export default function Navbar({
           />
         )}
       </NavbarSection>
-      <div className="pointer-events-none relative z-20 flex h-full min-w-0 flex-1 items-center justify-start [&>*]:pointer-events-auto">
-        {children}
-        {!forMobile && pathname.startsWith("/settings") && (
-          <div className="translate-y-[3.5px] [&>div]:w-auto">
-            <SettingsProfileMenu />
-          </div>
-        )}
-      </div>
-      <NavbarSection side="right">
+      <NavbarTarget className="pointer-events-none relative z-20 flex h-full min-w-0 flex-1 items-center justify-start [&>*]:pointer-events-auto" />
+      <NavbarSection cutout={!forMobile} side="right">
         {pathname === "/chat" && id && (
           <>
             {currentCalls.length === 0 ? (

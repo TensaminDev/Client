@@ -21,7 +21,7 @@ import {
 } from "./values";
 import Wrapper from "@tensamin/identity/wrapper";
 import { useMTP } from "@tensamin/mtp";
-import { GlobeOff } from "lucide-react";
+import { GlobeOff, PartyPopper } from "lucide-react";
 
 function shouldFetchPreviousPage({
   entry,
@@ -552,7 +552,7 @@ export default function Screen() {
         smoothScrollFrameRef.current = null;
       }
     };
-  }, [handleContainerScroll]);
+  }, [handleContainerScroll, readyState]);
 
   if (!hasValidChatUser) {
     return (
@@ -581,6 +581,7 @@ export default function Screen() {
         </div>
       ) : (
         <>
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-gradient-to-b from-[var(--background)] from-20% to-transparent" />
           <div
             ref={scrollRef}
             id="chat_container"
@@ -622,6 +623,26 @@ export default function Screen() {
                     }}
                   >
                     <div className="flex flex-col scale-y-[-1]">
+                      {chunkIndex === messageChunks.length - 1 &&
+                        messagesQuery.hasNextPage === false && (
+                          <Wrapper
+                            userId={userId}
+                            fields={["Display"]}
+                            loading={null}
+                            component={(user) => (
+                              <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted-foreground">
+                                <PartyPopper className="size-8" />
+                                <p>
+                                  This is the start of your conversation with{" "}
+                                  <span className="font-medium text-foreground">
+                                    {user?.Display}
+                                  </span>
+                                  .
+                                </p>
+                              </div>
+                            )}
+                          />
+                        )}
                       {chunk.messages.map((message, chunkMessageIndex) => {
                         const messageIndex =
                           chunk.startIndex + chunkMessageIndex;

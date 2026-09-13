@@ -11,6 +11,7 @@
     "./data": "./src/data.ts",
     "./desktopMedia": "./src/desktopMedia.tsx",
     "./log": "./src/log.tsx",
+    "./navbar": "./src/navbar.tsx",
     "./indexedDb": "./src/indexedDb.ts",
     "./settings": "./src/settings.ts",
     "./sounds": "./src/sounds.ts",

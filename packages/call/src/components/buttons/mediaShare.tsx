@@ -1,4 +1,10 @@
-import { useEffect, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useState,
+  type ComponentPropsWithoutRef,
+  type ComponentRef,
+} from "react";
 import {
   Button,
   Checkbox,
@@ -25,6 +31,28 @@ import { useStorage } from "@tensamin/storage/context";
 import { startScreenShare, stopScreenShare, useCall } from "../../store";
 import { getMediaShareAdapter } from "../../mediaShare";
 import MediaShareDialog from "../mediaShareDialog";
+
+const MediaShareTrigger = forwardRef<
+  ComponentRef<typeof Button>,
+  Omit<ComponentPropsWithoutRef<typeof Button>, "variant"> & {
+    isScreensharing: boolean;
+    iconSize?: number;
+  }
+>(function MediaShareTrigger({ isScreensharing, iconSize, ...props }, ref) {
+  return (
+    <Button
+      ref={ref}
+      {...props}
+      variant={isScreensharing ? "default" : "secondary"}
+    >
+      {isScreensharing ? (
+        <MonitorDot style={{ scale: `${iconSize ? iconSize + 100 : 100}%` }} />
+      ) : (
+        <ScreenShare style={{ scale: `${iconSize ? iconSize + 100 : 100}%` }} />
+      )}
+    </Button>
+  );
+});
 
 export default function MediaShareButton({
   className,
@@ -107,23 +135,6 @@ export default function MediaShareButton({
       toast("error", "Failed to stop screen sharing.");
     }
   }
-
-  const trigger = (
-    <Button
-      variant={isScreensharing ? "default" : "secondary"}
-      className="w-full! h-full!"
-    >
-      {isScreensharing ? (
-        <MonitorDot
-          style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
-        />
-      ) : (
-        <ScreenShare
-          style={{ scale: (iconSize ? iconSize + 100 : 100) + "%" }}
-        />
-      )}
-    </Button>
-  );
 
   const menuContent = (
     <>
@@ -222,7 +233,11 @@ export default function MediaShareButton({
       {isMobile ? (
         <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
           <DrawerTrigger asChild>
-            <span className={className}>{trigger}</span>
+            <MediaShareTrigger
+              isScreensharing={isScreensharing}
+              iconSize={iconSize}
+              className={className}
+            />
           </DrawerTrigger>
           <DrawerContent>
             <DrawerHeader className="pb-0">
@@ -239,19 +254,22 @@ export default function MediaShareButton({
                 tooltip ? (
                   <TooltipTrigger
                     render={({ ref }) => (
-                      <span
-                        ref={ref as React.Ref<HTMLSpanElement>}
+                      <MediaShareTrigger
+                        ref={ref}
+                        isScreensharing={isScreensharing}
+                        iconSize={iconSize}
                         onClick={onClick}
                         className={className}
-                      >
-                        {trigger}
-                      </span>
+                      />
                     )}
                   />
                 ) : (
-                  <span className={className} onClick={onClick}>
-                    {trigger}
-                  </span>
+                  <MediaShareTrigger
+                    isScreensharing={isScreensharing}
+                    iconSize={iconSize}
+                    onClick={onClick}
+                    className={className}
+                  />
                 )
               }
             />
