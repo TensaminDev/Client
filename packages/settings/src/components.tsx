@@ -23,11 +23,13 @@ export function Switch({
     }[keyof Storage];
 }) {
   const { save, load } = useStorage();
-  const [value, setValue] = useState<boolean>(settingsStorageDefaults[id]);
+  const [value, setValue] = useState<boolean>();
 
   useEffect(() => {
     load(id).then((value) => setValue(value));
   }, [id, load]);
+
+  if (value === undefined) return null;
 
   return (
     <LabeledSwitch
@@ -50,11 +52,13 @@ export function List<K extends ListStorageKey>({
   id: K;
 }) {
   const { save, load } = useStorage();
-  const [items, setItems] = useState<Storage[K]>(storageDefaults[id]);
+  const [items, setItems] = useState<Storage[K]>();
 
   useEffect(() => {
     load(id).then((value) => setItems(value));
   }, [id, load]);
+
+  if (items === undefined) return null;
 
   const persistItems = (nextItems: ListStorageItem<K>[]) => {
     setItems(nextItems as Storage[K]);

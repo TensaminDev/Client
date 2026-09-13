@@ -106,7 +106,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                       <Button
                         onClick={onClick}
                         variant="link"
-                        className="text-foreground px-0! border-0! bg-none! bg-transparent!"
+                        className="text-foreground! px-0! border-0! bg-none! bg-transparent!"
                         style={{
                           textDecorationLine: "none",
                         }}
@@ -136,7 +136,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 disabled={callState !== "closed"}
                 onClick={() => void joinCall(id)}
                 className="w-9 h-9! aspect-square rounded-lg"
-                variant="outline"
+                variant="ghost"
               >
                 <Phone />
               </Button>

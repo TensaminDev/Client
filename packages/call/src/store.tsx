@@ -1073,7 +1073,7 @@ export async function switchCallDevice(
 function updateProcessingWarnings(settings: CallSettings) {
   const managed = new Set([
     "Automatic gain control may make the user extremely quiet on Linux.",
-    "DeepFilter and voice isolation are enabled together.",
+    "It is not recommended to use noise suppression and voice isolation together.",
   ]);
   const warnings = useCall
     .getState()

@@ -258,21 +258,25 @@ export default function Page() {
     useState("");
   const [currentForcedOmikronPublicKey, setCurrentForcedOmikronPublicKey] =
     useState("");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    load("omega_url").then((value) => {
-      setDraftOmegaUrl(value);
-      setCurrentOmegaUrl(value);
-    });
-    load("forced_omikron_url").then((value) => {
-      setDraftForcedOmikronUrl(value || "");
-      setCurrentForcedOmikronUrl(value || "");
-    });
-    load("forced_omikron_public_key").then((value) => {
-      setDraftForcedOmikronPublicKey(value || "");
-      setCurrentForcedOmikronPublicKey(value || "");
+    void Promise.all([
+      load("omega_url"),
+      load("forced_omikron_url"),
+      load("forced_omikron_public_key"),
+    ]).then(([omegaUrl, forcedOmikronUrl, forcedOmikronPublicKey]) => {
+      setDraftOmegaUrl(omegaUrl);
+      setCurrentOmegaUrl(omegaUrl);
+      setDraftForcedOmikronUrl(forcedOmikronUrl || "");
+      setCurrentForcedOmikronUrl(forcedOmikronUrl || "");
+      setDraftForcedOmikronPublicKey(forcedOmikronPublicKey || "");
+      setCurrentForcedOmikronPublicKey(forcedOmikronPublicKey || "");
+      setLoaded(true);
     });
   }, [load]);
+
+  if (!loaded) return null;
 
   return (
     <div className="flex flex-col gap-8">

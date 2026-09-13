@@ -31,7 +31,7 @@ export default function Page() {
     };
   }, []);
 
-  if (!isAndroid) return null;
+  if (!isAndroid || loading) return null;
 
   function updateInitialScale(nextScale: number) {
     setInitialScale(nextScale);

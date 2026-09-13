@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { SpecialSwitch } from "@methanium/ui";
 
-import Switch from "./switch";
 import ConversationModal from "../modal/conversation";
 import CommunityModal from "../modal/community";
 import { Loader2 } from "lucide-react";
@@ -21,13 +21,21 @@ export default function List() {
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: items?.length || 0,
-    estimateSize: () => 60,
+    estimateSize: () => 50,
     getScrollElement: () => scrollRef.current,
   });
 
   return (
     <div className="flex flex-col h-full">
-      <Switch category={category} setCategory={setCategory} />
+      <SpecialSwitch
+        className="mx-2"
+        value={category}
+        onValueChange={setCategory}
+        options={[
+          { value: "conversations", label: "Conversations" },
+          { value: "communities", label: "Communities" },
+        ]}
+      />
       <div
         ref={scrollRef}
         id="conversation-list"

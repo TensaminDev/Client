@@ -132,6 +132,7 @@ function ThemeStorageBridge() {
     parentThemeId,
     setParentThemeId,
     applyThemePreset,
+    notCustomized,
     themeDesign,
     setThemeDesign,
   } = useTheme();
@@ -177,16 +178,19 @@ function ThemeStorageBridge() {
           return;
         }
 
-        if (customCss === "" && parent) applyThemePreset(parent);
-        else setParentThemeId(parent || null);
-        setThemeColor(color);
-        setThemePalette(palette);
-        setThemePrimaryColor(primaryColor);
         setThemePolarity(polarity);
-        setThemeTint(tint);
-        setThemeBorderRadius(borderRadius);
-        if (customCss !== "") setThemeCustomCss(customCss);
-        setThemeDesign(design);
+        if ((notCustomized || customCss === "") && parent) {
+          applyThemePreset(parent);
+        } else {
+          setParentThemeId(parent || null);
+          setThemeColor(color);
+          setThemePalette(palette);
+          setThemePrimaryColor(primaryColor);
+          setThemeTint(tint);
+          setThemeBorderRadius(borderRadius);
+          setThemeCustomCss(customCss);
+          setThemeDesign(design);
+        }
         loadedRef.current = true;
       },
     );
@@ -197,6 +201,7 @@ function ThemeStorageBridge() {
   }, [
     load,
     applyThemePreset,
+    notCustomized,
     setThemeBorderRadius,
     setThemeColor,
     setThemeCustomCss,

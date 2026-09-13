@@ -93,6 +93,7 @@ export default function Page() {
   );
   const [microphones, setMicrophones] = useState<DeviceOption[]>([]);
   const [speakers, setSpeakers] = useState<DeviceOption[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const expectedCodec = useCall((state) => state.screenShareExpectedCodec);
@@ -109,6 +110,7 @@ export default function Page() {
         callPageKeys.map((key, index) => [key, loaded[index]]),
       ) as PageValues,
     );
+    setLoaded(true);
   }, [storage]);
 
   const refreshDevices = useCallback(async () => {
@@ -176,6 +178,8 @@ export default function Page() {
   const agcWarning =
     /Linux/i.test(navigator.userAgent) && values.call_automatic_gain_control;
   const sensitivity = Math.round((-25 - values.call_mute_range_start) * 2);
+
+  if (!loaded) return null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -272,7 +276,7 @@ export default function Page() {
                   warnings={
                     deepFilterWarning
                       ? [
-                          "DeepFilter and voice isolation are enabled together. Use only one for cleaner audio.",
+                          "It is not recommended to use noise suppression and voice isolation together.",
                         ]
                       : []
                   }
@@ -321,7 +325,7 @@ export default function Page() {
                 warnings={
                   deepFilterWarning
                     ? [
-                        "DeepFilter and voice isolation are enabled together. Use only one for cleaner audio.",
+                        "It is not recommended to use noise suppression and voice isolation together.",
                       ]
                     : []
                 }
