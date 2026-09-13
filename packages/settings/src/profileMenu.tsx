@@ -90,7 +90,7 @@ export function SettingsProfileMenu() {
       <div className="flex gap-2 w-full">
         <Button
           className="size-9 p-0"
-          variant="outline"
+          variant="ghost"
           onClick={() => openNameDialog("create")}
         >
           <Plus className="size-4" />
@@ -118,15 +118,15 @@ export function SettingsProfileMenu() {
         <Button
           className="size-9 p-0"
           disabled={!activeProfile?.available}
-          variant="outline"
+          variant="ghost"
           onClick={() => openNameDialog("rename")}
         >
           <Pencil className="size-4" />
         </Button>
         <Button
-          className="size-9 p-0"
+          className="size-9 p-0 text-destructive"
           disabled={!activeProfile}
-          variant="outline"
+          variant="ghost"
           onClick={() => {
             setDialogError("");
             setDialog("delete");

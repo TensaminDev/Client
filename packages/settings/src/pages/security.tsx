@@ -1,3 +1,9 @@
+import { ClearStorageButton } from "@methanium/ui";
+
 export default function Page() {
-  return null;
+  return (
+    <div>
+      <ClearStorageButton className="w-full" />
+    </div>
+  );
 }

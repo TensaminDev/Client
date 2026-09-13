@@ -19,7 +19,6 @@ import {
   switchCallDevice,
   useCall,
 } from "@tensamin/call/store";
-import WarningIndicator from "@tensamin/call/warningIndicator";
 import { storageDefaults, type Storage } from "@tensamin/shared/data";
 import { toast } from "@tensamin/shared/log";
 import { playSound, stopSound } from "@tensamin/shared/sounds";
@@ -61,6 +60,26 @@ type PageValues = Pick<Storage, (typeof callPageKeys)[number]>;
 
 function sliderValue(value: number | readonly number[], fallback: number) {
   return typeof value === "number" ? value : (value[0] ?? fallback);
+}
+
+import { Tooltip, TooltipContent, TooltipTrigger } from "@methanium/ui";
+import { AlertTriangle } from "lucide-react";
+
+function WarningIndicator({ warnings }: { warnings: string[] }) {
+  if (warnings.length === 0) return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<AlertTriangle fill="orange" stroke="var(--background)" className="size-4.5" />}
+      />
+      <TooltipContent>
+        {warnings.map((warning) => (
+          <p key={warning}>{warning}</p>
+        ))}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 export default function Page() {
@@ -123,7 +142,7 @@ export default function Page() {
     void refresh();
     void refreshDevices();
     const unsubscribe = storage.subscribe((keys, bulk) => {
-      if (bulk && keys.some((key) => callPageKeys.includes(key as never)))
+      if (bulk || keys.some((key) => callPageKeys.includes(key as never)))
         void refresh();
     });
     navigator.mediaDevices?.addEventListener("devicechange", refreshDevices);

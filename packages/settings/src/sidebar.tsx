@@ -1,4 +1,4 @@
-import { Button, ClearStorageButton, cn, useIsMobile } from "@methanium/ui";
+import { Button, cn } from "@methanium/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { settingsNavigation } from "./navigation";
@@ -14,8 +14,6 @@ export function SettingsSidebar({
   const categories = [
     ...new Set(settingsNavigation.map((page) => page.category)),
   ];
-
-  const isMobile = useIsMobile();
 
   return (
     <div
@@ -37,18 +35,16 @@ export function SettingsSidebar({
             .map((page) => (
               <Button
                 key={page.path}
-                className="w-full px-4!"
-                variant="outline"
+                className="w-full flex justify-start"
+                variant="ghost"
                 onClick={() => navigate({ to: `/settings/${page.path}` })}
               >
+                {page.icon}
                 {page.label}
               </Button>
             ))}
         </div>
       ))}
-      <div hidden={!isMobile}>
-        <ClearStorageButton className="w-full" />
-      </div>
     </div>
   );
 }

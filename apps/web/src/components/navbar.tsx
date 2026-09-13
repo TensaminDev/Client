@@ -68,14 +68,14 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             <Button
               onClick={() => navigate({ to: "/" })}
               className="w-9 h-9! aspect-square rounded-lg"
-              variant="outline"
+              variant="ghost"
             >
               <House className="size-4.5" />
             </Button>
             <Button
               onClick={() => navigate({ to: "/settings" })}
               className="w-9 h-9! aspect-square rounded-lg"
-              variant="outline"
+              variant="ghost"
             >
               <Settings className="size-4.5" />
             </Button>

@@ -20,6 +20,8 @@ import {
   type RawMessage,
 } from "./values";
 import Wrapper from "@tensamin/identity/wrapper";
+import { useMTP } from "@tensamin/mtp";
+import { GlobeOff } from "lucide-react";
 
 function shouldFetchPreviousPage({
   entry,
@@ -168,6 +170,8 @@ export default function Screen() {
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasChatSecret = chatSecret !== null;
+
+  const { readyState } = useMTP();
 
   useEffect(() => {
     const previousEditingMessageId = previousEditingMessageIdRef.current;
@@ -560,10 +564,20 @@ export default function Screen() {
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
-      {error !== "" && errorDescription !== "" ? (
+      {readyState === 0 ? (
+        <div className="w-full h-full flex flex-col gap-10 justify-center items-center">
+          <GlobeOff size={80} />
+          <p className="text-muted-foreground text-lg w-80 text-center">
+            You are not connected to an Omikron. Please check your internet
+            connection and try again later
+          </p>
+        </div>
+      ) : error !== "" && errorDescription !== "" ? (
         <div className="w-full h-full flex flex-col gap-2 items-center justify-center">
           <p className="font-semibold text-xl">{error}</p>
-          <p className="text-muted-foreground text-lg">{errorDescription}</p>
+          <p className="text-muted-foreground text-lg w-80 text-center">
+            {errorDescription}
+          </p>
         </div>
       ) : (
         <>

@@ -31,7 +31,7 @@ export function Basic({
     <Button
       render={<div />}
       nativeButton={false}
-      variant="outline"
+      variant="ghost"
       className="relative outline-none! animate-in fade-in duration-300 h-auto w-full justify-start gap-2.5 rounded-xl min-h-12.5!"
     >
       <div className="relative shrink-0 overflow-visible">

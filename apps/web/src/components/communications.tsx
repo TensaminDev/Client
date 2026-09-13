@@ -313,7 +313,11 @@ export function AddConversationButton() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button>Add Conversation</Button>} />
+      <DialogTrigger
+        render={({ onClick }) => (
+          <Button onClick={onClick}>Add Conversation</Button>
+        )}
+      />
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>New Conversation</DialogTitle>
