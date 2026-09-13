@@ -859,12 +859,9 @@ export const storageDefaults: Storage = {
   theme_custom_css: "",
   theme_parent: "tensamin",
   theme_design: {
-    density: 1,
+    spacing: 1,
     borderWidth: 1,
-    shadowStrength: 0,
     fontScale: 1,
-    headingWeight: 600,
-    motion: 1,
     fontFamily: "public-sans",
   },
   chat_trusted_domains: [
