@@ -59,20 +59,10 @@ export default function Layout({ children }: { children: ReactNode }) {
         </AlertDialog>
         <div
           data-app-layout
-          className={cn(
-            "w-full h-full min-h-0 flex flex-col overflow-hidden",
-            isMobile && !showMobileNavbar && "bg-background",
-          )}
+          className="w-full h-full min-h-0 flex flex-col overflow-hidden bg-background"
         >
           {(!isMobile || showMobileNavbar) && <Navbar forMobile={isMobile} />}
-
-          <div
-            className={cn(
-              "bg-background min-h-0 flex-1 w-full overflow-hidden",
-              !isMobile &&
-                "rounded-tl-3xl border-t border-l border-(--border)/40",
-            )}
-          >
+          <div className="bg-background min-h-0 flex-1 w-full overflow-hidden">
             {children}
           </div>
         </div>

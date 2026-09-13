@@ -6,6 +6,7 @@ import { settingsPages } from "./manifest";
 export { SettingsProfilesProvider, useSettingsProfiles } from "./profiles";
 export type { SettingsProfile } from "./profiles";
 export { SettingsProfileOnboarding } from "./profileOnboarding";
+export { SettingsProfileMenu } from "./profileMenu";
 
 export function createSettingsRoute(parentRoute: AnyRoute) {
   const settingsRoute = createRoute({

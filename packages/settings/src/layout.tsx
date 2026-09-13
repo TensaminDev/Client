@@ -3,7 +3,6 @@ import { Button, useIsMobile } from "@methanium/ui";
 import { ArrowLeft } from "lucide-react";
 
 import { SettingsSidebar } from "./sidebar";
-import { SettingsProfileMenu } from "./profileMenu";
 import { useSettingsProfiles } from "./profiles";
 
 export default function SettingsLayout() {
@@ -15,10 +14,7 @@ export default function SettingsLayout() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="hidden md:flex w-full shrink-0 justify-between p-2">
-        <SettingsProfileMenu />
-      </div>
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden border-t border-(--border)/40">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden">
         <SettingsSidebar className="hidden md:flex" />
         <div className="bg-background flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
           <div className="flex items-center gap-2">
@@ -41,7 +37,10 @@ export default function SettingsLayout() {
                 .replace(/\b\w/g, (letter) => letter.toUpperCase())}
             </h1>
           </div>
-          <div className="flex flex-col h-full" key={activeProfile?.id ?? "local"}>
+          <div
+            className="flex flex-col h-full"
+            key={activeProfile?.id ?? "local"}
+          >
             <Outlet />
           </div>
         </div>

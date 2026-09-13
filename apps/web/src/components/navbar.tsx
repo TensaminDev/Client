@@ -23,13 +23,118 @@ import {
   SelectTrigger,
 } from "@methanium/ui";
 import { displayCallId } from "@tensamin/call/utils";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { WindowControls as Controls } from "@methanium/ui";
 import { useSession } from "@tensamin/identity/session";
 import { joinCall } from "@tensamin/call/store";
+import { SettingsProfileMenu } from "@tensamin/settings";
 import Profile from "./modals/profile";
 
-export default function Navbar({ forMobile }: { forMobile: boolean }) {
+function NavbarSection({
+  children,
+  side,
+}: {
+  children: ReactNode;
+  side: "left" | "right";
+}) {
+  const content = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState<number>();
+
+  useLayoutEffect(() => {
+    if (!content.current) return;
+
+    const element = content.current;
+    const updateWidth = () => setWidth(element.scrollWidth);
+    const resizeObserver = new ResizeObserver(updateWidth);
+    const mutationObserver = new MutationObserver(updateWidth);
+
+    resizeObserver.observe(element);
+    mutationObserver.observe(element, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    updateWidth();
+
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, []);
+
+  const edgeWidth = 18;
+  const edgeReserve = 18;
+
+  return (
+    <div
+      className="relative z-10 h-12 min-w-0 shrink-0 overflow-hidden"
+      style={{ width: width == null ? 0 : width + edgeReserve }}
+    >
+      <div
+        className="absolute inset-y-0 z-0 border-b border-(--border)/40 bg-sidebar"
+        style={
+          side === "left"
+            ? { left: 0, right: edgeWidth }
+            : { right: 0, left: edgeWidth }
+        }
+      />
+
+      <svg
+        aria-hidden="true"
+        className={`pointer-events-none absolute top-0 z-1 h-12 ${
+          side === "left" ? "right-0 -scale-x-100" : "left-0"
+        }`}
+        style={{ width: edgeWidth }}
+        viewBox="0 0 18 48"
+      >
+        <path
+          d="
+            M0 0
+            V6.5
+            C1.2 6.5 2 7 3 8
+            C4.5 9.5 7.2 22.05 9 27
+            C10.8 31.95 13.5 44.5 15 46
+            C16 47 16.8 47.5 18 47.5
+            V0
+            Z
+          "
+          fill="var(--sidebar)"
+        />
+
+        <path
+          d="
+            M0 6.5
+            C1.2 6.5 2 7 3 8
+            C4.5 9.5 7.2 22.05 9 27
+            C10.8 31.95 13.5 44.5 15 46
+            C16 47 16.8 47.5 18 47.5
+          "
+          fill="none"
+          className="opacity-40"
+          stroke="var(--border)"
+          strokeWidth="1"
+          strokeLinecap="butt"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      <div
+        ref={content}
+        className="relative z-10 flex h-full w-max items-center gap-2"
+        style={side === "right" ? { marginLeft: edgeReserve } : undefined}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export default function Navbar({
+  forMobile,
+  children,
+}: {
+  forMobile: boolean;
+  children?: ReactNode;
+}) {
   const navigate = useNavigate();
   const callState = useCall((state) => state.state);
   const { calls } = useSession();
@@ -52,9 +157,10 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
     <div
       data-tauri-drag-region
       data-pwa-navbar
-      className={`${forMobile && "border-b"} pl-px w-full shrink-0 gap-2 h-13.5 flex items-center justify-between`}
+      className="relative flex h-13.5 w-full shrink-0 items-start justify-between"
     >
-      <div className="flex items-center justify-center gap-2">
+      <div className="absolute inset-x-0 top-0 h-[7px] border-b border-(--border)/40 bg-sidebar" />
+      <NavbarSection side="left">
         {forMobile ? (
           <Button
             onClick={() => void navigate({ to: "/" })}
@@ -111,7 +217,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                           textDecorationLine: "none",
                         }}
                       >
-                        <p className="font-medium text-[1.07rem]">
+                        <p className="font-medium text-[1.07rem] pr-1">
                           {user?.Display}
                         </p>
                       </Button>
@@ -126,9 +232,16 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
             loading={<Skeleton className="w-30 h-5" />}
           />
         )}
+      </NavbarSection>
+      <div className="pointer-events-none relative z-20 flex h-full min-w-0 flex-1 items-center justify-start [&>*]:pointer-events-auto">
+        {children}
+        {!forMobile && pathname.startsWith("/settings") && (
+          <div className="translate-y-[3.5px] [&>div]:w-auto">
+            <SettingsProfileMenu />
+          </div>
+        )}
       </div>
-      {/* Empty space */}
-      <div className="flex items-center justify-center gap-2">
+      <NavbarSection side="right">
         {pathname === "/chat" && id && (
           <>
             {currentCalls.length === 0 ? (
@@ -201,7 +314,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           </Button>
         )}
         <Controls className="mr-2" />
-      </div>
+      </NavbarSection>
     </div>
   );
 }
