@@ -30,12 +30,12 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@livekit_components-react@2.9.23`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
 
-## @methanium/ui@0.0.38
+## @methanium/ui@0.0.28
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@methanium_ui@0.0.38`
-- Source package dir: `apps/pwa/node_modules/@methanium/ui`
+- Folder: `licenses/@methanium_ui@0.0.28`
+- Source package dir: `apps/tauri/node_modules/@methanium/ui`
 
 ## @tailwindcss/vite@4.3.3
 
@@ -85,7 +85,7 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Description: Modern and scalable routing for React applications
 - Included files: LICENSE
 - Folder: `licenses/@tanstack_react-router@1.170.23`
-- Source package dir: `apps/pwa/node_modules/@tanstack/react-router`
+- Source package dir: `apps/web/node_modules/@tanstack/react-router`
 
 ## @tanstack/react-virtual@3.14.9
 
@@ -105,7 +105,7 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Description: Tauri API definitions
 - Included files: LICENSE_APACHE-2.0, LICENSE_MIT
 - Folder: `licenses/@tauri-apps_api@2.11.1`
-- Source package dir: `apps/pwa/node_modules/@tauri-apps/api`
+- Source package dir: `apps/tauri/node_modules/@tauri-apps/api`
 
 ## @tauri-apps/cli@2.11.4
 
@@ -162,7 +162,7 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Description: TypeScript definitions for react
 - Included files: LICENSE
 - Folder: `licenses/@types_react@19.2.18`
-- Source package dir: `apps/pwa/node_modules/@types/react`
+- Source package dir: `apps/web/node_modules/@types/react`
 
 ## @types/react-dom@19.2.4
 
@@ -174,14 +174,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@types_react-dom@19.2.4`
 - Source package dir: `apps/web/node_modules/@types/react-dom`
 
-## @typescript-eslint/parser@8.67.0
+## @typescript-eslint/parser@8.66.0
 
 - License: MIT
 - Homepage: https://typescript-eslint.io/packages/parser
 - Repository: https://github.com/typescript-eslint/typescript-eslint.git
 - Description: An ESLint custom parser which leverages TypeScript ESTree
 - Included files: LICENSE
-- Folder: `licenses/@typescript-eslint_parser@8.67.0`
+- Folder: `licenses/@typescript-eslint_parser@8.66.0`
 - Source package dir: `node_modules/@typescript-eslint/parser`
 
 ## @vitejs/plugin-react@6.0.5
@@ -270,14 +270,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/eventemitter3@5.0.4`
 - Source package dir: `apps/web/node_modules/eventemitter3`
 
-## fallow@3.17.0
+## fallow@3.14.0
 
 - License: MIT
 - Homepage: https://docs.fallow.tools
 - Repository: git+https://github.com/fallow-rs/fallow.git
 - Description: Codebase intelligence for TypeScript and JavaScript. Free static analysis of code and styles, optional paid runtime intelligence (Fallow Runtime). Quality, risk, architecture, dependencies, duplication, and design-system drift for humans, CI, and the agents writing your code. Zero-config framework support.
 - Included files: none found
-- Folder: `licenses/fallow@3.17.0`
+- Folder: `licenses/fallow@3.14.0`
 - Source package dir: `node_modules/fallow`
 
 ## globals@17.9.0
@@ -317,13 +317,13 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/motion@13.0.0`
 - Source package dir: `packages/chat/node_modules/motion`
 
-## mtp@0.3.0
+## mtp@0.2.0
 
 - License: UNKNOWN
 - Description: MTP TypeScript SDK
 - Included files: none found
-- Folder: `licenses/mtp@0.3.0`
-- Source package dir: `apps/pwa/node_modules/mtp`
+- Folder: `licenses/mtp@0.2.0`
+- Source package dir: `packages/mtp/node_modules/mtp`
 
 ## prettier@3.9.6
 
@@ -343,7 +343,7 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Description: React is a JavaScript library for building user interfaces.
 - Included files: LICENSE
 - Folder: `licenses/react@19.2.8`
-- Source package dir: `apps/pwa/node_modules/react`
+- Source package dir: `apps/tauri/node_modules/react`
 
 ## react-dom@19.2.8
 
@@ -385,15 +385,15 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/recharts@3.10.1`
 - Source package dir: `packages/call/node_modules/recharts`
 
-## sonner@2.0.8
+## sonner@2.0.7
 
 - License: MIT
 - Homepage: https://sonner.emilkowal.ski/
 - Repository: git+https://github.com/emilkowalski/sonner.git
 - Description: An opinionated toast component for React.
 - Included files: LICENSE.md
-- Folder: `licenses/sonner@2.0.8`
-- Source package dir: `apps/pwa/node_modules/sonner`
+- Folder: `licenses/sonner@2.0.7`
+- Source package dir: `packages/notifications/node_modules/sonner`
 
 ## tailwind-scrollbar-hide@4.0.0
 
@@ -462,67 +462,17 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Description: Native-ESM powered web dev build tool
 - Included files: LICENSE.md
 - Folder: `licenses/vite@8.2.1`
-- Source package dir: `apps/pwa/node_modules/vite`
+- Source package dir: `apps/web/node_modules/vite`
 
-## vite-plugin-pwa@1.3.0
-
-- License: MIT
-- Homepage: https://github.com/vite-pwa/vite-plugin-pwa#readme
-- Repository: git+https://github.com/vite-pwa/vite-plugin-pwa.git
-- Description: Zero-config PWA for Vite
-- Included files: LICENSE
-- Folder: `licenses/vite-plugin-pwa@1.3.0`
-- Source package dir: `apps/pwa/node_modules/vite-plugin-pwa`
-
-## vitest@4.1.11
+## vitest@4.1.10
 
 - License: MIT
 - Homepage: https://vitest.dev
 - Repository: git+https://github.com/vitest-dev/vitest.git
 - Description: Next generation testing framework powered by Vite
 - Included files: LICENSE.md
-- Folder: `licenses/vitest@4.1.11`
+- Folder: `licenses/vitest@4.1.10`
 - Source package dir: `node_modules/vitest`
-
-## workbox-core@7.4.1
-
-- License: MIT
-- Homepage: https://github.com/GoogleChrome/workbox
-- Repository: git+https://github.com/googlechrome/workbox.git
-- Description: This module is used by a number of the other Workbox modules to share common code.
-- Included files: LICENSE
-- Folder: `licenses/workbox-core@7.4.1`
-- Source package dir: `apps/pwa/node_modules/workbox-core`
-
-## workbox-precaching@7.4.1
-
-- License: MIT
-- Homepage: https://github.com/GoogleChrome/workbox
-- Repository: git+https://github.com/googlechrome/workbox.git
-- Description: This module efficiently precaches assets.
-- Included files: LICENSE
-- Folder: `licenses/workbox-precaching@7.4.1`
-- Source package dir: `apps/pwa/node_modules/workbox-precaching`
-
-## workbox-routing@7.4.1
-
-- License: MIT
-- Homepage: https://github.com/GoogleChrome/workbox
-- Repository: git+https://github.com/googlechrome/workbox.git
-- Description: A service worker helper library to route request URLs to handlers.
-- Included files: LICENSE
-- Folder: `licenses/workbox-routing@7.4.1`
-- Source package dir: `apps/pwa/node_modules/workbox-routing`
-
-## workbox-strategies@7.4.1
-
-- License: MIT
-- Homepage: https://github.com/GoogleChrome/workbox
-- Repository: git+https://github.com/googlechrome/workbox.git
-- Description: A service worker helper library implementing common caching strategies.
-- Included files: LICENSE
-- Folder: `licenses/workbox-strategies@7.4.1`
-- Source package dir: `apps/pwa/node_modules/workbox-strategies`
 
 ## zod@4.4.3
 
