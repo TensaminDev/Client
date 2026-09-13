@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-08-09T22:09:04.469Z",
+    "timestamp": "2026-09-13T17:52:30.224Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -118,19 +118,19 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40methanium/ui@0.0.28",
+      "bomRef": "pkg:npm/%40methanium/ui@0.0.38",
       "name": "@methanium/ui",
-      "version": "0.0.28",
-      "purl": "pkg:npm/%40methanium/ui@0.0.28",
+      "version": "0.0.38",
+      "purl": "pkg:npm/%40methanium/ui@0.0.38",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@methanium_ui@0.0.28"
+          "value": "licenses/@methanium_ui@0.0.38"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/@methanium/ui"
+          "value": "apps/pwa/node_modules/@methanium/ui"
         }
       ]
     },
@@ -305,7 +305,7 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/@tanstack/react-router"
+          "value": "apps/pwa/node_modules/@tanstack/react-router"
         }
       ]
     },
@@ -375,7 +375,7 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/@tauri-apps/api"
+          "value": "apps/pwa/node_modules/@tauri-apps/api"
         }
       ]
     },
@@ -576,7 +576,7 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/@types/react"
+          "value": "apps/pwa/node_modules/@types/react"
         }
       ]
     },
@@ -617,10 +617,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.66.0",
+      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.67.0",
       "name": "@typescript-eslint/parser",
-      "version": "8.66.0",
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.66.0",
+      "version": "8.67.0",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.67.0",
       "description": "An ESLint custom parser which leverages TypeScript ESTree",
       "licenses": [
         {
@@ -642,7 +642,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@typescript-eslint_parser@8.66.0"
+          "value": "licenses/@typescript-eslint_parser@8.67.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -951,10 +951,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/fallow@3.14.0",
+      "bomRef": "pkg:npm/fallow@3.17.0",
       "name": "fallow",
-      "version": "3.14.0",
-      "purl": "pkg:npm/fallow@3.14.0",
+      "version": "3.17.0",
+      "purl": "pkg:npm/fallow@3.17.0",
       "description": "Codebase intelligence for TypeScript and JavaScript. Free static analysis of code and styles, optional paid runtime intelligence (Fallow Runtime). Quality, risk, architecture, dependencies, duplication, and design-system drift for humans, CI, and the agents writing your code. Zero-config framework support.",
       "licenses": [
         {
@@ -976,7 +976,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/fallow@3.14.0"
+          "value": "licenses/fallow@3.17.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1114,20 +1114,20 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/mtp@0.2.0",
+      "bomRef": "pkg:npm/mtp@0.3.0",
       "name": "mtp",
-      "version": "0.2.0",
-      "purl": "pkg:npm/mtp@0.2.0",
+      "version": "0.3.0",
+      "purl": "pkg:npm/mtp@0.3.0",
       "description": "MTP TypeScript SDK",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/mtp@0.2.0"
+          "value": "licenses/mtp@0.3.0"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "packages/mtp/node_modules/mtp"
+          "value": "apps/pwa/node_modules/mtp"
         }
       ]
     },
@@ -1197,7 +1197,7 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/react"
+          "value": "apps/pwa/node_modules/react"
         }
       ]
     },
@@ -1343,10 +1343,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/sonner@2.0.7",
+      "bomRef": "pkg:npm/sonner@2.0.8",
       "name": "sonner",
-      "version": "2.0.7",
-      "purl": "pkg:npm/sonner@2.0.7",
+      "version": "2.0.8",
+      "purl": "pkg:npm/sonner@2.0.8",
       "description": "An opinionated toast component for React.",
       "licenses": [
         {
@@ -1368,11 +1368,11 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/sonner@2.0.7"
+          "value": "licenses/sonner@2.0.8"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "packages/notifications/node_modules/sonner"
+          "value": "apps/pwa/node_modules/sonner"
         }
       ]
     },
@@ -1613,16 +1613,51 @@
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/vite"
+          "value": "apps/pwa/node_modules/vite"
         }
       ]
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/vitest@4.1.10",
+      "bomRef": "pkg:npm/vite-plugin-pwa@1.3.0",
+      "name": "vite-plugin-pwa",
+      "version": "1.3.0",
+      "purl": "pkg:npm/vite-plugin-pwa@1.3.0",
+      "description": "Zero-config PWA for Vite",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/vite-pwa/vite-plugin-pwa#readme"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/vite-pwa/vite-plugin-pwa.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/vite-plugin-pwa@1.3.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/pwa/node_modules/vite-plugin-pwa"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/vitest@4.1.11",
       "name": "vitest",
-      "version": "4.1.10",
-      "purl": "pkg:npm/vitest@4.1.10",
+      "version": "4.1.11",
+      "purl": "pkg:npm/vitest@4.1.11",
       "description": "Next generation testing framework powered by Vite",
       "licenses": [
         {
@@ -1644,11 +1679,151 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/vitest@4.1.10"
+          "value": "licenses/vitest@4.1.11"
         },
         {
           "name": "local:sourcePackageDir",
           "value": "node_modules/vitest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/workbox-core@7.4.1",
+      "name": "workbox-core",
+      "version": "7.4.1",
+      "purl": "pkg:npm/workbox-core@7.4.1",
+      "description": "This module is used by a number of the other Workbox modules to share common code.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/GoogleChrome/workbox"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/googlechrome/workbox.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/workbox-core@7.4.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/pwa/node_modules/workbox-core"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/workbox-precaching@7.4.1",
+      "name": "workbox-precaching",
+      "version": "7.4.1",
+      "purl": "pkg:npm/workbox-precaching@7.4.1",
+      "description": "This module efficiently precaches assets.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/GoogleChrome/workbox"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/googlechrome/workbox.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/workbox-precaching@7.4.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/pwa/node_modules/workbox-precaching"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/workbox-routing@7.4.1",
+      "name": "workbox-routing",
+      "version": "7.4.1",
+      "purl": "pkg:npm/workbox-routing@7.4.1",
+      "description": "A service worker helper library to route request URLs to handlers.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/GoogleChrome/workbox"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/googlechrome/workbox.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/workbox-routing@7.4.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/pwa/node_modules/workbox-routing"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/workbox-strategies@7.4.1",
+      "name": "workbox-strategies",
+      "version": "7.4.1",
+      "purl": "pkg:npm/workbox-strategies@7.4.1",
+      "description": "A service worker helper library implementing common caching strategies.",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/GoogleChrome/workbox"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/googlechrome/workbox.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/workbox-strategies@7.4.1"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "apps/pwa/node_modules/workbox-strategies"
         }
       ]
     },
