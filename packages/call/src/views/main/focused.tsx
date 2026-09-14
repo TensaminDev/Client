@@ -195,6 +195,7 @@ export default function View() {
               flush={isImmersiveFocusedView || isFocusedTileFlush}
               type={focusedTileType}
               participant={focusedParticipant}
+              zoomable={!isMobile && focusedTileType === "stream"}
             />
           </div>
         </div>

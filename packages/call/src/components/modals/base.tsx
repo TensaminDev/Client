@@ -159,11 +159,13 @@ export default function Base({
   type,
   fill = false,
   flush = false,
+  zoomable = false,
 }: {
   participant: Participant | undefined;
   type: "user" | "stream";
   fill?: boolean;
   flush?: boolean;
+  zoomable?: boolean;
 }) {
   const { load } = useStorage();
 
@@ -262,7 +264,12 @@ export default function Base({
                 "border-4 border-(--primary-foreground-alt)/75! rounded-lg",
             )}
           >
-            <div className="z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2">
+            <div
+              className={cn(
+                "z-20 absolute bottom-0 left-0 w-full h-full flex justify-start items-end p-2",
+                zoomable && showStream && "pointer-events-none",
+              )}
+            >
               <>
                 {type === "stream" && !showStream && (
                   <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center gap-2">
@@ -297,7 +304,11 @@ export default function Base({
             <div
               ref={currentCard}
               className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center border-(--border)/40 ${
-                flush ? fill ? "rounded-none" : "rounded-none border-y" : "rounded-lg border"
+                flush
+                  ? fill
+                    ? "rounded-none"
+                    : "rounded-none border-y"
+                  : "rounded-lg border"
               }`}
               style={{
                 backgroundColor: avatarBackgroundColor,
@@ -313,6 +324,7 @@ export default function Base({
                     flush={flush}
                     participantId={participant.identity}
                     publication={screenSharePublication}
+                    zoomable={zoomable}
                   />
                 ) : screenSharePreview ? (
                   <div
