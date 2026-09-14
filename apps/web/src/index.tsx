@@ -21,6 +21,7 @@ import Register from "@/features/register/register";
 import { createSettingsRoute } from "@tensamin/settings";
 import ChatScreen from "@tensamin/chat/screen";
 import CallScreen from "@tensamin/call/screen";
+import Authorize from "@tensamin/tauth/authorize";
 
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import PwaRuntime from "@tensamin/pwa/runtime";
@@ -74,6 +75,14 @@ function LoginWrapper({ children }: { children: ReactNode }) {
         if (!active) return;
         if (userId !== 0 && keyring !== "") {
           setLoggedIn(true);
+          const pendingAuthorization = sessionStorage.getItem(
+            "tauth.authorization",
+          );
+          if (location.pathname === "/login" && pendingAuthorization) {
+            sessionStorage.removeItem("tauth.authorization");
+            window.location.assign(pendingAuthorization);
+            return;
+          }
           if (
             location.pathname === "/login" ||
             location.pathname === "/register"
@@ -84,6 +93,9 @@ function LoginWrapper({ children }: { children: ReactNode }) {
         }
         setLoggedIn(false);
         if (location.pathname !== "/register") {
+          if (location.pathname === "/authorize") {
+            sessionStorage.setItem("tauth.authorization", window.location.href);
+          }
           void navigate({
             to: "/login",
             replace: true,
@@ -358,8 +370,24 @@ const registerRoute = createRoute({
   },
 });
 
+const authorizeRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "authorize",
+  validateSearch: z.object({ request: z.string().optional() }),
+  component: function AuthorizationRoute() {
+    const { request } = authorizeRoute.useSearch();
+    return <Authorize request={request} />;
+  },
+});
+
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([homeRoute, chatRoute, callRoute, settingsRoute]),
+  appRoute.addChildren([
+    homeRoute,
+    chatRoute,
+    callRoute,
+    settingsRoute,
+    authorizeRoute,
+  ]),
   loginRoute,
   registerRoute,
 ]);

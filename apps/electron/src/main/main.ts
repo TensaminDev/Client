@@ -33,9 +33,41 @@ let mainWindow: BrowserWindow | null = null;
 let selectedScreenShareSourceId: string | null = null;
 let globalHotkeyBindings: DesktopGlobalHotkeyBinding[] = [];
 let globalHotkeysSuspended = false;
+const pendingDeepLinks: string[] = [];
 
 app.setName("tensamin");
 app.setPath("userData", join(app.getPath("appData"), "tensamin", "electron"));
+app.setAsDefaultProtocolClient("tensamin");
+
+function openDeepLink(value: string) {
+  try {
+    const url = new URL(value);
+    if (
+      url.protocol !== "tensamin:" ||
+      !["authorize", "chat"].includes(url.hostname)
+    )
+      return;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(ipcChannels.deepLinkOpened, value);
+      mainWindow.show();
+      mainWindow.focus();
+    } else {
+      pendingDeepLinks.push(value);
+    }
+  } catch {
+    return;
+  }
+}
+
+const singleInstance = app.requestSingleInstanceLock();
+if (!singleInstance) app.quit();
+app.on("second-instance", (_event, argv) => {
+  argv.filter((value) => value.startsWith("tensamin://")).forEach(openDeepLink);
+});
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  openDeepLink(url);
+});
 
 if (verbose) {
   app.commandLine.appendSwitch("enable-logging", "stderr");
@@ -471,6 +503,7 @@ async function createWindow() {
   }
 
   await mainWindow.loadFile(rendererIndex);
+  pendingDeepLinks.splice(0).forEach(openDeepLink);
 }
 
 app.on("window-all-closed", () => {
@@ -506,6 +539,9 @@ async function start() {
   registerMediaPermissionHandler();
   initTray(() => mainWindow);
   await createWindow();
+  process.argv
+    .filter((value) => value.startsWith("tensamin://"))
+    .forEach(openDeepLink);
 }
 
 void start().catch((error) => {

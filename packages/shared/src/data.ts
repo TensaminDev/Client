@@ -590,27 +590,32 @@ export const mtp = {
     }),
   },
 
-  LoadTxtRecord: {
+  TAuthAuthorize: {
     request: z.object({
-      Path: z.string(),
+      AuthorizationRequest: z.string(),
+      Enabled: z.boolean(),
     }),
     response: z.object({
-      Content: z.string(),
+      AppId: z.string(),
+      AppName: z.string(),
+      Domain: z.string(),
+      RedirectUri: z.url(),
+      Scopes: z.array(z.string()),
+      State: z.string(),
+      Locator: z.string(),
+      AuthorizationCode: z.string().optional(),
     }),
   },
-  AuthenticateApp: {
-    request: z.object({
-      AppIdentifier: z.string(),
-    }),
-    response: z.object({
-      Challenge: z.base64(),
-    }),
+  TAuthGrantList: {
+    request: z.object({}),
+    response: z.object({ Json: z.string() }),
   },
-  CreateApp: {
-    request: z.object({
-      AppPublicKey: z.base64(),
-      AppIdentifier: z.string(),
-    }),
+  TAuthGrantRevoke: {
+    request: z.object({ AppId: z.string() }),
+    response: z.object({}),
+  },
+  TAuthGrantMetadataSet: {
+    request: z.object({ AppId: z.string(), Json: z.string() }),
     response: z.object({}),
   },
 

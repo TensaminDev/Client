@@ -20,6 +20,16 @@ function validKey(key: string) {
 }
 
 const desktopApi = {
+  deepLinks: {
+    onOpened: (callback: (url: string) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, url: unknown) => {
+        if (typeof url === "string") callback(url);
+      };
+      ipcRenderer.on(ipcChannels.deepLinkOpened, listener);
+      return () =>
+        ipcRenderer.removeListener(ipcChannels.deepLinkOpened, listener);
+    },
+  },
   media: {
     listScreenShareSources: () =>
       ipcRenderer.invoke(ipcChannels.listScreenShareSources),

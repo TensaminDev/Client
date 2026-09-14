@@ -90,4 +90,5 @@ export const ipcChannels = {
   setGlobalHotkeyBindings: "hotkeys:setBindings",
   setGlobalHotkeysSuspended: "hotkeys:setSuspended",
   globalHotkeyTriggered: "hotkeys:triggered",
+  deepLinkOpened: "deepLink:opened",
 } as const;

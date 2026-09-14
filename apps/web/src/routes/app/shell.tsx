@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "@tanstack/react-router";
+import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 
 import AppLayout from "./layout";
 import CallInit from "@/components/callRuntimeInit";
@@ -13,7 +13,6 @@ import OnboardingGate from "@tensamin/onboarding";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
 import Session from "@tensamin/identity/session";
 import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
-import TAuthWrapper from "@tensamin/tauth/context";
 import { SettingsProfilesProvider } from "@tensamin/settings";
 
 function DeeplinkNavigator() {
@@ -36,6 +35,12 @@ function DeeplinkNavigator() {
           id > 0
         ) {
           void navigate({ to: "/chat", search: { id } });
+        } else if (
+          url.protocol === "tensamin:" &&
+          url.hostname === "authorize"
+        ) {
+          const request = url.searchParams.get("request");
+          if (request) void navigate({ to: "/authorize", search: { request } });
         }
       } catch {
         // Ignore malformed URLs delivered by the platform.
@@ -47,6 +52,8 @@ function DeeplinkNavigator() {
 }
 
 export default function AppShell() {
+  const authorizing = useLocation().pathname === "/authorize";
+
   return (
     <Crypto>
       <DesktopMediaProvider>
@@ -58,7 +65,9 @@ export default function AppShell() {
               <Session>
                 <UserProvider>
                   <CallInit />
-                  <TAuthWrapper>
+                  {authorizing ? (
+                    <Outlet />
+                  ) : (
                     <AppLayout>
                       <ChatContext>
                         <NotificationsProvider>
@@ -66,7 +75,7 @@ export default function AppShell() {
                         </NotificationsProvider>
                       </ChatContext>
                     </AppLayout>
-                  </TAuthWrapper>
+                  )}
                 </UserProvider>
               </Session>
             </OnboardingGate>
