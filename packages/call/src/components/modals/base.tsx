@@ -22,21 +22,9 @@ import VideoViewer from "../videoViewer";
 import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
 import ContextMenu from "./contextMenu";
 import { useStorage } from "@tensamin/storage/context";
+import { getTrackPublicationBySource } from "../../participants";
 
 const USER_FIELDS = ["UserId", "Avatar", "Display"] as const;
-
-function getTrackPublicationBySource(
-  participant: Participant | undefined,
-  source: Track.Source,
-) {
-  if (!participant) {
-    return undefined;
-  }
-
-  return [...participant.trackPublications.values()].find(
-    (publication) => publication.source === source,
-  );
-}
 
 function TransparentButton({ children }: { children: React.ReactNode }) {
   return (

@@ -16,21 +16,9 @@ import { ScreenShareOff } from "lucide-react";
 import { useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking, useLastSpeakingParticipantId } from "../speakingState";
 import { getAverageImageColor } from "./modals/base";
+import { getTrackPublicationBySource } from "../participants";
 
 const USER_FIELDS = ["Avatar", "Display"] as const;
-
-function getTrackPublicationBySource(
-  participant: Participant | undefined,
-  source: Track.Source,
-) {
-  if (!participant) {
-    return undefined;
-  }
-
-  return [...participant.trackPublications.values()].find(
-    (publication) => publication.source === source,
-  );
-}
 
 type Positions = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type ResizeEdge =

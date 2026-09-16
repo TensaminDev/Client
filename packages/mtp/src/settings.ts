@@ -10,10 +10,6 @@ export type UserBlob = {
   updatedAt: number;
 };
 
-export type UserBlobMetadata = Omit<UserBlob, "ciphertext"> & {
-  ciphertext?: Uint8Array;
-};
-
 export type ReceiptPolicy = {
   sendReadReceipts: boolean;
   sendReceivedReceipts: boolean;
@@ -47,7 +43,9 @@ function blob(data: ProtocolMessage<"UserBlobGet">["data"]): UserBlob {
 
 function blobMetadata(
   data: ProtocolMessage<"UserBlobList">["data"]["Blobs"][number],
-): UserBlobMetadata {
+): Omit<UserBlob, "ciphertext"> & {
+  ciphertext?: Uint8Array;
+} {
   return {
     id: data.BlobId,
     revision: data.VersionNumber,

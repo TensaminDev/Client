@@ -26,10 +26,6 @@ export type DesktopCallStatus = {
   iconDataUrl?: string;
 };
 
-export type DesktopGpuFeatureStatus = {
-  videoEncode: string;
-};
-
 export type DesktopSecureStorageStatus = {
   available: boolean;
   backend: string | null;

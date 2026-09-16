@@ -29,7 +29,7 @@
     "@tensamin/storage": "workspace:*",
     "@tensamin/identity": "workspace:*",
     "lucide-react": "^1.29.0",
-    "motion": "^13.0.0",
+    "mtp": "*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "zod": "^4.4.3"

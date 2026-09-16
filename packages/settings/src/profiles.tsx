@@ -21,7 +21,7 @@ const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 const PROFILE_SALT = textEncoder.encode("tensamin-settings-profile-v1");
 
-export const profileStorageKeys = (
+const profileStorageKeys = (
   Object.keys(storageDefaults) as (keyof Storage)[]
 ).filter(
   (key) =>
