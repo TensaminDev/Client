@@ -166,7 +166,7 @@ function MessageComponent({
     try {
       if (message.Content.split(" ").length > 1) throw new Error();
 
-      new URL(message.Content);
+      if (new URL(message.Content).protocol !== "https:") throw new Error();
       setIsValidURL(true);
     } catch {
       setIsValidURL(false);

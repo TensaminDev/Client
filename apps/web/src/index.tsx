@@ -26,7 +26,7 @@ import Authorize from "@tensamin/tauth/authorize";
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 import PwaRuntime from "@tensamin/pwa/runtime";
 
-import { ErrorScreen, ThemeProvider, useTheme } from "@methanium/ui";
+import { ThemeProvider, useTheme } from "@methanium/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -38,6 +38,15 @@ import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
 import { HotkeysProvider } from "@tensamin/hotkeys";
+import StartupErrorScreen from "@tensamin/storage/startupError";
+
+let nextNavigationDirection: "forward" | "back" = "forward";
+addEventListener("popstate", () => {
+  nextNavigationDirection = "back";
+});
+addEventListener("tensamin:navigate-back", () => {
+  nextNavigationDirection = "back";
+});
 
 const wrapper = document.getElementById("root");
 
@@ -60,6 +69,7 @@ window.enableDev = () => {
 
 function LoginWrapper({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [loginError, setLoginError] = useState<Error | null>(null);
 
   const { load, secureStorage } = useStorage();
 
@@ -104,12 +114,24 @@ function LoginWrapper({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         log(0, "login", "red", "Failed to load login state", error);
+        setLoginError(
+          error instanceof Error ? error : new Error(String(error)),
+        );
       });
 
     return () => {
       active = false;
     };
   }, [load, location.pathname, navigate, secureStorage]);
+
+  if (loginError) {
+    return (
+      <StartupErrorScreen
+        error="Failed to load login state"
+        description={loginError.message}
+      />
+    );
+  }
 
   if (
     loggedIn !== true &&
@@ -306,7 +328,7 @@ function RootShell() {
 const rootRoute = createRootRoute({
   component: RootShell,
   errorComponent: ({ error }: { error: Error }) => (
-    <ErrorScreen
+    <StartupErrorScreen
       description={error.message}
       error={"Unknown Error: " + error.name}
     />
@@ -396,6 +418,19 @@ const router = createRouter({
   routeTree,
   history:
     window.location.protocol === "file:" ? createHashHistory() : undefined,
+  defaultViewTransition: {
+    types: ({ hrefChanged }) => {
+      const direction = nextNavigationDirection;
+      nextNavigationDirection = "forward";
+      return hrefChanged &&
+        matchMedia("(max-width: 767px)").matches &&
+        !matchMedia("(prefers-reduced-motion: reduce)").matches &&
+        "startViewTransition" in document &&
+        CSS.supports("selector(:active-view-transition-type(forward))")
+        ? [direction]
+        : false;
+    },
+  },
   defaultNotFoundComponent: NotFound,
 });
 

@@ -23,6 +23,7 @@ pub fn run() {
             mtp_backend::mtp_send_sealed_relay,
             mtp_backend::mtp_status,
             mtp_backend::mtp_store_credentials,
+            mtp_backend::mtp_clear_credentials,
             mtp_backend::mtp_has_credentials,
             mtp_backend::mtp_load_keyring,
             mtp_backend::mtp_set_enabled,

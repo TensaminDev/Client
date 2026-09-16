@@ -32,9 +32,10 @@ export default function SettingsLayout() {
                 <Button
                   className="h-8 w-8 shrink-0 p-0"
                   variant="ghost"
-                  onClick={() =>
-                    void navigate({ to: isSettingsRoot ? "/" : "/settings" })
-                  }
+                  onClick={() => {
+                    window.dispatchEvent(new Event("tensamin:navigate-back"));
+                    void navigate({ to: isSettingsRoot ? "/" : "/settings" });
+                  }}
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>

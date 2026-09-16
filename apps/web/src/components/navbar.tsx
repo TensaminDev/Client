@@ -176,7 +176,10 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
       <NavbarSection cutout={!forMobile} side="left">
         {forMobile ? (
           <Button
-            onClick={() => void navigate({ to: "/" })}
+            onClick={() => {
+              window.dispatchEvent(new Event("tensamin:navigate-back"));
+              void navigate({ to: "/" });
+            }}
             className="w-9 h-9! ml-2"
             variant="ghost"
           >

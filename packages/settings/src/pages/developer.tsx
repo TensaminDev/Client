@@ -1,5 +1,9 @@
 import { useStorage } from "@tensamin/storage/context";
 import {
+  normalizeHttpsUrl,
+  persistNativeMtpConfig,
+} from "@tensamin/storage/credentials";
+import {
   Button,
   Dialog,
   DialogContent,
@@ -249,7 +253,8 @@ function DatabaseViewer() {
 }
 
 export default function Page() {
-  const { save, load } = useStorage();
+  const storage = useStorage();
+  const { save, load } = storage;
   const [draftOmegaUrl, setDraftOmegaUrl] = useState("");
   const [currentOmegaUrl, setCurrentOmegaUrl] = useState("");
   const [draftForcedOmikronUrl, setDraftForcedOmikronUrl] = useState("");
@@ -259,6 +264,8 @@ export default function Page() {
   const [currentForcedOmikronPublicKey, setCurrentForcedOmikronPublicKey] =
     useState("");
   const [loaded, setLoaded] = useState(false);
+  const [endpointError, setEndpointError] = useState("");
+  const [savingEndpoints, setSavingEndpoints] = useState(false);
 
   useEffect(() => {
     void Promise.all([
@@ -278,6 +285,58 @@ export default function Page() {
 
   if (!loaded) return null;
 
+  async function saveEndpoints({
+    omegaUrl = currentOmegaUrl,
+    forcedOmikronUrl = currentForcedOmikronUrl,
+    forcedOmikronPublicKey = currentForcedOmikronPublicKey,
+  }: {
+    omegaUrl?: string;
+    forcedOmikronUrl?: string;
+    forcedOmikronPublicKey?: string;
+  }) {
+    setEndpointError("");
+    setSavingEndpoints(true);
+    try {
+      const normalizedOmega = normalizeHttpsUrl(omegaUrl, "Omega URL");
+      if (!normalizedOmega.pathname.endsWith("/")) {
+        normalizedOmega.pathname += "/";
+      }
+      const normalizedForcedUrl = forcedOmikronUrl.trim()
+        ? normalizeHttpsUrl(forcedOmikronUrl, "Forced Omikron URL").toString()
+        : undefined;
+      const normalizedForcedKey = forcedOmikronPublicKey.trim() || undefined;
+      if (Boolean(normalizedForcedUrl) !== Boolean(normalizedForcedKey)) {
+        throw new Error(
+          "Forced Omikron URL and public key must both be set or both be empty",
+        );
+      }
+
+      const normalizedOmegaUrl = normalizedOmega.toString();
+      await Promise.all([
+        save("omega_url", normalizedOmegaUrl),
+        save("forced_omikron_url", normalizedForcedUrl),
+        save("forced_omikron_public_key", normalizedForcedKey),
+      ]);
+      const [userId, keyring] = await Promise.all([
+        load("user_id"),
+        load("mtp_keyring"),
+      ]);
+      await persistNativeMtpConfig({ storage, userId, keyring });
+      setDraftOmegaUrl(normalizedOmegaUrl);
+      setCurrentOmegaUrl(normalizedOmegaUrl);
+      setDraftForcedOmikronUrl(normalizedForcedUrl ?? "");
+      setCurrentForcedOmikronUrl(normalizedForcedUrl ?? "");
+      setDraftForcedOmikronPublicKey(normalizedForcedKey ?? "");
+      setCurrentForcedOmikronPublicKey(normalizedForcedKey ?? "");
+    } catch (caught) {
+      setEndpointError(
+        caught instanceof Error ? caught.message : String(caught),
+      );
+    } finally {
+      setSavingEndpoints(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <p className="text-destructive">
@@ -292,12 +351,8 @@ export default function Page() {
             onChange={(event) => setDraftOmegaUrl(event.target.value)}
           />
           <Button
-            disabled={currentOmegaUrl === draftOmegaUrl}
-            onClick={() =>
-              save("omega_url", draftOmegaUrl).then(() =>
-                setCurrentOmegaUrl(draftOmegaUrl),
-              )
-            }
+            disabled={savingEndpoints || currentOmegaUrl === draftOmegaUrl}
+            onClick={() => void saveEndpoints({ omegaUrl: draftOmegaUrl })}
           >
             Save
           </Button>
@@ -320,25 +375,24 @@ export default function Page() {
           />
           <Button
             disabled={
-              currentForcedOmikronUrl === draftForcedOmikronUrl &&
-              currentForcedOmikronPublicKey === draftForcedOmikronPublicKey
+              savingEndpoints ||
+              (currentForcedOmikronUrl === draftForcedOmikronUrl &&
+                currentForcedOmikronPublicKey === draftForcedOmikronPublicKey)
             }
-            onClick={() => {
-              save("forced_omikron_url", draftForcedOmikronUrl).then(() =>
-                setCurrentForcedOmikronUrl(draftForcedOmikronUrl),
-              );
-              save(
-                "forced_omikron_public_key",
-                draftForcedOmikronPublicKey,
-              ).then(() =>
-                setCurrentForcedOmikronPublicKey(draftForcedOmikronPublicKey),
-              );
-            }}
+            onClick={() =>
+              void saveEndpoints({
+                forcedOmikronUrl: draftForcedOmikronUrl,
+                forcedOmikronPublicKey: draftForcedOmikronPublicKey,
+              })
+            }
           >
             Save
           </Button>
         </div>
       </div>
+      {endpointError && (
+        <p className="text-sm text-destructive">{endpointError}</p>
+      )}
       <DatabaseViewer />
     </div>
   );

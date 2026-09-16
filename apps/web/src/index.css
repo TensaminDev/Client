@@ -81,3 +81,49 @@ body {
 :root[data-theme="tensamin"] [data-slot="switch-thumb"] {
   transition-property: translate !important;
 }
+
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: mobile-page-out 120ms ease-out both;
+  }
+
+  ::view-transition-new(root) {
+    animation: mobile-page-in 120ms ease-out both;
+  }
+
+  :active-view-transition-type(back)::view-transition-old(root) {
+    animation-name: mobile-page-out-back;
+  }
+
+  :active-view-transition-type(back)::view-transition-new(root) {
+    animation-name: mobile-page-in-back;
+  }
+}
+
+@keyframes mobile-page-out {
+  to {
+    opacity: 0.85;
+    transform: translateY(-10%);
+  }
+}
+
+@keyframes mobile-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(18%);
+  }
+}
+
+@keyframes mobile-page-out-back {
+  to {
+    opacity: 0;
+    transform: translateY(18%);
+  }
+}
+
+@keyframes mobile-page-in-back {
+  from {
+    opacity: 0.85;
+    transform: translateY(-10%);
+  }
+}

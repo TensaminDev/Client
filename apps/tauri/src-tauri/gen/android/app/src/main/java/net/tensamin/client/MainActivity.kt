@@ -55,6 +55,7 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onWebViewCreate(webView: WebView) {
+    webView.setBackgroundColor(getColor(R.color.launch_background))
     webView.settings.apply {
       setSupportZoom(false)
       builtInZoomControls = false

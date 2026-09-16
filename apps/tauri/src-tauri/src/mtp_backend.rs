@@ -337,7 +337,52 @@ impl MtpManager {
 }
 
 fn migrate_config(config: MtpConfig) -> Result<MtpConfig, String> {
-    Ok(config)
+    let keyring_bytes = decode_browser_base64(&config.keyring)
+        .map_err(|error| format!("invalid MTP keyring: {error}"))?;
+    Keyring::from_bytes(&keyring_bytes).map_err(|error| format!("invalid MTP keyring: {error}"))?;
+    let omega_url = normalize_https_url(&config.omega_url, "Omega URL")?;
+    let forced_omikron_url = config
+        .forced_omikron_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(|value| normalize_https_url(value, "Forced Omikron URL"))
+        .transpose()?;
+    let forced_omikron_public_key = config
+        .forced_omikron_public_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned);
+    if forced_omikron_url.is_some() != forced_omikron_public_key.is_some() {
+        return Err("Forced Omikron URL and public key must both be set or both be empty".into());
+    }
+    if let Some(public_key) = forced_omikron_public_key.as_ref() {
+        let bytes = decode_sdk_bytes(public_key)
+            .map_err(|error| format!("invalid Omikron public key: {error}"))?;
+        let key = PublicKeyBundle::from_bytes(&bytes)
+            .map_err(|error| format!("invalid Omikron public key: {error}"))?;
+        key.validate()
+            .map_err(|error| format!("invalid Omikron public key: {error}"))?;
+    }
+    Ok(MtpConfig {
+        omega_url,
+        forced_omikron_url,
+        forced_omikron_public_key,
+        ..config
+    })
+}
+
+fn normalize_https_url(value: &str, label: &str) -> Result<String, String> {
+    let url = reqwest::Url::parse(value.trim())
+        .map_err(|error| format!("{label} is invalid: {error}"))?;
+    if url.scheme() != "https" || url.host_str().is_none() {
+        return Err(format!("{label} must be a valid HTTPS URL"));
+    }
+    if !url.username().is_empty() || url.password().is_some() {
+        return Err(format!("{label} must not contain credentials"));
+    }
+    Ok(url.to_string())
 }
 
 async fn supervise(generation: u64) {
@@ -503,7 +548,7 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
         .with_ping_interval(Duration::from_secs(30))
         .with_max_missed_pings(3);
     #[cfg(target_os = "android")]
-    let client_config = client_config.with_pinned_pem(android_root_certificates().clone());
+    let client_config = client_config.with_pinned_pem(android_root_certificates()?);
     let connection = tokio::time::timeout(
         Duration::from_secs(30),
         MTPClient::auth_connect(client_config, &keyring, &host_key),
@@ -684,10 +729,13 @@ async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String
         .connect_timeout(Duration::from_secs(10))
         .timeout(Duration::from_secs(20));
     #[cfg(target_os = "android")]
-    let client = client.tls_certs_only(
-        reqwest::Certificate::from_pem_bundle(android_root_certificates())
-            .map_err(|error| format!("invalid bundled root certificates: {error}"))?,
-    );
+    let client = {
+        let roots = android_root_certificates()?;
+        client.tls_certs_only(
+            reqwest::Certificate::from_pem_bundle(&roots)
+                .map_err(|error| format!("invalid Android root certificates: {error}"))?,
+        )
+    };
     let response = client
         .build()
         .map_err(|error| error.to_string())?
@@ -967,23 +1015,11 @@ fn decode_sdk_bytes(value: &str) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(target_os = "android")]
-fn android_root_certificates() -> &'static Vec<u8> {
-    static ROOTS: OnceLock<Vec<u8>> = OnceLock::new();
-    ROOTS.get_or_init(|| {
-        let mut pem = Vec::new();
-        for certificate in webpki_root_certs::TLS_SERVER_ROOT_CERTS {
-            pem.extend_from_slice(b"-----BEGIN CERTIFICATE-----\n");
-            let encoded = STANDARD.encode(certificate.as_ref());
-            for line in encoded.as_bytes().chunks(64) {
-                pem.extend_from_slice(line);
-                pem.push(b'\n');
-            }
-            pem.extend_from_slice(b"-----END CERTIFICATE-----\n");
-        }
-        pem.extend_from_slice(ROOT_YE_PEM);
-        pem.extend_from_slice(YE1_PEM);
-        pem
-    })
+fn android_root_certificates() -> Result<Vec<u8>, String> {
+    let mut pem = android::root_certificates()?;
+    pem.extend_from_slice(ROOT_YE_PEM);
+    pem.extend_from_slice(YE1_PEM);
+    Ok(pem)
 }
 
 fn container_value(value: &DataValue, field: DataType) -> Option<&DataValue> {
@@ -1327,8 +1363,19 @@ pub fn mtp_store_credentials(config: MtpConfig) -> Result<(), String> {
     let config = migrate_config(config)?;
     let serialized = serde_json::to_string(&config).map_err(|error| error.to_string())?;
     android_store_config(&serialized)?;
-    *manager().config.write().expect("config lock poisoned") = Some(config);
+    if manager().is_enabled() {
+        manager().configure_and_start(config);
+    } else {
+        *manager().config.write().expect("config lock poisoned") = Some(config);
+    }
     Ok(())
+}
+
+#[tauri::command]
+pub fn mtp_clear_credentials() -> Result<(), String> {
+    manager().stop();
+    *manager().config.write().expect("config lock poisoned") = None;
+    android_clear_config()
 }
 
 #[tauri::command]
@@ -1337,13 +1384,28 @@ pub fn mtp_has_credentials() -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub fn mtp_load_keyring() -> Option<String> {
-    manager()
-        .config
-        .read()
-        .expect("config lock poisoned")
-        .as_ref()
-        .map(|config| config.keyring.clone())
+pub fn mtp_load_keyring() -> Result<Option<String>, String> {
+    #[cfg(target_os = "android")]
+    {
+        let Some(serialized) = android_load_config()? else {
+            return Ok(None);
+        };
+        let config = serde_json::from_str(serialized.as_str())
+            .map_err(|error| format!("invalid stored MTP config: {error}"))?;
+        let config = migrate_config(config)?;
+        let keyring = config.keyring.clone();
+        *manager().config.write().expect("config lock poisoned") = Some(config);
+        Ok(Some(keyring))
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(manager()
+            .config
+            .read()
+            .expect("config lock poisoned")
+            .as_ref()
+            .map(|config| config.keyring.clone()))
+    }
 }
 
 #[tauri::command]
@@ -1392,6 +1454,10 @@ pub fn mtp_post_message_notification(
 
 #[cfg(not(target_os = "android"))]
 fn android_store_config(_: &str) -> Result<(), String> {
+    Ok(())
+}
+#[cfg(not(target_os = "android"))]
+fn android_clear_config() -> Result<(), String> {
     Ok(())
 }
 #[cfg(not(target_os = "android"))]
@@ -1488,6 +1554,64 @@ mod android {
             )
             .map_err(|e| e.to_string())?;
             Ok(())
+        })
+    }
+
+    pub fn clear_config() -> Result<(), String> {
+        with_env(|env, host| {
+            env.call_method(
+                host.bridge.as_obj(),
+                jni_str!("clearConfig"),
+                jni_sig!("(Landroid/content/Context;)V"),
+                &[JValue::Object(host.context.as_obj())],
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })
+    }
+
+    pub fn load_config() -> Result<Option<String>, String> {
+        with_env(|env, host| {
+            let value = env
+                .call_method(
+                    host.bridge.as_obj(),
+                    jni_str!("loadConfig"),
+                    jni_sig!("(Landroid/content/Context;)Ljava/lang/String;"),
+                    &[JValue::Object(host.context.as_obj())],
+                )
+                .and_then(|value| value.l())
+                .map_err(|e| e.to_string())?;
+            if value.is_null() {
+                return Ok(None);
+            }
+            let value = env
+                .cast_local::<JString>(value)
+                .map_err(|e| e.to_string())?;
+            value
+                .mutf8_chars(env)
+                .map(|value| Some(value.to_str().into_owned()))
+                .map_err(|e| e.to_string())
+        })
+    }
+
+    pub fn root_certificates() -> Result<Vec<u8>, String> {
+        with_env(|env, host| {
+            let value = env
+                .call_method(
+                    host.bridge.as_obj(),
+                    jni_str!("trustedCertificates"),
+                    jni_sig!("()Ljava/lang/String;"),
+                    &[],
+                )
+                .and_then(|value| value.l())
+                .map_err(|e| e.to_string())?;
+            let value = env
+                .cast_local::<JString>(value)
+                .map_err(|e| e.to_string())?;
+            value
+                .mutf8_chars(env)
+                .map(|value| value.to_str().as_bytes().to_vec())
+                .map_err(|e| e.to_string())
         })
     }
 
@@ -1683,9 +1807,11 @@ mod android {
 
 #[cfg(target_os = "android")]
 use android::{
-    cancel_notification as android_cancel_notification, has_config as android_has_config,
+    cancel_notification as android_cancel_notification, clear_config as android_clear_config,
+    has_config as android_has_config,
     is_ignoring_battery_optimizations as android_is_ignoring_battery_optimizations,
-    notify as android_notify, request_battery_exemption as android_request_battery_exemption,
+    load_config as android_load_config, notify as android_notify,
+    request_battery_exemption as android_request_battery_exemption,
     set_enabled as android_set_enabled, status as android_status,
     store_config as android_store_config,
 };

@@ -78,13 +78,11 @@ class MtpForegroundService : Service() {
   override fun onTaskRemoved(rootIntent: Intent?) {
     val preferences = getSharedPreferences(SERVICE_PREFERENCES, Context.MODE_PRIVATE)
     val now = SystemClock.elapsedRealtime()
-    if (now - preferences.getLong(LAST_TASK_RESTART, 0) < TASK_RESTART_COOLDOWN_MS) {
-      super.onTaskRemoved(rootIntent)
-      return
-    }
-    preferences.edit().putLong(LAST_TASK_RESTART, now).commit()
-    if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
-      startService(Intent(this, MtpForegroundService::class.java))
+    if (now - preferences.getLong(LAST_TASK_RESTART, 0) >= TASK_RESTART_COOLDOWN_MS) {
+      preferences.edit().putLong(LAST_TASK_RESTART, now).commit()
+      if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
+        startService(Intent(this, MtpForegroundService::class.java))
+      }
     }
     super.onTaskRemoved(rootIntent)
     // Tauri cannot recreate its WebView after the UI task is removed while this process survives.

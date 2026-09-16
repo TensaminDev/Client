@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Base64
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
@@ -20,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import java.security.KeyStore
 
 @Keep
 object NativeMtpBridge {
@@ -49,6 +51,29 @@ object NativeMtpBridge {
     } catch (error: Throwable) {
       log(0, "Failed to store native MTP credentials", error)
       throw error
+    }
+  }
+
+  fun clearConfig(context: Context) {
+    MtpSecureStore.setEnabled(context, false)
+    stopService(context)
+    MtpSecureStore.clear(context)
+  }
+
+  fun loadConfig(context: Context): String? = MtpSecureStore.loadConfig(context)
+
+  fun trustedCertificates(): String {
+    val store = KeyStore.getInstance("AndroidCAStore").apply { load(null) }
+    return buildString {
+      val aliases = store.aliases()
+      while (aliases.hasMoreElements()) {
+        val certificate = store.getCertificate(aliases.nextElement()) ?: continue
+        append("-----BEGIN CERTIFICATE-----\n")
+        Base64.encodeToString(certificate.encoded, Base64.NO_WRAP)
+          .chunked(64)
+          .forEach { append(it).append('\n') }
+        append("-----END CERTIFICATE-----\n")
+      }
     }
   }
 
