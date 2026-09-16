@@ -24,7 +24,6 @@ import CallScreen from "@tensamin/call/screen";
 import Authorize from "@tensamin/tauth/authorize";
 
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
-import PwaRuntime from "@tensamin/pwa/runtime";
 
 import { ThemeProvider, useTheme } from "@methanium/ui";
 import z from "zod";
@@ -303,14 +302,10 @@ function RootShell() {
         parentThemeStorageKey={null}
         designStorageKey={null}
       >
-        <div
-          data-pwa-root
-          className="box-border w-screen h-dvh overflow-hidden"
-        >
+        <div className="box-border w-screen h-dvh overflow-hidden">
           <Toaster position={isMobile ? "top-center" : "bottom-right"} />
           <TooltipProvider>
             <Storage>
-              <PwaRuntime />
               <HotkeysProvider>
                 <ThemeStorageBridge />
                 <LoginWrapper>

@@ -13,7 +13,6 @@ import {
   useState,
 } from "react";
 import { z } from "zod";
-import { subscribeTuFileLaunch } from "@tensamin/pwa/runtime";
 import {
   parseTuFileContent,
   persistMtpCredentials,
@@ -86,11 +85,6 @@ export default function Form() {
       }
     },
     [persistLogin],
-  );
-
-  useEffect(
-    () => subscribeTuFileLaunch(processDroppedFile),
-    [processDroppedFile],
   );
 
   // Handle .tu files
