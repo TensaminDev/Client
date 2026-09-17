@@ -101,11 +101,11 @@ body {
 
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) {
-    animation: mobile-page-out 120ms ease-out both;
+    animation: mobile-page-out 240ms ease-out both;
   }
 
   ::view-transition-new(root) {
-    animation: mobile-page-in 120ms ease-out both;
+    animation: mobile-page-in 240ms ease-out both;
   }
 
   :active-view-transition-type(back)::view-transition-old(root) {
