@@ -1,1 +1,0 @@
-- Improve trusted domains UX
