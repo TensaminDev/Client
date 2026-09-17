@@ -304,7 +304,7 @@ function RootShell() {
       >
         <div
           data-safe-area-root
-          className="box-border w-screen h-dvh overflow-hidden"
+          className="box-border w-screen h-dvh overflow-hidden bg-background"
         >
           <Toaster position={isMobile ? "top-center" : "bottom-right"} />
           <TooltipProvider>
