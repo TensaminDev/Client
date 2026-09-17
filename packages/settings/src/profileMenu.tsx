@@ -14,8 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@methanium/ui";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { parseTuFileContent } from "@tensamin/storage/credentials";
 import { useSettingsProfiles } from "./profiles";
 
@@ -37,6 +37,8 @@ export function SettingsProfileMenu() {
   const [dialogError, setDialogError] = useState("");
   const [saving, setSaving] = useState(false);
   const [accountFile, setAccountFile] = useState<File | null>(null);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
+  const accountFileRef = useRef<HTMLInputElement>(null);
 
   function openNameDialog(kind: "create" | "rename") {
     setName(kind === "rename" ? (activeProfile?.name ?? "") : "");
@@ -85,13 +87,24 @@ export function SettingsProfileMenu() {
     }
   }
 
+  function openFilePicker() {
+    setFilePickerOpen(true);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => accountFileRef.current?.click()),
+    );
+  }
+
+  useEffect(() => {
+    const input = accountFileRef.current;
+    const closeFilePicker = () => setFilePickerOpen(false);
+    input?.addEventListener("cancel", closeFilePicker);
+    return () => input?.removeEventListener("cancel", closeFilePicker);
+  }, [dialog]);
+
   return (
     <>
       <div className="flex gap-2 w-full">
-        <Button
-          variant="ghost"
-          onClick={() => openNameDialog("create")}
-        >
+        <Button variant="ghost" onClick={() => openNameDialog("create")}>
           <Plus className="size-4" />
         </Button>
         <Select
@@ -171,12 +184,23 @@ export function SettingsProfileMenu() {
                   <Label htmlFor="settings-profile-account">Account file</Label>
                   <Input
                     accept=".tu"
+                    className="hidden"
                     id="settings-profile-account"
+                    ref={accountFileRef}
                     type="file"
-                    onChange={(event) =>
-                      setAccountFile(event.currentTarget.files?.[0] ?? null)
-                    }
+                    onChange={(event) => {
+                      setFilePickerOpen(false);
+                      setAccountFile(event.currentTarget.files?.[0] ?? null);
+                    }}
                   />
+                  <Button
+                    disabled={filePickerOpen}
+                    variant="outline"
+                    onClick={openFilePicker}
+                  >
+                    {filePickerOpen && <Loader2 className="animate-spin" />}
+                    {accountFile?.name ?? "Choose account file"}
+                  </Button>
                 </>
               )}
             </div>

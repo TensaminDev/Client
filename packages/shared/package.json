@@ -6,6 +6,7 @@
   "exports": {
     "./asyncQueue": "./src/asyncQueue.ts",
     "./code": "./src/code.ts",
+    "./clearStorageButton": "./src/clearStorageButton.tsx",
     "./errors": "./src/errors.ts",
     "./focus": "./src/focus.ts",
     "./data": "./src/data.ts",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "@methanium/ui": "*",
+    "@tauri-apps/api": "^2.11.1",
     "lucide-react": "^1.29.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

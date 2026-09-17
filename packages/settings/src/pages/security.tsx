@@ -1,7 +1,6 @@
 import { useMTP } from "@tensamin/mtp";
 import {
   Button,
-  ClearStorageButton,
   Table,
   TableBody,
   TableCell,
@@ -10,6 +9,7 @@ import {
   TableRow,
   Textarea,
 } from "@methanium/ui";
+import ClearStorageButton from "@tensamin/shared/clearStorageButton";
 import { Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 

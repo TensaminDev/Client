@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@methanium/ui': https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
+  '@methanium/ui': https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
   mtp: https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-1a1d18c/mtp-0.3.0.tgz
 
 importers:
@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       mtp:
         specifier: https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-1a1d18c/mtp-0.3.0.tgz
         version: https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-1a1d18c/mtp-0.3.0.tgz
@@ -83,8 +83,8 @@ importers:
   apps/tauri:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -114,8 +114,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.50.0)(yaml@2.9.0))
@@ -268,8 +268,8 @@ importers:
         specifier: ^2.9.23
         version: 2.9.23(livekit-client@2.21.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tslib@2.8.1)
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tanstack/react-router':
         specifier: ^1.170.21
         version: 1.170.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -319,8 +319,8 @@ importers:
   packages/chat:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tanstack/pacer':
         specifier: ^0.21.1
         version: 0.21.1
@@ -428,8 +428,8 @@ importers:
   packages/mtp:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -453,8 +453,8 @@ importers:
   packages/notifications:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tanstack/react-router':
         specifier: ^1.170.21
         version: 1.170.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -495,8 +495,8 @@ importers:
   packages/onboarding:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -525,8 +525,8 @@ importers:
   packages/settings:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tanstack/react-router':
         specifier: ^1.170.21
         version: 1.170.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -574,8 +574,11 @@ importers:
   packages/shared:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+      '@tauri-apps/api':
+        specifier: ^2.11.1
+        version: 2.11.1
       lucide-react:
         specifier: ^1.29.0
         version: 1.30.0(react@19.2.8)
@@ -592,8 +595,8 @@ importers:
   packages/storage:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -610,8 +613,8 @@ importers:
   packages/tauth:
     dependencies:
       '@methanium/ui':
-        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz
-        version: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
+        specifier: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz
+        version: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -1237,9 +1240,9 @@ packages:
   '@marijn/find-cluster-break@1.0.3':
     resolution: {integrity: sha512-FY+MKLBoTsLNJF/eLWaOsXGdz6uh3Iu1axjPf6TUq92IYumcTcXWHoS747JARLkcdlJ/Waiaxc5wQfFO8jC6NA==}
 
-  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz':
-    resolution: {integrity: sha512-XotnxXRAfI4zFzTFK4oQsGFaP1+ydhIhruFir1xLGhsx1177KAtB4CSIkolbFxDri7svGaBzbsnEWqrJHbk9WA==, tarball: https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz}
-    version: 0.0.39
+  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz':
+    resolution: {integrity: sha512-446ruS5R3NVVJcoM4OA9twz0QgRpSc8sd9MxCYc8+FRv8H8pBur1ojVzWKseh3uD3C6Q4y6SEa3ypD5ayu7IcA==, tarball: https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz}
+    version: 0.0.40
     peerDependencies:
       react: ^19.2.7
       react-dom: ^19.2.7
@@ -6001,7 +6004,7 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.3': {}
 
-  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.39/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)':
+  '@methanium/ui@https://git.methanium.net/methanium/ui/releases/download/0.0.40/methanium-ui.tgz(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(emojibase@17.0.0)(react-dom@19.2.8(react@19.2.8))(react-is@19.2.8)(react@19.2.8)(redux@5.0.1)(supports-color@7.2.0)(typescript@6.0.3)':
     dependencies:
       '@base-ui/react': 1.7.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@codemirror/autocomplete': 6.20.3

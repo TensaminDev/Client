@@ -3,7 +3,7 @@ import { Input } from "@methanium/ui";
 import { Label } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
-import { File } from "lucide-react";
+import { File, Loader2 } from "lucide-react";
 import {
   type ChangeEvent,
   type FormEvent,
@@ -42,6 +42,7 @@ export default function Form() {
   const isMobile = useIsMobile();
   const uploadRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const { load, save } = useStorage();
   const navigate = useNavigate();
   const loginPendingRef = useRef(false);
@@ -90,6 +91,7 @@ export default function Form() {
   // Handle .tu files
   const handleFileInputChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+      setFilePickerOpen(false);
       const file = event.currentTarget.files?.[0];
 
       if (!file) {
@@ -101,6 +103,20 @@ export default function Form() {
     },
     [processDroppedFile],
   );
+
+  function openFilePicker() {
+    setFilePickerOpen(true);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => uploadRef.current?.click()),
+    );
+  }
+
+  useEffect(() => {
+    const input = uploadRef.current;
+    const closeFilePicker = () => setFilePickerOpen(false);
+    input?.addEventListener("cancel", closeFilePicker);
+    return () => input?.removeEventListener("cancel", closeFilePicker);
+  }, []);
 
   // Drag and drop listener
   useEffect(() => {
@@ -226,12 +242,13 @@ export default function Form() {
   return (
     <div className="relative flex md:flex-row flex-col gap-15">
       {isMobile ? (
-        <Button onClick={() => uploadRef.current?.click()}>
-          Select .tu file
+        <Button disabled={filePickerOpen} onClick={openFilePicker}>
+          {filePickerOpen && <Loader2 className="animate-spin" />}
+          {filePickerOpen ? "Opening file picker..." : "Select .tu file"}
         </Button>
       ) : (
         <div
-          onClick={() => uploadRef.current?.click()}
+          onClick={openFilePicker}
           className={cn(
             "flex flex-col gap-3 cursor-pointer w-55 aspect-square",
             "border-3 items-center justify-center rounded-lg",
@@ -241,12 +258,11 @@ export default function Form() {
             isDragging ? "animate-wiggle" : "",
           )}
         >
-          <File
-            className={["transition-all duration-300 text-foreground"].join(
-              " ",
-            )}
-            size={27}
-          />
+          {filePickerOpen ? (
+            <Loader2 className="animate-spin text-foreground" size={27} />
+          ) : (
+            <File className="text-foreground" size={27} />
+          )}
 
           <p
             className={[
