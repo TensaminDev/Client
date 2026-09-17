@@ -302,7 +302,10 @@ function RootShell() {
         parentThemeStorageKey={null}
         designStorageKey={null}
       >
-        <div className="box-border w-screen h-dvh overflow-hidden">
+        <div
+          data-safe-area-root
+          className="box-border w-screen h-dvh overflow-hidden"
+        >
           <Toaster position={isMobile ? "top-center" : "bottom-right"} />
           <TooltipProvider>
             <Storage>

@@ -163,6 +163,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
   return (
     <div
       data-tauri-drag-region
+      data-safe-area-navbar
       className={`relative flex h-13.5 w-full shrink-0 justify-between ${
         forMobile
           ? "items-center border-b border-(--border)/40 bg-sidebar"
