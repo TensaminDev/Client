@@ -249,7 +249,7 @@ export default function Base({
               flush && !fill && "border-x-0!",
               type === "user" &&
                 isSpeaking &&
-                "border-4 border-(--primary-foreground-alt)/75! rounded-lg",
+                "rounded-lg after:pointer-events-none after:absolute after:inset-0 after:z-30 after:rounded-lg after:border-4 after:border-(--primary-foreground-alt)/75",
             )}
           >
             <div
