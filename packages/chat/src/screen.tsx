@@ -581,7 +581,7 @@ export default function Screen() {
         </div>
       ) : (
         <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-gradient-to-b from-[var(--background)] from-20% to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-12 bg-gradient-to-b from-[var(--background)] from-20% to-transparent md:block" />
           <div
             ref={scrollRef}
             id="chat_container"
