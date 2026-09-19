@@ -142,7 +142,7 @@ export default function MediaSaveButton({
           buttonVariants({ variant: "secondary" }),
           "absolute right-1 top-1 z-10 h-auto gap-0 overflow-hidden p-0 transition-all",
           !isMobile &&
-            "-translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100",
+            "-translate-y-2 opacity-0 hover:bg-muted! group-hover:translate-y-0 group-hover:opacity-100",
           className,
         )}
       >
@@ -152,6 +152,7 @@ export default function MediaSaveButton({
           className={cn(
             isMobile ? "h-10 w-10" : "h-9 w-9",
             isSaved && "rounded-r-none",
+            !isMobile && "hover:bg-transparent!",
             "border-0! p-0",
           )}
           onClick={handleSaveClick}
@@ -170,6 +171,7 @@ export default function MediaSaveButton({
             variant="ghost"
             className={cn(
               isMobile ? "h-10 w-10" : "h-9 w-9",
+              !isMobile && "hover:bg-transparent!",
               "rounded-l-none border-0! p-0",
             )}
             onClick={handleGroupClick}
