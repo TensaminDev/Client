@@ -109,7 +109,7 @@ export function useInitializeCall() {
       new DeepFilterNoiseFilterProcessor({
         enabled: true,
         enableNoiseReduction: true,
-        noiseReductionLevel: 60,
+        noiseReductionLevel: 70,
         sampleRate: 48000,
         assetConfig: {
           cdnUrl: getNoiseFilterAssetBaseUrl(),

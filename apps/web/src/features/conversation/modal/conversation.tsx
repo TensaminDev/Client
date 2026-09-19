@@ -21,7 +21,7 @@ import {
   useIsMobile,
   Button,
 } from "@methanium/ui";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useSession } from "@tensamin/identity/session";
 import { useRef, useState } from "react";
 import { ChatBackgroundDialog } from "@tensamin/chat/backgrounds";
@@ -57,6 +57,8 @@ function JobBar({ job }: { job: ContactJob }) {
 
 export default function ConversationModal({ userId }: { userId: number }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { id } = useSearch({ strict: false });
   const { contacts } = useSession();
   const isMobile = useIsMobile();
   const { jobs, dismissJob } = useContactJobs();
@@ -72,10 +74,15 @@ export default function ConversationModal({ userId }: { userId: number }) {
   const longPressed = useRef(false);
   const notifications =
     contacts.find((contact) => contact.UserId === userId)?.notifications ?? 0;
+  const active = pathname === "/chat" && id === userId;
 
   const contact = (
     <button
-      className="relative w-full cursor-pointer select-none text-left"
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative w-full cursor-pointer select-none rounded-xl text-left transition-colors",
+        active && "bg-input/30",
+      )}
       onClick={() => {
         if (longPressed.current) {
           longPressed.current = false;
