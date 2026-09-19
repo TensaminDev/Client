@@ -359,7 +359,7 @@ export default function Screen() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [readyState]);
 
   useLayoutEffect(() => {
     const element = composerRef.current;
@@ -379,7 +379,7 @@ export default function Screen() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [readyState]);
 
   useLayoutEffect(() => {
     if (didInitialScrollRef.current || virtualRowCount === 0) {
