@@ -218,6 +218,7 @@ class SpeakingDetector {
       void this.audioContext.close();
       this.audioContext = null;
     }
+    clearSpeakingParticipants(true);
   }
 }
 

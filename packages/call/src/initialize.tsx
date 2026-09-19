@@ -19,6 +19,7 @@ import {
 import { isMediaShareReconfiguring } from "./mediaShare/controller";
 import { getTrackPublicationBySource } from "./participants";
 import { getSpeakingDetector } from "./speakingIndicator";
+import { forgetSpeakingParticipant } from "./speakingState";
 import InvitePopup from "./components/invitePopup";
 import { useCall } from "./state";
 import {
@@ -344,6 +345,7 @@ export function useInitializeCall() {
       if (participantId != null) {
         stopWatchingStream(participantId);
         getSpeakingDetector().removeParticipant(participantId);
+        forgetSpeakingParticipant(participantId);
       }
 
       syncParticipantState();

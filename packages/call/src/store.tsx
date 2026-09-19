@@ -2,6 +2,7 @@ export { useInitializeCall } from "./initialize";
 export { useCall } from "./state";
 export {
   getRoom,
+  getAllParticipants,
   getParticipantId,
   getRoomMetadata,
   syncParticipantState,

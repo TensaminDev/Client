@@ -146,6 +146,10 @@ const SCREEN_SHARE_PREVIEW_MAX_WIDTH = 320;
 const SCREEN_SHARE_PREVIEW_MAX_HEIGHT = 180;
 const SCREEN_SHARE_PREVIEW_QUALITY = 0.7;
 const SCREEN_SHARE_PREVIEW_TIMEOUT_MS = 5000;
+const watchedScreenShareParticipantIdsSchema = z.array(
+  z.number().int().positive(),
+);
+let watchedScreenShareParticipantIdsUpdate = Promise.resolve();
 
 async function startCallJingle(shouldPlay: () => boolean) {
   const generation = ++callJingleGeneration;
@@ -445,6 +449,32 @@ async function updateLocalParticipantAttributes(
   });
 }
 
+function publishWatchedScreenShareParticipantIds() {
+  const parsed = watchedScreenShareParticipantIdsSchema.safeParse(
+    useCall.getState().watchedStreamParticipantIds,
+  );
+  if (!parsed.success) {
+    log(
+      1,
+      "call",
+      "red",
+      "Invalid watched screen share participant IDs",
+      parsed.error,
+    );
+    return;
+  }
+
+  const value = JSON.stringify(parsed.data);
+  watchedScreenShareParticipantIdsUpdate =
+    watchedScreenShareParticipantIdsUpdate
+      .then(() =>
+        updateLocalParticipantAttributes({
+          watchedScreenShareParticipantIds: value,
+        }),
+      )
+      .catch(() => undefined);
+}
+
 async function waitForScreenSharePreviewFrame(video: HTMLVideoElement) {
   if (
     video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
@@ -640,6 +670,13 @@ function syncScreenShareParticipants() {
         ? "grid"
         : state.view,
   });
+
+  if (
+    watchedStreamParticipantIds.length !==
+    state.watchedStreamParticipantIds.length
+  ) {
+    publishWatchedScreenShareParticipantIds();
+  }
 }
 
 // utils
@@ -863,6 +900,7 @@ export function startWatchingStream(participantId: number) {
     focusedParticipantId: participantId,
     focusedParticipantType: "stream",
   }));
+  publishWatchedScreenShareParticipantIds();
 }
 
 // Toggle remote track subscriptions using LiveKit's built-in publication API.
@@ -968,6 +1006,7 @@ export function stopWatchingStream(participantId: number) {
         ? "grid"
         : state.view,
   }));
+  publishWatchedScreenShareParticipantIds();
 }
 
 // Exit focused screen-share mode for the currently highlighted participant.
