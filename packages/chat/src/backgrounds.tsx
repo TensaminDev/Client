@@ -1211,7 +1211,7 @@ export function ChatBackgroundDialog({
             {error}
           </p>
         )}
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="flex flex-row! justify-between">
           <Button
             variant="destructive"
             onClick={async () => {

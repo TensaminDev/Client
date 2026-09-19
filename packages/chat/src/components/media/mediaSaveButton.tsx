@@ -1,5 +1,6 @@
 import {
   Button,
+  buttonVariants,
   cn,
   Dialog,
   DialogContent,
@@ -138,15 +139,21 @@ export default function MediaSaveButton({
     <>
       <div
         className={cn(
-          "absolute right-1 top-1 z-10 flex gap-1 transition-all",
+          buttonVariants({ variant: "secondary" }),
+          "absolute right-1 top-1 z-10 h-auto gap-0 overflow-hidden p-0 transition-all",
           !isMobile &&
             "-translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100",
           className,
         )}
       >
         <Button
-          variant="secondary"
-          className="h-9 w-9 rounded-sm border-0! p-0"
+          aria-label={isSaved ? "Remove from favourites" : "Add to favourites"}
+          variant="ghost"
+          className={cn(
+            isMobile ? "h-10 w-10" : "h-9 w-9",
+            isSaved && "rounded-r-none",
+            "border-0! p-0",
+          )}
           onClick={handleSaveClick}
         >
           <Star
@@ -159,14 +166,29 @@ export default function MediaSaveButton({
         </Button>
         {isSaved ? (
           <Button
-            variant="secondary"
-            className="h-9 w-9 rounded-sm border-0! p-0"
+            aria-label="Organize favourite groups"
+            variant="ghost"
+            className={cn(
+              isMobile ? "h-10 w-10" : "h-9 w-9",
+              "rounded-l-none border-0! p-0",
+            )}
             onClick={handleGroupClick}
           >
             <Ellipsis className="size-4.5 stroke-1.5!" />
           </Button>
         ) : null}
       </div>
+
+      {dialogOpen ? (
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 z-40"
+          style={{
+            background:
+              "color-mix(in oklab, var(--background) 30%, transparent)",
+          }}
+        />
+      ) : null}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent onClick={(event) => event.stopPropagation()}>

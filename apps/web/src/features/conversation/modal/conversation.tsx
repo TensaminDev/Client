@@ -13,13 +13,13 @@ import {
   DialogTitle,
   Drawer,
   DrawerContent,
-  DrawerDescription,
   DrawerTitle,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
   Button,
+  DrawerHeader,
 } from "@methanium/ui";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useSession } from "@tensamin/identity/session";
@@ -204,30 +204,29 @@ export default function ConversationModal({ userId }: { userId: number }) {
         </ContextMenu>
       )}
       <Drawer open={actionsOpen} onOpenChange={setActionsOpen}>
-        <DrawerContent className="p-4">
-          <DrawerTitle>Contact actions</DrawerTitle>
-          <DrawerDescription>
-            Customise this conversation or inspect background work.
-          </DrawerDescription>
-          <Button
-            onClick={() => {
-              setActionsOpen(false);
-              setCustomiseOpen(true);
-            }}
-          >
-            Customise
-          </Button>
-          {jobs.length > 0 && (
+        <DrawerContent>
+          <DrawerTitle className="px-4 pt-2">Contact actions</DrawerTitle>
+          <div className="p-4 w-full flex flex-col gap-2">
             <Button
-              variant="outline"
               onClick={() => {
                 setActionsOpen(false);
-                setJobsOpen(true);
+                setCustomiseOpen(true);
               }}
             >
-              Background jobs
+              Customise
             </Button>
-          )}
+            {jobs.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setActionsOpen(false);
+                  setJobsOpen(true);
+                }}
+              >
+                Background jobs
+              </Button>
+            )}
+          </div>
         </DrawerContent>
       </Drawer>
       <Dialog open={jobsOpen} onOpenChange={setJobsOpen}>
