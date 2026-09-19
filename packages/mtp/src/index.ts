@@ -16,4 +16,6 @@ export type {
   ReceiptPolicy,
   SettingsClient,
   UserBlob,
+  UserAsset,
+  SyncedSetting,
 } from "./settings";

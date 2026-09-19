@@ -38,7 +38,7 @@ export default function LegalPage({
         </h2>
       </div>
       {error ? (
-        <div className="flex items-center gap-3 rounded-lg border border-destructive/50 p-4">
+        <div className="flex items-center gap-3">
           <p className="flex-1 text-sm text-destructive">{error}</p>
           <Button variant="outline" onClick={() => void onRetry()}>
             Retry

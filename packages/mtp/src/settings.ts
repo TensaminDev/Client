@@ -22,6 +22,52 @@ export type MessageStoragePolicy = {
   revision: number;
 };
 
+export type SyncedSetting = {
+  id: number;
+  scope: "user" | "contact" | "community";
+  target: string;
+  name: string;
+  payload: string;
+  revision: number;
+};
+
+export type UserAsset = {
+  id: string;
+  size: number;
+  sha256: Uint8Array;
+  mimeType: string;
+  revision: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+function setting(
+  data: ProtocolMessage<"SyncedSettingGet">["data"],
+): SyncedSetting {
+  return {
+    id: data.SettingId,
+    scope: data.SettingScope,
+    target: data.SettingTarget,
+    name: data.SettingsName,
+    payload: data.Payload,
+    revision: data.VersionNumber,
+  };
+}
+
+function asset(
+  data: ProtocolMessage<"UserAssetUploadCommit">["data"],
+): UserAsset {
+  return {
+    id: data.AssetId,
+    size: data.Size,
+    sha256: data.Sha256,
+    mimeType: data.MimeType,
+    revision: data.VersionNumber,
+    createdAt: data.CreatedAt,
+    updatedAt: data.UpdatedAt,
+  };
+}
+
 function expect<Type extends keyof typeof schemas & string>(
   type: Type,
   response: ProtocolMessage,
@@ -170,6 +216,135 @@ export function createSettingsClient({
         ).data.VersionNumber ?? null
       );
     },
+    async setSetting(value: Omit<SyncedSetting, "id" | "revision">) {
+      return setting(
+        expect(
+          "SyncedSettingSet",
+          await send("SyncedSettingSet", {
+            SettingScope: value.scope,
+            SettingTarget: value.target,
+            SettingsName: value.name,
+            Payload: value.payload,
+          }),
+        ).data,
+      );
+    },
+    async getSetting(
+      scope: SyncedSetting["scope"],
+      target: string,
+      name: string,
+    ) {
+      return setting(
+        expect(
+          "SyncedSettingGet",
+          await send("SyncedSettingGet", {
+            SettingScope: scope,
+            SettingTarget: target,
+            SettingsName: name,
+          }),
+        ).data,
+      );
+    },
+    async deleteSetting(
+      scope: SyncedSetting["scope"],
+      target: string,
+      name: string,
+    ) {
+      return expect(
+        "SyncedSettingDelete",
+        await send("SyncedSettingDelete", {
+          SettingScope: scope,
+          SettingTarget: target,
+          SettingsName: name,
+        }),
+      ).data;
+    },
+    async listSettings() {
+      return expect(
+        "SyncedSettingsList",
+        await send("SyncedSettingsList", {}),
+      ).data.Settings.map(setting);
+    },
+    async startAssetUpload(
+      uploadId: string,
+      value: {
+        id: string;
+        size: number;
+        sha256: Uint8Array;
+        mimeType: string;
+      },
+    ) {
+      return expect(
+        "UserAssetUploadStart",
+        await send("UserAssetUploadStart", {
+          UploadId: uploadId,
+          AssetId: value.id,
+          Size: value.size,
+          Sha256: ownedBytes(value.sha256),
+          MimeType: value.mimeType,
+        }),
+      ).data;
+    },
+    async uploadAssetChunk(
+      uploadId: string,
+      offset: number,
+      bytes: Uint8Array,
+    ) {
+      return expect(
+        "UserAssetUploadChunk",
+        await send("UserAssetUploadChunk", {
+          UploadId: uploadId,
+          Offset: offset,
+          Blob: ownedBytes(bytes),
+        }),
+      ).data;
+    },
+    async getAssetUploadStatus(uploadId: string) {
+      return expect(
+        "UserAssetUploadStatus",
+        await send("UserAssetUploadStatus", {
+          UploadId: uploadId,
+        }),
+      ).data;
+    },
+    async commitAssetUpload(uploadId: string) {
+      return asset(
+        expect(
+          "UserAssetUploadCommit",
+          await send("UserAssetUploadCommit", {
+            UploadId: uploadId,
+          }),
+        ).data,
+      );
+    },
+    async abortAssetUpload(uploadId: string) {
+      expect(
+        "UserAssetUploadAbort",
+        await send("UserAssetUploadAbort", { UploadId: uploadId }),
+      );
+    },
+    async getAssetChunk(id: string, offset: number, amount: number) {
+      return expect(
+        "UserAssetGetChunk",
+        await send("UserAssetGetChunk", {
+          AssetId: id,
+          Offset: offset,
+          Amount: amount,
+        }),
+      ).data;
+    },
+    async listAssets() {
+      return expect(
+        "UserAssetList",
+        await send("UserAssetList", {}),
+      ).data.Assets.map(asset);
+    },
+    async deleteAsset(id: string) {
+      return expect(
+        "UserAssetDelete",
+        await send("UserAssetDelete", { AssetId: id }),
+      ).data;
+    },
     async blockUser(userId: number) {
       const data = expect(
         "UserBlock",
@@ -264,6 +439,29 @@ export function createSettingsClient({
                 deleted: false,
               },
         ),
+      );
+    },
+    subscribeSettingChanges(
+      handler: (
+        event: SyncedSetting | { deletedIds: number[]; revision: number },
+      ) => void,
+    ) {
+      return subscribe("SyncedSettingChanged", ({ data }) => {
+        handler(
+          "DeletedSettingIds" in data
+            ? {
+                deletedIds: data.DeletedSettingIds,
+                revision: data.VersionNumber,
+              }
+            : setting(data),
+        );
+      });
+    },
+    subscribeAssetChanges(
+      handler: (event: UserAsset & { deleted: boolean }) => void,
+    ) {
+      return subscribe("UserAssetChanged", ({ data }) =>
+        handler({ ...asset(data), deleted: data.Deleted }),
       );
     },
     subscribeBlockedUserChanges(

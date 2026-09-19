@@ -19,6 +19,22 @@ import { useEffect, useRef, useState } from "react";
 import { parseTuFileContent } from "@tensamin/storage/credentials";
 import { useSettingsProfiles } from "./profiles";
 
+function relativeTime(timestamp: number) {
+  const seconds = Math.round((timestamp - Date.now()) / 1_000);
+  const compact = (value: number, unit: string) =>
+    value === 0
+      ? "now"
+      : value < 0
+        ? `${Math.abs(value)}${unit} ago`
+        : `in ${value}${unit}`;
+  if (Math.abs(seconds) < 60) return compact(seconds, "s");
+  const minutes = Math.round(seconds / 60);
+  if (Math.abs(minutes) < 60) return compact(minutes, "m");
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) return compact(hours, "h");
+  return compact(Math.round(hours / 24), "d");
+}
+
 export function SettingsProfileMenu() {
   const {
     profiles,
@@ -115,16 +131,29 @@ export function SettingsProfileMenu() {
           <SelectTrigger className="w-full md:max-w-43">
             <SelectValue>{activeProfile?.name ?? "Local settings"}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="p-1">
-            {profiles.map((profile) => (
-              <SelectItem
-                disabled={!profile.available}
-                key={profile.id}
-                value={profile.id}
-              >
-                {profile.name}
-              </SelectItem>
-            ))}
+          <SelectContent className="w-max min-w-(--anchor-width) p-1">
+            {[...profiles]
+              .sort(
+                (left, right) =>
+                  (right.document?.lastUsedAt ?? 0) -
+                  (left.document?.lastUsedAt ?? 0),
+              )
+              .map((profile) => (
+                <SelectItem
+                  disabled={!profile.available}
+                  key={profile.id}
+                  value={profile.id}
+                >
+                  <span className="flex min-w-0 items-center gap-6">
+                    <span className="max-w-64 truncate">{profile.name}</span>
+                    {profile.document && (
+                      <span className="text-muted-foreground text-xs">
+                        {relativeTime(profile.document.lastUsedAt)}
+                      </span>
+                    )}
+                  </span>
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         <Button
@@ -136,7 +165,7 @@ export function SettingsProfileMenu() {
         </Button>
         <Button
           className="text-destructive"
-          disabled={!activeProfile}
+          disabled={!activeProfile || profiles.length <= 1}
           variant="ghost"
           onClick={() => {
             setDialogError("");
@@ -181,7 +210,9 @@ export function SettingsProfileMenu() {
               />
               {dialog === "create" && (
                 <>
-                  <Label htmlFor="settings-profile-account">Account file</Label>
+                  <Label htmlFor="settings-profile-account">
+                    Add credentials
+                  </Label>
                   <Input
                     accept=".tu"
                     className="hidden"
@@ -199,7 +230,8 @@ export function SettingsProfileMenu() {
                     onClick={openFilePicker}
                   >
                     {filePickerOpen && <Loader2 className="animate-spin" />}
-                    {accountFile?.name ?? "Choose account file"}
+                    {accountFile?.name ?? "Add .tu file"}
+                    <p className="text-xs text-muted-foreground">(optional)</p>
                   </Button>
                 </>
               )}

@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { Button, useIsMobile } from "@methanium/ui";
 import { ArrowLeft } from "lucide-react";
+import { useRef } from "react";
 
 import { SettingsSidebar } from "./sidebar";
 import { SettingsProfileMenu } from "./profileMenu";
@@ -11,7 +12,9 @@ export default function SettingsLayout() {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
-  const { activeProfile } = useSettingsProfiles();
+  const { activeProfile, loading } = useSettingsProfiles();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const touchYRef = useRef<number | null>(null);
   const { render } = useNavbar();
   const isSettingsRoot = /^\/settings\/?$/.test(location.pathname);
 
@@ -26,7 +29,10 @@ export default function SettingsLayout() {
       <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
         <div className="flex min-h-0 w-full flex-1 overflow-hidden">
           <SettingsSidebar className="hidden md:flex" />
-          <div className="bg-background flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+          <div
+            ref={scrollRef}
+            className="bg-background flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-3"
+          >
             <div className="flex items-center gap-2">
               {isMobile && (
                 <Button
@@ -48,11 +54,42 @@ export default function SettingsLayout() {
                   .replace(/\b\w/g, (letter) => letter.toUpperCase())}
               </h1>
             </div>
-            <div
-              className="flex flex-col h-full"
-              key={activeProfile?.id ?? "local"}
-            >
-              <Outlet />
+            <div className="relative flex h-full flex-col">
+              <div
+                className="flex h-full flex-col"
+                key={activeProfile?.id ?? "local"}
+              >
+                <Outlet />
+              </div>
+              {loading && (
+                <div
+                  aria-label="Loading settings"
+                  aria-live="polite"
+                  className="absolute inset-0 z-40"
+                  style={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--background) 30%, transparent)",
+                  }}
+                  onWheel={(event) =>
+                    scrollRef.current?.scrollBy({ top: event.deltaY })
+                  }
+                  onTouchStart={(event) => {
+                    touchYRef.current = event.touches[0]?.clientY ?? null;
+                  }}
+                  onTouchMove={(event) => {
+                    const next = event.touches[0]?.clientY;
+                    if (next === undefined || touchYRef.current === null)
+                      return;
+                    scrollRef.current?.scrollBy({
+                      top: touchYRef.current - next,
+                    });
+                    touchYRef.current = next;
+                  }}
+                  onTouchEnd={() => {
+                    touchYRef.current = null;
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>

@@ -37,6 +37,50 @@ const blobId = z.string().refine((value) => {
   return length >= 1 && length <= 256;
 }, "BlobId must be between 1 and 256 UTF-8 bytes");
 const revision = z.number().int().nonnegative();
+const utf8Length = (value: string) =>
+  new TextEncoder().encode(value).byteLength;
+const assetId = z
+  .string()
+  .min(1)
+  .refine((value) => utf8Length(value) <= 256);
+const uploadId = z
+  .string()
+  .min(1)
+  .refine((value) => utf8Length(value) <= 128);
+const sha256 = protocolBytes.refine((value) => value.byteLength === 32);
+const sha256Response = protocolBytesResponse.refine(
+  (value) => value.byteLength === 32,
+);
+const syncedSetting = z.object({
+  SettingId: z.number().int().positive(),
+  SettingScope: z.enum(["user", "contact", "community"]),
+  SettingTarget: z.string(),
+  SettingsName: z.string().min(1),
+  Payload: z.string().refine((value) => utf8Length(value) <= 16 * 1024 * 1024),
+  VersionNumber: revision,
+});
+const userAssetMetadata = z.object({
+  AssetId: assetId,
+  Size: z.number().int().nonnegative(),
+  Sha256: sha256Response,
+  MimeType: z.string().min(1).max(255),
+  VersionNumber: revision,
+  CreatedAt: z.number(),
+  UpdatedAt: z.number(),
+});
+const userAssetUploadStatus = z.object({
+  UploadId: uploadId,
+  AssetId: assetId,
+  Size: z.number().int().nonnegative(),
+  Sha256: sha256Response,
+  MimeType: z.string().min(1).max(255),
+  Offset: z.number().int().nonnegative(),
+  State: z.enum(["uploading", "committed"]),
+  VersionNumber: revision.optional(),
+  CreatedAt: z.number(),
+  UpdatedAt: z.number(),
+  CommittedAt: z.number().optional(),
+});
 const userBlobMetadata = z.object({
   BlobId: blobId,
   VersionNumber: revision,
@@ -211,6 +255,7 @@ const accountStateSnapshot = authPayload.extend({
     .default([]),
   MissingUserIds: z.array(z.number().int().positive()).default([]),
   PresenceSnapshotComplete: z.boolean().default(false),
+  Settings: z.array(syncedSetting).default([]),
 });
 
 export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
@@ -316,7 +361,10 @@ export const mtp = {
     response: z.object({ Blobs: z.array(userBlobMetadata) }),
   },
   UserBlobDelete: {
-    request: z.object({ BlobId: blobId, ExpectedRevision: revision }),
+    request: z.object({
+      BlobId: blobId,
+      ExpectedRevision: revision.optional(),
+    }),
     response: z.object({ VersionNumber: revision.optional() }),
   },
   UserBlobChanged: {
@@ -327,6 +375,109 @@ export const mtp = {
         Deleted: z.literal(true),
       }),
     ]),
+  },
+  SyncedSettingSet: {
+    request: syncedSetting.pick({
+      SettingScope: true,
+      SettingTarget: true,
+      SettingsName: true,
+      Payload: true,
+    }),
+    response: syncedSetting,
+  },
+  SyncedSettingGet: {
+    request: syncedSetting.pick({
+      SettingScope: true,
+      SettingTarget: true,
+      SettingsName: true,
+    }),
+    response: syncedSetting,
+  },
+  SyncedSettingDelete: {
+    request: syncedSetting.pick({
+      SettingScope: true,
+      SettingTarget: true,
+      SettingsName: true,
+    }),
+    response: z.object({
+      SettingId: z.number().int().positive().optional(),
+      VersionNumber: revision.optional(),
+    }),
+  },
+  SyncedSettingsList: {
+    request: z.object({}).optional(),
+    response: z.object({ Settings: z.array(syncedSetting) }),
+  },
+  SyncedSettingChanged: {
+    request: z.object({}).optional(),
+    response: z.union([
+      syncedSetting,
+      z.object({
+        DeletedSettingIds: z.array(z.number().int().positive()),
+        VersionNumber: revision,
+      }),
+    ]),
+  },
+  UserAssetUploadStart: {
+    request: z.object({
+      UploadId: uploadId,
+      AssetId: assetId,
+      Size: z.number().int().nonnegative(),
+      Sha256: sha256,
+      MimeType: z.string().min(1).max(255),
+    }),
+    response: userAssetUploadStatus,
+  },
+  UserAssetUploadChunk: {
+    request: z.object({
+      UploadId: uploadId,
+      Offset: z.number().int().nonnegative(),
+      Blob: protocolBytes.refine(
+        (value) => value.byteLength > 0 && value.byteLength <= 8 * 1024 * 1024,
+      ),
+    }),
+    response: userAssetUploadStatus,
+  },
+  UserAssetUploadStatus: {
+    request: z.object({ UploadId: uploadId }),
+    response: userAssetUploadStatus,
+  },
+  UserAssetUploadCommit: {
+    request: z.object({ UploadId: uploadId }),
+    response: userAssetMetadata,
+  },
+  UserAssetUploadAbort: {
+    request: z.object({ UploadId: uploadId }),
+    response: z.object({ UploadId: uploadId }),
+  },
+  UserAssetGetChunk: {
+    request: z.object({
+      AssetId: assetId,
+      Offset: z.number().int().nonnegative(),
+      Amount: z
+        .number()
+        .int()
+        .positive()
+        .max(8 * 1024 * 1024),
+    }),
+    response: userAssetMetadata.extend({
+      Offset: z.number().int().nonnegative(),
+      Blob: protocolBytesResponse.refine(
+        (value) => value.byteLength <= 8 * 1024 * 1024,
+      ),
+    }),
+  },
+  UserAssetList: {
+    request: z.object({}).optional(),
+    response: z.object({ Assets: z.array(userAssetMetadata) }),
+  },
+  UserAssetDelete: {
+    request: z.object({ AssetId: assetId }),
+    response: userAssetMetadata.partial().required({ AssetId: true }),
+  },
+  UserAssetChanged: {
+    request: z.object({}).optional(),
+    response: userAssetMetadata.extend({ Deleted: z.boolean() }),
   },
   UserBlock: {
     request: z.object({ BlockedUserId: z.number().int().positive() }),

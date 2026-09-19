@@ -84,7 +84,7 @@
             hash = "sha256-/4n8F0YLJaLncefKL907P5l+en1CTjpgdFmLBF3gbiQ=";
           };
           mtpSource = pkgs.fetchzip {
-            url = "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-a135d0f/mtp-0.3.0.tgz";
+            url = "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-bb0f682/mtp-0.3.0.tgz";
             hash = "sha256-+HXhjEmcoE9JPB0eb6vc8N5uiiEpjHQQk0YY+8EuO4o=";
           };
           mtpCargoDeps = pkgs.rustPlatform.fetchCargoVendor {

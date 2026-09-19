@@ -6,6 +6,7 @@
   "exports": {
     "./context": "./src/context.tsx",
     "./screen": "./src/screen.tsx",
+    "./backgrounds": "./src/backgrounds.tsx",
     "./behaviour-conversation": "./src/behaviour/conversation.ts",
     "./behaviour-community": "./src/behaviour/community.ts",
     "./values": "./src/values.ts"

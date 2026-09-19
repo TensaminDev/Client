@@ -60,11 +60,11 @@ export function Basic({
           </TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex w-full flex-col items-start justify-center text-[15px]">
+      <div className="flex h-full w-full flex-col items-start justify-center text-[15px]">
         <p>{display}</p>
         <p className="text-xs text-muted-foreground">{user.Status}</p>
       </div>
-      <div className="pr-1">{extra}</div>
+      <div className="pr-1 w-full h-full flex justify-end">{extra}</div>
     </Button>
   );
 }

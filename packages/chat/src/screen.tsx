@@ -21,7 +21,9 @@ import {
 } from "./values";
 import Wrapper from "@tensamin/identity/wrapper";
 import { useMTP } from "@tensamin/mtp";
+import { useTheme } from "@methanium/ui";
 import { GlobeOff, PartyPopper } from "lucide-react";
+import { chatBackgroundStyle, useChatBackground } from "./backgrounds";
 
 function shouldFetchPreviousPage({
   entry,
@@ -170,6 +172,8 @@ export default function Screen() {
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasChatSecret = chatSecret !== null;
+  const { background, imageUrl, animateImage } = useChatBackground(userId);
+  const { resolvedPolarity } = useTheme();
 
   const { readyState } = useMTP();
 
@@ -581,11 +585,38 @@ export default function Screen() {
         </div>
       ) : (
         <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-12 bg-gradient-to-b from-[var(--background)] from-20% to-transparent md:block" />
+          <div
+            aria-hidden="true"
+            key={
+              background?.kind === "image"
+                ? imageUrl
+                : JSON.stringify(background)
+            }
+            className={`pointer-events-none absolute inset-0 bg-background bg-cover bg-center ${
+              animateImage
+                ? "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500"
+                : ""
+            }`}
+            style={{
+              ...chatBackgroundStyle(background, imageUrl, resolvedPolarity),
+              opacity: background
+                ? resolvedPolarity === "dark"
+                  ? 0.3
+                  : 0.5
+                : 1,
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-6 md:block"
+            style={{
+              background:
+                "linear-gradient(to bottom,var(--background) 0%,var(--background) 35%,color-mix(in srgb,var(--background) 72%,transparent) 68%,transparent 100%)",
+            }}
+          />
           <div
             ref={scrollRef}
             id="chat_container"
-            className="min-h-0 flex-1 overflow-y-auto"
+            className="relative z-1 min-h-0 flex-1 overflow-y-auto"
             style={{
               overflowAnchor: "none",
               //paddingTop: "22px",

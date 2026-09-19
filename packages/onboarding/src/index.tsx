@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { OnboardingFlow, type OnboardingStep } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
-import {
-  SettingsProfileOnboarding,
-  useSettingsProfiles,
-} from "@tensamin/settings/profiles";
+import { useSettingsProfiles } from "@tensamin/settings/profiles";
 import { isTauri } from "@tauri-apps/api/core";
 
 import { onboardingSteps } from "./steps";
@@ -20,8 +17,8 @@ export {
 export default function OnboardingGate({ children }: { children: ReactNode }) {
   const { load, save } = useStorage();
   const {
-    needsSelection,
-    activeProfileHasTheme,
+    themePromptCompleted,
+    completeThemePrompt,
     loading,
     legalRequired,
     legalChanged,
@@ -33,6 +30,7 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
   const [onboarding, setOnboarding] = useState(false);
   const [tauriPermissions, setTauriPermissions] = useState(false);
   const [complete, setComplete] = useState(false);
+  const [themeSkipped, setThemeSkipped] = useState(false);
   const [onboardingThemeId, setOnboardingThemeId] = useState<string | null>(
     null,
   );
@@ -53,6 +51,7 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
   }, [load]);
 
   const finish = useCallback(async () => {
+    if (!themePromptCompleted) await completeThemePrompt();
     if (onboarding) {
       await Promise.all([
         save("onboarding_done", true),
@@ -61,21 +60,16 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
     }
     if (tauriPermissions) await save("tauri_permissions_done", true);
     setComplete(true);
-  }, [onboarding, save, tauriPermissions]);
-
-  useEffect(() => {
-    if (
-      !ready ||
-      loading ||
-      needsSelection ||
-      !onboarding ||
-      !activeProfileHasTheme
-    )
-      return;
-    void save("onboarding_done", true).then(() => setOnboarding(false));
-  }, [activeProfileHasTheme, loading, needsSelection, onboarding, ready, save]);
+  }, [
+    completeThemePrompt,
+    onboarding,
+    save,
+    tauriPermissions,
+    themePromptCompleted,
+  ]);
 
   if (!ready) return null;
+  if (loading) return <>{children}</>;
 
   const steps: OnboardingStep[] = [];
   if (legalRequired) {
@@ -94,17 +88,13 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
       ),
     });
   }
-  if (needsSelection) {
-    steps.push({
-      id: "settings-profile",
-      title: "Settings profile",
-      description: "Choose the preferences to load",
-      defaultCanContinue: false,
-      content: <SettingsProfileOnboarding />,
-    });
-  }
-  if (onboarding && !activeProfileHasTheme) {
-    steps.push(...onboardingSteps(onboardingThemeId, setOnboardingThemeId));
+  if (!themePromptCompleted && !themeSkipped) {
+    steps.push(
+      ...onboardingSteps(onboardingThemeId, setOnboardingThemeId, async () => {
+        await completeThemePrompt();
+        setThemeSkipped(true);
+      }),
+    );
   }
   if (tauriPermissions) {
     steps.push({
@@ -118,5 +108,11 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
   }
 
   if (complete || steps.length === 0) return <>{children}</>;
-  return <OnboardingFlow steps={steps} onFinish={finish} />;
+  return (
+    <OnboardingFlow
+      key={steps.map((step) => step.id).join(":")}
+      steps={steps}
+      onFinish={finish}
+    />
+  );
 }
