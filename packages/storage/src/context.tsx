@@ -92,9 +92,13 @@ export default function StorageProvider(props: { children: ReactNode }) {
 
   const commit = useCallback(
     <K extends keyof StorageSchema>(key: K, nextValue: StorageSchema[K]) => {
+      const changed =
+        !loadedKeys.current.has(key) ||
+        JSON.stringify(storageRef.current[key]) !== JSON.stringify(nextValue);
+      loadedKeys.current.add(key);
+      if (!changed) return;
       const next = { ...storageRef.current, [key]: nextValue };
       storageRef.current = next;
-      loadedKeys.current.add(key);
       setStorage(next);
       for (const handler of subscribers.current) handler([key], false);
     },
