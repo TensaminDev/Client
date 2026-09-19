@@ -19,7 +19,6 @@ import {
   TooltipTrigger,
   useIsMobile,
   Button,
-  DrawerHeader,
 } from "@methanium/ui";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useSession } from "@tensamin/identity/session";
