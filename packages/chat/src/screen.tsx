@@ -24,6 +24,7 @@ import { useMTP } from "@tensamin/mtp";
 import { useTheme } from "@methanium/ui";
 import { GlobeOff, PartyPopper } from "lucide-react";
 import { chatBackgroundStyle, useChatBackground } from "./backgrounds";
+import { toast } from "@tensamin/shared/log";
 
 function shouldFetchPreviousPage({
   entry,
@@ -162,12 +163,20 @@ export default function Screen() {
   const hasNextPageRef = useRef(false);
   const isFetchingNextPageRef = useRef(false);
   const fetchNextPageRef = useRef<(() => void) | null>(null);
+  const replyJumpLoadingRef = useRef(false);
 
   const [lastLiveMessageCount, setLastLiveMessageCount] = useState(0);
   const [didInitialScroll, setDidInitialScroll] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [composerHeight, setComposerHeight] = useState(0);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [pendingJump, setPendingJump] = useState<{
+    sendTime: number;
+    minimumLoaded: number;
+  } | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    number | null
+  >(null);
   const previousEditingMessageIdRef = useRef<number | null>(null);
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
@@ -175,7 +184,7 @@ export default function Screen() {
   const { background, imageUrl, animateImage } = useChatBackground(userId);
   const { resolvedPolarity } = useTheme();
 
-  const { readyState } = useMTP();
+  const { readyState, send } = useMTP();
 
   useEffect(() => {
     const previousEditingMessageId = previousEditingMessageIdRef.current;
@@ -196,11 +205,11 @@ export default function Screen() {
     queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
     enabled: hasValidChatUser && hasChatSecret,
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < PAGE_SIZE) {
+      if (lastPage.length < PAGE_SIZE && allPages.length > 1) {
         return undefined;
       }
 
-      return allPages.length * PAGE_SIZE;
+      return allPages.reduce((count, page) => count + page.length, 0);
     },
   });
   const {
@@ -224,6 +233,8 @@ export default function Screen() {
     setDidInitialScroll(false);
     setLastLiveMessageCount(0);
     setEditingMessageId(null);
+    setPendingJump(null);
+    setHighlightedMessageId(null);
   }, [userId]);
 
   const historicalMessages = useMemo(() => {
@@ -312,6 +323,100 @@ export default function Screen() {
   });
   const totalSize = virtualizer.getTotalSize();
   const contentHeight = Math.max(totalSize, viewportHeight);
+
+  const jumpToReply = useCallback(
+    async (sendTime: number) => {
+      if (replyJumpLoadingRef.current) return;
+      if (messages.some((message) => message.SendTime === sendTime)) {
+        setPendingJump({ sendTime, minimumLoaded: 0 });
+        return;
+      }
+
+      replyJumpLoadingRef.current = true;
+      try {
+        const response = await send("MessageGet", {
+          SendTime: sendTime,
+          ChatPartnerId: userId,
+        });
+        const offset = response.data.Offset;
+        if (
+          offset === undefined ||
+          !Number.isSafeInteger(offset) ||
+          offset < 0
+        ) {
+          throw new Error("MessageGet omitted a valid Offset");
+        }
+
+        let loaded = new Set(
+          (messagesQuery.data?.pages ?? [])
+            .flat()
+            .map((message) => message.SendTime),
+        ).size;
+        let hasNextPage = messagesQuery.hasNextPage;
+        while (loaded <= offset) {
+          if (!hasNextPage) {
+            throw new Error("Message history ended before the reply target");
+          }
+          const result = await messagesQuery.fetchNextPage({
+            cancelRefetch: false,
+          });
+          if (result.isError) throw result.error;
+          loaded = new Set(
+            (result.data?.pages ?? [])
+              .flat()
+              .map((message) => message.SendTime),
+          ).size;
+          hasNextPage = result.hasNextPage;
+        }
+
+        setPendingJump({ sendTime, minimumLoaded: offset + 1 });
+      } catch (error) {
+        toast("error", "Couldn't jump to replied message", String(error));
+      } finally {
+        replyJumpLoadingRef.current = false;
+      }
+    },
+    [messages, messagesQuery, send, userId],
+  );
+
+  useEffect(() => {
+    if (pendingJump === null) return;
+    const chunkIndex = messageChunks.findIndex((chunk) =>
+      chunk.messages.some(
+        (message) => message.SendTime === pendingJump.sendTime,
+      ),
+    );
+    if (chunkIndex === -1) {
+      const loaded = new Set(
+        (messagesQuery.data?.pages ?? [])
+          .flat()
+          .map((message) => message.SendTime),
+      ).size;
+      if (
+        messagesQuery.isFetchingNextPage ||
+        (loaded < pendingJump.minimumLoaded && messagesQuery.hasNextPage !== false)
+      ) {
+        return;
+      }
+
+      setPendingJump(null);
+      toast("error", "Couldn't jump to replied message");
+      return;
+    }
+
+    virtualizer.scrollToIndex(chunkIndex, { align: "center" });
+    setHighlightedMessageId(pendingJump.sendTime);
+    setPendingJump(null);
+  }, [messageChunks, messagesQuery, pendingJump, virtualizer]);
+
+  useEffect(() => {
+    if (highlightedMessageId === null) return;
+    const timeout = window.setTimeout(
+      () => setHighlightedMessageId(null),
+      1600,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [highlightedMessageId]);
 
   const editLastMessage = useCallback(() => {
     if (editingMessageId !== null) return;
@@ -424,7 +529,8 @@ export default function Screen() {
     if (
       newMessageCount > loadedIncomingMessages &&
       messagesQuery.hasNextPage &&
-      !messagesQuery.isFetchingNextPage
+      !messagesQuery.isFetchingNextPage &&
+      !replyJumpLoadingRef.current
     ) {
       void messagesQuery.fetchNextPage();
     }
@@ -435,7 +541,8 @@ export default function Screen() {
       viewportHeight === 0 ||
       totalSize > viewportHeight ||
       messagesQuery.isFetchingNextPage ||
-      !messagesQuery.hasNextPage
+      !messagesQuery.hasNextPage ||
+      replyJumpLoadingRef.current
     ) {
       return;
     }
@@ -459,7 +566,8 @@ export default function Screen() {
             entry,
             hasNextPage: messagesQuery.hasNextPage,
             isFetchingNextPage: messagesQuery.isFetchingNextPage,
-            userScrolledUp: userScrolledUpRef.current,
+            userScrolledUp:
+              userScrolledUpRef.current && !replyJumpLoadingRef.current,
           })
         ) {
           void messagesQuery.fetchNextPage();
@@ -518,7 +626,8 @@ export default function Screen() {
         scrollTop >= maxScrollTop - 240 &&
         userScrolledUpRef.current &&
         hasNextPageRef.current &&
-        !isFetchingNextPageRef.current
+        !isFetchingNextPageRef.current &&
+        !replyJumpLoadingRef.current
       ) {
         fetchNextPageRef.current?.();
       }
@@ -712,7 +821,11 @@ export default function Screen() {
                                     editingMessageId === message.SendTime
                                   }
                                   grouped={isGrouped}
+                                  highlighted={
+                                    highlightedMessageId === message.SendTime
+                                  }
                                   message={message}
+                                  onReplyActivate={jumpToReply}
                                   onSetEditing={(editing) =>
                                     setEditingMessageId(
                                       editing ? message.SendTime : null,

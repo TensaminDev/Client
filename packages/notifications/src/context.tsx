@@ -129,7 +129,8 @@ export default function Provider(props: { children: React.ReactNode }) {
       const isCurrentChat =
         location.pathname === "/chat" && userId === data.SenderId;
       const appFocused = getAppFocused();
-      const shouldAlert = !isCurrentChat || !appFocused;
+      const activelyViewing = isCurrentChat && appFocused;
+      const shouldNotify = !activelyViewing && !data.suppressNotification;
       const notifications =
         data.notifications ??
         (contacts.find((contact) => contact.UserId === data.SenderId)
@@ -137,7 +138,7 @@ export default function Provider(props: { children: React.ReactNode }) {
 
       setNotifications(data.SenderId, notifications, data.LastMessageAt);
       if (!isCurrentChat) moveUserIdToTop(data.SenderId);
-      if (!shouldAlert) {
+      if (activelyViewing) {
         void readNotifications(data.SenderId, data.LastMessageAt);
       }
 
@@ -148,7 +149,7 @@ export default function Provider(props: { children: React.ReactNode }) {
           : await getChatSecret(data.SenderId, messageVersion);
 
       if (!messageSecret) return;
-      if (shouldAlert) playSound("message");
+      if (shouldNotify) playSound("message");
 
       void decryptChatText(messageSecret, data.Message.Content, messageVersion)
         .catch((err) => {
@@ -171,7 +172,7 @@ export default function Provider(props: { children: React.ReactNode }) {
             );
           }
 
-          if (!shouldAlert) return;
+          if (!shouldNotify) return;
 
           const user = await get(data.SenderId, [
             "UserId",

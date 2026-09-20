@@ -196,8 +196,8 @@ function protocolBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
 
 type SendMessageGet = (
   type: "MessageGet",
-  data: { SendTime: number },
-) => Promise<{ data: RawMessage }>;
+  data: { SendTime: number; ChatPartnerId?: number },
+) => Promise<{ data: { Message: RawMessage; Offset?: number } }>;
 
 type StoredDraftState = ChatDraft & {
   accountId: number;
@@ -234,7 +234,7 @@ export async function getMessage({
       await send("MessageGet", {
         SendTime: sendTime,
       })
-    ).data;
+    ).data.Message;
   const messageChatPartnerId =
     message.SenderId === ownId ? chatPartnerId : message.SenderId;
 

@@ -1,4 +1,4 @@
-import { mtp } from "@tensamin/shared/data";
+import { Message, mtp } from "@tensamin/shared/data";
 import { z } from "zod";
 
 export const accountIdSchema = z.string().min(1);
@@ -9,14 +9,14 @@ export const contactSchema = z.object({
   LastMessage: z
     .object({ Content: z.base64(), SenderId: z.number() })
     .optional(),
-  Messages: z.array(mtp.MessageGet.response),
+  Messages: z.array(Message),
 });
 export const contactsSchema = z.array(contactSchema);
 export const userProfileSchema = mtp.GetUserData.response;
 export const iotaDataSchema = mtp.GetIotaData.response;
 
 // Content remains the protocol base64 ciphertext. This package never decrypts messages.
-export const cachedMessageSchema = mtp.MessageGet.response;
+export const cachedMessageSchema = Message;
 export const conversationWindowSchema = z.object({
   UserId: z.number(),
   LastMessageAt: z.number(),

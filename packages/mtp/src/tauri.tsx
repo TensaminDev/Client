@@ -32,6 +32,7 @@ import {
   type SealedRelaySend,
   useMessageHandlers,
 } from "./mtpContext";
+import { useSessionActivity } from "./sessionActivity";
 
 type NativeSnapshot = {
   generation: number;
@@ -291,6 +292,10 @@ export function TauriProvider(props: {
     [],
   );
   const connected = snapshot.readyState === ConnectionState.Connected;
+  useSessionActivity({
+    connected: connected && snapshot.identified,
+    send,
+  });
 
   return (
     <MTPContext.Provider

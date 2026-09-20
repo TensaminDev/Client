@@ -4,6 +4,14 @@ import { useMTP, type MTPExchange, type ProtocolMessage } from "@tensamin/mtp";
 import { useStorage } from "@tensamin/storage/context";
 import { secureValueCodec } from "@tensamin/storage/secure";
 
+const messageStateRank: Record<CachedMessage["MessageState"], number> = {
+  awaiting: 0,
+  sending: 0,
+  sent: 1,
+  received: 2,
+  read: 3,
+};
+
 function isError(message: ProtocolMessage) {
   return message.type.startsWith("Error");
 }
@@ -103,7 +111,14 @@ export default function CacheSync() {
       await cache.conversations.replace({
         ...window,
         Messages: window.Messages.map((message) =>
-          message.SendTime === sendTime ? { ...message, ...edit } : message,
+          message.SendTime === sendTime &&
+          !(
+            edit.MessageState !== undefined &&
+            messageStateRank[edit.MessageState] <
+              messageStateRank[message.MessageState]
+          )
+            ? { ...message, ...edit }
+            : message,
         ),
       });
     },

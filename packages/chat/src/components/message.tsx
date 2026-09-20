@@ -35,17 +35,21 @@ import { cancelMessageEditHotkey } from "../hotkeys";
 function MessageComponent({
   editing,
   grouped,
+  highlighted,
   message,
+  onReplyActivate,
   onSetEditing,
   user,
 }: {
   editing: boolean;
   grouped: boolean;
+  highlighted: boolean;
   message: RawMessage & {
     failed?: boolean;
     decryptionFailed?: boolean;
   };
   onSetEditing: (editing: boolean) => void;
+  onReplyActivate: (sendTime: number) => void;
   user: SelectedUser<readonly ["UserId", "Avatar", "Display"]> | null;
 }) {
   const actuallyFailed =
@@ -379,6 +383,7 @@ function MessageComponent({
         <ReplyBox
           edited={replyMessage.Edited}
           content={replyMessage.Content}
+          onActivate={() => onReplyActivate(replyMessage.SendTime)}
           user={replyUser}
           variant="message"
         />
@@ -401,6 +406,8 @@ function MessageComponent({
                     actuallyFailed,
                   "bg-(--primary-foreground-alt)/15 hover:bg-(--primary-foreground-alt)/20":
                     replyTo === message.SendTime && !actuallyFailed,
+                  "bg-(--primary-foreground-alt)/25 hover:bg-(--primary-foreground-alt)/25":
+                    highlighted && !actuallyFailed,
                 },
               )}
             >
@@ -576,6 +583,7 @@ export default memo(MessageComponent, (prev, next) => {
   return (
     prev.message.SendTime === next.message.SendTime &&
     prev.editing === next.editing &&
+    prev.highlighted === next.highlighted &&
     prev.message.Content === next.message.Content &&
     prev.message.SenderId === next.message.SenderId &&
     prev.message.ReplyId === next.message.ReplyId &&
@@ -585,6 +593,7 @@ export default memo(MessageComponent, (prev, next) => {
     JSON.stringify(prev.message.Reactions) ===
       JSON.stringify(next.message.Reactions) &&
     prev.grouped === next.grouped &&
-    prev.user === next.user
+    prev.user === next.user &&
+    prev.onReplyActivate === next.onReplyActivate
   );
 });

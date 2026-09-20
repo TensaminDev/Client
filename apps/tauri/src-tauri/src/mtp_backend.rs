@@ -859,7 +859,14 @@ async fn handle_push(
             }
         }
     }
-    if frame.is_type(CommunicationType::MessageLive) && !manager.ui_visible.load(Ordering::SeqCst) {
+    let suppress_notification = frame
+        .get_data(DataType::SuppressNotification)
+        .and_then(DataValue::as_bool)
+        .unwrap_or(false);
+    if frame.is_type(CommunicationType::MessageLive)
+        && !manager.ui_visible.load(Ordering::SeqCst)
+        && !suppress_notification
+    {
         if notification_tx.try_send(frame).is_err() {
             eprintln!("background message notification queue is full");
         }

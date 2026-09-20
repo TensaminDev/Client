@@ -655,14 +655,24 @@ export const mtp = {
         SenderId: z.number(),
         LastMessageAt: z.number().optional(),
         Notifications: z.number().int().nonnegative().optional(),
+        SuppressNotification: z.boolean().optional(),
         Message: Message.extend({ SenderId: z.number().optional() }),
       })
-      .transform(({ SenderId, LastMessageAt, Notifications, Message }) => ({
-        SenderId,
-        LastMessageAt: LastMessageAt ?? Message.SendTime,
-        notifications: Notifications,
-        Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
-      })),
+      .transform(
+        ({
+          SenderId,
+          LastMessageAt,
+          Notifications,
+          SuppressNotification,
+          Message,
+        }) => ({
+          SenderId,
+          LastMessageAt: LastMessageAt ?? Message.SendTime,
+          notifications: Notifications,
+          suppressNotification: SuppressNotification ?? false,
+          Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
+        }),
+      ),
   },
   ReadNotification: {
     request: z.object({
@@ -696,8 +706,11 @@ export const mtp = {
   MessageGet: {
     request: z.object({
       SendTime: z.number(),
+      ChatPartnerId: z.number().optional(),
     }),
-    response: Message,
+    response: Message.extend({ Offset: z.number().optional() }).transform(
+      ({ Offset, ...Message }) => ({ Message, Offset }),
+    ),
   },
   MessagesGet: {
     request: z.object({
@@ -739,6 +752,14 @@ export const mtp = {
       MessageState: Message.shape.MessageState,
       SendTime: z.number(),
     }),
+  },
+  SessionActivitySet: {
+    request: z.object({
+      DeviceClass: z.enum(["desktop", "mobile", "web"]),
+      Foreground: z.boolean(),
+      NotificationCapable: z.boolean(),
+    }),
+    response: z.object({}),
   },
 
   TAuthAuthorize: {

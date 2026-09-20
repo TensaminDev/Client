@@ -29,6 +29,7 @@ import {
   RETRY_INTERVAL,
   STATE_ACK_TIMEOUT,
 } from "./values";
+import { useSessionActivity } from "./sessionActivity";
 
 type BrowserMtpClient = Awaited<ReturnType<typeof createBrowserClient>>;
 
@@ -681,6 +682,7 @@ export function BrowserProvider(props: {
     },
     [interceptorsRef, mtpRef],
   );
+  useSessionActivity({ connected: contextReady, send: sendQueued });
 
   return (
     <MTPContext.Provider
