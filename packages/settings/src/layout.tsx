@@ -1,11 +1,13 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { Button, useIsMobile } from "@methanium/ui";
 import { ArrowLeft } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { ConnectionState } from "mtp";
 
 import { SettingsSidebar } from "./sidebar";
 import { SettingsProfileMenu } from "./profileMenu";
 import { useSettingsProfiles } from "./profiles";
+import { useMTP } from "@tensamin/mtp";
 import { useNavbar } from "@tensamin/shared/navbar";
 
 export default function SettingsLayout() {
@@ -13,10 +15,22 @@ export default function SettingsLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeProfile, loading } = useSettingsProfiles();
+  const { identified, readyState } = useMTP();
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchYRef = useRef<number | null>(null);
+  const blockerRef = useRef<HTMLDivElement>(null);
   const { render } = useNavbar();
   const isSettingsRoot = /^\/settings\/?$/.test(location.pathname);
+  const blockingExcluded = /^\/settings\/(legal|developer|security)\/?$/.test(
+    location.pathname,
+  );
+  const blocked =
+    !blockingExcluded &&
+    (loading || !identified || readyState !== ConnectionState.Connected);
+
+  useEffect(() => {
+    if (blocked) blockerRef.current?.focus();
+  }, [blocked]);
 
   return (
     <>
@@ -57,18 +71,27 @@ export default function SettingsLayout() {
             <div className="relative flex h-full flex-col">
               <div
                 className="flex h-full flex-col"
+                inert={blocked ? true : undefined}
                 key={activeProfile?.id ?? "local"}
               >
                 <Outlet />
               </div>
-              {loading && (
+              {blocked && (
                 <div
-                  aria-label="Loading settings"
+                  ref={blockerRef}
+                  aria-label={
+                    loading ? "Loading settings" : "Settings unavailable"
+                  }
                   aria-live="polite"
                   className="absolute inset-0 z-40"
+                  tabIndex={-1}
                   style={{
                     backgroundColor:
                       "color-mix(in srgb, var(--background) 30%, transparent)",
+                  }}
+                  onKeyDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
                   }}
                   onWheel={(event) =>
                     scrollRef.current?.scrollBy({ top: event.deltaY })

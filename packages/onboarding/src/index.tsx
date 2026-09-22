@@ -6,7 +6,6 @@ import { isTauri } from "@tauri-apps/api/core";
 
 import { onboardingSteps } from "./steps";
 import TauriPermissionsPage from "./pages/tauriPermissions";
-import LegalPage from "./pages/legal";
 
 export {
   useOnboardingStep,
@@ -14,18 +13,18 @@ export {
   type OnboardingStepControls,
 } from "@methanium/ui";
 
-export default function OnboardingGate({ children }: { children: ReactNode }) {
+export default function OnboardingGate({
+  children,
+  fallback,
+  settingsFallback,
+}: {
+  children: ReactNode;
+  fallback?: ReactNode;
+  settingsFallback?: ReactNode;
+}) {
   const { load, save } = useStorage();
-  const {
-    themePromptCompleted,
-    completeThemePrompt,
-    loading,
-    legalRequired,
-    legalChanged,
-    legalError,
-    retryLegal,
-    acceptLegal,
-  } = useSettingsProfiles();
+  const { themePromptCompleted, completeThemePrompt, loading } =
+    useSettingsProfiles();
   const [ready, setReady] = useState(false);
   const [onboarding, setOnboarding] = useState(false);
   const [tauriPermissions, setTauriPermissions] = useState(false);
@@ -68,27 +67,11 @@ export default function OnboardingGate({ children }: { children: ReactNode }) {
     themePromptCompleted,
   ]);
 
-  if (!ready) return null;
-  if (loading) return <>{children}</>;
+  if (!ready) return fallback;
+  if (loading) return settingsFallback ?? fallback;
 
   const steps: OnboardingStep[] = [];
-  if (legalRequired) {
-    steps.push({
-      id: "legal",
-      title: legalChanged ? "Legal terms changed" : "Privacy Policy & ToS",
-      description: "Review and accept the account terms",
-      defaultCanContinue: false,
-      content: (
-        <LegalPage
-          changed={legalChanged}
-          error={legalError}
-          onRetry={retryLegal}
-          onAccept={acceptLegal}
-        />
-      ),
-    });
-  }
-  if (!themePromptCompleted && !themeSkipped) {
+  if (onboarding && !themePromptCompleted && !themeSkipped) {
     steps.push(
       ...onboardingSteps(onboardingThemeId, setOnboardingThemeId, async () => {
         await completeThemePrompt();

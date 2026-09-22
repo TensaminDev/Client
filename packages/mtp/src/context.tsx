@@ -6,17 +6,25 @@ import { BrowserProvider } from "./browser";
 import { MTPContext, type MTPContextType } from "./mtpContext";
 import { TauriProvider } from "./tauri";
 
-export function Provider(props: {
+export function Provider({
+  fallback,
+  ...props
+}: {
   children: ReactNode;
   blockConnection?: boolean;
+  fallback?: ReactNode;
 }) {
   if (isTauri()) return <TauriProvider {...props} />;
-  return <BrowserWasmProvider {...props} />;
+  return <BrowserWasmProvider {...props} fallback={fallback} />;
 }
 
-function BrowserWasmProvider(props: {
+function BrowserWasmProvider({
+  fallback,
+  ...props
+}: {
   children: ReactNode;
   blockConnection?: boolean;
+  fallback?: ReactNode;
 }) {
   const [wasmReady, setWasmReady] = useState(false);
   const [wasmError, setWasmError] = useState<unknown>();
@@ -31,7 +39,7 @@ function BrowserWasmProvider(props: {
     };
   }, []);
   if (wasmError) throw wasmError;
-  return wasmReady ? <BrowserProvider {...props} /> : null;
+  return wasmReady ? <BrowserProvider {...props} /> : fallback;
 }
 
 export function useMTP(): MTPContextType {

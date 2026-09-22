@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { base64ToBytes, crypto, MTPProtocolError } from "mtp";
+import { base64ToBytes, ConnectionState, crypto } from "mtp";
 import { createSettingsClient, type UserBlob } from "@tensamin/mtp";
 import { storageDefaults, type Storage } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
@@ -18,7 +18,6 @@ import { toast } from "@methanium/ui";
 import { Check } from "lucide-react";
 
 const PROFILE_PREFIX = "settings-profile:";
-const LEGAL_BLOB_ID = "account-setting:legal-acceptance";
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 const PROFILE_SALT = textEncoder.encode("tensamin-settings-profile-v1");
@@ -57,13 +56,6 @@ type ProfileDocument = {
   };
 };
 
-type LegalAcceptance = {
-  version: 1;
-  privacyPolicyHash: string;
-  termsOfServiceHash: string;
-  acceptedAt: number;
-};
-
 export type SettingsProfile = {
   id: string;
   name: string;
@@ -80,10 +72,6 @@ type ProfilesContextValue = {
   error: string;
   syncError: string;
   themePromptCompleted: boolean;
-  legalLoading: boolean;
-  legalRequired: boolean;
-  legalChanged: boolean;
-  legalError: string;
   selectProfile(id: string): Promise<void>;
   completeThemePrompt(): Promise<void>;
   createProfile(
@@ -95,8 +83,6 @@ type ProfilesContextValue = {
   deleteProfile(id: string): Promise<void>;
   retry(): Promise<void>;
   retrySave(): Promise<void>;
-  retryLegal(): Promise<void>;
-  acceptLegal(): Promise<void>;
   validateName(name: string, exceptId?: string): string | null;
 };
 
@@ -186,59 +172,13 @@ async function encryptProfile(document: ProfileDocument, keyring: string) {
   }
 }
 
-async function fetchLegalHash(document: string) {
-  const response = await fetch(
-    `https://legal.methanium.net/tensamin/${document}/raw`,
-  );
-  if (
-    !response.ok ||
-    !response.headers.get("content-type")?.startsWith("text/plain")
-  )
-    throw new Error(`Could not load ${document}`);
-  const hash = await globalThis.crypto.subtle.digest(
-    "SHA-256",
-    await response.arrayBuffer(),
-  );
-  return Array.from(new Uint8Array(hash), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-}
-
-async function encryptLegal(value: LegalAcceptance, keyring: string) {
-  const key = profileKey(keyring);
-  try {
-    return await crypto.encrypt(key, textEncoder.encode(JSON.stringify(value)));
-  } finally {
-    key.fill(0);
-  }
-}
-
-async function decryptLegal(blob: UserBlob, keyring: string) {
-  const key = profileKey(keyring);
-  try {
-    const value = JSON.parse(
-      textDecoder.decode(await crypto.decrypt(key, blob.ciphertext)),
-    ) as LegalAcceptance;
-    if (
-      value.version !== 1 ||
-      typeof value.privacyPolicyHash !== "string" ||
-      typeof value.termsOfServiceHash !== "string" ||
-      typeof value.acceptedAt !== "number"
-    )
-      throw new Error("Unsupported legal acceptance record");
-    return value;
-  } finally {
-    key.fill(0);
-  }
-}
-
 export function SettingsProfilesProvider({
   children,
 }: {
   children: ReactNode;
 }) {
   const storage = useStorage();
-  const { send, subscribe, identified, clientState } = useMTP();
+  const { send, subscribe, identified, clientState, readyState } = useMTP();
   const client = useMemo(
     () => createSettingsClient({ send, subscribe, clientState }),
     [clientState, send, subscribe],
@@ -247,15 +187,9 @@ export function SettingsProfilesProvider({
   const profilesRef = useRef(profiles);
   const [activeId, setActiveId] = useState("");
   const activeIdRef = useRef("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [syncError, setSyncError] = useState("");
-  const [legalLoading, setLegalLoading] = useState(true);
-  const [legalRequired, setLegalRequired] = useState(false);
-  const [legalChanged, setLegalChanged] = useState(false);
-  const [legalError, setLegalError] = useState("");
-  const legalHashes = useRef({ privacyPolicyHash: "", termsOfServiceHash: "" });
-  const legalRevision = useRef(0);
   const keyringRef = useRef("");
   const applying = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -381,10 +315,9 @@ export function SettingsProfilesProvider({
     setLoading(true);
     setError("");
     try {
-      const [keyring, blobs] = await Promise.all([
-        storage.load("mtp_keyring"),
-        client.listBlobs(),
-      ]);
+      const keyring = await storage.load("mtp_keyring");
+      setLoading(true);
+      const blobs = await client.listBlobs();
       keyringRef.current = keyring;
       const relevant = blobs.filter((item) =>
         item.id.startsWith(PROFILE_PREFIX),
@@ -477,6 +410,19 @@ export function SettingsProfilesProvider({
   }, [client, identified, readSettings, storage]);
 
   useEffect(() => {
+    if (
+      readyState === ConnectionState.Disconnected ||
+      readyState === ConnectionState.Failed
+    ) {
+      setLoading(false);
+      if (loadingToastShown.current) {
+        toast.dismiss(LOADING_TOAST_ID);
+        loadingToastShown.current = false;
+      }
+    }
+  }, [readyState]);
+
+  useEffect(() => {
     void loadProfiles();
   }, [loadProfiles]);
 
@@ -484,10 +430,7 @@ export function SettingsProfilesProvider({
     if (loading) {
       const timer = setTimeout(() => {
         loadingToastShown.current = true;
-        toast.loading(
-          "Loading settings...",
-          { id: LOADING_TOAST_ID },
-        );
+        toast.loading("Loading settings...", { id: LOADING_TOAST_ID });
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -496,97 +439,18 @@ export function SettingsProfilesProvider({
         id: LOADING_TOAST_ID,
         action: { label: "Retry", onClick: () => void loadProfiles() },
       });
-    } else if (loadingToastShown.current) {
+    } else if (
+      loadingToastShown.current &&
+      readyState !== ConnectionState.Disconnected &&
+      readyState !== ConnectionState.Failed
+    ) {
       toast.success("Settings loaded.", {
         icon: <Check className="size-4.5" />,
         id: LOADING_TOAST_ID,
       });
       loadingToastShown.current = false;
     }
-  }, [error, loadProfiles, loading]);
-
-  const loadLegal = useCallback(async () => {
-    if (!identified) return;
-    setLegalLoading(true);
-    setLegalError("");
-    try {
-      const [keyring, privacyPolicyHash, termsOfServiceHash, blobs] =
-        await Promise.all([
-          storage.load("mtp_keyring"),
-          fetchLegalHash("privacy-policy"),
-          fetchLegalHash("terms-of-service"),
-          client.listBlobs(),
-        ]);
-      legalHashes.current = { privacyPolicyHash, termsOfServiceHash };
-      try {
-        const metadata = blobs.find((item) => item.id === LEGAL_BLOB_ID);
-        if (!metadata) {
-          legalRevision.current = 0;
-          setLegalChanged(false);
-          setLegalRequired(true);
-          return;
-        }
-        const blob = metadata.ciphertext
-          ? (metadata as UserBlob)
-          : await client.getBlob(LEGAL_BLOB_ID);
-        const acceptance = await decryptLegal(blob, keyring);
-        legalRevision.current = blob.revision;
-        const changed =
-          acceptance.privacyPolicyHash !== privacyPolicyHash ||
-          acceptance.termsOfServiceHash !== termsOfServiceHash;
-        setLegalChanged(changed);
-        setLegalRequired(changed);
-      } catch (caught) {
-        if (
-          caught instanceof MTPProtocolError &&
-          caught.type === "ErrorNotFound"
-        ) {
-          legalRevision.current = 0;
-          setLegalChanged(false);
-          setLegalRequired(true);
-        } else {
-          throw caught;
-        }
-      }
-    } catch (caught) {
-      setLegalError(
-        caught instanceof Error
-          ? caught.message
-          : "Failed to load legal documents",
-      );
-      setLegalRequired(true);
-    } finally {
-      setLegalLoading(false);
-    }
-  }, [client, identified, storage]);
-
-  useEffect(() => {
-    void loadLegal();
-  }, [loadLegal]);
-
-  const acceptLegal = useCallback(async () => {
-    const keyring = await storage.load("mtp_keyring");
-    const acceptance: LegalAcceptance = {
-      version: 1,
-      ...legalHashes.current,
-      acceptedAt: Date.now(),
-    };
-    const ciphertext = await encryptLegal(acceptance, keyring);
-    const saved = legalRevision.current
-      ? await client.updateBlob(
-          LEGAL_BLOB_ID,
-          ciphertext,
-          legalRevision.current,
-          { reason: "legal documents accepted", value: acceptance },
-        )
-      : await client.createBlob(LEGAL_BLOB_ID, ciphertext, {
-          reason: "legal documents accepted",
-          value: acceptance,
-        });
-    legalRevision.current = saved.revision;
-    setLegalRequired(false);
-    setLegalChanged(false);
-  }, [client, storage]);
+  }, [error, loadProfiles, loading, readyState]);
 
   const selectProfile = useCallback(
     async (id: string) => {
@@ -790,50 +654,6 @@ export function SettingsProfilesProvider({
     [client, createProfile, selectProfile, storage],
   );
 
-  useEffect(
-    () =>
-      client.subscribeBlobChanges(async (event) => {
-        if (
-          event.id !== LEGAL_BLOB_ID ||
-          event.revision <= legalRevision.current
-        )
-          return;
-        if (event.deleted) {
-          legalRevision.current = 0;
-          setLegalChanged(false);
-          setLegalRequired(true);
-          return;
-        }
-        try {
-          const acceptance = await decryptLegal(
-            {
-              id: event.id,
-              ciphertext: event.ciphertext,
-              revision: event.revision,
-              updatedAt: event.updatedAt,
-            },
-            keyringRef.current,
-          );
-          legalRevision.current = event.revision;
-          const changed =
-            acceptance.privacyPolicyHash !==
-              legalHashes.current.privacyPolicyHash ||
-            acceptance.termsOfServiceHash !==
-              legalHashes.current.termsOfServiceHash;
-          setLegalChanged(changed);
-          setLegalRequired(changed);
-          setLegalError("");
-        } catch (caught) {
-          setLegalError(
-            caught instanceof Error
-              ? caught.message
-              : "Failed to apply legal acceptance",
-          );
-        }
-      }),
-    [client],
-  );
-
   useEffect(() => {
     if (!identified) return;
     void client.getReceiptPolicy().then(async (value) => {
@@ -896,10 +716,6 @@ export function SettingsProfilesProvider({
       themePromptCompleted:
         profiles.find((profile) => profile.id === activeId)?.document
           ?.themePromptCompleted ?? false,
-      legalLoading,
-      legalRequired,
-      legalChanged,
-      legalError,
       selectProfile,
       completeThemePrompt,
       createProfile,
@@ -907,8 +723,6 @@ export function SettingsProfilesProvider({
       deleteProfile,
       retry: loadProfiles,
       retrySave: saveActive,
-      retryLegal: loadLegal,
-      acceptLegal,
       validateName,
     }),
     [
@@ -917,12 +731,6 @@ export function SettingsProfilesProvider({
       createProfile,
       deleteProfile,
       error,
-      acceptLegal,
-      legalChanged,
-      legalError,
-      legalLoading,
-      legalRequired,
-      loadLegal,
       loadProfiles,
       loading,
       profiles,

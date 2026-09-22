@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { LoadingScreen } from "@methanium/ui";
 
 import AppLayout from "./layout";
 import CallInit from "@/components/callRuntimeInit";
@@ -57,17 +58,28 @@ export default function AppShell() {
   return (
     <Crypto>
       <DesktopMediaProvider>
-        <MTPProvider>
-          <SettingsProfilesProvider>
-            <OnboardingGate>
-              <CacheSync />
-              <DeeplinkNavigator />
-              <Session>
-                <UserProvider>
-                  <CallInit />
-                  {authorizing ? (
-                    <Outlet />
-                  ) : (
+        <MTPProvider
+          fallback={
+            <LoadingScreen title="Starting secure messaging" noProgress />
+          }
+        >
+          {authorizing ? (
+            <Outlet />
+          ) : (
+            <SettingsProfilesProvider>
+              <OnboardingGate
+                fallback={
+                  <LoadingScreen title="Checking onboarding" noProgress />
+                }
+                settingsFallback={
+                  <LoadingScreen title="Loading settings" noProgress />
+                }
+              >
+                <CacheSync />
+                <DeeplinkNavigator />
+                <Session>
+                  <UserProvider>
+                    <CallInit />
                     <AppLayout>
                       <ChatContext>
                         <NotificationsProvider>
@@ -75,11 +87,11 @@ export default function AppShell() {
                         </NotificationsProvider>
                       </ChatContext>
                     </AppLayout>
-                  )}
-                </UserProvider>
-              </Session>
-            </OnboardingGate>
-          </SettingsProfilesProvider>
+                  </UserProvider>
+                </Session>
+              </OnboardingGate>
+            </SettingsProfilesProvider>
+          )}
         </MTPProvider>
       </DesktopMediaProvider>
     </Crypto>

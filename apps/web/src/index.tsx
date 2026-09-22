@@ -12,7 +12,6 @@ import "./index.css";
 import "@methanium/ui/index.css";
 
 import NotFound from "@/routes/404";
-import RouteLoader from "@/components/routeLoader";
 import Home from "@/routes/app/home";
 import AppShell from "@/routes/app/shell";
 import Login from "@/routes/screens/login";
@@ -25,7 +24,7 @@ import Authorize from "@tensamin/tauth/authorize";
 
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 
-import { ThemeProvider, useTheme } from "@methanium/ui";
+import { LoadingScreen, ThemeProvider, useTheme } from "@methanium/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -137,7 +136,7 @@ function LoginWrapper({ children }: { children: ReactNode }) {
     location.pathname !== "/login" &&
     location.pathname !== "/register"
   ) {
-    return <RouteLoader />;
+    return <LoadingScreen title="Checking account" noProgress />;
   }
 
   return children;
