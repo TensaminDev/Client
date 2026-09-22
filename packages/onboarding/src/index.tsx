@@ -6,16 +6,20 @@ import {
   type ReactNode,
 } from "react";
 import {
+  Button,
+  CreateScreen,
   LoadingScreen,
   OnboardingFlow,
   type OnboardingStep,
 } from "@methanium/ui";
 import { useStorage } from "@tensamin/storage/context";
+import type { MTPConnectionStatus } from "@tensamin/mtp";
 import { useSettingsProfiles } from "@tensamin/settings/profiles";
 import { isTauri } from "@tauri-apps/api/core";
 
 import { onboardingSteps } from "./steps";
 import TauriPermissionsPage from "./pages/tauriPermissions";
+import { GlobeOff } from "lucide-react";
 
 export {
   useOnboardingStep,
@@ -67,11 +71,17 @@ function useOnboardingFlags() {
 function StartupLoader({
   connectionReady,
   connectionDescription,
+  sessionEstablished,
+  connectionStatus,
+  retryConnection,
   settingsLoaded,
   onboardingLoaded,
 }: {
   connectionReady: boolean;
   connectionDescription: string;
+  sessionEstablished: boolean;
+  connectionStatus: MTPConnectionStatus | null;
+  retryConnection(): void;
   settingsLoaded: boolean;
   onboardingLoaded: boolean;
 }) {
@@ -81,6 +91,32 @@ function StartupLoader({
     onboardingLoaded,
   ].filter(Boolean).length;
   const progress = (completedSteps / 3) * 100;
+  const description =
+    connectionStatus?.kind === "failed"
+      ? connectionStatus.description
+      : connectionStatus?.kind === "reconnecting"
+        ? `Attempt ${connectionStatus.attempt} of 3`
+        : undefined;
+
+  if (connectionStatus?.kind === "failed" && !sessionEstablished) {
+    return (
+      <CreateScreen className="px-5 text-center flex flex-col gap-10 justify-center items-center">
+        <GlobeOff size={80} />
+        <div className="flex flex-col gap-3">
+          <p className="text-foreground font-semibold text-xl">
+            Connection failed
+          </p>
+          <p className="text-muted-foreground text-md w-80 text-center">
+            {connectionStatus.description}
+          </p>
+        </div>
+        <Button className="w-full max-w-xs" onClick={retryConnection}>
+          Retry
+        </Button>
+      </CreateScreen>
+    );
+  }
+
   const title = !connectionReady
     ? connectionDescription
     : !settingsLoaded
@@ -88,7 +124,17 @@ function StartupLoader({
       : !onboardingLoaded
         ? "Checking onboarding"
         : "";
-  return <LoadingScreen title={title} progress={progress} />;
+  if (connectionStatus?.kind === "reconnecting") {
+    return <LoadingScreen title={title} description={description} noProgress />;
+  }
+
+  return (
+    <LoadingScreen
+      title={title}
+      description={description}
+      progress={progress}
+    />
+  );
 }
 
 async function completeTheme(
@@ -211,10 +257,16 @@ export default function OnboardingGate({
   children,
   connectionReady,
   connectionDescription,
+  sessionEstablished,
+  connectionStatus,
+  retryConnection,
 }: {
   children: ReactNode;
   connectionReady: boolean;
   connectionDescription: string;
+  sessionEstablished: boolean;
+  connectionStatus: MTPConnectionStatus | null;
+  retryConnection(): void;
 }) {
   const { save } = useStorage();
   const {
@@ -237,11 +289,28 @@ export default function OnboardingGate({
     void save("onboarding_done", false);
   }, [released, save, themePromptCompleted]);
 
+  if (!sessionEstablished) {
+    return (
+      <StartupLoader
+        connectionReady={connectionReady}
+        connectionDescription={connectionDescription}
+        connectionStatus={connectionStatus}
+        retryConnection={retryConnection}
+        sessionEstablished={sessionEstablished}
+        settingsLoaded={settingsLoaded}
+        onboardingLoaded={flags !== null}
+      />
+    );
+  }
+
   if (!decision) {
     return (
       <StartupLoader
         connectionReady={connectionReady}
         connectionDescription={connectionDescription}
+        connectionStatus={connectionStatus}
+        retryConnection={retryConnection}
+        sessionEstablished={sessionEstablished}
         settingsLoaded={settingsLoaded}
         onboardingLoaded={flags !== null}
       />

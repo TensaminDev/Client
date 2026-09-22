@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@methanium/ui": "*",
+    "@tensamin/mtp": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-notification": "~2.3.3",
     "@tensamin/shared": "workspace:*",

@@ -312,6 +312,9 @@ export function TauriProvider(props: {
         freshCalls,
         clientState,
         contextReady: connected && snapshot.identified,
+        sessionEstablished: connected && snapshot.identified,
+        connectionStatus: null,
+        retryConnection: () => location.reload(),
         loadingDescription: connected
           ? "Waiting for authenticated session"
           : "Establishing native transport channel",

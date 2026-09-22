@@ -19,6 +19,7 @@ import {
   updateContactNotifications,
   type SealedRelaySend,
   useMessageHandlers,
+  type MTPConnectionStatus,
 } from "./mtpContext";
 import {
   DISCOVERY_TIMEOUT,
@@ -157,11 +158,9 @@ export function BrowserProvider(props: {
   );
   const [identified, setIdentified] = useState(false);
   const [identifying, setIdentifying] = useState(false);
-  const [connectionToast, setConnectionToast] = useState<
-    | { kind: "reconnecting"; attempt: number }
-    | { kind: "failed"; description: string }
-    | null
-  >(null);
+  const [sessionEstablished, setSessionEstablished] = useState(false);
+  const [connectionStatus, setConnectionStatus] =
+    useState<MTPConnectionStatus | null>(null);
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
@@ -182,20 +181,16 @@ export function BrowserProvider(props: {
   const retryConnectionRef = useRef(() => {});
 
   useEffect(() => {
-    if (!connectionToast) {
+    if (!connectionStatus) {
       sonnerToast.dismiss(CONNECTION_TOAST_ID);
       return;
     }
-    if (connectionToast.kind === "reconnecting") {
-      sonnerToast.loading(
-        `Reconnecting to server... (attempt ${connectionToast.attempt} of ${RECONNECT_TRIES})`,
-        { id: CONNECTION_TOAST_ID, duration: Infinity },
-      );
+    if (connectionStatus.kind === "reconnecting" || !sessionEstablished) {
       return;
     }
     sonnerToast.error("Connection failed", {
       id: CONNECTION_TOAST_ID,
-      description: connectionToast.description,
+      description: connectionStatus.description,
       icon: null,
       duration: Infinity,
       closeButton: true,
@@ -204,7 +199,7 @@ export function BrowserProvider(props: {
         onClick: () => retryConnectionRef.current(),
       },
     });
-  }, [connectionToast]);
+  }, [connectionStatus, sessionEstablished]);
 
   const [mtpUrl, setMtpUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -296,7 +291,7 @@ export function BrowserProvider(props: {
       const shortRetry = attempts <= RECONNECT_TRIES;
       if (!shortRetry) {
         log(0, "mtp", "red", "Reconnection attempts exhausted", error);
-        setConnectionToast({
+        setConnectionStatus({
           kind: "failed",
           description:
             error instanceof Error
@@ -305,7 +300,7 @@ export function BrowserProvider(props: {
         });
         return;
       }
-      setConnectionToast({ kind: "reconnecting", attempt: attempts });
+      setConnectionStatus({ kind: "reconnecting", attempt: attempts });
       const jitter = 1 + (Math.random() * 2 - 1) * RECONNECT_JITTER;
       reconnectScheduled = true;
       reconnectTimer = setTimeout(
@@ -563,9 +558,10 @@ export function BrowserProvider(props: {
         connectionReady = true;
         setIdentifying(false);
         setIdentified(true);
+        setSessionEstablished(true);
         clearReconnectTimer();
         attempts = 0;
-        setConnectionToast(null);
+        setConnectionStatus(null);
         resolveConnectionRef.current?.();
       } catch (connectError) {
         if (disposed || generation !== connectionGeneration) {
@@ -593,7 +589,7 @@ export function BrowserProvider(props: {
       if (disposed) return;
       clearReconnectTimer();
       attempts = 0;
-      setConnectionToast(null);
+      setConnectionStatus(null);
       void connect();
     };
     void connect();
@@ -605,7 +601,8 @@ export function BrowserProvider(props: {
       setReadyState(ConnectionState.Disconnected);
       setIdentified(false);
       setIdentifying(false);
-      setConnectionToast(null);
+      setSessionEstablished(false);
+      setConnectionStatus(null);
       sonnerToast.dismiss(CONNECTION_TOAST_ID);
     };
   }, [attachSubscriptions, load, mtpUrl, props.blockConnection, subscribe]);
@@ -663,11 +660,11 @@ export function BrowserProvider(props: {
   }, [subscribe]);
 
   const loadingDescription = useMemo(() => {
-    if (!mtpUrl) return "Loading connection details";
+    if (!mtpUrl) return "Finding an Omikron...";
     if (readyState === ConnectionState.Connecting || !connected) {
-      return "Establishing transport channel";
+      return "Connecting to Omikron...";
     }
-    if (identifying || !identified) return "Waiting for authenticated session";
+    if (identifying || !identified) return "Authenticating...";
     return "Loading...";
   }, [connected, identified, identifying, readyState, mtpUrl]);
   const contextReady = connected && identified && mtpUrl !== null;
@@ -710,7 +707,10 @@ export function BrowserProvider(props: {
         freshCalls,
         clientState,
         contextReady,
+        sessionEstablished,
         loadingDescription,
+        connectionStatus,
+        retryConnection: () => retryConnectionRef.current(),
       }}
     >
       {props.children}

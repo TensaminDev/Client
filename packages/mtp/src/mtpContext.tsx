@@ -58,6 +58,10 @@ export type SealedRelaySend = (
   options: SealedRelayOptions,
 ) => Promise<SealedRelayResult>;
 
+export type MTPConnectionStatus =
+  | { kind: "reconnecting"; attempt: number }
+  | { kind: "failed"; description: string };
+
 export type MTPExchange = {
   type: keyof typeof mtpSchemas & string;
   data: unknown;
@@ -82,7 +86,10 @@ export type MTPContextType = {
   freshCalls: Calls;
   clientState: ProtocolMessage<"AccountStateSnapshot">["data"] | null;
   contextReady: boolean;
+  sessionEstablished: boolean;
   loadingDescription: string;
+  connectionStatus: MTPConnectionStatus | null;
+  retryConnection(): void;
 };
 
 export const MTPContext = createContext<MTPContextType | undefined>(undefined);

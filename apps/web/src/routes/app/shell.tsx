@@ -53,13 +53,22 @@ function DeeplinkNavigator() {
 }
 
 function MainApp() {
-  const { contextReady, loadingDescription } = useMTP();
+  const {
+    contextReady,
+    sessionEstablished,
+    loadingDescription,
+    connectionStatus,
+    retryConnection,
+  } = useMTP();
 
   return (
     <SettingsProfilesProvider>
       <OnboardingGate
         connectionReady={contextReady}
+        sessionEstablished={sessionEstablished}
         connectionDescription={loadingDescription}
+        connectionStatus={connectionStatus}
+        retryConnection={retryConnection}
       >
         <CacheSync />
         <DeeplinkNavigator />
