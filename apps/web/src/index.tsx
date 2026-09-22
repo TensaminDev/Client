@@ -8,8 +8,8 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 
-import "./index.css";
 import "@methanium/ui/index.css";
+import "./index.css";
 
 import NotFound from "@/routes/404";
 import Home from "@/routes/app/home";

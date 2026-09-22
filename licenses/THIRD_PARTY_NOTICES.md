@@ -12,16 +12,6 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@eslint_js@10.0.1`
 - Source package dir: `apps/web/node_modules/@eslint/js`
 
-## @fontsource-variable/public-sans@5.3.0
-
-- License: OFL-1.1
-- Homepage: https://fontsource.org/fonts/public-sans
-- Repository: git+https://github.com/fontsource/font-files.git
-- Description: Self-host the Public Sans font in a neatly bundled NPM package.
-- Included files: LICENSE
-- Folder: `licenses/@fontsource-variable_public-sans@5.3.0`
-- Source package dir: `apps/web/node_modules/@fontsource-variable/public-sans`
-
 ## @livekit/components-react@2.9.23
 
 - License: Apache-2.0
@@ -30,11 +20,11 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@livekit_components-react@2.9.23`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
 
-## @methanium/ui@0.0.28
+## @methanium/ui@0.0.42
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@methanium_ui@0.0.28`
+- Folder: `licenses/@methanium_ui@0.0.42`
 - Source package dir: `apps/tauri/node_modules/@methanium/ui`
 
 ## @tailwindcss/vite@4.3.3
@@ -174,14 +164,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@types_react-dom@19.2.4`
 - Source package dir: `apps/web/node_modules/@types/react-dom`
 
-## @typescript-eslint/parser@8.66.0
+## @typescript-eslint/parser@8.67.0
 
 - License: MIT
 - Homepage: https://typescript-eslint.io/packages/parser
 - Repository: https://github.com/typescript-eslint/typescript-eslint.git
 - Description: An ESLint custom parser which leverages TypeScript ESTree
 - Included files: LICENSE
-- Folder: `licenses/@typescript-eslint_parser@8.66.0`
+- Folder: `licenses/@typescript-eslint_parser@8.67.0`
 - Source package dir: `node_modules/@typescript-eslint/parser`
 
 ## @vitejs/plugin-react@6.0.5
@@ -270,14 +260,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/eventemitter3@5.0.4`
 - Source package dir: `apps/web/node_modules/eventemitter3`
 
-## fallow@3.14.0
+## fallow@3.17.0
 
 - License: MIT
 - Homepage: https://docs.fallow.tools
 - Repository: git+https://github.com/fallow-rs/fallow.git
 - Description: Codebase intelligence for TypeScript and JavaScript. Free static analysis of code and styles, optional paid runtime intelligence (Fallow Runtime). Quality, risk, architecture, dependencies, duplication, and design-system drift for humans, CI, and the agents writing your code. Zero-config framework support.
 - Included files: none found
-- Folder: `licenses/fallow@3.14.0`
+- Folder: `licenses/fallow@3.17.0`
 - Source package dir: `node_modules/fallow`
 
 ## globals@17.9.0
@@ -308,22 +298,13 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/lucide-react@1.30.0`
 - Source package dir: `apps/web/node_modules/lucide-react`
 
-## motion@13.0.0
-
-- License: MIT
-- Repository: https://github.com/motiondivision/motion
-- Description: An animation library for JavaScript and React.
-- Included files: LICENSE.md
-- Folder: `licenses/motion@13.0.0`
-- Source package dir: `packages/chat/node_modules/motion`
-
-## mtp@0.2.0
+## mtp@0.3.0
 
 - License: UNKNOWN
 - Description: MTP TypeScript SDK
 - Included files: none found
-- Folder: `licenses/mtp@0.2.0`
-- Source package dir: `packages/mtp/node_modules/mtp`
+- Folder: `licenses/mtp@0.3.0`
+- Source package dir: `apps/web/node_modules/mtp`
 
 ## prettier@3.9.6
 
@@ -464,14 +445,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/vite@8.2.1`
 - Source package dir: `apps/web/node_modules/vite`
 
-## vitest@4.1.10
+## vitest@4.1.11
 
 - License: MIT
 - Homepage: https://vitest.dev
 - Repository: git+https://github.com/vitest-dev/vitest.git
 - Description: Next generation testing framework powered by Vite
 - Included files: LICENSE.md
-- Folder: `licenses/vitest@4.1.10`
+- Folder: `licenses/vitest@4.1.11`
 - Source package dir: `node_modules/vitest`
 
 ## zod@4.4.3

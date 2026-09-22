@@ -12,7 +12,6 @@
     "preview": "cd dist && nix-shell -p python3 --run 'python3 -m http.server 3000' && cd .."
   },
   "dependencies": {
-    "@fontsource-variable/public-sans": "^5.3.0",
     "@methanium/ui": "*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-router": "^1.170.21",

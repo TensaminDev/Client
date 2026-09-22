@@ -1040,6 +1040,7 @@ export const storageDefaults: Storage = {
     borderWidth: 1,
     fontScale: 1,
     fontFamily: "public-sans",
+    monoFontFamily: "jetbrains-mono",
   },
   chat_trusted_domains: [
     // Other platforms
