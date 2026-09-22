@@ -68,6 +68,7 @@ type ProfilesContextValue = {
   profiles: SettingsProfile[];
   activeProfile: SettingsProfile | null;
   activeProfileHasTheme: boolean;
+  loaded: boolean;
   loading: boolean;
   error: string;
   syncError: string;
@@ -187,6 +188,7 @@ export function SettingsProfilesProvider({
   const profilesRef = useRef(profiles);
   const [activeId, setActiveId] = useState("");
   const activeIdRef = useRef("");
+  const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [syncError, setSyncError] = useState("");
@@ -316,7 +318,6 @@ export function SettingsProfilesProvider({
     setError("");
     try {
       const keyring = await storage.load("mtp_keyring");
-      setLoading(true);
       const blobs = await client.listBlobs();
       keyringRef.current = keyring;
       const relevant = blobs.filter((item) =>
@@ -399,6 +400,7 @@ export function SettingsProfilesProvider({
       setProfiles(next);
       activeIdRef.current = selected.id;
       setActiveId(selected.id);
+      setLoaded(true);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Failed to load profiles",
@@ -427,7 +429,7 @@ export function SettingsProfilesProvider({
   }, [loadProfiles]);
 
   useEffect(() => {
-    if (loading) {
+    if (loading && loaded) {
       const timer = setTimeout(() => {
         loadingToastShown.current = true;
         toast.loading("Loading settings...", { id: LOADING_TOAST_ID });
@@ -450,7 +452,7 @@ export function SettingsProfilesProvider({
       });
       loadingToastShown.current = false;
     }
-  }, [error, loadProfiles, loading, readyState]);
+  }, [error, loadProfiles, loaded, loading, readyState]);
 
   const selectProfile = useCallback(
     async (id: string) => {
@@ -710,6 +712,7 @@ export function SettingsProfilesProvider({
         profiles.find((profile) => profile.id === activeId)?.document?.settings
           .theme_parent,
       ),
+      loaded,
       loading,
       error,
       syncError,
@@ -732,6 +735,7 @@ export function SettingsProfilesProvider({
       deleteProfile,
       error,
       loadProfiles,
+      loaded,
       loading,
       profiles,
       renameProfile,

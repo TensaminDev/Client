@@ -24,7 +24,6 @@ import {
   DISCOVERY_TIMEOUT,
   INITIAL_SYNC_TIMEOUT,
   RECONNECT_JITTER,
-  RECONNECT_LONG_INTERVAL,
   RECONNECT_TRIES,
   RETRY_INTERVAL,
   STATE_ACK_TIMEOUT,
@@ -180,6 +179,7 @@ export function BrowserProvider(props: {
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
     useMessageHandlers();
   const connected = readyState === ConnectionState.Connected;
+  const retryConnectionRef = useRef(() => {});
 
   useEffect(() => {
     if (!connectionToast) {
@@ -199,6 +199,10 @@ export function BrowserProvider(props: {
       icon: null,
       duration: Infinity,
       closeButton: true,
+      action: {
+        label: "Retry",
+        onClick: () => retryConnectionRef.current(),
+      },
     });
   }, [connectionToast]);
 
@@ -296,13 +300,12 @@ export function BrowserProvider(props: {
           kind: "failed",
           description:
             error instanceof Error
-              ? `${error.message.split(":")[0]}. Retrying in the background.`
-              : "Connection lost. Retrying in the background.",
+              ? `${error.message.split(":")[0]}.`
+              : "Connection lost.",
         });
-      } else {
-        setConnectionToast({ kind: "reconnecting", attempt: attempts });
+        return;
       }
-      const baseDelay = shortRetry ? RETRY_INTERVAL : RECONNECT_LONG_INTERVAL;
+      setConnectionToast({ kind: "reconnecting", attempt: attempts });
       const jitter = 1 + (Math.random() * 2 - 1) * RECONNECT_JITTER;
       reconnectScheduled = true;
       reconnectTimer = setTimeout(
@@ -311,7 +314,7 @@ export function BrowserProvider(props: {
           reconnectTimer = null;
           void connect();
         },
-        Math.round(baseDelay * jitter),
+        Math.round(RETRY_INTERVAL * jitter),
       );
     };
 
@@ -586,9 +589,17 @@ export function BrowserProvider(props: {
       }
     }
 
+    retryConnectionRef.current = () => {
+      if (disposed) return;
+      clearReconnectTimer();
+      attempts = 0;
+      setConnectionToast(null);
+      void connect();
+    };
     void connect();
     return () => {
       disposed = true;
+      retryConnectionRef.current = () => {};
       clearReconnectTimer();
       cleanupConnection();
       setReadyState(ConnectionState.Disconnected);

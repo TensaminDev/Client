@@ -8,8 +8,8 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 
-import "@methanium/ui/index.css";
 import "./index.css";
+import "@methanium/ui/index.css";
 
 import NotFound from "@/routes/404";
 import Home from "@/routes/app/home";
@@ -136,7 +136,7 @@ function LoginWrapper({ children }: { children: ReactNode }) {
     location.pathname !== "/login" &&
     location.pathname !== "/register"
   ) {
-    return <LoadingScreen title="Checking account" noProgress />;
+    return <LoadingScreen title="Checking account" progress={4} />;
   }
 
   return children;

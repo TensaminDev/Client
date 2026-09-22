@@ -920,7 +920,6 @@ export interface Storage extends SettingsStorageDefaults {
   mtp_reset_token: string;
   pending_invitation_registration: string;
   onboarding_done: boolean;
-  onboarding_started: boolean;
   active_settings_profile_id: string;
   settings_profile_prompted_session_id: number;
   tauri_permissions_done: boolean;
@@ -996,7 +995,6 @@ export const storageDefaults: Storage = {
   mtp_reset_token: "",
   pending_invitation_registration: "",
   onboarding_done: false,
-  onboarding_started: false,
   active_settings_profile_id: "",
   settings_profile_prompted_session_id: 0,
   tauri_permissions_done: false,

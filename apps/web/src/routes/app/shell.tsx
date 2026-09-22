@@ -8,7 +8,7 @@ import CacheSync from "@tensamin/cache/sync";
 import ChatContext from "@tensamin/chat/context";
 import Crypto from "@tensamin/crypto/context";
 import UserProvider from "@tensamin/identity/context";
-import { Provider as MTPProvider } from "@tensamin/mtp";
+import { Provider as MTPProvider, useMTP } from "@tensamin/mtp";
 import NotificationsProvider from "@tensamin/notifications/context";
 import OnboardingGate from "@tensamin/onboarding";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
@@ -52,6 +52,34 @@ function DeeplinkNavigator() {
   return null;
 }
 
+function MainApp() {
+  const { contextReady, loadingDescription } = useMTP();
+
+  return (
+    <SettingsProfilesProvider>
+      <OnboardingGate
+        connectionReady={contextReady}
+        connectionDescription={loadingDescription}
+      >
+        <CacheSync />
+        <DeeplinkNavigator />
+        <Session>
+          <UserProvider>
+            <CallInit />
+            <AppLayout>
+              <ChatContext>
+                <NotificationsProvider>
+                  <Outlet />
+                </NotificationsProvider>
+              </ChatContext>
+            </AppLayout>
+          </UserProvider>
+        </Session>
+      </OnboardingGate>
+    </SettingsProfilesProvider>
+  );
+}
+
 export default function AppShell() {
   const authorizing = useLocation().pathname === "/authorize";
 
@@ -60,38 +88,10 @@ export default function AppShell() {
       <DesktopMediaProvider>
         <MTPProvider
           fallback={
-            <LoadingScreen title="Starting secure messaging" noProgress />
+            <LoadingScreen title="Starting secure messaging" progress={8} />
           }
         >
-          {authorizing ? (
-            <Outlet />
-          ) : (
-            <SettingsProfilesProvider>
-              <OnboardingGate
-                fallback={
-                  <LoadingScreen title="Checking onboarding" noProgress />
-                }
-                settingsFallback={
-                  <LoadingScreen title="Loading settings" noProgress />
-                }
-              >
-                <CacheSync />
-                <DeeplinkNavigator />
-                <Session>
-                  <UserProvider>
-                    <CallInit />
-                    <AppLayout>
-                      <ChatContext>
-                        <NotificationsProvider>
-                          <Outlet />
-                        </NotificationsProvider>
-                      </ChatContext>
-                    </AppLayout>
-                  </UserProvider>
-                </Session>
-              </OnboardingGate>
-            </SettingsProfilesProvider>
-          )}
+          {authorizing ? <Outlet /> : <MainApp />}
         </MTPProvider>
       </DesktopMediaProvider>
     </Crypto>
