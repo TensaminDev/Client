@@ -20,11 +20,11 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@livekit_components-react@2.9.23`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
 
-## @methanium/ui@0.0.42
+## @methanium/ui@0.0.43
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@methanium_ui@0.0.42`
+- Folder: `licenses/@methanium_ui@0.0.43`
 - Source package dir: `apps/tauri/node_modules/@methanium/ui`
 
 ## @tailwindcss/vite@4.3.3

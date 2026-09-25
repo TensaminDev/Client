@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ThemeDesign } from "@methanium/ui";
+import type { Theme, ThemeDesign } from "@methanium/ui";
 
 import {
   settingsStorageDefaults,
@@ -976,6 +976,8 @@ export interface Storage extends SettingsStorageDefaults {
   theme_custom_css: string;
   theme_parent: string;
   theme_design: ThemeDesign;
+  theme_selected_id: string;
+  theme_custom_themes: Theme[];
   chat_trusted_domains: string[];
   chat_picker_saved_media: string[];
   chat_picker_saved_media_groups: ChatPickerMediaGroup[];
@@ -1034,12 +1036,12 @@ export const storageDefaults: Storage = {
   theme_custom_css: "",
   theme_parent: "tensamin",
   theme_design: {
-    spacing: 1,
-    borderWidth: 1,
     fontScale: 1,
     fontFamily: "public-sans",
     monoFontFamily: "jetbrains-mono",
   },
+  theme_selected_id: "tensamin",
+  theme_custom_themes: [],
   chat_trusted_domains: [
     // Other platforms
     "cdn.discordapp.com",

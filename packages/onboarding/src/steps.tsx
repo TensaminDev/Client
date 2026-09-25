@@ -5,8 +5,6 @@ import {
 } from "@methanium/ui";
 
 export const onboardingSteps = (
-  themeId: string | null,
-  setThemeId: (id: string) => void,
   onSkip: () => Promise<void>,
 ): OnboardingStep[] => [
   {
@@ -17,7 +15,7 @@ export const onboardingSteps = (
     defaultCanContinue: false,
     content: (
       <div className="flex flex-col gap-6">
-        <ThemeOnboardingPage value={themeId} onValueChange={setThemeId} />
+        <ThemeOnboardingPage />
         <Button
           className="self-end"
           variant="ghost"

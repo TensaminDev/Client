@@ -377,7 +377,11 @@ export function SettingsProfilesProvider({
         throw new Error("No settings profile is available");
       const document = { ...selected.document, lastUsedAt: Date.now() };
       applying.current = true;
-      await storage.apply(document.settings);
+      await storage.apply({
+        theme_selected_id: storageDefaults.theme_selected_id,
+        theme_custom_themes: storageDefaults.theme_custom_themes,
+        ...document.settings,
+      });
       await storage.save("active_settings_profile_id", selected.id);
       applying.current = false;
       try {
@@ -464,7 +468,11 @@ export function SettingsProfilesProvider({
       applying.current = true;
       try {
         const document = { ...profile.document, lastUsedAt: Date.now() };
-        await storage.apply(document.settings);
+        await storage.apply({
+          theme_selected_id: storageDefaults.theme_selected_id,
+          theme_custom_themes: storageDefaults.theme_custom_themes,
+          ...document.settings,
+        });
         await storage.save("active_settings_profile_id", id);
         setActiveId(id);
         activeIdRef.current = id;
@@ -640,7 +648,11 @@ export function SettingsProfilesProvider({
           setProfiles(next);
           if (id === activeIdRef.current && remote.document) {
             applying.current = true;
-            await storage.apply(remote.document.settings);
+            await storage.apply({
+              theme_selected_id: storageDefaults.theme_selected_id,
+              theme_custom_themes: storageDefaults.theme_custom_themes,
+              ...remote.document.settings,
+            });
             applying.current = false;
             setSyncError("");
           }
@@ -709,6 +721,8 @@ export function SettingsProfilesProvider({
       activeProfile:
         profiles.find((profile) => profile.id === activeId) ?? null,
       activeProfileHasTheme: Boolean(
+        profiles.find((profile) => profile.id === activeId)?.document?.settings
+          .theme_selected_id ??
         profiles.find((profile) => profile.id === activeId)?.document?.settings
           .theme_parent,
       ),

@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-09-22T16:02:57.839Z",
+    "timestamp": "2026-09-25T16:12:44.771Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -83,15 +83,15 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40methanium/ui@0.0.42",
+      "bomRef": "pkg:npm/%40methanium/ui@0.0.43",
       "name": "@methanium/ui",
-      "version": "0.0.42",
-      "purl": "pkg:npm/%40methanium/ui@0.0.42",
+      "version": "0.0.43",
+      "purl": "pkg:npm/%40methanium/ui@0.0.43",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@methanium_ui@0.0.42"
+          "value": "licenses/@methanium_ui@0.0.43"
         },
         {
           "name": "local:sourcePackageDir",

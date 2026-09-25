@@ -156,23 +156,19 @@ function createOnboardingSteps({
   decision,
   themeSkipped,
   setThemeSkipped,
-  onboardingThemeId,
-  setOnboardingThemeId,
   completeThemePrompt,
   finish,
 }: {
   decision: OnboardingDecision;
   themeSkipped: boolean;
   setThemeSkipped(value: boolean): void;
-  onboardingThemeId: string | null;
-  setOnboardingThemeId: (id: string) => void;
   completeThemePrompt(): Promise<void>;
   finish(themeAlreadyComplete?: boolean): Promise<void>;
 }) {
   const steps: OnboardingStep[] = [];
   if (decision.theme && !themeSkipped) {
     steps.push(
-      ...onboardingSteps(onboardingThemeId, setOnboardingThemeId, async () => {
+      ...onboardingSteps(async () => {
         await completeThemePrompt();
         if (decision.tauriPermissions) setThemeSkipped(true);
         else await finish(true);
@@ -208,9 +204,6 @@ function ActiveOnboarding({
   const { save } = useStorage();
   const [complete, setComplete] = useState(false);
   const [themeSkipped, setThemeSkipped] = useState(false);
-  const [onboardingThemeId, setOnboardingThemeId] = useState<string | null>(
-    null,
-  );
 
   const finish = useCallback(
     async (themeAlreadyComplete = false) => {
@@ -229,8 +222,6 @@ function ActiveOnboarding({
     decision,
     themeSkipped,
     setThemeSkipped,
-    onboardingThemeId,
-    setOnboardingThemeId,
     completeThemePrompt,
     finish,
   });

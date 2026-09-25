@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T16:02:57.837Z",
+  "generatedAt": "2026-09-25T16:12:44.770Z",
   "packageCount": 49,
   "packages": [
     {
@@ -30,7 +30,7 @@
     },
     {
       "name": "@methanium/ui",
-      "version": "0.0.42",
+      "version": "0.0.43",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
@@ -38,7 +38,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@methanium_ui@0.0.42",
+      "licenseFolder": "licenses/@methanium_ui@0.0.43",
       "sourcePackageDir": "apps/tauri/node_modules/@methanium/ui"
     },
     {

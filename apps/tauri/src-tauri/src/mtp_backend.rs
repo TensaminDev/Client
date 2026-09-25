@@ -336,7 +336,7 @@ impl MtpManager {
     }
 }
 
-fn migrate_config(config: MtpConfig) -> Result<MtpConfig, String> {
+fn validate_config(config: MtpConfig) -> Result<MtpConfig, String> {
     let keyring_bytes = decode_browser_base64(&config.keyring)
         .map_err(|error| format!("invalid MTP keyring: {error}"))?;
     Keyring::from_bytes(&keyring_bytes).map_err(|error| format!("invalid MTP keyring: {error}"))?;
@@ -1367,7 +1367,7 @@ pub fn mtp_status() -> MtpSnapshot {
 
 #[tauri::command]
 pub fn mtp_store_credentials(config: MtpConfig) -> Result<(), String> {
-    let config = migrate_config(config)?;
+    let config = validate_config(config)?;
     let serialized = serde_json::to_string(&config).map_err(|error| error.to_string())?;
     android_store_config(&serialized)?;
     if manager().is_enabled() {
@@ -1399,7 +1399,7 @@ pub fn mtp_load_keyring() -> Result<Option<String>, String> {
         };
         let config = serde_json::from_str(serialized.as_str())
             .map_err(|error| format!("invalid stored MTP config: {error}"))?;
-        let config = migrate_config(config)?;
+        let config = validate_config(config)?;
         let keyring = config.keyring.clone();
         *manager().config.write().expect("config lock poisoned") = Some(config);
         Ok(Some(keyring))
@@ -1760,9 +1760,9 @@ mod android {
         let _ = env.with_env(|env| {
             if let Ok(config) = config.mutf8_chars(env) {
                 match serde_json::from_str(config.to_str().as_ref()) {
-                    Ok(config) => match super::migrate_config(config) {
+                    Ok(config) => match super::validate_config(config) {
                         Ok(config) => super::manager().configure_and_start(config),
-                        Err(error) => eprintln!("failed to migrate native MTP config: {error}"),
+                        Err(error) => eprintln!("invalid native MTP config: {error}"),
                     },
                     Err(error) => eprintln!("failed to deserialize native MTP config: {error}"),
                 }
