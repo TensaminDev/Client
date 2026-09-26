@@ -48,6 +48,13 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   ];
 
   useEffect(() => {
+    if (!contextReady) return;
+    setLocalCalls((previous) => previous.filter((call) =>
+      freshCalls.some((fresh) => fresh.CallId === call.CallId),
+    ));
+  }, [contextReady, freshCalls]);
+
+  useEffect(() => {
     setRemovedCallIds((previous) =>
       previous.filter((callId) =>
         freshCalls.some((call) => call.CallId === callId),

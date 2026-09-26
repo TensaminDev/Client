@@ -1,37 +1,168 @@
-import { useCall } from "../store";
-import type { CurrentCallData } from "../state";
+import { useEffect, useRef, useState } from "react";
+import { Timer } from "lucide-react";
+import { Button } from "@methanium/ui";
 import { useUserFields } from "@tensamin/identity/context";
+import { joinCall, useCall } from "../store";
+import type { CurrentCallData } from "../state";
+import { PixelBlast } from "@methanium/ui";
+import ParticipantCard, {
+  ParticipantCardAvatar,
+  ParticipantNameplate,
+} from "../components/participantCard";
+import { calculateOptimalGridLayout } from "./main/grid";
 
-const USER_FIELDS = ["Display"] as const;
+const USER_FIELDS = ["UserId", "Display", "Avatar"] as const;
 const STATUS_MESSAGES: Record<CurrentCallData["status"], string | null> = {
   loading: null,
   ready: null,
-  "not-found": "Call expired",
+  "not-found": "Call Expired",
   forbidden: "You do not have access to this call",
   error: "Unable to load call",
 };
 
 function Participant({ userId }: { userId: number }) {
   const { data: user } = useUserFields(userId, USER_FIELDS);
-  return user ? <p className="text-2xl">User: {user.Display}</p> : null;
+  return user ? (
+    <div className="relative aspect-video w-full">
+      <ParticipantCard user={user}>
+        <ParticipantCardAvatar user={user} />
+      </ParticipantCard>
+      <div className="absolute bottom-0 left-0 z-20 flex h-full w-full items-end p-2">
+        <ParticipantNameplate name={user.Display} />
+      </div>
+    </div>
+  ) : null;
+}
+
+export function formatDuration(milliseconds: number) {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return [
+    days && `${days}d`,
+    hours && `${hours}h`,
+    minutes && `${minutes}m`,
+    seconds % 60 && `${seconds % 60}s`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export default function Preview() {
   const currentCallData = useCall((state) => state.currentCallData);
-  const message = currentCallData
-    ? STATUS_MESSAGES[currentCallData.status]
-    : null;
+  const callId = useCall((state) => state.callId);
+  const ownerOmikronId = useCall((state) => state.callRoute?.ownerOmikronId);
+  const [now, setNow] = useState(0);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    const element = gridRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [currentCallData?.status]);
+
+  const count =
+    currentCallData?.status === "ready" ? currentCallData.userIds.length : 0;
+  const layout = calculateOptimalGridLayout(size.width, size.height, count, 8);
+  let index = 0;
+  const rows = layout.rowCounts.map((rowCount) =>
+    Array.from({ length: rowCount }, () => index++),
+  );
+  const message =
+    currentCallData?.status === "error"
+      ? currentCallData.message
+      : currentCallData
+        ? STATUS_MESSAGES[currentCallData.status]
+        : null;
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden p-6">
+      <div className="absolute w-full h-full opacity-50">
+        <PixelBlast />
+      </div>
       {currentCallData?.status === "ready" ? (
-        <div className="flex flex-col gap-2">
-          {currentCallData.userIds.map((userId) => (
-            <Participant key={userId} userId={userId} />
-          ))}
-        </div>
+        <>
+          <span className="absolute md:right-6 top-6 z-10 rounded-lg bg-card/90 px-3 py-2 text-sm tabular-nums w-full text-center md:w-auto md:text-right">
+            {formatDuration(Math.max(0, now - currentCallData.createdAt))}
+          </span>
+          <div className="relative flex h-[min(65vh,440px)] w-[min(100%,1240px)] flex-col items-center justify-center gap-8 p-8 sm:p-12">
+            <div ref={gridRef} className="min-h-0 w-full flex-1">
+              <div className="flex h-full flex-col items-center justify-center gap-5">
+                {rows.map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex justify-center gap-5">
+                    {row.map((userIndex) => (
+                      <div
+                        key={currentCallData.userIds[userIndex]}
+                        style={{
+                          width: Math.min(layout.tileWidth, 240 * 4),
+                          height: Math.min(layout.tileHeight, 135 * 4),
+                        }}
+                      >
+                        <Participant
+                          userId={currentCallData.userIds[userIndex]}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="h-12 w-auto shrink-0 px-12 text-lg hover:bg-[color-mix(in_srgb,var(--primary)_85%,black)]! disabled:bg-[color-mix(in_srgb,var(--primary)_75%,black)]! disabled:opacity-100!"
+              disabled={
+                !callId || currentCallData.userIds.length === 0 || joining
+              }
+              onClick={() => {
+                if (!callId) return;
+                setJoining(true);
+                setJoinError(null);
+                void joinCall(
+                  currentCallData.userIds[0],
+                  currentCallData.callSecret,
+                  callId,
+                  false,
+                  ownerOmikronId,
+                )
+                  .catch((error) =>
+                    setJoinError(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to join call",
+                    ),
+                  )
+                  .finally(() => setJoining(false));
+              }}
+            >
+              {joining ? "Joining..." : "Join call"}
+            </Button>
+            {joinError && (
+              <p role="alert" className="text-sm text-destructive">
+                {joinError}
+              </p>
+            )}
+          </div>
+        </>
       ) : message ? (
-        <p className="text-2xl">{message}</p>
+        <div className="relative flex items-center gap-3 rounded-xl bg-card/90 p-5 text-2xl">
+          {currentCallData?.status === "not-found" && <Timer aria-hidden />}
+          <p>{message}</p>
+        </div>
       ) : null}
     </div>
   );

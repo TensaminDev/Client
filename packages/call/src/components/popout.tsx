@@ -15,7 +15,7 @@ import {
 import { ScreenShareOff } from "lucide-react";
 import { useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking, useLastSpeakingParticipantId } from "../speakingState";
-import { getAverageImageColor } from "./modals/base";
+import { getAverageImageColor } from "./participantCard";
 import { getTrackPublicationBySource } from "../participants";
 
 const USER_FIELDS = ["Avatar", "Display"] as const;

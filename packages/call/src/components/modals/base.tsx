@@ -1,7 +1,4 @@
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
   Button,
   ContextMenu as UIContextMenu,
   ContextMenuTrigger,
@@ -15,7 +12,7 @@ import {
   useCall,
 } from "../../store";
 import { Track, type Participant } from "livekit-client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { type SelectedUser, useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking } from "../../speakingState";
 import VideoViewer from "../videoViewer";
@@ -23,6 +20,7 @@ import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
 import ContextMenu from "./contextMenu";
 import { useStorage } from "@tensamin/storage/context";
 import { getTrackPublicationBySource } from "../../participants";
+import ParticipantCard, { ParticipantCardAvatar, ParticipantNameplate } from "../participantCard";
 
 const USER_FIELDS = ["UserId", "Avatar", "Display"] as const;
 
@@ -32,69 +30,6 @@ function TransparentButton({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   );
-}
-
-export function getAverageImageColor(src: string) {
-  return new Promise<string | undefined>((resolve) => {
-    const image = new Image();
-
-    image.crossOrigin = "anonymous";
-    image.referrerPolicy = "no-referrer";
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-
-      if (!context) {
-        resolve(undefined);
-        return;
-      }
-
-      canvas.width = 32;
-      canvas.height = 32;
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      try {
-        const { data } = context.getImageData(
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-        );
-        let red = 0;
-        let green = 0;
-        let blue = 0;
-        let total = 0;
-
-        for (let index = 0; index < data.length; index += 4) {
-          const alpha = data[index + 3];
-
-          if (alpha < 128) {
-            continue;
-          }
-
-          red += data[index] * alpha;
-          green += data[index + 1] * alpha;
-          blue += data[index + 2] * alpha;
-          total += alpha;
-        }
-
-        if (total === 0) {
-          resolve(undefined);
-          return;
-        }
-
-        const darken = 0.7;
-
-        resolve(
-          `rgb(${Math.round((red / total) * darken)}, ${Math.round((green / total) * darken)}, ${Math.round((blue / total) * darken)})`,
-        );
-      } catch {
-        resolve(undefined);
-      }
-    };
-    image.onerror = () => resolve(undefined);
-    image.src = src;
-  });
 }
 
 function Overlay({
@@ -135,9 +70,7 @@ function Overlay({
           <Monitor className="size-3.5" />
         </TransparentButton>
       )}
-      <TransparentButton>
-        <p className="text-sm">{user.Display}</p>
-      </TransparentButton>
+      <ParticipantNameplate name={user.Display} />
     </div>
   );
 }
@@ -165,9 +98,6 @@ export default function Base({
       ? participantId
       : null;
   const { data: user } = useUserFields(validParticipantId, USER_FIELDS);
-  const [avatarBackgroundColor, setAvatarBackgroundColor] = useState<
-    string | undefined
-  >(undefined);
   const isSpeaking = useIsSpeaking(user?.UserId ?? -1);
   const screenSharePublication = getTrackPublicationBySource(
     participant,
@@ -186,28 +116,6 @@ export default function Base({
   useEffect(() => {
     load("user_id").then(setOwnId);
   }, [load]);
-
-  useEffect(() => {
-    if (type !== "user" || !user?.Avatar) {
-      setAvatarBackgroundColor(undefined);
-      return;
-    }
-
-    let active = true;
-
-    void getAverageImageColor(user.Avatar).then((color) => {
-      if (active) {
-        setAvatarBackgroundColor(color);
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [type, user?.Avatar]);
-
-  // Avatar calc
-  const currentCard = useRef<HTMLDivElement>(null);
 
   if (!participant || !user) {
     return (
@@ -289,20 +197,7 @@ export default function Base({
                 ) : null}
               </>
             </div>
-            <div
-              ref={currentCard}
-              className={`transition-all duration-150 z-10 bg-card absolute top-0 left-0 w-full h-full flex gap-2 items-center justify-center border-(--border)/40 ${
-                flush
-                  ? fill
-                    ? "rounded-none"
-                    : "rounded-none border-y"
-                  : "rounded-lg border"
-              }`}
-              style={{
-                backgroundColor: avatarBackgroundColor,
-                containerType: "size",
-              }}
-            >
+            <ParticipantCard user={type === "user" ? user : undefined} fill={fill} flush={flush}>
               {/* Detect video / user and place here */}
 
               {type === "stream" &&
@@ -338,23 +233,9 @@ export default function Base({
                     publication={cameraPublication}
                   />
                 ) : (
-                  <Avatar
-                    style={{
-                      width: "32cqh",
-                      height: "32cqh",
-                    }}
-                  >
-                    <AvatarImage src={user.Avatar} />
-                    <AvatarFallback
-                      style={{
-                        fontSize: "11cqh",
-                      }}
-                    >
-                      {user.Display.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <ParticipantCardAvatar user={user} />
                 ))}
-            </div>
+            </ParticipantCard>
           </div>
         }
       />

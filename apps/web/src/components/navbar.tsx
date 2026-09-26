@@ -3,6 +3,9 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
   useIsMobile,
 } from "@methanium/ui";
 import {
@@ -263,21 +266,29 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 <Phone />
               </Button>
             ) : currentCalls.length === 1 ? (
-              <Button
-                disabled={callState !== "closed"}
-                onClick={() => {
-                  void joinCall(
-                    id,
-                    currentCalls[0].CallSecret,
-                    currentCalls[0].CallId,
-                    true,
-                    currentCalls[0].OmikronId,
-                  );
-                }}
-                className="w-9 h-9! aspect-square rounded-lg"
-              >
-                <Phone />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      disabled={callState !== "closed"}
+                      onClick={() => {
+                        void joinCall(
+                          id,
+                          currentCalls[0].CallSecret,
+                          currentCalls[0].CallId,
+                          false,
+                          currentCalls[0].OmikronId,
+                        );
+                      }}
+                      className="w-9 h-9! aspect-square rounded-lg"
+                      variant="default"
+                    >
+                      <Phone />
+                    </Button>
+                  }
+                />
+                <TooltipContent>Join existing call</TooltipContent>
+              </Tooltip>
             ) : (
               <>
                 <Select>
@@ -303,7 +314,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                             id,
                             call.CallSecret,
                             call.CallId,
-                            true,
+                            false,
                             call.OmikronId,
                           )
                         }

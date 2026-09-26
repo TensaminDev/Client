@@ -211,6 +211,9 @@ const authPayload = z.object({
         OmikronId: z.number(),
         CallSecret: callSecretEnvelopeResponse.optional(),
         CallMembers: z.array(z.number()),
+        CallInvited: z.boolean().optional(),
+        SenderId: z.number().optional(),
+        CreatedAt: z.number().optional(),
       }),
     )
     .default([]),
@@ -792,6 +795,18 @@ export const mtp = {
   },
 
   // Calls
+  CallReserve: {
+    request: z.object({}),
+    response: z.object({ CallId: z.string(), OmikronId: z.number() }),
+  },
+  CallActivate: {
+    request: z.object({ CallId: z.string(), CallSecret: callSecretEnvelopeRequest }),
+    response: z.object({ CallToken: z.string(), CallEndpoint: z.string(), OmikronId: z.number(), CreatedAt: z.number() }),
+  },
+  CallEnded: {
+    request: z.object({}).optional(),
+    response: z.object({ CallId: z.string() }),
+  },
   CallToken: {
     request: z.object({
       CallId: z.string(),
@@ -801,6 +816,7 @@ export const mtp = {
       CallToken: z.string(),
       CallEndpoint: z.string(),
       OmikronId: z.number(),
+      CreatedAt: z.number().optional(),
     }),
   },
   CallData: {
@@ -809,6 +825,8 @@ export const mtp = {
     }),
     response: z.object({
       UserIds: z.array(z.number()),
+      CreatedAt: z.number(),
+      CallSecret: callSecretEnvelopeResponse,
     }),
   },
   CallInvite: {

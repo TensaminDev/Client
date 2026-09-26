@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useMTP } from "@tensamin/mtp";
+import { mtp } from "@tensamin/shared/data";
 import { log, toast } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 import { useSession } from "@tensamin/identity/session";
@@ -95,9 +96,9 @@ async function ensureNoiseFilter(
 export function useInitializeCall() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sendCallControl, subscribe } = useMTP();
+  const { sendCallControl, subscribe, contextReady } = useMTP();
   const { load, save, subscribe: subscribeStorage } = useStorage();
-  const { upsertCall, removeCall } = useSession();
+  const { upsertCall, removeCall, calls } = useSession();
   const { get } = useUser();
 
   const callId = useCall((state) => state.callId);
@@ -197,6 +198,14 @@ export function useInitializeCall() {
       await receiveCallInvite(data, Number(await load("user_id")));
     });
   }, [load, subscribe]);
+
+  useEffect(() => subscribe("CallEnded", ({ data }) => {
+    const callId = mtp.CallEnded.response.parse(data).CallId;
+    removeCall(callId);
+    if (useCall.getState().callId === callId) {
+      useCall.setState({ currentCallData: { status: "not-found" } });
+    }
+  }), [removeCall, subscribe]);
 
   // get callId from url
   useEffect(() => {
@@ -571,13 +580,15 @@ export function useInitializeCall() {
   }, [noiseFilter, load]);
 
   // fetch call data for preview page
+  const previewOwner = calls.find((call) => call.CallId === callId)?.OmikronId;
   useEffect(() => {
-    if (view !== "preview" || !callId) {
+    if (view !== "preview" || !callId || !contextReady) {
       return;
     }
 
-    void loadCallData(callId);
-  }, [callId, view]);
+    useCall.setState({ callRoute: previewOwner == null ? null : { ownerOmikronId: previewOwner, livekitUrl: null } });
+    void loadCallData(callId, previewOwner);
+  }, [callId, view, contextReady, previewOwner]);
 
   return incomingCallInvite ? (
     <InvitePopup

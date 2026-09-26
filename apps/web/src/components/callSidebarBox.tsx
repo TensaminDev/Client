@@ -3,7 +3,7 @@ import SidebarBox from "@tensamin/call/sidebarBox";
 
 export default function CallSidebarBox() {
   const active = useCall(
-    (state) => state.state !== "closed" || state.callId !== null,
+    (state) => state.state !== "closed" && state.state !== "encrypting",
   );
 
   return active ? <SidebarBox /> : null;

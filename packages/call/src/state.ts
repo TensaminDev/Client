@@ -22,7 +22,12 @@ export type CallRoute = {
 
 export type CurrentCallData =
   | { status: "loading" }
-  | { status: "ready"; userIds: number[] }
+  | {
+      status: "ready";
+      userIds: number[];
+      createdAt: number;
+      callSecret: WrappedCallSecret;
+    }
   | { status: "not-found" }
   | { status: "forbidden" }
   | { status: "error"; message: string };
@@ -55,6 +60,7 @@ export const useCall = create<{
   view: CallView;
   invitedUserId: number | null;
   callId: string | null;
+  callCreatedAt: number | null;
   callRoute: CallRoute | null;
   incomingCallInvite: {
     callId: string;
@@ -94,6 +100,7 @@ export const useCall = create<{
   view: "preview",
   invitedUserId: null,
   callId: null,
+  callCreatedAt: null,
   callRoute: null,
   incomingCallInvite: null,
   callSecret: null,

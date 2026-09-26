@@ -23,6 +23,7 @@ import {
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useSession } from "@tensamin/identity/session";
 import { useRef, useState } from "react";
+import { Phone } from "lucide-react";
 import { ChatBackgroundDialog } from "@tensamin/chat/backgrounds";
 import {
   useContactJobs,
@@ -58,7 +59,7 @@ export default function ConversationModal({ userId }: { userId: number }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { id } = useSearch({ strict: false });
-  const { contacts } = useSession();
+  const { contacts, calls } = useSession();
   const isMobile = useIsMobile();
   const { jobs, dismissJob } = useContactJobs();
   const contactJobs = jobs
@@ -73,6 +74,9 @@ export default function ConversationModal({ userId }: { userId: number }) {
   const longPressed = useRef(false);
   const notifications =
     contacts.find((contact) => contact.UserId === userId)?.notifications ?? 0;
+  const hasPendingCall = calls.some(
+    (call) => call.CallInvited && call.SenderId === userId,
+  );
   const active = pathname === "/chat" && id === userId;
 
   const contact = (
@@ -135,14 +139,22 @@ export default function ConversationModal({ userId }: { userId: number }) {
           />
         )}
       />
-      <span
-        hidden={notifications === 0}
-        className={cn(
-          "h-4 absolute -left-1 -top-1 flex items-center justify-center text-[10.5px] leading-none text-primary-foreground bg-(--destructive) rounded-full",
-          notifications < 10 ? "w-4" : "w-auto",
+      <span className="pointer-events-none absolute -left-1 -top-1 z-10 flex gap-0.5">
+        {notifications > 0 && (
+          <span
+            className={cn(
+              "flex h-4 items-center justify-center rounded-full bg-destructive text-[10.5px] leading-none text-primary-foreground motion-safe:animate-in motion-safe:slide-in-from-bottom-2",
+              notifications < 10 ? "w-4" : "min-w-4 px-1",
+            )}
+          >
+            {notifications > 99 ? "99+" : notifications}
+          </span>
         )}
-      >
-        {notifications > 99 ? "99+" : notifications}
+        {hasPendingCall && (
+          <span className="flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground motion-safe:animate-in motion-safe:slide-in-from-bottom-2">
+            <Phone className="size-2.5 animate-pulse" />
+          </span>
+        )}
       </span>
     </button>
   );

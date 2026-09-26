@@ -1425,6 +1425,7 @@ export async function disconnect() {
     state: "closing",
     invitedUserId: null,
     callId: null,
+    callCreatedAt: null,
     callRoute: null,
     incomingCallInvite: null,
     callSecret: null,
@@ -1481,9 +1482,6 @@ export async function leaveCall() {
     }
   } finally {
     await disconnect();
-    if (callId) {
-      runtime.removeCall(callId);
-    }
   }
 }
 
@@ -1633,6 +1631,7 @@ async function connectPreparedCall(
 
   useCall.setState({
     view: "grid",
+    callCreatedAt: token.CreatedAt ?? null,
     callRoute: {
       ownerOmikronId: token.OmikronId,
       livekitUrl: token.CallEndpoint,
@@ -1678,7 +1677,10 @@ export async function joinCall(
   const attemptGeneration = ++callAttemptGeneration;
   log(2, "call", "purple", "Call creation initialised");
   const isNewCall = !callSecret && !existingCallId;
-  const finalId = existingCallId || crypto.randomUUID();
+  const reservation = isNewCall
+    ? mtp.CallReserve.response.parse((await runtime.callControl.request(undefined, "CallReserve", {})).data)
+    : null;
+  const finalId = existingCallId || reservation!.CallId;
   useCall.setState({
     state: "encrypting",
     invitedUserId: sendInvite && !existingCallId ? userId : null,
@@ -1697,17 +1699,43 @@ export async function joinCall(
     );
     if (cancelled) return;
 
-    const token = await getCallToken(finalId, creatorEnvelope, ownerOmikronId);
+    const token = creatorEnvelope
+      ? mtp.CallActivate.response.parse((await runtime.callControl.request(reservation!.OmikronId, "CallActivate", {
+          CallId: finalId,
+          CallSecret: creatorEnvelope,
+        })).data)
+      : await getCallToken(finalId, undefined, ownerOmikronId);
     if (!isCurrentCallAttempt(attemptGeneration)) return;
     if (
       !(await connectPreparedCall(
         finalId,
         token,
-        ownerOmikronId,
+        ownerOmikronId ?? reservation?.OmikronId,
         attemptGeneration,
       ))
     ) {
       return;
+    }
+
+    if (existingCallId && callSecret) {
+      const preview = useCall.getState().currentCallData;
+      runtime.upsertCall({
+        CallId: finalId,
+        OmikronId: token.OmikronId,
+        CallSecret: protocolCallSecret(normalizeWrappedCallSecret(callSecret)),
+        CallMembers: preview?.status === "ready" ? preview.userIds : [userId],
+        CallInvited: false,
+      });
+    }
+    if (isNewCall && creatorEnvelope) {
+      runtime.upsertCall({
+        CallId: finalId,
+        OmikronId: token.OmikronId,
+        CallSecret: creatorEnvelope,
+        CallMembers: [Number(await runtime.load("user_id"))],
+        CallInvited: false,
+        CreatedAt: token.CreatedAt,
+      });
     }
 
     if (isNewCall && sendInvite) {
@@ -1745,6 +1773,14 @@ export async function receiveCallInvite(data: unknown, ownUserId: number) {
       ownerOmikronId: OmikronId,
     },
   });
+  requireRuntime(useCall.getState().runtime).upsertCall({
+    CallId,
+    OmikronId,
+    CallSecret,
+    CallMembers: [SenderId],
+    CallInvited: true,
+    SenderId,
+  });
   void startCallJingle(() => useCall.getState().incomingCallInvite != null);
 }
 
@@ -1765,7 +1801,6 @@ export async function respondToCallInvite(accepted: boolean) {
     return;
   }
 
-  const runtime = requireRuntime(useCall.getState().runtime);
   await joinCall(
     invite.senderId,
     invite.callSecret,
@@ -1773,24 +1808,28 @@ export async function respondToCallInvite(accepted: boolean) {
     false,
     invite.ownerOmikronId,
   );
-  runtime.upsertCall({
-    CallId: invite.callId,
-    OmikronId: invite.ownerOmikronId,
-    CallSecret: protocolCallSecret(invite.callSecret),
-    CallMembers: [invite.senderId],
-  });
 }
 
-export async function loadCallData(callId: string) {
+let latestCallDataRequest = 0;
+export async function loadCallData(callId: string, ownerOmikronId?: number) {
+  const request = ++latestCallDataRequest;
   setCurrentCallData({ status: "loading" });
 
   try {
     const response = await requireRuntime(
       useCall.getState().runtime,
-    ).callControl.request(callRouteOwner(), "CallData", { CallId: callId });
+    ).callControl.request(ownerOmikronId, "CallData", { CallId: callId });
+    if (request !== latestCallDataRequest || useCall.getState().callId !== callId) return;
     const parsed = mtp.CallData.response.parse(response.data);
-    setCurrentCallData({ status: "ready", userIds: parsed.UserIds });
+    setCurrentCallData({
+      status: "ready",
+      userIds: parsed.UserIds,
+      createdAt: parsed.CreatedAt,
+      callSecret: normalizeWrappedCallSecret(parsed.CallSecret),
+    });
+    useCall.setState({ callCreatedAt: parsed.CreatedAt });
   } catch (error) {
+    if (request !== latestCallDataRequest || useCall.getState().callId !== callId) return;
     if (error instanceof MTPProtocolError) {
       if (error.type === "ErrorNotFound") {
         setCurrentCallData({ status: "not-found" });
@@ -1918,6 +1957,7 @@ export function resetCallState() {
     view: "preview",
     invitedUserId: null,
     callId: null,
+    callCreatedAt: null,
     callRoute: null,
     incomingCallInvite: null,
     callSecret: null,

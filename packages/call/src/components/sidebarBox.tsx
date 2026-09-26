@@ -1,4 +1,4 @@
-import { Lock, LockOpen } from "lucide-react";
+import { Lock, LockOpen, Timer } from "lucide-react";
 import { openCallPage, useCall, getRoom } from "../store";
 import {
   Button,
@@ -17,6 +17,7 @@ import { Room, Track } from "livekit-client";
 import { useEffect, useState } from "react";
 import { AreaChart, Area } from "recharts";
 import LeaveButton from "./buttons/leave";
+import { formatDuration } from "../views/preview";
 
 async function getPing(room: Room): Promise<number | undefined> {
   const report = await room.localParticipant
@@ -55,6 +56,13 @@ function ConnectionBar() {
   const isEncrypted = useCall((store) => store.isEncrypted);
   const callId = useCall((store) => store.callId);
   const warnings = useCall((store) => store.warnings);
+  const createdAt = useCall((store) => store.callCreatedAt);
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const age = createdAt == null || !now ? null : now - createdAt;
   const isConnecting = state === "encrypting" || state === "connecting";
   return (
     <Tooltip>
@@ -68,15 +76,33 @@ function ConnectionBar() {
             }}
             size="lg"
             variant={
-              isConnecting || warnings.length > 0 ? "warning" : "default"
+              isConnecting ||
+              warnings.length > 0 ||
+              (age != null && age >= 2 * 86400000)
+                ? "warning"
+                : "default"
             }
-            className="flex items-center justify-between px-2!"
+            className="flex items-center justify-between px-2! group/connection-bar"
           >
-            {state === "encrypting" && "Encrypting..."}
-            {state === "connecting" && "Connecting..."}
-            {state === "open" && "Connected"}
-            {state === "closed" && "Closed"}
-            {state === "closing" && "Closing"}
+            <div className="w-21 truncate flex justify-center text-center">
+              {state === "encrypting" && "Encrypting..."}
+              {state === "connecting" && "Connecting..."}
+              {state === "open" && (
+                <>
+                  <div className="flex gap-1 items-center group-hover/connection-bar:hidden">
+                    <Timer className="size-3.5" />
+                    <code className="text-xs">
+                      {formatDuration(age || 0)}
+                    </code>
+                  </div>
+                  <p className="hidden group-hover/connection-bar:block">
+                    Connected
+                  </p>
+                </>
+              )}
+              {state === "closed" && "Closed"}
+              {state === "closing" && "Closing"}
+            </div>
 
             <TinyPingGraph />
 
@@ -88,8 +114,11 @@ function ConnectionBar() {
           </Button>
         )}
       />
-      <TooltipContent className="flex flex-col gap-2 items-start">
+      <TooltipContent className="flex flex-col gap-3 items-start">
         <p>Click to open call page</p>
+        {age != null && age >= 2 * 86400000 && (
+          <p>Calls expire after three days.</p>
+        )}
         {warnings.map((warning, index) => (
           <p key={index}>{warning}</p>
         ))}
@@ -194,10 +223,9 @@ export function TinyPingGraph() {
 
 export default function SidebarBox() {
   const state = useCall((store) => store.state);
-  const callId = useCall((store) => store.callId);
   const isMobile = useIsMobile();
 
-  return state === "closed" && callId === null ? null : (
+  return state === "closed" || state === "encrypting" ? null : (
     <Card className="p-1.5 gap-2" hidden={isMobile}>
       <CardHeader className="p-0! pb-2! border-b-2">
         <ConnectionBar />

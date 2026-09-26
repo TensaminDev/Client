@@ -57,12 +57,13 @@ export default function InviteButton({
       <Wrapper
         key={contact.UserId}
         userId={contact.UserId}
-        fields={["Display"]}
+        fields={["Display", "OnlineStatus"]}
         loading={<div>Loading...</div>}
         component={(user) => (
           <Button
             className="w-full justify-start"
             variant="ghost"
+            disabled={user.OnlineStatus === "iota_offline" || user.OnlineStatus === "iota_borked"}
             onClick={() => {
               setOpen(false);
               void sendCallInvite(contact.UserId).catch((error) => {
