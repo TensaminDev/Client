@@ -29,7 +29,7 @@ import { displayCallId } from "@tensamin/call/utils";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { WindowControls as Controls } from "@methanium/ui";
 import { useSession } from "@tensamin/identity/session";
-import { joinCall } from "@tensamin/call/store";
+import { requestJoinCall } from "@tensamin/call/store";
 import { NavbarTarget } from "@tensamin/shared/navbar";
 import Profile from "./modals/profile";
 
@@ -149,7 +149,6 @@ function NavbarSection({
 
 export default function Navbar({ forMobile }: { forMobile: boolean }) {
   const navigate = useNavigate();
-  const callState = useCall((state) => state.state);
   const { calls } = useSession();
 
   const { pathname } = useLocation();
@@ -285,8 +284,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
           <>
             {currentCalls.length === 0 ? (
               <Button
-                disabled={callState !== "closed"}
-                onClick={() => void joinCall(id)}
+                onClick={() => void requestJoinCall(id)}
                 className="w-9 h-9! aspect-square rounded-lg"
                 variant="ghost"
               >
@@ -297,9 +295,8 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                 <TooltipTrigger
                   render={
                     <Button
-                      disabled={callState !== "closed"}
                       onClick={() => {
-                        void joinCall(
+                        void requestJoinCall(
                           id,
                           currentCalls[0].CallSecret,
                           currentCalls[0].CallId,
@@ -337,7 +334,7 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
                         value={call.CallId}
                         key={call.CallId}
                         onSelect={() =>
-                          void joinCall(
+                          void requestJoinCall(
                             id,
                             call.CallSecret,
                             call.CallId,

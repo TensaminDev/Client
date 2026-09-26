@@ -39,6 +39,8 @@ export {
   timeoutUser,
   setAnonymousJoining,
   joinCall,
+  requestJoinCall,
+  respondToCallSwitch,
   receiveCallInvite,
   respondToCallInvite,
   loadCallData,

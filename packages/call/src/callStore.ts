@@ -1407,7 +1407,9 @@ export async function disconnect() {
   useCall.setState({ state: "closing" });
   stopCallJingle();
   disposeSpeakingDetector();
-  await clearScreenSharePreview();
+  if (getRoom().state === "connected") {
+    await clearScreenSharePreview();
+  }
   if (attemptGeneration !== callAttemptGeneration) return;
 
   try {
@@ -1448,9 +1450,17 @@ export async function disconnect() {
     activeScreenShareAudioParticipantIds: [],
     callIsFullscreen: false,
     lastFocusedParticipantId: null,
+    screenShareExpectedCodec: null,
+    screenShareActiveCodec: null,
+    warnings: [],
   });
 
   participantVolumes.clear();
+  clearRemoteAudio();
+  for (const timeout of pendingRemoteScreenShareEnds.values()) {
+    clearTimeout(timeout);
+  }
+  pendingRemoteScreenShareEnds.clear();
 
   try {
     await getRoom().disconnect();
@@ -1469,6 +1479,7 @@ export async function leaveCall() {
   callAttemptGeneration += 1;
   const runtime = requireRuntime(useCall.getState().runtime);
   const { callId } = useCall.getState();
+  useCall.setState({ state: "closing" });
 
   try {
     if (callId) {
@@ -1669,29 +1680,49 @@ export async function joinCall(
   sendInvite = true,
   ownerOmikronId?: number,
 ) {
-  const runtime = requireRuntime(useCall.getState().runtime);
-  const state = useCall.getState().state;
-
-  if (state !== "closed") {
-    await leaveCall();
+  const active = useCall.getState();
+  if (
+    active.state === "closing" ||
+    active.state === "connecting" ||
+    active.state === "encrypting"
+  )
+    return;
+  if (
+    existingCallId &&
+    active.callId === existingCallId &&
+    active.state !== "closed"
+  ) {
+    await openCallPage(existingCallId);
+    return;
   }
-
+  const runtime = requireRuntime(useCall.getState().runtime);
+  if (useCall.getState().state === "open") {
+    try {
+      await leaveCall();
+    } catch (error) {
+      log(1, "call", "red", "Failed to revoke old call membership", error);
+    }
+  }
   const attemptGeneration = ++callAttemptGeneration;
+  useCall.setState({ state: "encrypting" });
   log(2, "call", "purple", "Call creation initialised");
   const isNewCall = !callSecret && !existingCallId;
-  const reservation = isNewCall
-    ? mtp.CallReserve.response.parse((await runtime.callControl.request(undefined, "CallReserve", {})).data)
-    : null;
-  const finalId = existingCallId || reservation!.CallId;
-  useCall.setState({
-    state: "encrypting",
-    invitedUserId: sendInvite && !existingCallId ? userId : null,
-    callId: finalId,
-    callRoute:
-      ownerOmikronId != null ? { ownerOmikronId, livekitUrl: null } : null,
-  });
 
   try {
+    const reservation = isNewCall
+      ? mtp.CallReserve.response.parse(
+          (await runtime.callControl.request(undefined, "CallReserve", {}))
+            .data,
+        )
+      : null;
+    if (!isCurrentCallAttempt(attemptGeneration)) return;
+    const finalId = existingCallId || reservation!.CallId;
+    useCall.setState({
+      invitedUserId: sendInvite && !existingCallId ? userId : null,
+      callId: finalId,
+      callRoute:
+        ownerOmikronId != null ? { ownerOmikronId, livekitUrl: null } : null,
+    });
     const { cancelled, creatorEnvelope } = await prepareCallEncryption(
       runtime,
       attemptGeneration,
@@ -1702,10 +1733,18 @@ export async function joinCall(
     if (cancelled) return;
 
     const token = creatorEnvelope
-      ? mtp.CallActivate.response.parse((await runtime.callControl.request(reservation!.OmikronId, "CallActivate", {
-          CallId: finalId,
-          CallSecret: creatorEnvelope,
-        })).data)
+      ? mtp.CallActivate.response.parse(
+          (
+            await runtime.callControl.request(
+              reservation!.OmikronId,
+              "CallActivate",
+              {
+                CallId: finalId,
+                CallSecret: creatorEnvelope,
+              },
+            )
+          ).data,
+        )
       : await getCallToken(finalId, undefined, ownerOmikronId);
     if (!isCurrentCallAttempt(attemptGeneration)) return;
     if (
@@ -1751,6 +1790,59 @@ export async function joinCall(
     log(1, "call", "red", "Failed to join call", err);
     await disconnect();
     throw err;
+  }
+}
+
+// Ask before replacing a different call, regardless of where the join originated.
+export function requestJoinCall(
+  userId: number,
+  callSecret?:
+    WrappedCallSecret | ProtocolCallSecret | ProtocolCallSecretResponse,
+  existingCallId?: string,
+  sendInvite = true,
+  ownerOmikronId?: number,
+) {
+  const active = useCall.getState();
+  if (
+    active.state === "closing" ||
+    active.state === "connecting" ||
+    active.state === "encrypting"
+  )
+    return;
+  if (active.state !== "closed" && active.callId !== existingCallId) {
+    useCall.setState({
+      pendingCallSwitch: {
+        userId,
+        callSecret: callSecret
+          ? normalizeWrappedCallSecret(callSecret)
+          : undefined,
+        callId: existingCallId,
+        sendInvite,
+        ownerOmikronId,
+      },
+    });
+    return;
+  }
+  return joinCall(
+    userId,
+    callSecret,
+    existingCallId,
+    sendInvite,
+    ownerOmikronId,
+  );
+}
+
+export function respondToCallSwitch(confirmed: boolean) {
+  const pending = useCall.getState().pendingCallSwitch;
+  useCall.setState({ pendingCallSwitch: null });
+  if (confirmed && pending) {
+    return joinCall(
+      pending.userId,
+      pending.callSecret,
+      pending.callId,
+      pending.sendInvite,
+      pending.ownerOmikronId,
+    );
   }
 }
 
@@ -1806,7 +1898,7 @@ export async function respondToCallInvite(accepted: boolean) {
     return;
   }
 
-  await joinCall(
+  await requestJoinCall(
     invite.senderId,
     invite.callSecret,
     invite.callId,
@@ -1824,7 +1916,11 @@ export async function loadCallData(callId: string, ownerOmikronId?: number) {
     const response = await requireRuntime(
       useCall.getState().runtime,
     ).callControl.request(ownerOmikronId, "CallData", { CallId: callId });
-    if (request !== latestCallDataRequest || useCall.getState().callId !== callId) return;
+    if (
+      request !== latestCallDataRequest ||
+      useCall.getState().callId !== callId
+    )
+      return;
     const parsed = mtp.CallData.response.parse(response.data);
     setCurrentCallData({
       status: "ready",
@@ -1834,7 +1930,11 @@ export async function loadCallData(callId: string, ownerOmikronId?: number) {
     });
     useCall.setState({ callCreatedAt: parsed.CreatedAt });
   } catch (error) {
-    if (request !== latestCallDataRequest || useCall.getState().callId !== callId) return;
+    if (
+      request !== latestCallDataRequest ||
+      useCall.getState().callId !== callId
+    )
+      return;
     if (error instanceof MTPProtocolError) {
       if (error.type === "ErrorNotFound") {
         setCurrentCallData({ status: "not-found" });

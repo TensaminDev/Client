@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Timer } from "lucide-react";
 import { Button } from "@methanium/ui";
 import { useUserFields } from "@tensamin/identity/context";
-import { joinCall, useCall } from "../store";
+import { useNavbar } from "@tensamin/shared/navbar";
+import { requestJoinCall, useCall } from "../store";
 import type { CurrentCallData } from "../state";
 import { PixelBlast } from "@methanium/ui";
 import ParticipantCard, {
@@ -10,6 +11,7 @@ import ParticipantCard, {
   ParticipantNameplate,
 } from "../components/participantCard";
 import { calculateOptimalGridLayout } from "./main/grid";
+import { displayCallId } from "../utils";
 
 const USER_FIELDS = ["UserId", "Display", "Avatar"] as const;
 const STATUS_MESSAGES: Record<CurrentCallData["status"], string | null> = {
@@ -50,6 +52,7 @@ export function formatDuration(milliseconds: number) {
 }
 
 export default function Preview() {
+  const { render } = useNavbar();
   const currentCallData = useCall((state) => state.currentCallData);
   const callId = useCall((state) => state.callId);
   const ownerOmikronId = useCall((state) => state.callRoute?.ownerOmikronId);
@@ -97,9 +100,14 @@ export default function Preview() {
       </div>
       {currentCallData?.status === "ready" ? (
         <>
-          <span className="absolute md:right-6 top-6 z-10 rounded-lg bg-card/90 px-3 py-2 text-sm tabular-nums w-full text-center md:w-auto md:text-right">
-            {formatDuration(Math.max(0, now - currentCallData.createdAt))}
-          </span>
+          {render(
+            <div className="flex w-full items-center px-3 text-sm justify-between md:px-6">
+              <p className="invisible md:visible">{displayCallId(callId || "")}</p>
+              <p>
+                {formatDuration(Math.max(0, now - currentCallData.createdAt))}
+              </p>
+            </div>,
+          )}
           <div className="relative flex h-[min(65vh,440px)] w-[min(100%,1240px)] flex-col items-center justify-center gap-8 p-8 sm:p-12">
             <div ref={gridRef} className="min-h-0 w-full flex-1">
               <div className="flex h-full flex-col items-center justify-center gap-5">
@@ -132,12 +140,14 @@ export default function Preview() {
                 if (!callId) return;
                 setJoining(true);
                 setJoinError(null);
-                void joinCall(
-                  currentCallData.userIds[0],
-                  currentCallData.callSecret,
-                  callId,
-                  false,
-                  ownerOmikronId,
+                void Promise.resolve(
+                  requestJoinCall(
+                    currentCallData.userIds[0],
+                    currentCallData.callSecret,
+                    callId,
+                    false,
+                    ownerOmikronId,
+                  ),
                 )
                   .catch((error) =>
                     setJoinError(

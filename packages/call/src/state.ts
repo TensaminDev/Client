@@ -68,6 +68,13 @@ export const useCall = create<{
     senderId: number;
     ownerOmikronId: number;
   } | null;
+  pendingCallSwitch: {
+    userId: number;
+    callSecret?: WrappedCallSecret;
+    callId?: string;
+    sendInvite: boolean;
+    ownerOmikronId?: number;
+  } | null;
   callSecret: string | null;
   livekitToken: string | null;
   currentCallData: CurrentCallData | null;
@@ -103,6 +110,7 @@ export const useCall = create<{
   callCreatedAt: null,
   callRoute: null,
   incomingCallInvite: null,
+  pendingCallSwitch: null,
   callSecret: null,
   livekitToken: null,
   currentCallData: null,

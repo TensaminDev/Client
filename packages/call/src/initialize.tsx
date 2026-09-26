@@ -8,6 +8,17 @@ import { useSession } from "@tensamin/identity/session";
 import { useUser } from "@tensamin/identity/context";
 import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  toast as persistentToast,
+} from "@methanium/ui";
+import {
   LocalAudioTrack,
   DisconnectReason,
   type LocalTrackPublication,
@@ -43,6 +54,7 @@ import {
   receiveCallInvite,
   requireRuntime,
   respondToCallInvite,
+  respondToCallSwitch,
   setCallId,
   setCallIsFullscreen,
   setCallRuntime,
@@ -106,6 +118,7 @@ export function useInitializeCall() {
   const callId = useCall((state) => state.callId);
   const view = useCall((state) => state.view);
   const incomingCallInvite = useCall((state) => state.incomingCallInvite);
+  const pendingCallSwitch = useCall((state) => state.pendingCallSwitch);
 
   const listenersRegistered = useRef(false);
   const noiseFilter = useMemo(
@@ -228,18 +241,28 @@ export function useInitializeCall() {
     });
   }, [load, subscribe]);
 
-  useEffect(() => subscribe("CallEnded", ({ data }) => {
-    const callId = mtp.CallEnded.response.parse(data).CallId;
-    removeCall(callId);
-    if (useCall.getState().callId === callId) {
-      useCall.setState({ currentCallData: { status: "not-found" } });
-      if (useCall.getState().state !== "closed") {
-        void disconnect().then(navigateBackFromCall);
-      } else if (window.location.pathname.startsWith("/call")) {
-        navigateBackFromCall();
-      }
-    }
-  }), [removeCall, navigateBackFromCall, subscribe]);
+  useEffect(
+    () =>
+      subscribe("CallEnded", ({ data }) => {
+        const callId = mtp.CallEnded.response.parse(data).CallId;
+        removeCall(callId);
+        if (useCall.getState().callId === callId) {
+          useCall.setState({ currentCallData: { status: "not-found" } });
+          if (
+            useCall.getState().state !== "closed" &&
+            useCall.getState().state !== "closing"
+          ) {
+            void disconnect().then(navigateBackFromCall);
+          } else if (
+            useCall.getState().state === "closed" &&
+            window.location.pathname.startsWith("/call")
+          ) {
+            navigateBackFromCall();
+          }
+        }
+      }),
+    [removeCall, navigateBackFromCall, subscribe],
+  );
 
   // get callId from url
   useEffect(() => {
@@ -307,6 +330,7 @@ export function useInitializeCall() {
     listenersRegistered.current = true;
 
     const onConnected = async () => {
+      if (useCall.getState().state === "closing") return;
       useCall.setState({ state: "open" });
       playCallEvent("call_join");
       syncParticipantState();
@@ -357,35 +381,26 @@ export function useInitializeCall() {
       stopCallJingle();
       playCallEvent("call_leave");
       const stateBeforeDisconnect = useCall.getState().state;
-      const endedNormally = stateBeforeDisconnect === "closing" ||
-        stateBeforeDisconnect === "connecting" ||
-        stateBeforeDisconnect === "closed" ||
-        reason === DisconnectReason.CLIENT_INITIATED ||
-        reason === DisconnectReason.ROOM_DELETED ||
-        reason === DisconnectReason.ROOM_CLOSED ||
-        reason === DisconnectReason.PARTICIPANT_REMOVED;
-
+      if (
+        reason === DisconnectReason.DUPLICATE_IDENTITY &&
+        stateBeforeDisconnect !== "closing"
+      ) {
+        const toastId = persistentToast("Call moved to another client.", {
+          description:
+            "This client was disconnected because you joined the call elsewhere.",
+          duration: Infinity,
+          action: {
+            label: "Dismiss",
+            onClick: () => persistentToast.dismiss(toastId),
+          },
+        });
+      }
       const droppedWhileActive = useCall.getState().callId != null;
-      useCall.setState((state) => ({
-        state: "closed",
-        warnings: endedNormally
-          ? state.warnings.filter(
-              (warning) =>
-                warning !==
-                "The call disconnected unexpectedly without a correct end sequence.",
-            )
-          : [
-              ...state.warnings.filter(
-                (warning) =>
-                  warning !==
-                  "The call disconnected unexpectedly without a correct end sequence.",
-              ),
-              "The call disconnected unexpectedly without a correct end sequence.",
-            ],
-      }));
-      syncParticipantState();
-      if (droppedWhileActive) {
-        navigateBackFromCallRef.current();
+      if (stateBeforeDisconnect !== "closing" && droppedWhileActive) {
+        void disconnect().finally(() => navigateBackFromCallRef.current());
+      } else if (stateBeforeDisconnect !== "closing") {
+        useCall.setState({ state: "closed" });
+        syncParticipantState();
       }
       log(2, "call", "purple", "Disconnected from call", {
         callId: useCall.getState().callId,
@@ -401,7 +416,10 @@ export function useInitializeCall() {
       // Keep the authoritative member list current for the invite picker.
       const activeCallId = useCall.getState().callId;
       if (activeCallId) {
-        void loadCallData(activeCallId, useCall.getState().callRoute?.ownerOmikronId);
+        void loadCallData(
+          activeCallId,
+          useCall.getState().callRoute?.ownerOmikronId,
+        );
       }
     };
 
@@ -644,16 +662,54 @@ export function useInitializeCall() {
       return;
     }
 
-    useCall.setState({ callRoute: previewOwner == null ? null : { ownerOmikronId: previewOwner, livekitUrl: null } });
+    useCall.setState({
+      callRoute:
+        previewOwner == null
+          ? null
+          : { ownerOmikronId: previewOwner, livekitUrl: null },
+    });
     void loadCallData(callId, previewOwner);
   }, [callId, view, contextReady, previewOwner]);
 
-  return incomingCallInvite ? (
-    <InvitePopup
-      open
-      setOpen={setInvitePopupOpen}
-      onAccept={respondToInvite}
-      user={incomingCallInvite.senderId}
-    />
-  ) : null;
+  return (
+    <>
+      {incomingCallInvite && (
+        <InvitePopup
+          open
+          setOpen={setInvitePopupOpen}
+          onAccept={respondToInvite}
+          user={incomingCallInvite.senderId}
+        />
+      )}
+      <AlertDialog
+        open={pendingCallSwitch != null}
+        onOpenChange={(open) => {
+          if (!open) respondToCallSwitch(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch calls?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Joining the other call will leave your current call.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => respondToCallSwitch(false)}>
+              Stay in current call
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                void respondToCallSwitch(true)?.catch((error) => {
+                  log(1, "call", "red", "Failed to switch calls", error);
+                });
+              }}
+            >
+              Join other call
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }
