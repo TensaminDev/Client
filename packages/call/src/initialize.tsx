@@ -364,8 +364,7 @@ export function useInitializeCall() {
         reason === DisconnectReason.ROOM_DELETED ||
         reason === DisconnectReason.ROOM_CLOSED ||
         reason === DisconnectReason.PARTICIPANT_REMOVED;
-      // A non-null callId means the room dropped without a local teardown —
-      // an involuntary disconnect. Walk back out of the dead /call page.
+
       const droppedWhileActive = useCall.getState().callId != null;
       useCall.setState((state) => ({
         state: "closed",

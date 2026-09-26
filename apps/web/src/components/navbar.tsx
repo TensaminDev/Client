@@ -72,9 +72,10 @@ function NavbarSection({
 
   return (
     <div
+      data-tauri-drag-region={cutout || undefined}
       className={`relative z-10 min-w-0 shrink-0 ${
         cutout
-          ? "h-12 overflow-hidden transition-[width] duration-200 ease-in-out motion-reduce:transition-none"
+          ? "pointer-events-auto h-12 overflow-hidden transition-[width] duration-200 ease-in-out motion-reduce:transition-none"
           : "h-full"
       }`}
       style={
@@ -85,7 +86,7 @@ function NavbarSection({
         <>
           <div
             className={`absolute inset-y-0 z-0 bg-sidebar after:absolute after:right-0 after:bottom-0 after:border-b after:border-(--border)/40 after:content-[''] ${
-              side === "left" ? "after:left-[19px]" : "after:left-0"
+              side === "left" ? "after:left-[11.5px]" : "after:left-0"
             }`}
             style={
               side === "left"
@@ -134,6 +135,7 @@ function NavbarSection({
       )}
       <div
         ref={content}
+        data-tauri-drag-region={cutout || undefined}
         className="relative z-10 flex h-full w-max items-center gap-2"
         style={
           cutout && side === "right" ? { marginLeft: edgeReserve } : undefined
@@ -154,8 +156,6 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
 
   const { id } = useSearch({ strict: false });
 
-  // A call counts for this contact if the contact is a member, or if they
-  // hold a pending invite to it — both are joinable from here.
   const currentCalls = calls.filter(
     (call) =>
       call.CallMembers.some((member) => member === id) ||
@@ -171,14 +171,37 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
     <div
       data-tauri-drag-region
       data-safe-area-navbar
-      className={`relative flex h-13.5 w-full shrink-0 justify-between ${
+      className={`max-md:relative md:pointer-events-none md:absolute md:inset-x-0 md:top-0 md:z-30 flex h-13.5 w-full shrink-0 justify-between ${
         forMobile
           ? "items-center border-b border-(--border)/40 bg-sidebar"
           : "items-start"
       }`}
     >
       {!forMobile && (
-        <div className="absolute inset-x-0 top-0 h-[7px] border-b border-(--border)/40 bg-sidebar" />
+        <div
+          data-tauri-drag-region
+          className="pointer-events-auto absolute inset-x-0 top-0 h-[7px] border-b border-(--border)/40 bg-sidebar"
+        />
+      )}
+      {!forMobile && (
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-px top-12 z-20 h-[13px] w-[20px] -translate-y-px overflow-visible"
+          viewBox="0 0 20 13"
+        >
+          <path
+            d="M0 0H12.5V.5C5.873.5.5 5.873.5 12.5V13H0Z"
+            fill="var(--sidebar)"
+          />
+          <path
+            d="M12.5 .5C5.873.5.5 5.873.5 12.5V13"
+            fill="none"
+            className="opacity-40"
+            stroke="var(--border)"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
       )}
       <NavbarSection cutout={!forMobile} side="left">
         {forMobile ? (

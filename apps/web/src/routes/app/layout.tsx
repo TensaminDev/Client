@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useState, type ReactNode } from "react";
+import { useLocation } from "@tanstack/react-router";
 
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
@@ -19,9 +20,27 @@ import {
 } from "@methanium/ui";
 import { ShieldAlert } from "lucide-react";
 import { useStorage } from "@tensamin/storage/context";
-import { NavbarProvider } from "@tensamin/shared/navbar";
+import { NavbarProvider, useNavbar } from "@tensamin/shared/navbar";
 import { ContactJobsProvider } from "@tensamin/identity/contactJobs";
 import { ChatBackgroundsProvider } from "@tensamin/chat/backgrounds";
+
+function ContentArea({ children }: { children: ReactNode }) {
+  const { topPadding, setTopPadding } = useNavbar();
+  const { pathname } = useLocation();
+
+  useLayoutEffect(() => {
+    setTopPadding(null);
+  }, [pathname, setTopPadding]);
+
+  return (
+    <div
+      data-navbar-padding={topPadding ? "" : undefined}
+      className="bg-background min-h-0 flex-1 w-full overflow-hidden"
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Layout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
@@ -69,14 +88,12 @@ export default function Layout({ children }: { children: ReactNode }) {
               </AlertDialog>
               <div
                 data-app-layout
-                className="w-full h-full min-h-0 flex flex-col overflow-hidden bg-background"
+                className="relative w-full h-full min-h-0 flex flex-col bg-background"
               >
                 {(!isMobile || showMobileNavbar) && (
                   <Navbar forMobile={isMobile} />
                 )}
-                <div className="bg-background min-h-0 flex-1 w-full overflow-hidden">
-                  {children}
-                </div>
+                <ContentArea>{children}</ContentArea>
               </div>
             </SidebarProvider>
           </div>

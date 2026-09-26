@@ -90,6 +90,10 @@ body,
       calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw))
     );
   }
+
+  [data-navbar-padding] {
+    padding-top: max(3.375rem, env(titlebar-area-height, 3.375rem));
+  }
 }
 
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {

@@ -716,13 +716,6 @@ export default function Screen() {
             }}
           />
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden h-6 md:block"
-            style={{
-              background:
-                "linear-gradient(to bottom,var(--background) 0%,var(--background) 35%,color-mix(in srgb,var(--background) 72%,transparent) 68%,transparent 100%)",
-            }}
-          />
-          <div
             ref={scrollRef}
             id="chat_container"
             className="min-h-0 flex-1 overflow-y-auto"

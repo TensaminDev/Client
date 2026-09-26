@@ -281,6 +281,13 @@ function PopoutScreen() {
 
 export default function Screen() {
   const callIsPopout = useCall((state) => state.callIsPopout);
+  const view = useCall((state) => state.view);
+  const { setTopPadding } = useNavbar();
+
+  useEffect(() => {
+    setTopPadding(view !== "preview");
+    return () => setTopPadding(null);
+  }, [setTopPadding, view]);
 
   return (
     <>
