@@ -551,14 +551,14 @@ function MessageComponent({
                           <Button
                             key={reaction}
                             className={cn(
-                              "h-7 gap-2 rounded-lg py-3.5 px-1.5! border",
+                              "h-7 gap-2 rounded-lg py-3.5 px-1.5! border-[0.75px]!",
                               reactedByMe
-                                ? "border-(--primary-foreground-alt)/40!"
+                                ? "border-(--primary-foreground-alt)/40! text-foreground! bg-(--primary)/30!"
                                 : "",
                             )}
                             onClick={() => void toggleReaction(reaction)}
                             size="xs"
-                            variant={reactedByMe ? "default" : "secondary"}
+                            variant={reactedByMe ? "default" : "outline"}
                           >
                             <Emoji className="h-5 w-5" shortcode={reaction} />
                             <span className="text-sm">{count}</span>
