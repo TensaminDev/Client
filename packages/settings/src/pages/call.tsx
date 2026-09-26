@@ -303,7 +303,7 @@ export default function Page() {
               value={[values.call_noise_suppression_level]}
               disabled={!values.call_noise_suppression_enabled}
               onValueChange={(value) =>
-                save("call_noise_suppression_level", sliderValue(value, 70))
+                save("call_noise_suppression_level", sliderValue(value, 100))
               }
             />
           </div>
@@ -439,7 +439,7 @@ export default function Page() {
                 value={[sensitivity]}
                 disabled={!values.call_noise_gate_enabled}
                 onValueChange={(value) => {
-                  const next = sliderValue(value, 70);
+                  const next = sliderValue(value, 100);
                   const close = -25 - next / 2;
                   save("call_mute_range_start", close);
                   void storage.save("call_mute_range_end", close + 10);

@@ -854,6 +854,7 @@ export async function sendCallInvite(userId: number) {
         CallId: callId,
         CallSecret: await wrapCallSecretForUser(userId, callId, callSecret),
       },
+      { timeoutMs: 70_000 },
     );
 
     if (response.type.startsWith("Error")) {
@@ -861,11 +862,12 @@ export async function sendCallInvite(userId: number) {
     }
     mtp.CallInvite.response.parse(response.data);
   } catch (error) {
+    stopCallJingle();
+    throw error;
+  } finally {
     if (useCall.getState().invitedUserId === userId) {
       useCall.setState({ invitedUserId: null });
-      stopCallJingle();
     }
-    throw error;
   }
 }
 
@@ -1389,7 +1391,6 @@ export async function connect(
     .catch((error) => {
       log(1, "call", "red", "Failed to enable microphone", error);
       toast("error", "Failed to enable microphone.");
-      throw error;
     });
 
   if (attemptGeneration !== callAttemptGeneration) {
@@ -1403,6 +1404,7 @@ export async function connect(
 // Tear down the active call session and return the store to a closed state.
 export async function disconnect() {
   const attemptGeneration = ++callAttemptGeneration;
+  useCall.setState({ state: "closing" });
   stopCallJingle();
   disposeSpeakingDetector();
   await clearScreenSharePreview();
@@ -1741,6 +1743,9 @@ export async function joinCall(
     if (isNewCall && sendInvite) {
       await sendInitialCallInvite(userId);
     }
+
+    // Adopt the server-verified member list for the invite picker.
+    void loadCallData(finalId, token.OmikronId);
   } catch (err) {
     if (!isCurrentCallAttempt(attemptGeneration)) return;
     log(1, "call", "red", "Failed to join call", err);

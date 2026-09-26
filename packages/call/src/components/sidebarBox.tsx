@@ -89,15 +89,21 @@ function ConnectionBar() {
               {state === "connecting" && "Connecting..."}
               {state === "open" && (
                 <>
-                  <div className="flex gap-1 items-center group-hover/connection-bar:hidden">
-                    <Timer className="size-3.5" />
-                    <code className="text-xs">
-                      {formatDuration(age || 0)}
-                    </code>
-                  </div>
-                  <p className="hidden group-hover/connection-bar:block">
-                    Connected
-                  </p>
+                  {formatDuration(age || 0).trim() != "" ? (
+                    <>
+                      <div className="flex gap-1 items-center group-hover/connection-bar:hidden">
+                        <Timer className="size-3.5" />
+                        <code className="text-xs">
+                          {formatDuration(age || 0)}
+                        </code>
+                      </div>
+                      <p className="hidden group-hover/connection-bar:block">
+                        Connected
+                      </p>
+                    </>
+                  ) : (
+                    <p>Connected</p>
+                  )}
                 </>
               )}
               {state === "closed" && "Closed"}

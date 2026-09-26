@@ -154,8 +154,12 @@ export default function Navbar({ forMobile }: { forMobile: boolean }) {
 
   const { id } = useSearch({ strict: false });
 
-  const currentCalls = calls.filter((call) =>
-    call.CallMembers.some((member) => member === id),
+  // A call counts for this contact if the contact is a member, or if they
+  // hold a pending invite to it — both are joinable from here.
+  const currentCalls = calls.filter(
+    (call) =>
+      call.CallMembers.some((member) => member === id) ||
+      (call.CallInvited && call.SenderId === id),
   );
 
   const isMobile = useIsMobile();

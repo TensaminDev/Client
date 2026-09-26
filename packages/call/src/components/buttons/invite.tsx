@@ -34,6 +34,8 @@ export default function InviteButton({
   const { load } = useStorage();
   const isMobile = useIsMobile();
   const screenRef = useCall((state) => state.screenRef);
+  const invitedUserId = useCall((state) => state.invitedUserId);
+  const currentCallData = useCall((state) => state.currentCallData);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
   const [open, setOpen] = useState(false);
   const [ownId, setOwnId] = useState<number>();
@@ -53,7 +55,12 @@ export default function InviteButton({
   );
   const contactsContent = contacts
     .filter((contact) => ownId !== undefined && contact.UserId !== ownId)
-    .map((contact) => (
+    .map((contact) => {
+      // Server-verified membership of the current call.
+      const inCurrentCall =
+        currentCallData?.status === "ready" &&
+        currentCallData.userIds.includes(contact.UserId);
+      return (
       <Wrapper
         key={contact.UserId}
         userId={contact.UserId}
@@ -63,25 +70,27 @@ export default function InviteButton({
           <Button
             className="w-full justify-start"
             variant="ghost"
-            disabled={user.OnlineStatus === "iota_offline" || user.OnlineStatus === "iota_borked"}
+            disabled={invitedUserId !== null || inCurrentCall || user.OnlineStatus === "iota_offline" || user.OnlineStatus === "iota_borked"}
             onClick={() => {
-              setOpen(false);
-              void sendCallInvite(contact.UserId).catch((error) => {
-                toast(
-                  "error",
-                  error instanceof Error
-                    ? `Call invitation unavailable: ${error.message}`
-                    : "Call invitation unavailable.",
-                );
-                log(1, "call", "red", "Failed to send call invite", error);
-              });
+              void sendCallInvite(contact.UserId)
+                .then(() => setOpen(false))
+                .catch((error) => {
+                  toast(
+                    "error",
+                    error instanceof Error
+                      ? `Call invitation unavailable: ${error.message}`
+                      : "Call invitation unavailable.",
+                  );
+                  log(1, "call", "red", "Failed to send call invite", error);
+                });
             }}
           >
             {user.Display}
           </Button>
         )}
       />
-    ));
+      );
+    });
 
   if (isMobile) {
     return (

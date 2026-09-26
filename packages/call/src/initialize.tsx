@@ -9,6 +9,7 @@ import { useUser } from "@tensamin/identity/context";
 import { DeepFilterNoiseFilterProcessor } from "deepfilternet3-noise-filter";
 import {
   LocalAudioTrack,
+  DisconnectReason,
   type LocalTrackPublication,
   type Participant,
   type RemoteParticipant,
@@ -30,6 +31,7 @@ import {
   clearRemoteAudio,
   currentCallSettings,
   detachRemoteAudio,
+  disconnect,
   getAllParticipants,
   getParticipantId,
   getParticipantVolume,
@@ -111,7 +113,7 @@ export function useInitializeCall() {
       new DeepFilterNoiseFilterProcessor({
         enabled: true,
         enableNoiseReduction: true,
-        noiseReductionLevel: 70,
+        noiseReductionLevel: 100,
         sampleRate: 48000,
         assetConfig: {
           cdnUrl: getNoiseFilterAssetBaseUrl(),
@@ -186,6 +188,33 @@ export function useInitializeCall() {
     }
   }, []);
 
+  // After a disconnection the /call page is dead; walk the navigation history
+  // back to the last page that is not /call (falling back to home).
+  const navigateBackFromCall = useCallback(() => {
+    if (!window.location.pathname.startsWith("/call")) {
+      return;
+    }
+    let attempts = 0;
+    const step = () => {
+      if (!window.location.pathname.startsWith("/call")) {
+        return;
+      }
+      // A new call attempt is underway; do not back out of its page.
+      const state = useCall.getState().state;
+      if (state === "encrypting" || state === "connecting") {
+        return;
+      }
+      if (attempts >= 10) {
+        void navigate({ to: "/" });
+        return;
+      }
+      attempts += 1;
+      window.history.back();
+      window.setTimeout(step, 80);
+    };
+    step();
+  }, [navigate]);
+
   const respondToInvite = useCallback((accepted: boolean) => {
     void respondToCallInvite(accepted).catch((error) => {
       log(1, "call", "red", "Failed to join call", error);
@@ -204,8 +233,13 @@ export function useInitializeCall() {
     removeCall(callId);
     if (useCall.getState().callId === callId) {
       useCall.setState({ currentCallData: { status: "not-found" } });
+      if (useCall.getState().state !== "closed") {
+        void disconnect().then(navigateBackFromCall);
+      } else if (window.location.pathname.startsWith("/call")) {
+        navigateBackFromCall();
+      }
     }
-  }), [removeCall, subscribe]);
+  }), [removeCall, navigateBackFromCall, subscribe]);
 
   // get callId from url
   useEffect(() => {
@@ -256,6 +290,13 @@ export function useInitializeCall() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [location.pathname]);
+
+  // The room-listener effect must not re-register when the callback identity
+  // changes, so it reads the latest helper through a ref.
+  const navigateBackFromCallRef = useRef(navigateBackFromCall);
+  useEffect(() => {
+    navigateBackFromCallRef.current = navigateBackFromCall;
+  }, [navigateBackFromCall]);
 
   // room setup
   useEffect(() => {
@@ -312,10 +353,20 @@ export function useInitializeCall() {
       });
     };
 
-    const onDisconnected = () => {
+    const onDisconnected = (reason?: DisconnectReason) => {
       stopCallJingle();
       playCallEvent("call_leave");
-      const endedNormally = useCall.getState().state === "closing";
+      const stateBeforeDisconnect = useCall.getState().state;
+      const endedNormally = stateBeforeDisconnect === "closing" ||
+        stateBeforeDisconnect === "connecting" ||
+        stateBeforeDisconnect === "closed" ||
+        reason === DisconnectReason.CLIENT_INITIATED ||
+        reason === DisconnectReason.ROOM_DELETED ||
+        reason === DisconnectReason.ROOM_CLOSED ||
+        reason === DisconnectReason.PARTICIPANT_REMOVED;
+      // A non-null callId means the room dropped without a local teardown —
+      // an involuntary disconnect. Walk back out of the dead /call page.
+      const droppedWhileActive = useCall.getState().callId != null;
       useCall.setState((state) => ({
         state: "closed",
         warnings: endedNormally
@@ -334,6 +385,9 @@ export function useInitializeCall() {
             ],
       }));
       syncParticipantState();
+      if (droppedWhileActive) {
+        navigateBackFromCallRef.current();
+      }
       log(2, "call", "purple", "Disconnected from call", {
         callId: useCall.getState().callId,
         callSecret: useCall.getState().callSecret,
@@ -345,6 +399,11 @@ export function useInitializeCall() {
       playCallEvent("call_join");
       syncAllRemoteTrackSubscriptions();
       syncParticipantState();
+      // Keep the authoritative member list current for the invite picker.
+      const activeCallId = useCall.getState().callId;
+      if (activeCallId) {
+        void loadCallData(activeCallId, useCall.getState().callRoute?.ownerOmikronId);
+      }
     };
 
     const onParticipantDisconnected = (participant: Participant) => {
