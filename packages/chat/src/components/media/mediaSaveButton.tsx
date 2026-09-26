@@ -161,7 +161,7 @@ export default function MediaSaveButton({
             color="var(--primary-foreground-alt)"
             className={cn(
               "size-4.5 stroke-1.5!",
-              isSaved ? "fill-(--primary)" : "",
+              isSaved ? "fill-(--primary-foreground-alt)" : "",
             )}
           />
         </Button>
