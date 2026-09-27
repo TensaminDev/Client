@@ -20,6 +20,7 @@ import {
 import { ErrorScreen } from "@methanium/ui";
 import { log } from "@tensamin/shared/log";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import StartupErrorScreen from "./startupError";
 import {
   decodeSecureValue,
   encodeSecureValue,
@@ -75,17 +76,29 @@ export default function StorageProvider(props: { children: ReactNode }) {
   const [errorDescription, setErrorDescription] = useState("");
 
   useEffect(() => {
-    void getSecureStorageStatus().then((status) => {
-      secureStorageRef.current = status;
-      setSecureStorage(status);
-    });
+    void getSecureStorageStatus().then(
+      (status) => {
+        secureStorageRef.current = status;
+        setSecureStorage(status);
+      },
+      (caught: unknown) => {
+        setError("Failed to initialize secure storage");
+        setErrorDescription(
+          caught instanceof Error ? caught.message : String(caught),
+        );
+      },
+    );
   }, []);
 
   const commit = useCallback(
     <K extends keyof StorageSchema>(key: K, nextValue: StorageSchema[K]) => {
+      const changed =
+        !loadedKeys.current.has(key) ||
+        JSON.stringify(storageRef.current[key]) !== JSON.stringify(nextValue);
+      loadedKeys.current.add(key);
+      if (!changed) return;
       const next = { ...storageRef.current, [key]: nextValue };
       storageRef.current = next;
-      loadedKeys.current.add(key);
       setStorage(next);
       for (const handler of subscribers.current) handler([key], false);
     },
@@ -252,7 +265,7 @@ export default function StorageProvider(props: { children: ReactNode }) {
   );
 
   if (error !== "" && errorDescription !== "") {
-    return <ErrorScreen error={error} description={errorDescription} />;
+    return <StartupErrorScreen error={error} description={errorDescription} />;
   }
 
   if (!isIndexedDBSupported) {

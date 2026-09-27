@@ -70,6 +70,7 @@ export const ipcChannels = {
   listScreenShareSources: "desktopMedia:listScreenShareSources",
   listScreenShareAudioOutputs: "desktopMedia:listScreenShareAudioOutputs",
   getScreenShareCapabilities: "desktopMedia:getScreenShareCapabilities",
+  getGpuFeatureStatus: "desktopMedia:getGpuFeatureStatus",
   selectScreenShareSource: "desktopMedia:selectScreenShareSource",
   minimizeWindow: "window:minimize",
   maximizeWindow: "window:maximize",
@@ -85,4 +86,5 @@ export const ipcChannels = {
   setGlobalHotkeyBindings: "hotkeys:setBindings",
   setGlobalHotkeysSuspended: "hotkeys:setSuspended",
   globalHotkeyTriggered: "hotkeys:triggered",
+  deepLinkOpened: "deepLink:opened",
 } as const;

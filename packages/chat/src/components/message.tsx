@@ -35,17 +35,21 @@ import { cancelMessageEditHotkey } from "../hotkeys";
 function MessageComponent({
   editing,
   grouped,
+  highlighted,
   message,
+  onReplyActivate,
   onSetEditing,
   user,
 }: {
   editing: boolean;
   grouped: boolean;
+  highlighted: boolean;
   message: RawMessage & {
     failed?: boolean;
     decryptionFailed?: boolean;
   };
   onSetEditing: (editing: boolean) => void;
+  onReplyActivate: (sendTime: number) => void;
   user: SelectedUser<readonly ["UserId", "Avatar", "Display"]> | null;
 }) {
   const actuallyFailed =
@@ -166,7 +170,7 @@ function MessageComponent({
     try {
       if (message.Content.split(" ").length > 1) throw new Error();
 
-      new URL(message.Content);
+      if (new URL(message.Content).protocol !== "https:") throw new Error();
       setIsValidURL(true);
     } catch {
       setIsValidURL(false);
@@ -379,6 +383,7 @@ function MessageComponent({
         <ReplyBox
           edited={replyMessage.Edited}
           content={replyMessage.Content}
+          onActivate={() => onReplyActivate(replyMessage.SendTime)}
           user={replyUser}
           variant="message"
         />
@@ -401,6 +406,8 @@ function MessageComponent({
                     actuallyFailed,
                   "bg-(--primary-foreground-alt)/15 hover:bg-(--primary-foreground-alt)/20":
                     replyTo === message.SendTime && !actuallyFailed,
+                  "bg-(--primary-foreground-alt)/25 hover:bg-(--primary-foreground-alt)/25":
+                    highlighted && !actuallyFailed,
                 },
               )}
             >
@@ -496,7 +503,6 @@ function MessageComponent({
                       <div className="flex gap-1">
                         <Button
                           size="xs"
-                          variant="subtleDefault"
                           onClick={() => {
                             if (!editDraft.trim()) return;
                             if (editDraft !== message.Content) {
@@ -544,16 +550,15 @@ function MessageComponent({
                         ([reaction, { count, reactedByMe }]) => (
                           <Button
                             key={reaction}
-                            aria-label={`${reactedByMe ? "Remove" : "Add"} ${reaction} reaction`}
                             className={cn(
-                              "h-7 gap-2 rounded-lg py-3.5 px-1.5! border",
+                              "h-7 gap-2 rounded-lg py-3.5 px-1.5! border-[0.75px]!",
                               reactedByMe
-                                ? "border-(--primary-foreground-alt)/40!"
+                                ? "border-(--primary-foreground-alt)/40! text-foreground! bg-(--primary)/30!"
                                 : "",
                             )}
                             onClick={() => void toggleReaction(reaction)}
                             size="xs"
-                            variant={reactedByMe ? "subtleDefault" : "outline"}
+                            variant={reactedByMe ? "default" : "outline"}
                           >
                             <Emoji className="h-5 w-5" shortcode={reaction} />
                             <span className="text-sm">{count}</span>
@@ -578,6 +583,7 @@ export default memo(MessageComponent, (prev, next) => {
   return (
     prev.message.SendTime === next.message.SendTime &&
     prev.editing === next.editing &&
+    prev.highlighted === next.highlighted &&
     prev.message.Content === next.message.Content &&
     prev.message.SenderId === next.message.SenderId &&
     prev.message.ReplyId === next.message.ReplyId &&
@@ -587,6 +593,7 @@ export default memo(MessageComponent, (prev, next) => {
     JSON.stringify(prev.message.Reactions) ===
       JSON.stringify(next.message.Reactions) &&
     prev.grouped === next.grouped &&
-    prev.user === next.user
+    prev.user === next.user &&
+    prev.onReplyActivate === next.onReplyActivate
   );
 });

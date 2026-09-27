@@ -4,6 +4,14 @@ import { useMTP, type MTPExchange, type ProtocolMessage } from "@tensamin/mtp";
 import { useStorage } from "@tensamin/storage/context";
 import { secureValueCodec } from "@tensamin/storage/secure";
 
+const messageStateRank: Record<CachedMessage["MessageState"], number> = {
+  awaiting: 0,
+  sending: 0,
+  sent: 1,
+  received: 2,
+  read: 3,
+};
+
 function isError(message: ProtocolMessage) {
   return message.type.startsWith("Error");
 }
@@ -103,7 +111,14 @@ export default function CacheSync() {
       await cache.conversations.replace({
         ...window,
         Messages: window.Messages.map((message) =>
-          message.SendTime === sendTime ? { ...message, ...edit } : message,
+          message.SendTime === sendTime &&
+          !(
+            edit.MessageState !== undefined &&
+            messageStateRank[edit.MessageState] <
+              messageStateRank[message.MessageState]
+          )
+            ? { ...message, ...edit }
+            : message,
         ),
       });
     },
@@ -187,14 +202,23 @@ export default function CacheSync() {
         const messages = result.Messages as CachedMessage[];
         const cache = secureCache();
         const previous = await cache.conversations.get(partnerId);
+        const fetchedSendTimes = new Set(
+          messages.map((message) => message.SendTime),
+        );
+        const pendingMessages = (previous?.Messages ?? []).filter(
+          (message) =>
+            message.SenderId === accountId &&
+            !fetchedSendTimes.has(message.SendTime),
+        );
         await cache.conversations.replace({
           UserId: partnerId,
           LastMessageAt: Math.max(
             previous?.LastMessageAt ?? 0,
             ...messages.map((message) => message.SendTime),
           ),
-          // This replacement is authoritative: absent server messages are deleted.
-          Messages: messages,
+          Messages: [...messages, ...pendingMessages].sort(
+            (first, second) => first.SendTime - second.SendTime,
+          ),
         });
         return;
       }

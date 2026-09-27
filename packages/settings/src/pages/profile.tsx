@@ -16,7 +16,7 @@ import {
   useUserFields,
   type SelectedUser,
 } from "@tensamin/identity/context";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const PROFILE_FIELDS = [
@@ -68,6 +68,7 @@ export default function Page() {
   const [draftUser, setDraftUser] = useState<ProfileDraft>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [saveSucceeded, setSaveSucceeded] = useState(false);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const avatarUploadRef = useRef<HTMLInputElement>(null);
   const draftInitializedRef = useRef(false);
   const effectiveAvatar =
@@ -97,15 +98,30 @@ export default function Page() {
     updateDraftUser((previous) => ({ ...previous, Avatar: avatar }));
     if (avatarUploadRef.current) avatarUploadRef.current.value = "";
   }
+  function openFilePicker() {
+    setFilePickerOpen(true);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => avatarUploadRef.current?.click()),
+    );
+  }
+  useEffect(() => {
+    const input = avatarUploadRef.current;
+    const closeFilePicker = () => setFilePickerOpen(false);
+    input?.addEventListener("cancel", closeFilePicker);
+    return () => input?.removeEventListener("cancel", closeFilePicker);
+  }, []);
   if (!currentUser) return <p>Loading...</p>;
   return (
     <>
       <input
         ref={avatarUploadRef}
         hidden
-        onChange={(event) =>
-          event.target.files?.[0] && handleAvatarUpload(event.target.files[0])
-        }
+        onChange={(event) => {
+          setFilePickerOpen(false);
+          if (event.target.files?.[0]) {
+            void handleAvatarUpload(event.target.files[0]);
+          }
+        }}
         type="file"
       />
       <div className={cn("flex flex-col gap-5", isMobile ? "w-full" : "w-80")}>
@@ -120,7 +136,8 @@ export default function Page() {
           <div className="flex flex-col gap-1">
             <p>Avatar</p>
             <div className="flex gap-1">
-              <Button onClick={() => avatarUploadRef.current?.click()}>
+              <Button disabled={filePickerOpen} onClick={openFilePicker}>
+                {filePickerOpen && <Loader2 className="animate-spin" />}
                 Upload avatar
               </Button>
               <Button

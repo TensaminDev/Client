@@ -321,7 +321,6 @@ function MiniMessageMenu({
             label={emoji}
             children={
               <Button
-                aria-label={`React with ${emoji}`}
                 variant="ghost"
                 className="h-8 w-8 p-0!"
                 onClick={() => onReact(emoji)}
@@ -338,19 +337,13 @@ function MiniMessageMenu({
             usePickerTrigger ? (
               <PopoverTrigger
                 render={({ onClick }) => (
-                  <Button
-                    onClick={onClick}
-                    aria-label="Add reaction"
-                    variant="ghost"
-                    className="h-8 w-8"
-                  >
+                  <Button onClick={onClick} variant="ghost" className="h-8 w-8">
                     <Laugh />
                   </Button>
                 )}
               />
             ) : (
               <Button
-                aria-label="Add reaction"
                 variant="ghost"
                 className="h-8 w-8"
                 onClick={onOpenPicker}
@@ -366,7 +359,6 @@ function MiniMessageMenu({
             <Button
               variant="ghost"
               className="h-8 w-8"
-              aria-label={isOwnMessage ? "Edit message" : "Reply to message"}
               onClick={isOwnMessage ? onEdit : onReply}
             >
               {isOwnMessage ? <Pen /> : <Reply />}
@@ -376,11 +368,7 @@ function MiniMessageMenu({
         <MiniMenuTooltip
           label="Forward message"
           children={
-            <Button
-              variant="ghost"
-              className="h-8 w-8"
-              aria-label="Forward message"
-            >
+            <Button variant="ghost" className="h-8 w-8">
               <Forward />
             </Button>
           }
@@ -393,7 +381,6 @@ function MiniMessageMenu({
               <Button
                 variant="ghost"
                 className="h-8 w-8 text-destructive"
-                aria-label="Delete message"
                 onClick={onDelete}
               >
                 <Trash />
@@ -404,12 +391,7 @@ function MiniMessageMenu({
           <MiniMenuTooltip
             label="Open message menu"
             children={
-              <Button
-                variant="ghost"
-                className="h-8 w-8"
-                aria-label="Open message menu"
-                onClick={onOpenMenu}
-              >
+              <Button variant="ghost" className="h-8 w-8" onClick={onOpenMenu}>
                 <Ellipsis />
               </Button>
             }

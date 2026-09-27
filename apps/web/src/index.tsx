@@ -12,19 +12,24 @@ import "./index.css";
 import "@methanium/ui/index.css";
 
 import NotFound from "@/routes/404";
-import RouteLoader from "@/components/routeLoader";
 import Home from "@/routes/app/home";
 import AppShell from "@/routes/app/shell";
 import Login from "@/routes/screens/login";
+import Register from "@/features/register/register";
 
 import { createSettingsRoute } from "@tensamin/settings";
 import ChatScreen from "@tensamin/chat/screen";
 import CallScreen from "@tensamin/call/screen";
+import Authorize from "@tensamin/tauth/authorize";
 
 import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
-import PwaRuntime from "@tensamin/pwa/runtime";
 
-import { ErrorScreen, ThemeProvider, useTheme } from "@methanium/ui";
+import {
+  LoadingScreen,
+  ThemeProvider,
+  useTheme,
+  type Theme,
+} from "@methanium/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -36,6 +41,16 @@ import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
 import { HotkeysProvider } from "@tensamin/hotkeys";
+import StartupErrorScreen from "@tensamin/storage/startupError";
+import { storageDefaults } from "@tensamin/shared/data";
+
+let nextNavigationDirection: "forward" | "back" = "forward";
+addEventListener("popstate", () => {
+  nextNavigationDirection = "back";
+});
+addEventListener("tensamin:navigate-back", () => {
+  nextNavigationDirection = "back";
+});
 
 const wrapper = document.getElementById("root");
 
@@ -51,13 +66,14 @@ if (localStorage.getItem("log_level") === null) {
 }
 
 // @ts-expect-error Declare global function
-window.setLogLevelToMax = () => {
+window.enableDev = () => {
   localStorage.setItem("log_level", String(1000));
   location.reload();
 };
 
 function LoginWrapper({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const [loginError, setLoginError] = useState<Error | null>(null);
 
   const { load, secureStorage } = useStorage();
 
@@ -73,19 +89,38 @@ function LoginWrapper({ children }: { children: ReactNode }) {
         if (!active) return;
         if (userId !== 0 && keyring !== "") {
           setLoggedIn(true);
-          if (location.pathname === "/login") {
+          const pendingAuthorization = sessionStorage.getItem(
+            "tauth.authorization",
+          );
+          if (location.pathname === "/login" && pendingAuthorization) {
+            sessionStorage.removeItem("tauth.authorization");
+            window.location.assign(pendingAuthorization);
+            return;
+          }
+          if (
+            location.pathname === "/login" ||
+            location.pathname === "/register"
+          ) {
             void navigate({ to: "/", replace: true });
           }
           return;
         }
         setLoggedIn(false);
-        void navigate({
-          to: "/login",
-          replace: true,
-        });
+        if (location.pathname !== "/register") {
+          if (location.pathname === "/authorize") {
+            sessionStorage.setItem("tauth.authorization", window.location.href);
+          }
+          void navigate({
+            to: "/login",
+            replace: true,
+          });
+        }
       })
       .catch((error) => {
         log(0, "login", "red", "Failed to load login state", error);
+        setLoginError(
+          error instanceof Error ? error : new Error(String(error)),
+        );
       });
 
     return () => {
@@ -93,46 +128,71 @@ function LoginWrapper({ children }: { children: ReactNode }) {
     };
   }, [load, location.pathname, navigate, secureStorage]);
 
-  if (loggedIn !== true && location.pathname !== "/login") {
-    return <RouteLoader />;
+  if (loginError) {
+    return (
+      <StartupErrorScreen
+        error="Failed to load login state"
+        description={loginError.message}
+      />
+    );
+  }
+
+  if (
+    loggedIn !== true &&
+    location.pathname !== "/login" &&
+    location.pathname !== "/register"
+  ) {
+    return <LoadingScreen title="Checking account" progress={4} />;
   }
 
   return children;
 }
 
-function ThemeStorageBridge() {
-  const { load, save } = useStorage();
-  const { subscribe } = useStorage();
-  const [profileRevision, setProfileRevision] = useState(0);
-  const {
-    themeColor,
-    setThemeColor,
-    themePalette,
-    setThemePalette,
-    themePrimaryColor,
-    setThemePrimaryColor,
-    themePolarity,
-    setThemePolarity,
-    themeTint,
-    setThemeTint,
-    themeBorderRadius,
-    setThemeBorderRadius,
-    themeCustomCss,
-    setThemeCustomCss,
-    parentThemeId,
-    setParentThemeId,
-    applyThemePreset,
-    themeDesign,
-    setThemeDesign,
-  } = useTheme();
-  const loadedRef = useRef(false);
+function ThemePolarityBridge() {
+  const { load, save, subscribe } = useStorage();
+  const { themePolarity, setThemePolarity } = useTheme();
+  const [revision, setRevision] = useState(0);
+  const ready = useRef(false);
+  useEffect(
+    () =>
+      subscribe((keys, bulk) => {
+        if (bulk && keys.includes("theme_polarity")) {
+          ready.current = false;
+          setRevision((value) => value + 1);
+        }
+      }),
+    [subscribe],
+  );
+  useEffect(() => {
+    let active = true;
+    void load("theme_polarity").then((value) => {
+      if (!active) return;
+      setThemePolarity(value);
+      ready.current = true;
+    });
+    return () => {
+      active = false;
+    };
+  }, [load, revision, setThemePolarity]);
+  useEffect(() => {
+    if (ready.current) void save("theme_polarity", themePolarity);
+  }, [save, themePolarity]);
+  return null;
+}
+
+function StoredThemeProvider({ children }: { children: ReactNode }) {
+  const { load, save, subscribe } = useStorage();
+  const [revision, setRevision] = useState(0);
+  const [selection, setSelection] = useState(storageDefaults.theme_selected_id);
+  const [customThemes, setCustomThemes] = useState<Theme[]>([]);
+  const ready = useRef(false);
 
   useEffect(
     () =>
       subscribe((keys, bulk) => {
         if (bulk && keys.some((key) => key.startsWith("theme_"))) {
-          loadedRef.current = false;
-          setProfileRevision((revision) => revision + 1);
+          ready.current = false;
+          setRevision((value) => value + 1);
         }
       }),
     [subscribe],
@@ -140,102 +200,53 @@ function ThemeStorageBridge() {
 
   useEffect(() => {
     let active = true;
-
-    Promise.all([
-      load("theme_color"),
-      load("theme_palette"),
-      load("theme_primary_color"),
-      load("theme_polarity"),
-      load("theme_tint"),
-      load("theme_border_radius"),
-      load("theme_custom_css"),
+    void Promise.all([
+      load("theme_selected_id"),
+      load("theme_custom_themes"),
       load("theme_parent"),
+      load("theme_custom_css"),
       load("theme_design"),
+      load("theme_color"),
+      load("theme_tint"),
+      load("theme_primary_color"),
+      load("theme_palette"),
+      load("theme_border_radius"),
     ]).then(
-      ([
-        color,
-        palette,
-        primaryColor,
-        polarity,
-        tint,
-        borderRadius,
-        customCss,
-        parent,
-        design,
+      async ([
+        id,
+        themes,
       ]) => {
-        if (!active) {
-          return;
-        }
-
-        if (customCss === "" && parent) applyThemePreset(parent);
-        else setParentThemeId(parent || null);
-        setThemeColor(color);
-        setThemePalette(palette);
-        setThemePrimaryColor(primaryColor);
-        setThemePolarity(polarity);
-        setThemeTint(tint);
-        setThemeBorderRadius(borderRadius);
-        if (customCss !== "") setThemeCustomCss(customCss);
-        setThemeDesign(design);
-        loadedRef.current = true;
+        if (!active) return;
+        setCustomThemes(themes);
+        setSelection(id);
+        ready.current = true;
       },
     );
-
     return () => {
       active = false;
     };
-  }, [
-    load,
-    applyThemePreset,
-    setThemeBorderRadius,
-    setThemeColor,
-    setThemeCustomCss,
-    setParentThemeId,
-    setThemeDesign,
-    setThemePalette,
-    setThemePolarity,
-    setThemePrimaryColor,
-    setThemeTint,
-    profileRevision,
-  ]);
+  }, [load, revision, save]);
 
-  useEffect(() => {
-    if (loadedRef.current) save("theme_color", themeColor);
-  }, [save, themeColor]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_palette", themePalette);
-  }, [save, themePalette]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_primary_color", themePrimaryColor);
-  }, [save, themePrimaryColor]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_polarity", themePolarity);
-  }, [save, themePolarity]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_tint", themeTint);
-  }, [save, themeTint]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_border_radius", themeBorderRadius);
-  }, [save, themeBorderRadius]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_custom_css", themeCustomCss);
-  }, [save, themeCustomCss]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_parent", parentThemeId ?? "");
-  }, [parentThemeId, save]);
-
-  useEffect(() => {
-    if (loadedRef.current) save("theme_design", themeDesign);
-  }, [save, themeDesign]);
-
-  return null;
+  return (
+    <ThemeProvider
+      storageKey={null}
+      customThemes={customThemes}
+      selectedThemeId={selection}
+      onCustomThemesChange={(themes) => {
+        if (!ready.current) return;
+        setCustomThemes(themes);
+        void save("theme_custom_themes", themes);
+      }}
+      onSelectedThemeIdChange={(id) => {
+        if (!ready.current) return;
+        setSelection(id);
+        void save("theme_selected_id", id);
+      }}
+    >
+      <ThemePolarityBridge />
+      {children}
+    </ThemeProvider>
+  );
 }
 
 function RootShell() {
@@ -243,35 +254,23 @@ function RootShell() {
 
   return (
     <DeeplinkContext>
-      <ThemeProvider
-        storageKey={null}
-        colorStorageKey={null}
-        paletteStorageKey={null}
-        primaryColorStorageKey={null}
-        tintStorageKey={null}
-        borderRadiusStorageKey={null}
-        customCssStorageKey={null}
-        parentThemeStorageKey={null}
-        designStorageKey={null}
-      >
-        <div
-          data-pwa-root
-          className="box-border w-screen h-dvh overflow-hidden"
-        >
-          <Toaster position={isMobile ? "top-center" : "bottom-right"} />
-          <TooltipProvider>
-            <Storage>
-              <PwaRuntime />
+      <Storage>
+        <StoredThemeProvider>
+          <div
+            data-safe-area-root
+            className="box-border w-screen h-dvh overflow-hidden bg-background"
+          >
+            <Toaster position={isMobile ? "top-center" : "bottom-right"} />
+            <TooltipProvider>
               <HotkeysProvider>
-                <ThemeStorageBridge />
                 <LoginWrapper>
                   <Outlet />
                 </LoginWrapper>
               </HotkeysProvider>
-            </Storage>
-          </TooltipProvider>
-        </div>
-      </ThemeProvider>
+            </TooltipProvider>
+          </div>
+        </StoredThemeProvider>
+      </Storage>
     </DeeplinkContext>
   );
 }
@@ -279,7 +278,7 @@ function RootShell() {
 const rootRoute = createRootRoute({
   component: RootShell,
   errorComponent: ({ error }: { error: Error }) => (
-    <ErrorScreen
+    <StartupErrorScreen
       description={error.message}
       error={"Unknown Error: " + error.name}
     />
@@ -300,7 +299,7 @@ const homeRoute = createRoute({
   path: "/",
   component: Home,
   staticData: {
-    showMobileNavbar: true,
+    showMobileNavbar: false,
   },
 });
 
@@ -312,7 +311,7 @@ const chatRoute = createRoute({
     id: z.number().optional(),
   }),
   staticData: {
-    showMobileNavbar: false,
+    showMobileNavbar: true,
   },
 });
 
@@ -321,7 +320,7 @@ const callRoute = createRoute({
   path: "call",
   component: CallScreen,
   staticData: {
-    showMobileNavbar: false,
+    showMobileNavbar: true,
   },
 });
 
@@ -334,15 +333,54 @@ const loginRoute = createRoute({
   },
 });
 
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "register",
+  component: Register,
+  staticData: {
+    showMobileNavbar: false,
+  },
+});
+
+const authorizeRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "authorize",
+  validateSearch: z.object({ request: z.string().optional() }),
+  component: function AuthorizationRoute() {
+    const { request } = authorizeRoute.useSearch();
+    return <Authorize request={request} />;
+  },
+});
+
 const routeTree = rootRoute.addChildren([
-  appRoute.addChildren([homeRoute, chatRoute, callRoute, settingsRoute]),
+  appRoute.addChildren([
+    homeRoute,
+    chatRoute,
+    callRoute,
+    settingsRoute,
+    authorizeRoute,
+  ]),
   loginRoute,
+  registerRoute,
 ]);
 
 const router = createRouter({
   routeTree,
   history:
     window.location.protocol === "file:" ? createHashHistory() : undefined,
+  defaultViewTransition: {
+    types: ({ hrefChanged }) => {
+      const direction = nextNavigationDirection;
+      nextNavigationDirection = "forward";
+      return hrefChanged &&
+        matchMedia("(max-width: 767px)").matches &&
+        !matchMedia("(prefers-reduced-motion: reduce)").matches &&
+        "startViewTransition" in document &&
+        CSS.supports("selector(:active-view-transition-type(forward))")
+        ? [direction]
+        : false;
+    },
+  },
   defaultNotFoundComponent: NotFound,
 });
 

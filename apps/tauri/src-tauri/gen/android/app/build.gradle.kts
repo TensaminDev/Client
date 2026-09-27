@@ -19,7 +19,7 @@ android {
     compileSdk = 36
     namespace = "net.tensamin.client"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "net.tensamin.client"
         minSdk = 24
         targetSdk = 36

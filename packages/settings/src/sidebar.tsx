@@ -1,4 +1,4 @@
-import { Button, ClearStorageButton, cn } from "@methanium/ui";
+import { Button, cn } from "@methanium/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { settingsNavigation } from "./navigation";
@@ -20,7 +20,7 @@ export function SettingsSidebar({
       className={cn(
         mobile
           ? "w-full p-1"
-          : "h-full min-h-0 w-auto shrink-0 overflow-y-auto rounded-tl-2xl border-r bg-input/15 p-3",
+          : "h-full min-h-0 w-auto shrink-0 overflow-y-auto rounded-tl-2xl bg-input/15 p-3",
         "flex flex-col gap-6",
         className,
       )}
@@ -35,16 +35,16 @@ export function SettingsSidebar({
             .map((page) => (
               <Button
                 key={page.path}
-                className="w-full px-4!"
-                variant="outline"
+                className="w-full flex justify-start"
+                variant="ghost"
                 onClick={() => navigate({ to: `/settings/${page.path}` })}
               >
+                {page.icon}
                 {page.label}
               </Button>
             ))}
         </div>
       ))}
-      <ClearStorageButton />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 export { Provider, useMTP } from "./context";
+export type { MTPConnectionStatus } from "./mtpContext";
 export { RelayRejectedError, requireRelaySuccess } from "./mtpContext";
 export type {
   BoundSendFn,
@@ -16,4 +17,6 @@ export type {
   ReceiptPolicy,
   SettingsClient,
   UserBlob,
+  UserAsset,
+  SyncedSetting,
 } from "./settings";

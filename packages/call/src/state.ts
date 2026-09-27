@@ -1,5 +1,7 @@
 import type { RefObject } from "react";
 import { create } from "zustand";
+import type { BoundSendFn } from "@tensamin/mtp";
+import type { Calls, Storage } from "@tensamin/shared/data";
 
 import type { LocalMediaShareSession } from "./mediaShare/controller";
 
@@ -13,17 +15,44 @@ export type WrappedCallSecret = {
   wrappingScheme: string;
 };
 
+export type CallRoute = {
+  ownerOmikronId: number;
+  livekitUrl: string | null;
+};
+
+export type CurrentCallData =
+  | { status: "loading" }
+  | {
+      status: "ready";
+      userIds: number[];
+      createdAt: number;
+      callSecret: WrappedCallSecret;
+    }
+  | { status: "not-found" }
+  | { status: "forbidden" }
+  | { status: "error"; message: string };
+
+export type CallControlTransport = {
+  request: (
+    ownerOmikronId: number | undefined,
+    ...args: Parameters<BoundSendFn>
+  ) => ReturnType<BoundSendFn>;
+};
+
 export type CallRuntime = {
   navigate: (options: {
     to: string;
     search?: Record<string, unknown>;
   }) => Promise<void>;
-  send: (
-    type: string,
-    data: Record<string, unknown>,
-  ) => Promise<{ data: unknown }>;
-  load: (key: string) => Promise<unknown>;
+  callControl: CallControlTransport;
+  load: <K extends keyof Storage>(key: K) => Promise<Storage[K]>;
+  save: <K extends keyof Storage>(key: K, value: Storage[K]) => Promise<void>;
+  subscribeStorage: (
+    handler: (keys: (keyof Storage)[], bulk: boolean) => void,
+  ) => () => void;
   getPublicKey: (userId: number) => Promise<string>;
+  upsertCall: (call: Calls[number]) => void;
+  removeCall: (callId: string) => void;
 };
 
 export const useCall = create<{
@@ -31,14 +60,24 @@ export const useCall = create<{
   view: CallView;
   invitedUserId: number | null;
   callId: string | null;
+  callCreatedAt: number | null;
+  callRoute: CallRoute | null;
   incomingCallInvite: {
     callId: string;
     callSecret: WrappedCallSecret;
     senderId: number;
+    ownerOmikronId: number;
+  } | null;
+  pendingCallSwitch: {
+    userId: number;
+    callSecret?: WrappedCallSecret;
+    callId?: string;
+    sendInvite: boolean;
+    ownerOmikronId?: number;
   } | null;
   callSecret: string | null;
   livekitToken: string | null;
-  currentCallData: { UserIds: number[]; exists: boolean } | null;
+  currentCallData: CurrentCallData | null;
   deaf: boolean;
   micEnabled: boolean;
   cameraEnabled: boolean;
@@ -52,8 +91,11 @@ export const useCall = create<{
   watchedStreamParticipantIds: number[];
   pendingWatchedParticipantIds: number[];
   activeScreenShareParticipantIds: number[];
+  activeScreenShareAudioParticipantIds: number[];
   isEncrypted: boolean;
-  ownCallSecretInvitePending: boolean;
+  warnings: string[];
+  screenShareExpectedCodec: string | null;
+  screenShareActiveCodec: string | null;
   callIsFullscreen: boolean;
   callIsPopout: boolean;
   layoutVersion: number;
@@ -65,7 +107,10 @@ export const useCall = create<{
   view: "preview",
   invitedUserId: null,
   callId: null,
+  callCreatedAt: null,
+  callRoute: null,
   incomingCallInvite: null,
+  pendingCallSwitch: null,
   callSecret: null,
   livekitToken: null,
   currentCallData: null,
@@ -82,8 +127,11 @@ export const useCall = create<{
   watchedStreamParticipantIds: [],
   pendingWatchedParticipantIds: [],
   activeScreenShareParticipantIds: [],
+  activeScreenShareAudioParticipantIds: [],
   isEncrypted: false,
-  ownCallSecretInvitePending: false,
+  warnings: [],
+  screenShareExpectedCodec: null,
+  screenShareActiveCodec: null,
   callIsFullscreen: false,
   callIsPopout: false,
   layoutVersion: 0,

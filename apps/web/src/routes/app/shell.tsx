@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "@tanstack/react-router";
+import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { LoadingScreen } from "@methanium/ui";
 
 import AppLayout from "./layout";
 import CallInit from "@/components/callRuntimeInit";
@@ -7,13 +8,12 @@ import CacheSync from "@tensamin/cache/sync";
 import ChatContext from "@tensamin/chat/context";
 import Crypto from "@tensamin/crypto/context";
 import UserProvider from "@tensamin/identity/context";
-import { Provider as MTPProvider } from "@tensamin/mtp";
+import { Provider as MTPProvider, useMTP } from "@tensamin/mtp";
 import NotificationsProvider from "@tensamin/notifications/context";
 import OnboardingGate from "@tensamin/onboarding";
 import DesktopMediaProvider from "@tensamin/shared/desktopMedia";
 import Session from "@tensamin/identity/session";
 import { useDeeplinks } from "@tensamin/tauri/deeplinkHandler";
-import TAuthWrapper from "@tensamin/tauth/context";
 import { SettingsProfilesProvider } from "@tensamin/settings";
 
 function DeeplinkNavigator() {
@@ -36,6 +36,12 @@ function DeeplinkNavigator() {
           id > 0
         ) {
           void navigate({ to: "/chat", search: { id } });
+        } else if (
+          url.protocol === "tensamin:" &&
+          url.hostname === "authorize"
+        ) {
+          const request = url.searchParams.get("request");
+          if (request) void navigate({ to: "/authorize", search: { request } });
         }
       } catch {
         // Ignore malformed URLs delivered by the platform.
@@ -46,31 +52,55 @@ function DeeplinkNavigator() {
   return null;
 }
 
+function MainApp() {
+  const {
+    contextReady,
+    sessionEstablished,
+    loadingDescription,
+    connectionStatus,
+    retryConnection,
+  } = useMTP();
+
+  return (
+    <SettingsProfilesProvider>
+      <OnboardingGate
+        connectionReady={contextReady}
+        sessionEstablished={sessionEstablished}
+        connectionDescription={loadingDescription}
+        connectionStatus={connectionStatus}
+        retryConnection={retryConnection}
+      >
+        <CacheSync />
+        <DeeplinkNavigator />
+        <Session>
+          <UserProvider>
+            <CallInit />
+            <AppLayout>
+              <ChatContext>
+                <NotificationsProvider>
+                  <Outlet />
+                </NotificationsProvider>
+              </ChatContext>
+            </AppLayout>
+          </UserProvider>
+        </Session>
+      </OnboardingGate>
+    </SettingsProfilesProvider>
+  );
+}
+
 export default function AppShell() {
+  const authorizing = useLocation().pathname === "/authorize";
+
   return (
     <Crypto>
       <DesktopMediaProvider>
-        <MTPProvider>
-          <SettingsProfilesProvider>
-            <OnboardingGate>
-              <CacheSync />
-              <DeeplinkNavigator />
-              <Session>
-                <UserProvider>
-                  <CallInit />
-                  <TAuthWrapper>
-                    <AppLayout>
-                      <ChatContext>
-                        <NotificationsProvider>
-                          <Outlet />
-                        </NotificationsProvider>
-                      </ChatContext>
-                    </AppLayout>
-                  </TAuthWrapper>
-                </UserProvider>
-              </Session>
-            </OnboardingGate>
-          </SettingsProfilesProvider>
+        <MTPProvider
+          fallback={
+            <LoadingScreen title="Starting secure messaging" progress={8} />
+          }
+        >
+          {authorizing ? <Outlet /> : <MainApp />}
         </MTPProvider>
       </DesktopMediaProvider>
     </Crypto>

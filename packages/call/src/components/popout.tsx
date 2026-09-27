@@ -11,27 +11,14 @@ import {
   Card,
   cn,
   useIsMobile,
-  useSidebar,
 } from "@methanium/ui";
 import { ScreenShareOff } from "lucide-react";
 import { useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking, useLastSpeakingParticipantId } from "../speakingState";
-import { getAverageImageColor } from "./modals/base";
+import { getAverageImageColor } from "./participantCard";
+import { getTrackPublicationBySource } from "../participants";
 
 const USER_FIELDS = ["Avatar", "Display"] as const;
-
-function getTrackPublicationBySource(
-  participant: Participant | undefined,
-  source: Track.Source,
-) {
-  if (!participant) {
-    return undefined;
-  }
-
-  return [...participant.trackPublications.values()].find(
-    (publication) => publication.source === source,
-  );
-}
 
 type Positions = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type ResizeEdge =
@@ -63,7 +50,6 @@ function MobileCallPill({
   active: boolean;
   callId: string;
 }) {
-  const { setOpenMobile } = useSidebar();
   const lastSpeakingParticipantId = useLastSpeakingParticipantId();
   const isSpeaking = useIsSpeaking(lastSpeakingParticipantId ?? -1);
   const { data: lastSpeakingUser } = useUserFields(
@@ -180,7 +166,6 @@ function MobileCallPill({
             return;
           }
 
-          setOpenMobile(false);
           void openCallPage(callId);
         }}
         onPointerDown={(event) => {
@@ -584,8 +569,6 @@ export function Popout({ participant }: { participant: Participant }) {
         </div>
       </div>
       <div
-        aria-label="Resize popout from top edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "inset-x-4 -top-1 h-2 cursor-n-resize",
@@ -596,8 +579,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from right edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "-right-1 inset-y-4 w-2 cursor-e-resize",
@@ -608,8 +589,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from bottom edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "inset-x-4 -bottom-1 h-2 cursor-s-resize",
@@ -620,8 +599,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from left edge"
-        role="separator"
         className={cn(
           resizeEdgeClassName,
           "-left-1 inset-y-4 w-2 cursor-w-resize",
@@ -632,8 +609,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from top left corner"
-        role="separator"
         className={cn(resizeCornerClassName, "-left-1 -top-1 cursor-nw-resize")}
         onPointerDown={(e) => startResize(e, "top-left")}
         onPointerMove={resizePopout}
@@ -641,8 +616,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from top right corner"
-        role="separator"
         className={cn(
           resizeCornerClassName,
           "-right-1 -top-1 cursor-ne-resize",
@@ -653,8 +626,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from bottom right corner"
-        role="separator"
         className={cn(
           resizeCornerClassName,
           "-bottom-1 -right-1 cursor-se-resize",
@@ -665,8 +636,6 @@ export function Popout({ participant }: { participant: Participant }) {
         onPointerCancel={stopResize}
       />
       <div
-        aria-label="Resize popout from bottom left corner"
-        role="separator"
         className={cn(
           resizeCornerClassName,
           "-bottom-1 -left-1 cursor-sw-resize",
@@ -683,7 +652,6 @@ export function Popout({ participant }: { participant: Participant }) {
 export default function Wrapper() {
   const room = getRoom();
   const { pathname } = useLocation();
-  const { openMobile } = useSidebar();
   const isMobile = useIsMobile();
   const state = useCall((state) => state.state);
   const callId = useCall((state) => state.callId);
@@ -700,9 +668,7 @@ export default function Wrapper() {
   if (isMobile) {
     return (
       <MobileCallPill
-        active={
-          (!pathname.startsWith("/call") || openMobile) && state === "open"
-        }
+        active={!pathname.startsWith("/call") && state === "open"}
         callId={callId ?? ""}
       />
     );

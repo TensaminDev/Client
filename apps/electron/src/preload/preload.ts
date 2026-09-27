@@ -20,6 +20,16 @@ function validKey(key: string) {
 }
 
 const desktopApi = {
+  deepLinks: {
+    onOpened: (callback: (url: string) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, url: unknown) => {
+        if (typeof url === "string") callback(url);
+      };
+      ipcRenderer.on(ipcChannels.deepLinkOpened, listener);
+      return () =>
+        ipcRenderer.removeListener(ipcChannels.deepLinkOpened, listener);
+    },
+  },
   media: {
     listScreenShareSources: () =>
       ipcRenderer.invoke(ipcChannels.listScreenShareSources),
@@ -27,6 +37,8 @@ const desktopApi = {
       ipcRenderer.invoke(ipcChannels.listScreenShareAudioOutputs),
     getScreenShareCapabilities: () =>
       ipcRenderer.invoke(ipcChannels.getScreenShareCapabilities),
+    getGpuFeatureStatus: () =>
+      ipcRenderer.invoke(ipcChannels.getGpuFeatureStatus),
     selectScreenShareSource: (sourceId: DesktopScreenShareSource["id"]) => {
       if (typeof sourceId !== "string" || sourceId.length === 0) {
         return Promise.reject(new Error("Invalid screen share source id."));

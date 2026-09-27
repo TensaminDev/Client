@@ -2,7 +2,6 @@ import { createContext, useCallback, useRef } from "react";
 import type {
   MTPDataValueInput,
   MTPEncodedBytesInput,
-  MTPFrame,
   MTPRequestFunction,
   MTPResponseFrame,
   MTPSubscriptionFunction,
@@ -37,18 +36,6 @@ export type SealedRelayResult = {
   data: Record<string, unknown>;
 };
 
-export function sealedRelayResultFromFrame(frame: MTPFrame): SealedRelayResult {
-  return {
-    type: frame.type,
-    data:
-      typeof frame.data === "object" &&
-      frame.data !== null &&
-      !Array.isArray(frame.data)
-        ? (frame.data as Record<string, unknown>)
-        : {},
-  };
-}
-
 export class RelayRejectedError extends Error {
   public readonly responseType: string;
 
@@ -71,6 +58,10 @@ export type SealedRelaySend = (
   options: SealedRelayOptions,
 ) => Promise<SealedRelayResult>;
 
+export type MTPConnectionStatus =
+  | { kind: "reconnecting"; attempt: number }
+  | { kind: "failed"; description: string };
+
 export type MTPExchange = {
   type: keyof typeof mtpSchemas & string;
   data: unknown;
@@ -81,6 +72,10 @@ export type MTPInterceptor = (exchange: MTPExchange) => void | Promise<void>;
 
 export type MTPContextType = {
   send: BoundSendFn;
+  sendCallControl: (
+    ownerOmikronId: number | undefined,
+    ...args: Parameters<BoundSendFn>
+  ) => ReturnType<BoundSendFn>;
   sendSealedRelay: SealedRelaySend;
   subscribe: MTPSubscriptionFunction<typeof mtpSchemas>;
   addInterceptor: (interceptor: MTPInterceptor) => () => void;
@@ -89,18 +84,21 @@ export type MTPContextType = {
   freshContacts: Contacts;
   freshCommunities: Communities;
   freshCalls: Calls;
-  clientState: ProtocolMessage<"ClientStateSync">["data"] | null;
+  clientState: ProtocolMessage<"AccountStateSnapshot">["data"] | null;
   contextReady: boolean;
+  sessionEstablished: boolean;
   loadingDescription: string;
+  connectionStatus: MTPConnectionStatus | null;
+  retryConnection(): void;
 };
 
 export const MTPContext = createContext<MTPContextType | undefined>(undefined);
 
 export function removeMissingContacts(
   contacts: Contacts,
-  message: ProtocolMessage<"GetStates">,
+  missingUserIds: readonly number[],
 ): Contacts {
-  const missing = new Set(message.data.MissingUserIds ?? []);
+  const missing = new Set(missingUserIds);
   return contacts.filter((contact) => !missing.has(contact.UserId));
 }
 
@@ -144,7 +142,6 @@ export function useMessageHandlers() {
   } | null>(null);
   const transportGenerationRef = useRef(0);
   const transportUnsubscribersRef = useRef(new Map<string, () => void>());
-  const lastInitialStateRef = useRef<ProtocolMessage<"GetStates"> | null>(null);
 
   const attachType = useCallback(
     <Type extends keyof typeof mtpSchemas & string>(type: Type) => {
@@ -157,9 +154,6 @@ export function useMessageHandlers() {
           transportGenerationRef.current !== generation
         )
           return;
-        if (type === "GetStates") {
-          lastInitialStateRef.current = message as ProtocolMessage<"GetStates">;
-        }
         for (const handler of [
           ...(subscriptionHandlersRef.current.get(type) ?? []),
         ]) {
@@ -214,12 +208,6 @@ export function useMessageHandlers() {
       handlers.add(untypedHandler);
       subscriptionHandlersRef.current.set(type, handlers);
       attachType(type);
-      const initialState = lastInitialStateRef.current;
-      if (type === "GetStates" && initialState) {
-        void Promise.resolve(untypedHandler(initialState)).catch(
-          () => undefined,
-        );
-      }
       return () => {
         handlers.delete(untypedHandler);
         if (handlers.size !== 0) return;

@@ -31,7 +31,7 @@ export default function Page() {
     };
   }, []);
 
-  if (!isAndroid) return null;
+  if (!isAndroid || loading) return null;
 
   function updateInitialScale(nextScale: number) {
     setInitialScale(nextScale);
@@ -53,7 +53,6 @@ export default function Page() {
       <div className="flex items-center gap-3">
         <Slider
           id="initial-scale"
-          aria-label="Interface scale"
           min={MIN_INITIAL_SCALE}
           max={500}
           step={1}
@@ -67,8 +66,6 @@ export default function Page() {
         <Button
           className="size-8 shrink-0 p-0"
           variant="outline"
-          aria-label="Reset interface scale"
-          title="Reset interface scale"
           disabled={loading || initialScale === DEFAULT_INITIAL_SCALE}
           onClick={() => updateInitialScale(DEFAULT_INITIAL_SCALE)}
         >

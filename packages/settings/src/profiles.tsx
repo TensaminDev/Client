@@ -8,28 +8,30 @@ import {
   useRef,
   useState,
 } from "react";
-import { base64ToBytes, crypto, MTPProtocolError } from "mtp";
+import { base64ToBytes, ConnectionState, crypto } from "mtp";
 import { createSettingsClient, type UserBlob } from "@tensamin/mtp";
 import { storageDefaults, type Storage } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
 import { persistMtpCredentials } from "@tensamin/storage/credentials";
 import { useMTP } from "@tensamin/mtp";
+import { toast } from "@methanium/ui";
+import { Check } from "lucide-react";
 
 const PROFILE_PREFIX = "settings-profile:";
-const LEGAL_BLOB_ID = "account-setting:legal-acceptance";
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 const PROFILE_SALT = textEncoder.encode("tensamin-settings-profile-v1");
+const LOADING_TOAST_ID = "settings-profile-loading";
 
-export const profileStorageKeys = (
+const profileStorageKeys = (
   Object.keys(storageDefaults) as (keyof Storage)[]
 ).filter(
   (key) =>
     (key.startsWith("settings.") &&
+      key !== "settings.call_jingle" &&
       key !== "settings.read_confirmations" &&
       key !== "settings.receive_confirmations") ||
     key.startsWith("theme_") ||
-    key.startsWith("call_mute_range_") ||
     key.startsWith("chat_picker_") ||
     [
       "cache_contacts",
@@ -41,22 +43,17 @@ export const profileStorageKeys = (
 );
 
 type ProfileDocument = {
-  version: 1;
+  version: 2;
   id: string;
   name: string;
+  lastUsedAt: number;
+  themePromptCompleted: boolean;
   settings: Partial<Storage>;
   account?: {
     userId: number;
     privateKey: string;
     domain: string | null;
   };
-};
-
-type LegalAcceptance = {
-  version: 1;
-  privacyPolicyHash: string;
-  termsOfServiceHash: string;
-  acceptedAt: number;
 };
 
 export type SettingsProfile = {
@@ -71,17 +68,13 @@ type ProfilesContextValue = {
   profiles: SettingsProfile[];
   activeProfile: SettingsProfile | null;
   activeProfileHasTheme: boolean;
+  loaded: boolean;
   loading: boolean;
   error: string;
   syncError: string;
-  remoteChange: "updated" | "deleted" | null;
-  needsSelection: boolean;
-  legalLoading: boolean;
-  legalRequired: boolean;
-  legalChanged: boolean;
-  legalError: string;
+  themePromptCompleted: boolean;
   selectProfile(id: string): Promise<void>;
-  continueLocal(): Promise<void>;
+  completeThemePrompt(): Promise<void>;
   createProfile(
     name: string,
     sourceId?: string,
@@ -90,11 +83,7 @@ type ProfilesContextValue = {
   renameProfile(id: string, name: string): Promise<void>;
   deleteProfile(id: string): Promise<void>;
   retry(): Promise<void>;
-  reloadRemote(): Promise<void>;
-  keepLocal(): void;
   retrySave(): Promise<void>;
-  retryLegal(): Promise<void>;
-  acceptLegal(): Promise<void>;
   validateName(name: string, exceptId?: string): string | null;
 };
 
@@ -119,14 +108,18 @@ async function decryptProfile(blob: UserBlob, keyring: string) {
     if (
       typeof parsed !== "object" ||
       parsed === null ||
-      (parsed as ProfileDocument).version !== 1 ||
+      ![1, 2].includes((parsed as ProfileDocument).version) ||
       (parsed as ProfileDocument).id !== blob.id.slice(PROFILE_PREFIX.length) ||
       typeof (parsed as ProfileDocument).name !== "string" ||
       typeof (parsed as ProfileDocument).settings !== "object"
     ) {
       throw new Error("Unsupported profile document");
     }
-    const raw = parsed as ProfileDocument;
+    const raw = parsed as ProfileDocument & {
+      version: 1 | 2;
+      lastUsedAt?: number;
+      themePromptCompleted?: boolean;
+    };
     if (
       raw.account !== undefined &&
       (typeof raw.account !== "object" ||
@@ -148,7 +141,14 @@ async function decryptProfile(blob: UserBlob, keyring: string) {
         return typeof value === typeof defaultValue;
       }),
     ) as Partial<Storage>;
-    const document = { ...raw, settings };
+    const document: ProfileDocument = {
+      ...raw,
+      version: 2,
+      lastUsedAt:
+        typeof raw.lastUsedAt === "number" ? raw.lastUsedAt : blob.updatedAt,
+      themePromptCompleted: raw.themePromptCompleted === true,
+      settings,
+    };
     return {
       id: document.id,
       name: document.name,
@@ -173,59 +173,13 @@ async function encryptProfile(document: ProfileDocument, keyring: string) {
   }
 }
 
-async function fetchLegalHash(document: string) {
-  const response = await fetch(
-    `https://legal.methanium.net/tensamin/${document}/raw`,
-  );
-  if (
-    !response.ok ||
-    !response.headers.get("content-type")?.startsWith("text/plain")
-  )
-    throw new Error(`Could not load ${document}`);
-  const hash = await globalThis.crypto.subtle.digest(
-    "SHA-256",
-    await response.arrayBuffer(),
-  );
-  return Array.from(new Uint8Array(hash), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-}
-
-async function encryptLegal(value: LegalAcceptance, keyring: string) {
-  const key = profileKey(keyring);
-  try {
-    return await crypto.encrypt(key, textEncoder.encode(JSON.stringify(value)));
-  } finally {
-    key.fill(0);
-  }
-}
-
-async function decryptLegal(blob: UserBlob, keyring: string) {
-  const key = profileKey(keyring);
-  try {
-    const value = JSON.parse(
-      textDecoder.decode(await crypto.decrypt(key, blob.ciphertext)),
-    ) as LegalAcceptance;
-    if (
-      value.version !== 1 ||
-      typeof value.privacyPolicyHash !== "string" ||
-      typeof value.termsOfServiceHash !== "string" ||
-      typeof value.acceptedAt !== "number"
-    )
-      throw new Error("Unsupported legal acceptance record");
-    return value;
-  } finally {
-    key.fill(0);
-  }
-}
-
 export function SettingsProfilesProvider({
   children,
 }: {
   children: ReactNode;
 }) {
   const storage = useStorage();
-  const { send, subscribe, identified, clientState } = useMTP();
+  const { send, subscribe, identified, clientState, readyState } = useMTP();
   const client = useMemo(
     () => createSettingsClient({ send, subscribe, clientState }),
     [clientState, send, subscribe],
@@ -234,26 +188,17 @@ export function SettingsProfilesProvider({
   const profilesRef = useRef(profiles);
   const [activeId, setActiveId] = useState("");
   const activeIdRef = useRef("");
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [syncError, setSyncError] = useState("");
-  const [remoteChange, setRemoteChange] = useState<
-    "updated" | "deleted" | null
-  >(null);
-  const [needsSelection, setNeedsSelection] = useState(false);
-  const [legalLoading, setLegalLoading] = useState(true);
-  const [legalRequired, setLegalRequired] = useState(false);
-  const [legalChanged, setLegalChanged] = useState(false);
-  const [legalError, setLegalError] = useState("");
-  const legalHashes = useRef({ privacyPolicyHash: "", termsOfServiceHash: "" });
-  const legalRevision = useRef(0);
   const keyringRef = useRef("");
   const applying = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
   const saveQueue = useRef(Promise.resolve());
-  const pendingRemote = useRef<SettingsProfile | null>(null);
+  const loadingToastShown = useRef(false);
 
   useEffect(() => {
     profilesRef.current = profiles;
@@ -297,7 +242,6 @@ export function SettingsProfilesProvider({
         );
       profilesRef.current = update(profilesRef.current);
       setProfiles(update);
-      if (profile.id === activeIdRef.current) setRemoteChange(null);
       setSyncError("");
     },
     [client],
@@ -373,14 +317,8 @@ export function SettingsProfilesProvider({
     setLoading(true);
     setError("");
     try {
-      const [keyring, selectedId, sessionId, promptedSessionId, blobs] =
-        await Promise.all([
-          storage.load("mtp_keyring"),
-          storage.load("active_settings_profile_id"),
-          storage.load("session_id"),
-          storage.load("settings_profile_prompted_session_id"),
-          client.listBlobs(),
-        ]);
+      const keyring = await storage.load("mtp_keyring");
+      const blobs = await client.listBlobs();
       keyringRef.current = keyring;
       const relevant = blobs.filter((item) =>
         item.id.startsWith(PROFILE_PREFIX),
@@ -404,13 +342,15 @@ export function SettingsProfilesProvider({
           }
         }),
       );
-      let next = decoded;
+      let next: SettingsProfile[] = decoded;
       if (next.length === 0) {
         const id = globalThis.crypto.randomUUID();
         const document: ProfileDocument = {
-          version: 1,
+          version: 2,
           id,
           name: "Default",
+          lastUsedAt: Date.now(),
+          themePromptCompleted: false,
           settings: await readSettings(),
         };
         const created = await client.createBlob(
@@ -428,119 +368,95 @@ export function SettingsProfilesProvider({
           },
         ];
       }
-      setProfiles(next);
-      const selected = next.find(
-        (profile) => profile.id === selectedId && profile.available,
+      next.sort(
+        (left, right) =>
+          (right.document?.lastUsedAt ?? 0) - (left.document?.lastUsedAt ?? 0),
       );
-      const nextId =
-        selected?.id ?? next.find((profile) => profile.available)?.id ?? "";
-      setActiveId(nextId);
-      await storage.save("active_settings_profile_id", nextId);
-      setNeedsSelection(sessionId !== promptedSessionId);
+      const selected = next.find((profile) => profile.document);
+      if (!selected?.document)
+        throw new Error("No settings profile is available");
+      const document = { ...selected.document, lastUsedAt: Date.now() };
+      applying.current = true;
+      await storage.apply({
+        theme_selected_id: storageDefaults.theme_selected_id,
+        theme_custom_themes: storageDefaults.theme_custom_themes,
+        ...document.settings,
+      });
+      await storage.save("active_settings_profile_id", selected.id);
+      applying.current = false;
+      try {
+        const saved = await client.updateBlob(
+          PROFILE_PREFIX + selected.id,
+          await encryptProfile(document, keyring),
+          selected.revision,
+          { reason: "profile selected on login", value: document },
+        );
+        selected.document = document;
+        selected.revision = saved.revision;
+      } catch (caught) {
+        setSyncError(
+          caught instanceof Error
+            ? caught.message
+            : "Profile synchronization failed",
+        );
+      }
+      profilesRef.current = next;
+      setProfiles(next);
+      activeIdRef.current = selected.id;
+      setActiveId(selected.id);
+      setLoaded(true);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Failed to load profiles",
       );
-      setNeedsSelection(true);
     } finally {
+      applying.current = false;
       setLoading(false);
     }
   }, [client, identified, readSettings, storage]);
 
   useEffect(() => {
+    if (
+      readyState === ConnectionState.Disconnected ||
+      readyState === ConnectionState.Failed
+    ) {
+      setLoading(false);
+      if (loadingToastShown.current) {
+        toast.dismiss(LOADING_TOAST_ID);
+        loadingToastShown.current = false;
+      }
+    }
+  }, [readyState]);
+
+  useEffect(() => {
     void loadProfiles();
   }, [loadProfiles]);
 
-  const loadLegal = useCallback(async () => {
-    if (!identified) return;
-    setLegalLoading(true);
-    setLegalError("");
-    try {
-      const [keyring, privacyPolicyHash, termsOfServiceHash, blobs] =
-        await Promise.all([
-          storage.load("mtp_keyring"),
-          fetchLegalHash("privacy-policy"),
-          fetchLegalHash("terms-of-service"),
-          client.listBlobs(),
-        ]);
-      legalHashes.current = { privacyPolicyHash, termsOfServiceHash };
-      try {
-        const metadata = blobs.find((item) => item.id === LEGAL_BLOB_ID);
-        if (!metadata) {
-          legalRevision.current = 0;
-          setLegalChanged(false);
-          setLegalRequired(true);
-          return;
-        }
-        const blob = metadata.ciphertext
-          ? (metadata as UserBlob)
-          : await client.getBlob(LEGAL_BLOB_ID);
-        const acceptance = await decryptLegal(blob, keyring);
-        legalRevision.current = blob.revision;
-        const changed =
-          acceptance.privacyPolicyHash !== privacyPolicyHash ||
-          acceptance.termsOfServiceHash !== termsOfServiceHash;
-        setLegalChanged(changed);
-        setLegalRequired(changed);
-      } catch (caught) {
-        if (
-          caught instanceof MTPProtocolError &&
-          caught.type === "ErrorNotFound"
-        ) {
-          legalRevision.current = 0;
-          setLegalChanged(false);
-          setLegalRequired(true);
-        } else {
-          throw caught;
-        }
-      }
-    } catch (caught) {
-      setLegalError(
-        caught instanceof Error
-          ? caught.message
-          : "Failed to load legal documents",
-      );
-      setLegalRequired(true);
-    } finally {
-      setLegalLoading(false);
-    }
-  }, [client, identified, storage]);
-
   useEffect(() => {
-    void loadLegal();
-  }, [loadLegal]);
-
-  const acceptLegal = useCallback(async () => {
-    const keyring = await storage.load("mtp_keyring");
-    const acceptance: LegalAcceptance = {
-      version: 1,
-      ...legalHashes.current,
-      acceptedAt: Date.now(),
-    };
-    const ciphertext = await encryptLegal(acceptance, keyring);
-    const saved = legalRevision.current
-      ? await client.updateBlob(
-          LEGAL_BLOB_ID,
-          ciphertext,
-          legalRevision.current,
-          { reason: "legal documents accepted", value: acceptance },
-        )
-      : await client.createBlob(LEGAL_BLOB_ID, ciphertext, {
-          reason: "legal documents accepted",
-          value: acceptance,
-        });
-    legalRevision.current = saved.revision;
-    setLegalRequired(false);
-    setLegalChanged(false);
-  }, [client, storage]);
-
-  const markSelected = useCallback(async () => {
-    await storage.save(
-      "settings_profile_prompted_session_id",
-      await storage.load("session_id"),
-    );
-    setNeedsSelection(false);
-  }, [storage]);
+    if (loading && loaded) {
+      const timer = setTimeout(() => {
+        loadingToastShown.current = true;
+        toast.loading("Loading settings...", { id: LOADING_TOAST_ID });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    if (error) {
+      toast.error(error, {
+        id: LOADING_TOAST_ID,
+        action: { label: "Retry", onClick: () => void loadProfiles() },
+      });
+    } else if (
+      loadingToastShown.current &&
+      readyState !== ConnectionState.Disconnected &&
+      readyState !== ConnectionState.Failed
+    ) {
+      toast.success("Settings loaded.", {
+        icon: <Check className="size-4.5" />,
+        id: LOADING_TOAST_ID,
+      });
+      loadingToastShown.current = false;
+    }
+  }, [error, loadProfiles, loaded, loading, readyState]);
 
   const selectProfile = useCallback(
     async (id: string) => {
@@ -551,11 +467,16 @@ export function SettingsProfilesProvider({
       await flush();
       applying.current = true;
       try {
-        await storage.apply(profile.document.settings);
+        const document = { ...profile.document, lastUsedAt: Date.now() };
+        await storage.apply({
+          theme_selected_id: storageDefaults.theme_selected_id,
+          theme_custom_themes: storageDefaults.theme_custom_themes,
+          ...document.settings,
+        });
         await storage.save("active_settings_profile_id", id);
         setActiveId(id);
-        await markSelected();
-        setRemoteChange(null);
+        activeIdRef.current = id;
+        await persistDocument(profile, document, "profile selected");
         setSyncError("");
         if (profile.document.account) {
           const [userId, keyring] = await Promise.all([
@@ -579,14 +500,8 @@ export function SettingsProfilesProvider({
         applying.current = false;
       }
     },
-    [flush, markSelected, storage],
+    [flush, persistDocument, storage],
   );
-
-  const continueLocal = useCallback(async () => {
-    setActiveId("");
-    await storage.save("active_settings_profile_id", "");
-    await markSelected();
-  }, [markSelected, storage]);
 
   const createProfile = useCallback(
     async (
@@ -603,9 +518,11 @@ export function SettingsProfilesProvider({
       );
       const id = globalThis.crypto.randomUUID();
       const document: ProfileDocument = {
-        version: 1,
+        version: 2,
         id,
         name: trimmed,
+        lastUsedAt: Date.now(),
+        themePromptCompleted: false,
         settings: source?.document?.settings ?? (await readSettings()),
         ...(account ? { account } : {}),
       };
@@ -645,138 +562,110 @@ export function SettingsProfilesProvider({
     [flush, persistDocument, validateName],
   );
 
+  const completeThemePrompt = useCallback(async () => {
+    const profile = profilesRef.current.find(
+      (item) => item.id === activeIdRef.current,
+    );
+    if (!profile?.document || profile.document.themePromptCompleted) return;
+    await persistDocument(
+      profile,
+      { ...profile.document, themePromptCompleted: true },
+      "theme prompt completed",
+    );
+  }, [persistDocument]);
+
   const deleteProfile = useCallback(
     async (id: string) => {
       const profile = profilesRef.current.find((item) => item.id === id);
       if (!profile) return;
+      if (profilesRef.current.length <= 1)
+        throw new Error("At least one settings profile is required");
       await flush();
       await client.deleteBlob(PROFILE_PREFIX + id, profile.revision);
       const remaining = profilesRef.current.filter((item) => item.id !== id);
       setProfiles(remaining);
       profilesRef.current = remaining;
       if (id !== activeIdRef.current) return;
-      const fallback = remaining.find((item) => item.available);
+      const fallback = remaining
+        .filter((item) => item.available)
+        .sort(
+          (left, right) =>
+            (right.document?.lastUsedAt ?? 0) -
+            (left.document?.lastUsedAt ?? 0),
+        )[0];
       if (fallback) await selectProfile(fallback.id);
       else await createProfile("Default");
     },
     [client, createProfile, flush, selectProfile],
   );
 
-  const reloadRemote = useCallback(async () => {
-    const id = activeIdRef.current;
-    if (!id) return loadProfiles();
-    if (remoteChange === "deleted") {
-      const remaining = profilesRef.current.filter(
-        (profile) => profile.id !== id,
-      );
-      setProfiles(remaining);
-      profilesRef.current = remaining;
-      const fallback = remaining.find((profile) => profile.available);
-      if (fallback) await selectProfile(fallback.id);
-      else await createProfile("Default");
-      setRemoteChange(null);
-      return;
-    }
-    const decoded =
-      pendingRemote.current ??
-      (await decryptProfile(
-        await client.getBlob(PROFILE_PREFIX + id),
-        keyringRef.current,
-      ));
-    pendingRemote.current = null;
-    setProfiles((current) =>
-      current.map((profile) => (profile.id === id ? decoded : profile)),
-    );
-    profilesRef.current = profilesRef.current.map((profile) =>
-      profile.id === id ? decoded : profile,
-    );
-    await selectProfile(id);
-  }, [client, createProfile, loadProfiles, remoteChange, selectProfile]);
-
   useEffect(
     () =>
       client.subscribeBlobChanges(async (event) => {
-        if (event.id !== PROFILE_PREFIX + activeIdRef.current) return;
+        if (!event.id.startsWith(PROFILE_PREFIX)) return;
+        const id = event.id.slice(PROFILE_PREFIX.length);
         const known = profilesRef.current.find(
-          (profile) => profile.id === activeIdRef.current,
+          (profile) => profile.id === id,
         )?.revision;
         if (known !== undefined && event.revision <= known) return;
         if (event.deleted) {
-          pendingRemote.current = null;
-          setRemoteChange("deleted");
+          const remaining = profilesRef.current.filter(
+            (profile) => profile.id !== id,
+          );
+          profilesRef.current = remaining;
+          setProfiles(remaining);
+          if (id !== activeIdRef.current) {
+            if (remaining.length === 0) await createProfile("Default");
+            return;
+          }
+          const fallback = remaining
+            .filter((profile) => profile.document)
+            .sort(
+              (left, right) =>
+                (right.document?.lastUsedAt ?? 0) -
+                (left.document?.lastUsedAt ?? 0),
+            )[0];
+          if (fallback) await selectProfile(fallback.id);
+          else await createProfile("Default");
           return;
         }
         try {
           const remote = await decryptProfile(
-            await client.getBlob(event.id),
+            {
+              id: event.id,
+              ciphertext: event.ciphertext,
+              revision: event.revision,
+              updatedAt: event.updatedAt,
+            },
             keyringRef.current,
           );
-          const localSettings = await readSettings();
-          const current = profilesRef.current.find(
-            (profile) => profile.id === activeIdRef.current,
-          );
-          if (
-            current?.name === remote.name &&
-            JSON.stringify(localSettings) ===
-              JSON.stringify(remote.document?.settings)
-          ) {
-            profilesRef.current = profilesRef.current.map((profile) =>
-              profile.id === remote.id ? remote : profile,
-            );
-            setProfiles(profilesRef.current);
-            setRemoteChange(null);
-            return;
+          const next = profilesRef.current.some((profile) => profile.id === id)
+            ? profilesRef.current.map((profile) =>
+                profile.id === id ? remote : profile,
+              )
+            : [...profilesRef.current, remote];
+          profilesRef.current = next;
+          setProfiles(next);
+          if (id === activeIdRef.current && remote.document) {
+            applying.current = true;
+            await storage.apply({
+              theme_selected_id: storageDefaults.theme_selected_id,
+              theme_custom_themes: storageDefaults.theme_custom_themes,
+              ...remote.document.settings,
+            });
+            applying.current = false;
+            setSyncError("");
           }
-          pendingRemote.current = remote;
-          setRemoteChange("updated");
         } catch (caught) {
+          applying.current = false;
           setSyncError(
             caught instanceof Error
               ? caught.message
-              : "Failed to compare the remote profile",
+              : "Failed to apply the remote profile",
           );
         }
       }),
-    [client, readSettings],
-  );
-
-  useEffect(
-    () =>
-      client.subscribeBlobChanges(async (event) => {
-        if (
-          event.id !== LEGAL_BLOB_ID ||
-          event.revision <= legalRevision.current
-        )
-          return;
-        if (event.deleted) {
-          legalRevision.current = 0;
-          setLegalChanged(false);
-          setLegalRequired(true);
-          return;
-        }
-        try {
-          const acceptance = await decryptLegal(
-            await client.getBlob(event.id),
-            keyringRef.current,
-          );
-          legalRevision.current = event.revision;
-          const changed =
-            acceptance.privacyPolicyHash !==
-              legalHashes.current.privacyPolicyHash ||
-            acceptance.termsOfServiceHash !==
-              legalHashes.current.termsOfServiceHash;
-          setLegalChanged(changed);
-          setLegalRequired(changed);
-          setLegalError("");
-        } catch (caught) {
-          setLegalError(
-            caught instanceof Error
-              ? caught.message
-              : "Failed to apply legal acceptance",
-          );
-        }
-      }),
-    [client],
+    [client, createProfile, selectProfile, storage],
   );
 
   useEffect(() => {
@@ -833,61 +722,36 @@ export function SettingsProfilesProvider({
         profiles.find((profile) => profile.id === activeId) ?? null,
       activeProfileHasTheme: Boolean(
         profiles.find((profile) => profile.id === activeId)?.document?.settings
+          .theme_selected_id ??
+        profiles.find((profile) => profile.id === activeId)?.document?.settings
           .theme_parent,
       ),
+      loaded,
       loading,
       error,
       syncError,
-      remoteChange,
-      needsSelection,
-      legalLoading,
-      legalRequired,
-      legalChanged,
-      legalError,
+      themePromptCompleted:
+        profiles.find((profile) => profile.id === activeId)?.document
+          ?.themePromptCompleted ?? false,
       selectProfile,
-      continueLocal,
+      completeThemePrompt,
       createProfile,
       renameProfile,
       deleteProfile,
       retry: loadProfiles,
-      reloadRemote,
-      keepLocal: () => {
-        const remote = pendingRemote.current;
-        if (remote) {
-          profilesRef.current = profilesRef.current.map((profile) =>
-            profile.id === remote.id
-              ? { ...profile, revision: remote.revision }
-              : profile,
-          );
-          setProfiles(profilesRef.current);
-          pendingRemote.current = null;
-          void saveActive();
-        }
-        setRemoteChange(null);
-      },
       retrySave: saveActive,
-      retryLegal: loadLegal,
-      acceptLegal,
       validateName,
     }),
     [
       activeId,
-      continueLocal,
+      completeThemePrompt,
       createProfile,
       deleteProfile,
       error,
-      acceptLegal,
-      legalChanged,
-      legalError,
-      legalLoading,
-      legalRequired,
-      loadLegal,
       loadProfiles,
+      loaded,
       loading,
-      needsSelection,
       profiles,
-      reloadRemote,
-      remoteChange,
       renameProfile,
       saveActive,
       selectProfile,

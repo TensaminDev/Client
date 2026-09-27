@@ -20,6 +20,11 @@ import {
   type RawMessage,
 } from "./values";
 import Wrapper from "@tensamin/identity/wrapper";
+import { useMTP } from "@tensamin/mtp";
+import { useTheme } from "@methanium/ui";
+import { GlobeOff, PartyPopper } from "lucide-react";
+import { chatBackgroundStyle, useChatBackground } from "./backgrounds";
+import { toast } from "@tensamin/shared/log";
 
 function shouldFetchPreviousPage({
   entry,
@@ -76,11 +81,7 @@ function formatMessageDate(sendTime: number) {
 
 function DateSeparator({ label }: { label: string }) {
   return (
-    <div
-      aria-label={label}
-      className="my-3 flex w-full items-center gap-3 px-3"
-      role="separator"
-    >
+    <div className="my-3 flex w-full items-center gap-3 px-3">
       <div className="h-px flex-1 bg-border" />
       <span className="shrink-0 text-xs font-medium text-muted-foreground">
         {label}
@@ -92,7 +93,7 @@ function DateSeparator({ label }: { label: string }) {
 
 function NewMessagesSeparator() {
   return (
-    <div className="my-3 flex w-full items-center gap-3 px-3" role="separator">
+    <div className="my-3 flex w-full items-center gap-3 px-3">
       <div className="h-px flex-1 bg-(--destructive)" />
       <span className="shrink-0 text-xs font-medium text-destructive">
         New messages
@@ -106,6 +107,7 @@ function buildMessageChunks(
   messages: Array<RawMessage | LiveMessage>,
   keyPrefix: string,
   startOffset = 0,
+  chunkSize = MESSAGES_PER_VIRTUAL_ROW,
 ) {
   const chunks: {
     key: string;
@@ -113,8 +115,8 @@ function buildMessageChunks(
     startIndex: number;
   }[] = [];
 
-  for (let end = messages.length; end > 0; end -= MESSAGES_PER_VIRTUAL_ROW) {
-    const start = Math.max(0, end - MESSAGES_PER_VIRTUAL_ROW);
+  for (let end = messages.length; end > 0; end -= chunkSize) {
+    const start = Math.max(0, end - chunkSize);
     const chunkMessages = messages.slice(start, end);
     const firstMessage = chunkMessages[0];
 
@@ -138,8 +140,9 @@ export default function Screen() {
   const {
     getMessages,
     liveMessages,
+    newMessageCount,
     newMessagesStart,
-    clearLiveMessages,
+    setNewMessagesStart,
     userId,
     chatSecret,
     ownId,
@@ -160,16 +163,28 @@ export default function Screen() {
   const hasNextPageRef = useRef(false);
   const isFetchingNextPageRef = useRef(false);
   const fetchNextPageRef = useRef<(() => void) | null>(null);
+  const replyJumpLoadingRef = useRef(false);
 
   const [lastLiveMessageCount, setLastLiveMessageCount] = useState(0);
   const [didInitialScroll, setDidInitialScroll] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [composerHeight, setComposerHeight] = useState(0);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [pendingJump, setPendingJump] = useState<{
+    sendTime: number;
+    minimumLoaded: number;
+  } | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    number | null
+  >(null);
   const previousEditingMessageIdRef = useRef<number | null>(null);
 
   const hasValidChatUser = Number.isSafeInteger(userId) && userId > 0;
   const hasChatSecret = chatSecret !== null;
+  const { background, imageUrl, animateImage } = useChatBackground(userId);
+  const { resolvedPolarity } = useTheme();
+
+  const { readyState, send } = useMTP();
 
   useEffect(() => {
     const previousEditingMessageId = previousEditingMessageIdRef.current;
@@ -190,11 +205,11 @@ export default function Screen() {
     queryFn: ({ pageParam }) => getMessages(PAGE_SIZE, Number(pageParam)),
     enabled: hasValidChatUser && hasChatSecret,
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < PAGE_SIZE) {
+      if (lastPage.length < PAGE_SIZE && allPages.length > 1) {
         return undefined;
       }
 
-      return allPages.length * PAGE_SIZE;
+      return allPages.reduce((count, page) => count + page.length, 0);
     },
   });
   const {
@@ -212,14 +227,15 @@ export default function Screen() {
   }, [fetchMessagesNextPage, hasMessagesNextPage, isFetchingMessagesNextPage]);
 
   useEffect(() => {
-    clearLiveMessages();
     didInitialScrollRef.current = false;
     userScrolledUpRef.current = false;
     isAtBottomRef.current = true;
     setDidInitialScroll(false);
     setLastLiveMessageCount(0);
     setEditingMessageId(null);
-  }, [clearLiveMessages, userId]);
+    setPendingJump(null);
+    setHighlightedMessageId(null);
+  }, [userId]);
 
   const historicalMessages = useMemo(() => {
     const pages = messagesQuery.data?.pages ?? [];
@@ -251,24 +267,41 @@ export default function Screen() {
   }, [historicalMessages, liveMessagesSnapshot]);
 
   const messages = useMemo(() => {
-    return [...historicalMessages, ...liveWithoutDuplicates];
+    return [...historicalMessages, ...liveWithoutDuplicates].sort(
+      (first, second) => first.SendTime - second.SendTime,
+    );
   }, [historicalMessages, liveWithoutDuplicates]);
 
-  const historicalMessageChunks = useMemo(() => {
-    return buildMessageChunks(historicalMessages, "history");
-  }, [historicalMessages]);
-
-  const liveMessageChunks = useMemo(() => {
-    return buildMessageChunks(
-      liveWithoutDuplicates,
-      "live",
-      historicalMessages.length,
+  const pendingNewMessagesStart = useMemo(() => {
+    if (newMessagesStart !== null || newMessageCount === 0) return null;
+    const incomingMessages = messages.filter(
+      (message) => message.SenderId === userId,
     );
-  }, [historicalMessages.length, liveWithoutDuplicates]);
+    if (incomingMessages.length >= newMessageCount) {
+      return incomingMessages[incomingMessages.length - newMessageCount]
+        ?.SendTime;
+    }
+    if (messagesQuery.hasNextPage === false) {
+      return incomingMessages[0]?.SendTime ?? null;
+    }
+    return null;
+  }, [
+    messages,
+    messagesQuery.hasNextPage,
+    newMessageCount,
+    newMessagesStart,
+    userId,
+  ]);
+
+  useEffect(() => {
+    if (pendingNewMessagesStart !== null) {
+      setNewMessagesStart(userId, pendingNewMessagesStart);
+    }
+  }, [pendingNewMessagesStart, setNewMessagesStart, userId]);
 
   const messageChunks = useMemo(() => {
-    return [...liveMessageChunks, ...historicalMessageChunks];
-  }, [historicalMessageChunks, liveMessageChunks]);
+    return buildMessageChunks(messages, "messages", 0, 1);
+  }, [messages]);
 
   const virtualRowCount = messageChunks.length;
 
@@ -290,6 +323,100 @@ export default function Screen() {
   });
   const totalSize = virtualizer.getTotalSize();
   const contentHeight = Math.max(totalSize, viewportHeight);
+
+  const jumpToReply = useCallback(
+    async (sendTime: number) => {
+      if (replyJumpLoadingRef.current) return;
+      if (messages.some((message) => message.SendTime === sendTime)) {
+        setPendingJump({ sendTime, minimumLoaded: 0 });
+        return;
+      }
+
+      replyJumpLoadingRef.current = true;
+      try {
+        const response = await send("MessageGet", {
+          SendTime: sendTime,
+          ChatPartnerId: userId,
+        });
+        const offset = response.data.Offset;
+        if (
+          offset === undefined ||
+          !Number.isSafeInteger(offset) ||
+          offset < 0
+        ) {
+          throw new Error("MessageGet omitted a valid Offset");
+        }
+
+        let loaded = new Set(
+          (messagesQuery.data?.pages ?? [])
+            .flat()
+            .map((message) => message.SendTime),
+        ).size;
+        let hasNextPage = messagesQuery.hasNextPage;
+        while (loaded <= offset) {
+          if (!hasNextPage) {
+            throw new Error("Message history ended before the reply target");
+          }
+          const result = await messagesQuery.fetchNextPage({
+            cancelRefetch: false,
+          });
+          if (result.isError) throw result.error;
+          loaded = new Set(
+            (result.data?.pages ?? [])
+              .flat()
+              .map((message) => message.SendTime),
+          ).size;
+          hasNextPage = result.hasNextPage;
+        }
+
+        setPendingJump({ sendTime, minimumLoaded: offset + 1 });
+      } catch (error) {
+        toast("error", "Couldn't jump to replied message", String(error));
+      } finally {
+        replyJumpLoadingRef.current = false;
+      }
+    },
+    [messages, messagesQuery, send, userId],
+  );
+
+  useEffect(() => {
+    if (pendingJump === null) return;
+    const chunkIndex = messageChunks.findIndex((chunk) =>
+      chunk.messages.some(
+        (message) => message.SendTime === pendingJump.sendTime,
+      ),
+    );
+    if (chunkIndex === -1) {
+      const loaded = new Set(
+        (messagesQuery.data?.pages ?? [])
+          .flat()
+          .map((message) => message.SendTime),
+      ).size;
+      if (
+        messagesQuery.isFetchingNextPage ||
+        (loaded < pendingJump.minimumLoaded && messagesQuery.hasNextPage !== false)
+      ) {
+        return;
+      }
+
+      setPendingJump(null);
+      toast("error", "Couldn't jump to replied message");
+      return;
+    }
+
+    virtualizer.scrollToIndex(chunkIndex, { align: "center" });
+    setHighlightedMessageId(pendingJump.sendTime);
+    setPendingJump(null);
+  }, [messageChunks, messagesQuery, pendingJump, virtualizer]);
+
+  useEffect(() => {
+    if (highlightedMessageId === null) return;
+    const timeout = window.setTimeout(
+      () => setHighlightedMessageId(null),
+      1600,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [highlightedMessageId]);
 
   const editLastMessage = useCallback(() => {
     if (editingMessageId !== null) return;
@@ -337,7 +464,7 @@ export default function Screen() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [readyState]);
 
   useLayoutEffect(() => {
     const element = composerRef.current;
@@ -357,7 +484,7 @@ export default function Screen() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [readyState]);
 
   useLayoutEffect(() => {
     if (didInitialScrollRef.current || virtualRowCount === 0) {
@@ -396,11 +523,26 @@ export default function Screen() {
   ]);
 
   useEffect(() => {
+    const loadedIncomingMessages = messages.filter(
+      (message) => message.SenderId === userId,
+    ).length;
+    if (
+      newMessageCount > loadedIncomingMessages &&
+      messagesQuery.hasNextPage &&
+      !messagesQuery.isFetchingNextPage &&
+      !replyJumpLoadingRef.current
+    ) {
+      void messagesQuery.fetchNextPage();
+    }
+  }, [messages, messagesQuery, newMessageCount, userId]);
+
+  useEffect(() => {
     if (
       viewportHeight === 0 ||
       totalSize > viewportHeight ||
       messagesQuery.isFetchingNextPage ||
-      !messagesQuery.hasNextPage
+      !messagesQuery.hasNextPage ||
+      replyJumpLoadingRef.current
     ) {
       return;
     }
@@ -424,7 +566,8 @@ export default function Screen() {
             entry,
             hasNextPage: messagesQuery.hasNextPage,
             isFetchingNextPage: messagesQuery.isFetchingNextPage,
-            userScrolledUp: userScrolledUpRef.current,
+            userScrolledUp:
+              userScrolledUpRef.current && !replyJumpLoadingRef.current,
           })
         ) {
           void messagesQuery.fetchNextPage();
@@ -483,7 +626,8 @@ export default function Screen() {
         scrollTop >= maxScrollTop - 240 &&
         userScrolledUpRef.current &&
         hasNextPageRef.current &&
-        !isFetchingNextPageRef.current
+        !isFetchingNextPageRef.current &&
+        !replyJumpLoadingRef.current
       ) {
         fetchNextPageRef.current?.();
       }
@@ -521,7 +665,7 @@ export default function Screen() {
         smoothScrollFrameRef.current = null;
       }
     };
-  }, [handleContainerScroll]);
+  }, [handleContainerScroll, readyState]);
 
   if (!hasValidChatUser) {
     return (
@@ -533,13 +677,44 @@ export default function Screen() {
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
-      {error !== "" && errorDescription !== "" ? (
+      {readyState === 0 ? (
+        <div className="w-full h-full flex flex-col gap-10 justify-center items-center">
+          <GlobeOff size={80} />
+          <p className="text-muted-foreground text-lg w-80 text-center">
+            You are not connected to an Omikron. Please check your internet
+            connection and try again later
+          </p>
+        </div>
+      ) : error !== "" && errorDescription !== "" ? (
         <div className="w-full h-full flex flex-col gap-2 items-center justify-center">
           <p className="font-semibold text-xl">{error}</p>
-          <p className="text-muted-foreground text-lg">{errorDescription}</p>
+          <p className="text-muted-foreground text-lg w-80 text-center">
+            {errorDescription}
+          </p>
         </div>
       ) : (
         <>
+          <div
+            aria-hidden="true"
+            key={
+              background?.kind === "image"
+                ? imageUrl
+                : JSON.stringify(background)
+            }
+            className={`pointer-events-none absolute inset-0 bg-background bg-cover bg-center ${
+              animateImage
+                ? "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500"
+                : ""
+            }`}
+            style={{
+              ...chatBackgroundStyle(background, imageUrl, resolvedPolarity),
+              opacity: background
+                ? resolvedPolarity === "dark"
+                  ? 0.3
+                  : 0.5
+                : 1,
+            }}
+          />
           <div
             ref={scrollRef}
             id="chat_container"
@@ -581,6 +756,26 @@ export default function Screen() {
                     }}
                   >
                     <div className="flex flex-col scale-y-[-1]">
+                      {chunkIndex === messageChunks.length - 1 &&
+                        messagesQuery.hasNextPage === false && (
+                          <Wrapper
+                            userId={userId}
+                            fields={["Display"]}
+                            loading={null}
+                            component={(user) => (
+                              <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted-foreground">
+                                <PartyPopper className="size-8" />
+                                <p>
+                                  This is the start of your conversation with{" "}
+                                  <span className="font-medium text-foreground">
+                                    {user?.Display}
+                                  </span>
+                                  .
+                                </p>
+                              </div>
+                            )}
+                          />
+                        )}
                       {chunk.messages.map((message, chunkMessageIndex) => {
                         const messageIndex =
                           chunk.startIndex + chunkMessageIndex;
@@ -619,7 +814,11 @@ export default function Screen() {
                                     editingMessageId === message.SendTime
                                   }
                                   grouped={isGrouped}
+                                  highlighted={
+                                    highlightedMessageId === message.SendTime
+                                  }
                                   message={message}
+                                  onReplyActivate={jumpToReply}
                                   onSetEditing={(editing) =>
                                     setEditingMessageId(
                                       editing ? message.SendTime : null,

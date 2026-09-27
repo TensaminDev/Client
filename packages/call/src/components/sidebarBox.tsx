@@ -1,4 +1,4 @@
-import { Lock, LockOpen } from "lucide-react";
+import { Lock, LockOpen, Timer } from "lucide-react";
 import { openCallPage, useCall, getRoom } from "../store";
 import {
   Button,
@@ -17,6 +17,7 @@ import { Room, Track } from "livekit-client";
 import { useEffect, useState } from "react";
 import { AreaChart, Area } from "recharts";
 import LeaveButton from "./buttons/leave";
+import { formatDuration } from "../views/preview";
 
 async function getPing(room: Room): Promise<number | undefined> {
   const report = await room.localParticipant
@@ -54,7 +55,15 @@ function ConnectionBar() {
   const state = useCall((store) => store.state);
   const isEncrypted = useCall((store) => store.isEncrypted);
   const callId = useCall((store) => store.callId);
-
+  const warnings = useCall((store) => store.warnings);
+  const createdAt = useCall((store) => store.callCreatedAt);
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const age = createdAt == null || !now ? null : now - createdAt;
+  const isConnecting = state === "encrypting" || state === "connecting";
   return (
     <Tooltip>
       <TooltipTrigger
@@ -67,27 +76,59 @@ function ConnectionBar() {
             }}
             size="lg"
             variant={
-              state === "open" && isEncrypted ? "subtleDefault" : "destructive"
+              isConnecting ||
+              warnings.length > 0 ||
+              (age != null && age >= 2 * 86400000)
+                ? "warning"
+                : "default"
             }
-            className="flex items-center justify-between px-2!"
+            className="flex items-center justify-between px-2! group/connection-bar"
           >
-            {state === "encrypting" && "Encrypting..."}
-            {state === "connecting" && "Connecting..."}
-            {state === "open" && "Connected"}
-            {state === "closed" && "Closed"}
-            {state === "closing" && "Closing"}
+            <div className="w-21 truncate flex justify-center text-center">
+              {state === "encrypting" && "Encrypting..."}
+              {state === "connecting" && "Connecting..."}
+              {state === "open" && (
+                <>
+                  {formatDuration(age || 0).trim() != "" ? (
+                    <>
+                      <div className="flex gap-1 items-center group-hover/connection-bar:hidden">
+                        <Timer className="size-3.5" />
+                        <code className="text-xs">
+                          {formatDuration(age || 0)}
+                        </code>
+                      </div>
+                      <p className="hidden group-hover/connection-bar:block">
+                        Connected
+                      </p>
+                    </>
+                  ) : (
+                    <p>Connected</p>
+                  )}
+                </>
+              )}
+              {state === "closed" && "Closed"}
+              {state === "closing" && "Closing"}
+            </div>
 
             <TinyPingGraph />
 
             {isEncrypted ? (
-              <Lock color="var(--primary-foreground-alt)" />
+              <Lock color="currentColor" />
             ) : (
-              <LockOpen color="var(--destructive)" />
+              <LockOpen color="currentColor" />
             )}
           </Button>
         )}
       />
-      <TooltipContent>Click to open call page</TooltipContent>
+      <TooltipContent className="flex flex-col gap-3 items-start">
+        <p>Click to open call page</p>
+        {age != null && age >= 2 * 86400000 && (
+          <p>Calls expire after three days.</p>
+        )}
+        {warnings.map((warning, index) => (
+          <p key={index}>{warning}</p>
+        ))}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -190,7 +231,7 @@ export default function SidebarBox() {
   const state = useCall((store) => store.state);
   const isMobile = useIsMobile();
 
-  return state === "closed" ? null : (
+  return state === "closed" || state === "encrypting" ? null : (
     <Card className="p-1.5 gap-2" hidden={isMobile}>
       <CardHeader className="p-0! pb-2! border-b-2">
         <ConnectionBar />

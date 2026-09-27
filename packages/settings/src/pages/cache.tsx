@@ -16,6 +16,7 @@ export default function Page() {
   const [savedContacts, setSavedContacts] = useState(contacts);
   const [savedMessagesPerChat, setSavedMessagesPerChat] =
     useState(messagesPerChat);
+  const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     void Promise.all([
@@ -26,6 +27,7 @@ export default function Page() {
       setSavedContacts(nextContacts);
       setMessagesPerChat(nextMessages);
       setSavedMessagesPerChat(nextMessages);
+      setLoaded(true);
     });
   }, [load]);
   const valid = validLimit(contacts) && validLimit(messagesPerChat);
@@ -50,6 +52,7 @@ export default function Page() {
       setSaving(false);
     }
   }
+  if (!loaded) return null;
   return (
     <div className="flex max-w-xl flex-col gap-6">
       <div className="flex flex-col gap-2">

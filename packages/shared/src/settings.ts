@@ -52,7 +52,7 @@ const settings = {
   call: {
     call: {
       call_jingle: {
-        display: "Jingle",
+        display: "Incoming call sound",
         type: "select",
         default: "jingle_1" as "jingle_1" | "jingle_2",
       },

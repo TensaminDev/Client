@@ -1,6 +1,7 @@
 import { LeaveIcon } from "@livekit/components-react";
 import { Button } from "@methanium/ui";
-import { disconnect, useCall } from "../../store";
+import { leaveCall, useCall } from "../../store";
+import { log, toast } from "@tensamin/shared/log";
 import {
   type CallButtonProps,
   iconScale,
@@ -18,7 +19,12 @@ export default function LeaveButton({
   const button = (
     <Button
       className={className}
-      onClick={() => disconnect()}
+      onClick={() => {
+        void leaveCall().catch((error) => {
+          toast("error", "Left the call, but membership could not be removed.");
+          log(1, "call", "red", "Failed to revoke call membership", error);
+        });
+      }}
       disabled={state === "closing" || state === "closed"}
       variant="destructive"
     >

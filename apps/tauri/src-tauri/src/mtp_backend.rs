@@ -30,7 +30,6 @@ const CHAT_SECRET_SALT: &[u8] = b"tensamin-chat-secret-v1";
 const CHAT_MESSAGE_SALT: &[u8] = b"tensamin-chat-message-v1";
 const CHAT_SECRET_SCHEME: &str = "mtp-chat-secret-kem-chacha20poly1305-hkdf-sha256-v1";
 const INITIAL_SYNC_TIMEOUT: Duration = Duration::from_secs(30);
-const MAX_BUFFERED_INITIAL_FRAMES: usize = 1_000;
 const NOTIFICATION_QUEUE_CAPACITY: usize = 32;
 const ROUTE_TARGET_ID_MASK: u64 = (1_u64 << 48) - 1;
 const USER_ROUTE_TARGET_KIND: u64 = 0x4000_0000_0000_0000;
@@ -337,6 +336,55 @@ impl MtpManager {
     }
 }
 
+fn validate_config(config: MtpConfig) -> Result<MtpConfig, String> {
+    let keyring_bytes = decode_browser_base64(&config.keyring)
+        .map_err(|error| format!("invalid MTP keyring: {error}"))?;
+    Keyring::from_bytes(&keyring_bytes).map_err(|error| format!("invalid MTP keyring: {error}"))?;
+    let omega_url = normalize_https_url(&config.omega_url, "Omega URL")?;
+    let forced_omikron_url = config
+        .forced_omikron_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(|value| normalize_https_url(value, "Forced Omikron URL"))
+        .transpose()?;
+    let forced_omikron_public_key = config
+        .forced_omikron_public_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned);
+    if forced_omikron_url.is_some() != forced_omikron_public_key.is_some() {
+        return Err("Forced Omikron URL and public key must both be set or both be empty".into());
+    }
+    if let Some(public_key) = forced_omikron_public_key.as_ref() {
+        let bytes = decode_sdk_bytes(public_key)
+            .map_err(|error| format!("invalid Omikron public key: {error}"))?;
+        let key = PublicKeyBundle::from_bytes(&bytes)
+            .map_err(|error| format!("invalid Omikron public key: {error}"))?;
+        key.validate()
+            .map_err(|error| format!("invalid Omikron public key: {error}"))?;
+    }
+    Ok(MtpConfig {
+        omega_url,
+        forced_omikron_url,
+        forced_omikron_public_key,
+        ..config
+    })
+}
+
+fn normalize_https_url(value: &str, label: &str) -> Result<String, String> {
+    let url = reqwest::Url::parse(value.trim())
+        .map_err(|error| format!("{label} is invalid: {error}"))?;
+    if url.scheme() != "https" || url.host_str().is_none() {
+        return Err(format!("{label} must be a valid HTTPS URL"));
+    }
+    if !url.username().is_empty() || url.password().is_some() {
+        return Err(format!("{label} must not contain credentials"));
+    }
+    Ok(url.to_string())
+}
+
 async fn supervise(generation: u64) {
     let manager = manager();
     let mut delay = Duration::from_secs(1);
@@ -402,12 +450,14 @@ async fn supervise(generation: u64) {
                 });
 
                 for frame in prepared.buffered_frames {
-                    handle_push(generation, &notification_tx, frame).await;
+                    handle_push(generation, &notification_tx, &connection, frame).await;
                 }
 
                 while manager.is_current(generation) {
                     match connection.mtp.receive().await {
-                        Ok(frame) => handle_push(generation, &notification_tx, frame).await,
+                        Ok(frame) => {
+                            handle_push(generation, &notification_tx, &connection, frame).await
+                        }
                         Err(error) => {
                             let _guard = manager.start_lock.lock().expect("start lock poisoned");
                             if manager.is_current(generation) {
@@ -500,7 +550,7 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
         .with_ping_interval(Duration::from_secs(30))
         .with_max_missed_pings(3);
     #[cfg(target_os = "android")]
-    let client_config = client_config.with_pinned_pem(android_root_certificates().clone());
+    let client_config = client_config.with_pinned_pem(android_root_certificates()?);
     let connection = tokio::time::timeout(
         Duration::from_secs(30),
         MTPClient::auth_connect(client_config, &keyring, &host_key),
@@ -510,8 +560,18 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
     .map_err(|error| format!("transport authentication failed: {error}"))?;
     manager().log(2, "Native MTP authentication completed", None);
 
-    let (state, buffered_frames) = await_initial_state(&connection).await?;
     let request_ids = RequestIdAllocator::new();
+    let request = CommunicationValue::new(CommunicationType::AccountStateRequest)
+        .with_id(request_ids.next()?)
+        .add_typed_default(DataType::DeviceClass, DataValue::Str("mobile".into()))
+        .add_typed_default(DataType::NotificationCapable, DataValue::Bool(true));
+    let state = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&request, None))
+        .await
+        .map_err(|_| "account state request timed out".to_string())?
+        .map_err(|error| format!("account state request failed: {error}"))?;
+    if !state.is_type(CommunicationType::AccountStateSnapshot) {
+        return Err(format!("expected AccountStateSnapshot, received {state}"));
+    }
     let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids)?;
     let response = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&ack, None))
         .await
@@ -527,7 +587,7 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
         connection,
         request_ids,
         initial_state,
-        buffered_frames,
+        buffered_frames: Vec::new(),
     })
 }
 
@@ -536,35 +596,16 @@ fn prepare_initial_state_ack(
     request_ids: &RequestIdAllocator,
 ) -> Result<(Value, CommunicationValue), String> {
     let initial_state = frame_data_to_json(state)?;
-    validate_client_state_sync(&initial_state)?;
-    let data = initial_state
-        .as_object()
-        .ok_or("ClientStateSync payload is not an object")?;
-    let session_id = required_integer(data, "SessionId")?;
-    let version = required_integer(data, "VersionNumber")?;
-    let ack = CommunicationValue::new(communication_type("ClientStateAck")?)
-        .with_id(request_ids.next()?)
-        .add_typed_default(DataType::SessionId, number_to_data(session_id))
-        .add_typed_default(DataType::VersionNumber, number_to_data(version));
+    validate_account_state_snapshot(&initial_state)?;
+    let ack = CommunicationValue::new(CommunicationType::AccountStateApplied)
+        .with_id(request_ids.next()?);
     Ok((initial_state, ack))
 }
 
-fn validate_client_state_sync(state: &Value) -> Result<(), String> {
+fn validate_account_state_snapshot(state: &Value) -> Result<(), String> {
     let data = state
         .as_object()
-        .ok_or("ClientStateSync payload is not an object")?;
-    if required_integer(data, "SessionId")? <= 0 {
-        return Err("ClientStateSync SessionId must be a positive integer".into());
-    }
-    for field in ["VersionNumber", "CacheSchemaVersion"] {
-        if required_integer(data, field)? < 0 {
-            return Err(format!("ClientStateSync {field} must be nonnegative"));
-        }
-    }
-    match data.get("SyncMode").and_then(Value::as_str) {
-        Some("full" | "delta") => {}
-        _ => return Err("ClientStateSync SyncMode must be 'full' or 'delta'".into()),
-    }
+        .ok_or("AccountStateSnapshot payload is not an object")?;
     for field in ["Contacts", "Communities", "Calls", "Messages"] {
         if !data.get(field).is_some_and(Value::is_array) {
             return Err(format!("ClientStateSync {field} must be an array"));
@@ -674,33 +715,6 @@ fn required_integer(data: &Map<String, Value>, field: &str) -> Result<i128, Stri
         .ok_or_else(|| format!("ClientStateSync {field} must be an integer"))
 }
 
-async fn await_initial_state(
-    connection: &MTPConnection,
-) -> Result<(CommunicationValue, Vec<CommunicationValue>), String> {
-    let mut buffered = Vec::new();
-    let deadline = tokio::time::Instant::now() + INITIAL_SYNC_TIMEOUT;
-
-    loop {
-        let frame = tokio::time::timeout_at(deadline, connection.receive())
-            .await
-            .map_err(|_| "initial state synchronization timed out".to_string())?
-            .map_err(|error| format!("initial state synchronization failed: {error}"))?;
-
-        if frame.is_type(CommunicationType::ErrorNoIota) {
-            return Err("No Iota is currently connected".into());
-        }
-
-        if frame.get_type_name() == Some("ClientStateSync") {
-            return Ok((frame, buffered));
-        }
-
-        if buffered.len() == MAX_BUFFERED_INITIAL_FRAMES {
-            return Err("initial state synchronization buffered too many frames".into());
-        }
-        buffered.push(frame);
-    }
-}
-
 async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String> {
     if let (Some(url), Some(key)) = (
         config.forced_omikron_url.as_ref(),
@@ -719,10 +733,13 @@ async fn resolve_endpoint(config: &MtpConfig) -> Result<(String, String), String
         .connect_timeout(Duration::from_secs(10))
         .timeout(Duration::from_secs(20));
     #[cfg(target_os = "android")]
-    let client = client.tls_certs_only(
-        reqwest::Certificate::from_pem_bundle(android_root_certificates())
-            .map_err(|error| format!("invalid bundled root certificates: {error}"))?,
-    );
+    let client = {
+        let roots = android_root_certificates()?;
+        client.tls_certs_only(
+            reqwest::Certificate::from_pem_bundle(&roots)
+                .map_err(|error| format!("invalid Android root certificates: {error}"))?,
+        )
+    };
     let response = client
         .build()
         .map_err(|error| error.to_string())?
@@ -824,9 +841,24 @@ async fn send_sealed_relay(request: SealedRelayRequest) -> Result<Value, String>
 async fn handle_push(
     generation: u64,
     notification_tx: &mpsc::Sender<CommunicationValue>,
+    connection: &Arc<ManagedConnection>,
     frame: CommunicationValue,
 ) {
     let manager = manager();
+    if frame.is_type(CommunicationType::SessionActivitySet) {
+        if let Some(id) = frame.id() {
+            let response = CommunicationValue::new(CommunicationType::SessionActivitySet)
+                .with_id(id)
+                .add_typed_default(
+                    DataType::Foreground,
+                    DataValue::Bool(manager.ui_visible.load(Ordering::SeqCst)),
+                );
+            if let Err(error) = connection.mtp.sender.send(&response).await {
+                eprintln!("failed to answer foreground query: {error}");
+            }
+        }
+        return;
+    }
     if let Ok(message) = frame_to_json(&frame) {
         manager.emit(MtpEvent::Message {
             generation,
@@ -846,7 +878,14 @@ async fn handle_push(
             }
         }
     }
-    if frame.is_type(CommunicationType::MessageLive) && !manager.ui_visible.load(Ordering::SeqCst) {
+    let suppress_notification = frame
+        .get_data(DataType::SuppressNotification)
+        .and_then(DataValue::as_bool)
+        .unwrap_or(false);
+    if frame.is_type(CommunicationType::MessageLive)
+        && !manager.ui_visible.load(Ordering::SeqCst)
+        && !suppress_notification
+    {
         if notification_tx.try_send(frame).is_err() {
             eprintln!("background message notification queue is full");
         }
@@ -1002,23 +1041,11 @@ fn decode_sdk_bytes(value: &str) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(target_os = "android")]
-fn android_root_certificates() -> &'static Vec<u8> {
-    static ROOTS: OnceLock<Vec<u8>> = OnceLock::new();
-    ROOTS.get_or_init(|| {
-        let mut pem = Vec::new();
-        for certificate in webpki_root_certs::TLS_SERVER_ROOT_CERTS {
-            pem.extend_from_slice(b"-----BEGIN CERTIFICATE-----\n");
-            let encoded = STANDARD.encode(certificate.as_ref());
-            for line in encoded.as_bytes().chunks(64) {
-                pem.extend_from_slice(line);
-                pem.push(b'\n');
-            }
-            pem.extend_from_slice(b"-----END CERTIFICATE-----\n");
-        }
-        pem.extend_from_slice(ROOT_YE_PEM);
-        pem.extend_from_slice(YE1_PEM);
-        pem
-    })
+fn android_root_certificates() -> Result<Vec<u8>, String> {
+    let mut pem = android::root_certificates()?;
+    pem.extend_from_slice(ROOT_YE_PEM);
+    pem.extend_from_slice(YE1_PEM);
+    Ok(pem)
 }
 
 fn container_value(value: &DataValue, field: DataType) -> Option<&DataValue> {
@@ -1282,7 +1309,7 @@ mod tests {
     }
 
     fn valid_initial_state() -> CommunicationValue {
-        CommunicationValue::new(communication_type("ClientStateSync").unwrap())
+        CommunicationValue::new(CommunicationType::AccountStateSnapshot)
             .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
             .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
             .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))
@@ -1299,15 +1326,15 @@ mod tests {
         let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids).unwrap();
 
         assert_eq!(state["SyncMode"], "full");
-        assert_eq!(ack.get_type_name(), Some("ClientStateAck"));
+        assert_eq!(ack.get_type_name(), Some("AccountStateApplied"));
         assert_eq!(ack.id(), Some(1));
     }
 
     #[test]
     fn malformed_initial_state_does_not_prepare_ack() {
         let ids = RequestIdAllocator::new();
-        let malformed = valid_initial_state()
-            .add_typed_default(DataType::SyncMode, DataValue::Str("invalid".into()));
+        let malformed = CommunicationValue::new(CommunicationType::AccountStateSnapshot)
+            .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1));
 
         assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
         assert_eq!(
@@ -1320,7 +1347,7 @@ mod tests {
     #[test]
     fn malformed_nested_initial_state_does_not_prepare_ack() {
         let ids = RequestIdAllocator::new();
-        let malformed = CommunicationValue::new(communication_type("ClientStateSync").unwrap())
+        let malformed = CommunicationValue::new(CommunicationType::AccountStateSnapshot)
             .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
             .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
             .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))
@@ -1359,10 +1386,24 @@ pub fn mtp_status() -> MtpSnapshot {
 
 #[tauri::command]
 pub fn mtp_store_credentials(config: MtpConfig) -> Result<(), String> {
+    let config = validate_config(config)?;
     let serialized = serde_json::to_string(&config).map_err(|error| error.to_string())?;
     android_store_config(&serialized)?;
-    *manager().config.write().expect("config lock poisoned") = Some(config);
+    #[cfg(target_os = "android")]
+    android_set_enabled(true)?;
+    if manager().is_enabled() {
+        manager().configure_and_start(config);
+    } else {
+        *manager().config.write().expect("config lock poisoned") = Some(config);
+    }
     Ok(())
+}
+
+#[tauri::command]
+pub fn mtp_clear_credentials() -> Result<(), String> {
+    manager().stop();
+    *manager().config.write().expect("config lock poisoned") = None;
+    android_clear_config()
 }
 
 #[tauri::command]
@@ -1371,13 +1412,28 @@ pub fn mtp_has_credentials() -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub fn mtp_load_keyring() -> Option<String> {
-    manager()
-        .config
-        .read()
-        .expect("config lock poisoned")
-        .as_ref()
-        .map(|config| config.keyring.clone())
+pub fn mtp_load_keyring() -> Result<Option<String>, String> {
+    #[cfg(target_os = "android")]
+    {
+        let Some(serialized) = android_load_config()? else {
+            return Ok(None);
+        };
+        let config = serde_json::from_str(serialized.as_str())
+            .map_err(|error| format!("invalid stored MTP config: {error}"))?;
+        let config = validate_config(config)?;
+        let keyring = config.keyring.clone();
+        *manager().config.write().expect("config lock poisoned") = Some(config);
+        Ok(Some(keyring))
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(manager()
+            .config
+            .read()
+            .expect("config lock poisoned")
+            .as_ref()
+            .map(|config| config.keyring.clone()))
+    }
 }
 
 #[tauri::command]
@@ -1426,6 +1482,10 @@ pub fn mtp_post_message_notification(
 
 #[cfg(not(target_os = "android"))]
 fn android_store_config(_: &str) -> Result<(), String> {
+    Ok(())
+}
+#[cfg(not(target_os = "android"))]
+fn android_clear_config() -> Result<(), String> {
     Ok(())
 }
 #[cfg(not(target_os = "android"))]
@@ -1522,6 +1582,64 @@ mod android {
             )
             .map_err(|e| e.to_string())?;
             Ok(())
+        })
+    }
+
+    pub fn clear_config() -> Result<(), String> {
+        with_env(|env, host| {
+            env.call_method(
+                host.bridge.as_obj(),
+                jni_str!("clearConfig"),
+                jni_sig!("(Landroid/content/Context;)V"),
+                &[JValue::Object(host.context.as_obj())],
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })
+    }
+
+    pub fn load_config() -> Result<Option<String>, String> {
+        with_env(|env, host| {
+            let value = env
+                .call_method(
+                    host.bridge.as_obj(),
+                    jni_str!("loadConfig"),
+                    jni_sig!("(Landroid/content/Context;)Ljava/lang/String;"),
+                    &[JValue::Object(host.context.as_obj())],
+                )
+                .and_then(|value| value.l())
+                .map_err(|e| e.to_string())?;
+            if value.is_null() {
+                return Ok(None);
+            }
+            let value = env
+                .cast_local::<JString>(value)
+                .map_err(|e| e.to_string())?;
+            value
+                .mutf8_chars(env)
+                .map(|value| Some(value.to_str().into_owned()))
+                .map_err(|e| e.to_string())
+        })
+    }
+
+    pub fn root_certificates() -> Result<Vec<u8>, String> {
+        with_env(|env, host| {
+            let value = env
+                .call_method(
+                    host.bridge.as_obj(),
+                    jni_str!("trustedCertificates"),
+                    jni_sig!("()Ljava/lang/String;"),
+                    &[],
+                )
+                .and_then(|value| value.l())
+                .map_err(|e| e.to_string())?;
+            let value = env
+                .cast_local::<JString>(value)
+                .map_err(|e| e.to_string())?;
+            value
+                .mutf8_chars(env)
+                .map(|value| value.to_str().as_bytes().to_vec())
+                .map_err(|e| e.to_string())
         })
     }
 
@@ -1662,8 +1780,12 @@ mod android {
     ) {
         let _ = env.with_env(|env| {
             if let Ok(config) = config.mutf8_chars(env) {
-                if let Ok(config) = serde_json::from_str(config.to_str().as_ref()) {
-                    super::manager().configure_and_start(config);
+                match serde_json::from_str(config.to_str().as_ref()) {
+                    Ok(config) => match super::validate_config(config) {
+                        Ok(config) => super::manager().configure_and_start(config),
+                        Err(error) => eprintln!("invalid native MTP config: {error}"),
+                    },
+                    Err(error) => eprintln!("failed to deserialize native MTP config: {error}"),
                 }
             }
             Ok::<_, jni::errors::Error>(())
@@ -1713,9 +1835,11 @@ mod android {
 
 #[cfg(target_os = "android")]
 use android::{
-    cancel_notification as android_cancel_notification, has_config as android_has_config,
+    cancel_notification as android_cancel_notification, clear_config as android_clear_config,
+    has_config as android_has_config,
     is_ignoring_battery_optimizations as android_is_ignoring_battery_optimizations,
-    notify as android_notify, request_battery_exemption as android_request_battery_exemption,
+    load_config as android_load_config, notify as android_notify,
+    request_battery_exemption as android_request_battery_exemption,
     set_enabled as android_set_enabled, status as android_status,
     store_config as android_store_config,
 };

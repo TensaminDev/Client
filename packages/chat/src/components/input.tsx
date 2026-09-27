@@ -230,8 +230,6 @@ export default function InputComponent({
     }
   }
 
-  const isMobile = useIsMobile();
-
   function handleGifPopoverResizeStart(
     event: React.PointerEvent<HTMLDivElement>,
   ) {
@@ -285,6 +283,7 @@ export default function InputComponent({
 
   const { ownId, replyMessage, replyUserId } = useReplyMessage();
 
+  const isMobile = useIsMobile();
   return (
     <div className="flex flex-col">
       {/* reply */}
@@ -301,14 +300,14 @@ export default function InputComponent({
       <Card
         ref={inputBoxRef}
         className={cn(
-          "ring-0! rounded-none border-b-0 border-t border-x border-input/70 pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
-          isMobile ? "border-0 border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
+          "rounded-none border-1! border-b-0! border-(--input)! pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
+          isMobile ? "border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
         )}
       >
         <CardHeader className="relative p-0 flex flex-col">
           <div className="w-full flex items-center">
             <Input
-              className="w-full p-2"
+              className="w-full p-2 px-3"
               onControllerChange={setComposer}
               paddingY="13px"
               paddingX="13px"
@@ -345,7 +344,6 @@ export default function InputComponent({
                   render={({ onClick }) => (
                     <Button
                       onClick={onClick}
-                      aria-label="Open emoji picker"
                       className="w-9 h-9! p-0"
                       variant="ghost"
                     >
@@ -389,7 +387,6 @@ export default function InputComponent({
                     render={({ onClick }) => (
                       <Button
                         onClick={onClick}
-                        aria-label="Open GIF picker"
                         className="w-9 h-9! p-0"
                         variant="ghost"
                       >

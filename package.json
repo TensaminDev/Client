@@ -45,8 +45,8 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
-    "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.29/methanium-ui.tgz",
-    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-a135d0f/mtp-0.3.0.tgz",
+    "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.44/methanium-ui.tgz",
+    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-bb0f682/mtp-0.3.0.tgz",
     "sonner": "^2.0.8"
   }
 }

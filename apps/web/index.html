@@ -5,8 +5,28 @@
     <link rel="icon" href="./favicon.ico" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
+    <style>
+      html,
+      body,
+      #root {
+        background: #ffffff;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html,
+        body,
+        #root {
+          background: #171717;
+        }
+      }
+    </style>
+    <script>
+      if (matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
     <title>Tensamin</title>
   </head>
   <body>

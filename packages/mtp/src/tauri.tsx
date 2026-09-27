@@ -9,6 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   ConnectionState,
+  MTPClient,
   MTPProxyConnection,
   type MTPFrame,
   type MTPProxyAdapter,
@@ -20,6 +21,7 @@ import {
   type Contacts,
 } from "@tensamin/shared/data";
 import { log } from "@tensamin/shared/log";
+import { getAppFocused, subscribeAppFocus } from "@tensamin/shared/focus";
 
 import {
   type BoundSendFn,
@@ -77,7 +79,7 @@ export function TauriProvider(props: {
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
   const [clientState, setClientState] = useState<
-    ProtocolMessage<"ClientStateSync">["data"] | null
+    ProtocolMessage<"AccountStateSnapshot">["data"] | null
   >(null);
   const generationRef = useRef(0);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
@@ -96,7 +98,7 @@ export function TauriProvider(props: {
     };
   });
 
-  // The server sends ClientStateSync automatically after every login.
+  // The native backend loads an AccountStateSnapshot after every login.
   const applySnapshot = useCallback(async (next: NativeSnapshot) => {
     if (next.generation < generationRef.current) return;
     generationRef.current = next.generation;
@@ -116,7 +118,8 @@ export function TauriProvider(props: {
       return;
     }
     try {
-      const state = await mtpSchemas.ClientStateSync.response.parseAsync(
+      await MTPClient.init();
+      const state = await mtpSchemas.AccountStateSnapshot.response.parseAsync(
         next.state,
       );
       setFreshContacts(state.Contacts);
@@ -129,7 +132,7 @@ export function TauriProvider(props: {
       setSnapshot({
         ...next,
         identified: false,
-        error: "Invalid ClientStateSync payload",
+        error: "Invalid AccountStateSnapshot payload",
       });
     }
   }, []);
@@ -149,11 +152,19 @@ export function TauriProvider(props: {
     () =>
       subscribe("GetStates", (message) => {
         setFreshContacts((contacts) =>
-          removeMissingContacts(contacts, message),
+          removeMissingContacts(contacts, message.data.MissingUserIds ?? []),
         );
       }),
     [subscribe],
   );
+
+  useEffect(() => {
+    if (clientState?.PresenceSnapshotComplete) {
+      setFreshContacts((contacts) =>
+        removeMissingContacts(contacts, clientState.MissingUserIds),
+      );
+    }
+  }, [clientState]);
 
   useEffect(() => {
     const messageLive = subscribe("MessageLive", ({ data }) => {
@@ -230,19 +241,26 @@ export function TauriProvider(props: {
 
   useEffect(() => {
     if (props.blockConnection) return;
+    void invoke<string | null>("mtp_load_keyring")
+      .then((keyring) => {
+        if (keyring) return invoke("mtp_set_enabled", { enabled: true });
+      })
+      .catch((error) => {
+        log(0, "mtp", "red", "Failed to start native MTP service", error);
+      });
+  }, [props.blockConnection]);
+
+  useEffect(() => {
+    if (props.blockConnection) return;
     const updateVisibility = () => {
       void invoke("mtp_set_ui_visible", {
-        visible: document.visibilityState === "visible" && document.hasFocus(),
+        visible: getAppFocused(),
       });
     };
     updateVisibility();
-    document.addEventListener("visibilitychange", updateVisibility);
-    window.addEventListener("focus", updateVisibility);
-    window.addEventListener("blur", updateVisibility);
+    const unsubscribe = subscribeAppFocus(updateVisibility);
     return () => {
-      document.removeEventListener("visibilitychange", updateVisibility);
-      window.removeEventListener("focus", updateVisibility);
-      window.removeEventListener("blur", updateVisibility);
+      unsubscribe();
       void invoke("mtp_set_ui_visible", { visible: false });
     };
   }, [props.blockConnection]);
@@ -254,7 +272,8 @@ export function TauriProvider(props: {
         setFreshContacts((contacts) =>
           removeMissingContacts(
             contacts,
-            response as ProtocolMessage<"GetStates">,
+            (response as ProtocolMessage<"GetStates">).data.MissingUserIds ??
+              [],
           ),
         );
       }
@@ -290,6 +309,7 @@ export function TauriProvider(props: {
     <MTPContext.Provider
       value={{
         send,
+        sendCallControl: (_ownerOmikronId, ...args) => send(...args),
         sendSealedRelay,
         subscribe,
         addInterceptor,
@@ -300,6 +320,9 @@ export function TauriProvider(props: {
         freshCalls,
         clientState,
         contextReady: connected && snapshot.identified,
+        sessionEstablished: connected && snapshot.identified,
+        connectionStatus: null,
+        retryConnection: () => location.reload(),
         loadingDescription: connected
           ? "Waiting for authenticated session"
           : "Establishing native transport channel",

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./context": "./src/context.tsx"
+    "./authorize": "./src/authorize.tsx"
   },
   "scripts": {
     "format": "pnpm exec prettier --write .",
@@ -13,13 +13,9 @@
   },
   "dependencies": {
     "@methanium/ui": "*",
-    "@tanstack/react-router": "^1.170.21",
-    "@tensamin/crypto": "workspace:*",
+    "@tauri-apps/api": "^2.11.1",
     "@tensamin/mtp": "workspace:*",
-    "@tensamin/shared": "workspace:*",
-    "@tensamin/storage": "workspace:*",
-    "@tensamin/tauri": "workspace:*",
-    "@tensamin/identity": "workspace:*",
+    "lucide-react": "^1.29.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }

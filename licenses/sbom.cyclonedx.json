@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-08-09T22:09:04.469Z",
+    "timestamp": "2026-09-25T19:09:26.052Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -53,41 +53,6 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40fontsource-variable/public-sans@5.3.0",
-      "name": "@fontsource-variable/public-sans",
-      "version": "5.3.0",
-      "purl": "pkg:npm/%40fontsource-variable/public-sans@5.3.0",
-      "description": "Self-host the Public Sans font in a neatly bundled NPM package.",
-      "licenses": [
-        {
-          "license": {
-            "id": "OFL-1.1"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://fontsource.org/fonts/public-sans"
-        },
-        {
-          "type": "vcs",
-          "url": "git+https://github.com/fontsource/font-files.git"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/@fontsource-variable_public-sans@5.3.0"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "apps/web/node_modules/@fontsource-variable/public-sans"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bomRef": "pkg:npm/%40livekit/components-react@2.9.23",
       "name": "@livekit/components-react",
       "version": "2.9.23",
@@ -118,15 +83,15 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40methanium/ui@0.0.28",
+      "bomRef": "pkg:npm/%40methanium/ui@0.0.44",
       "name": "@methanium/ui",
-      "version": "0.0.28",
-      "purl": "pkg:npm/%40methanium/ui@0.0.28",
+      "version": "0.0.44",
+      "purl": "pkg:npm/%40methanium/ui@0.0.44",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@methanium_ui@0.0.28"
+          "value": "licenses/@methanium_ui@0.0.44"
         },
         {
           "name": "local:sourcePackageDir",
@@ -617,10 +582,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.66.0",
+      "bomRef": "pkg:npm/%40typescript-eslint/parser@8.67.0",
       "name": "@typescript-eslint/parser",
-      "version": "8.66.0",
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.66.0",
+      "version": "8.67.0",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.67.0",
       "description": "An ESLint custom parser which leverages TypeScript ESTree",
       "licenses": [
         {
@@ -642,7 +607,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@typescript-eslint_parser@8.66.0"
+          "value": "licenses/@typescript-eslint_parser@8.67.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -951,10 +916,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/fallow@3.14.0",
+      "bomRef": "pkg:npm/fallow@3.17.0",
       "name": "fallow",
-      "version": "3.14.0",
-      "purl": "pkg:npm/fallow@3.14.0",
+      "version": "3.17.0",
+      "purl": "pkg:npm/fallow@3.17.0",
       "description": "Codebase intelligence for TypeScript and JavaScript. Free static analysis of code and styles, optional paid runtime intelligence (Fallow Runtime). Quality, risk, architecture, dependencies, duplication, and design-system drift for humans, CI, and the agents writing your code. Zero-config framework support.",
       "licenses": [
         {
@@ -976,7 +941,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/fallow@3.14.0"
+          "value": "licenses/fallow@3.17.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1083,51 +1048,20 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/motion@13.0.0",
-      "name": "motion",
-      "version": "13.0.0",
-      "purl": "pkg:npm/motion@13.0.0",
-      "description": "An animation library for JavaScript and React.",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/motiondivision/motion"
-        }
-      ],
-      "properties": [
-        {
-          "name": "local:licenseFolder",
-          "value": "licenses/motion@13.0.0"
-        },
-        {
-          "name": "local:sourcePackageDir",
-          "value": "packages/chat/node_modules/motion"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bomRef": "pkg:npm/mtp@0.2.0",
+      "bomRef": "pkg:npm/mtp@0.3.0",
       "name": "mtp",
-      "version": "0.2.0",
-      "purl": "pkg:npm/mtp@0.2.0",
+      "version": "0.3.0",
+      "purl": "pkg:npm/mtp@0.3.0",
       "description": "MTP TypeScript SDK",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/mtp@0.2.0"
+          "value": "licenses/mtp@0.3.0"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "packages/mtp/node_modules/mtp"
+          "value": "apps/web/node_modules/mtp"
         }
       ]
     },
@@ -1619,10 +1553,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/vitest@4.1.10",
+      "bomRef": "pkg:npm/vitest@4.1.11",
       "name": "vitest",
-      "version": "4.1.10",
-      "purl": "pkg:npm/vitest@4.1.10",
+      "version": "4.1.11",
+      "purl": "pkg:npm/vitest@4.1.11",
       "description": "Next generation testing framework powered by Vite",
       "licenses": [
         {
@@ -1644,7 +1578,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/vitest@4.1.10"
+          "value": "licenses/vitest@4.1.11"
         },
         {
           "name": "local:sourcePackageDir",

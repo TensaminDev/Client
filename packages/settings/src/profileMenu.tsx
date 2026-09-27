@@ -14,10 +14,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@methanium/ui";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { parseTuFileContent } from "@tensamin/storage/credentials";
 import { useSettingsProfiles } from "./profiles";
+
+function relativeTime(timestamp: number) {
+  const seconds = Math.round((timestamp - Date.now()) / 1_000);
+  const compact = (value: number, unit: string) =>
+    value === 0
+      ? "now"
+      : value < 0
+        ? `${Math.abs(value)}${unit} ago`
+        : `in ${value}${unit}`;
+  if (Math.abs(seconds) < 60) return compact(seconds, "s");
+  const minutes = Math.round(seconds / 60);
+  if (Math.abs(minutes) < 60) return compact(minutes, "m");
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) return compact(hours, "h");
+  return compact(Math.round(hours / 24), "d");
+}
 
 export function SettingsProfileMenu() {
   const {
@@ -37,6 +53,8 @@ export function SettingsProfileMenu() {
   const [dialogError, setDialogError] = useState("");
   const [saving, setSaving] = useState(false);
   const [accountFile, setAccountFile] = useState<File | null>(null);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
+  const accountFileRef = useRef<HTMLInputElement>(null);
 
   function openNameDialog(kind: "create" | "rename") {
     setName(kind === "rename" ? (activeProfile?.name ?? "") : "");
@@ -85,15 +103,24 @@ export function SettingsProfileMenu() {
     }
   }
 
+  function openFilePicker() {
+    setFilePickerOpen(true);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => accountFileRef.current?.click()),
+    );
+  }
+
+  useEffect(() => {
+    const input = accountFileRef.current;
+    const closeFilePicker = () => setFilePickerOpen(false);
+    input?.addEventListener("cancel", closeFilePicker);
+    return () => input?.removeEventListener("cancel", closeFilePicker);
+  }, [dialog]);
+
   return (
     <>
       <div className="flex gap-2 w-full">
-        <Button
-          aria-label="Create profile"
-          className="size-9 p-0"
-          variant="outline"
-          onClick={() => openNameDialog("create")}
-        >
+        <Button variant="ghost" onClick={() => openNameDialog("create")}>
           <Plus className="size-4" />
         </Button>
         <Select
@@ -104,32 +131,42 @@ export function SettingsProfileMenu() {
           <SelectTrigger className="w-full md:max-w-43">
             <SelectValue>{activeProfile?.name ?? "Local settings"}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="p-1">
-            {profiles.map((profile) => (
-              <SelectItem
-                disabled={!profile.available}
-                key={profile.id}
-                value={profile.id}
-              >
-                {profile.name}
-              </SelectItem>
-            ))}
+          <SelectContent className="w-max min-w-(--anchor-width) p-1">
+            {[...profiles]
+              .sort(
+                (left, right) =>
+                  (right.document?.lastUsedAt ?? 0) -
+                  (left.document?.lastUsedAt ?? 0),
+              )
+              .map((profile) => (
+                <SelectItem
+                  disabled={!profile.available}
+                  key={profile.id}
+                  value={profile.id}
+                >
+                  <span className="flex min-w-0 items-center gap-6">
+                    <span className="max-w-64 truncate">{profile.name}</span>
+                    {profile.document && (
+                      <span className="text-muted-foreground text-xs">
+                        {relativeTime(profile.document.lastUsedAt)}
+                      </span>
+                    )}
+                  </span>
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         <Button
-          aria-label="Rename profile"
-          className="size-9 p-0"
           disabled={!activeProfile?.available}
-          variant="outline"
+          variant="ghost"
           onClick={() => openNameDialog("rename")}
         >
           <Pencil className="size-4" />
         </Button>
         <Button
-          aria-label="Delete profile"
-          className="size-9 p-0"
-          disabled={!activeProfile}
-          variant="outline"
+          className="text-destructive"
+          disabled={!activeProfile || profiles.length <= 1}
+          variant="ghost"
           onClick={() => {
             setDialogError("");
             setDialog("delete");
@@ -173,15 +210,29 @@ export function SettingsProfileMenu() {
               />
               {dialog === "create" && (
                 <>
-                  <Label htmlFor="settings-profile-account">Account file</Label>
+                  <Label htmlFor="settings-profile-account">
+                    Add credentials
+                  </Label>
                   <Input
                     accept=".tu"
+                    className="hidden"
                     id="settings-profile-account"
+                    ref={accountFileRef}
                     type="file"
-                    onChange={(event) =>
-                      setAccountFile(event.currentTarget.files?.[0] ?? null)
-                    }
+                    onChange={(event) => {
+                      setFilePickerOpen(false);
+                      setAccountFile(event.currentTarget.files?.[0] ?? null);
+                    }}
                   />
+                  <Button
+                    disabled={filePickerOpen}
+                    variant="outline"
+                    onClick={openFilePicker}
+                  >
+                    {filePickerOpen && <Loader2 className="animate-spin" />}
+                    {accountFile?.name ?? "Add .tu file"}
+                    <p className="text-xs text-muted-foreground">(optional)</p>
+                  </Button>
                 </>
               )}
             </div>

@@ -1,7 +1,0 @@
-- Implement context menu features
-  - Forward
-  - Pin Message
-- Placeholder image if media fails to load
-- Drop any unique reactions above 10
-- Reply jumping
-- Add emoji picker

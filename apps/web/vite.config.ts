@@ -8,7 +8,6 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { mtp } from "mtp/vite";
 import { methaniumUi } from "@methanium/ui/vite";
-import { tensaminPwa } from "@tensamin/pwa/vite";
 
 const host = process.env.TAURI_DEV_HOST;
 const appDir = dirname(fileURLToPath(import.meta.url));
@@ -20,14 +19,14 @@ function deepFilterAssetHeaders(rootDir: string): Plugin {
     next: () => void,
   ) => {
     const url = req.url ? new URL(req.url, "http://localhost") : null;
-    if (url?.pathname !== "/assets/v2/models/DeepFilterNet3_onnx.tar.gz") {
+    if (url?.pathname !== "/assets/v3/models/DeepFilterNet3_onnx.tar.gz") {
       next();
       return;
     }
 
     const modelPath = resolve(
       rootDir,
-      "assets/v2/models/DeepFilterNet3_onnx.tar.gz",
+      "assets/v3/models/DeepFilterNet3_onnx.tar.gz",
     );
     const stat = statSync(modelPath);
     res.statusCode = 200;
@@ -155,7 +154,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    ...tensaminPwa(),
     methaniumUi({ defaultThemeId: "tensamin" }),
     deepFilterAssetHeaders(resolve(appDir, "public")),
     mtp({

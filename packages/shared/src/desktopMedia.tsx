@@ -25,8 +25,12 @@ export type DesktopScreenShareCapabilities = {
 declare global {
   interface Window {
     tensaminDesktop?: {
+      deepLinks?: {
+        onOpened?: (callback: (url: string) => void) => () => void;
+      };
       media?: {
         getScreenShareCapabilities?: () => Promise<DesktopScreenShareCapabilities>;
+        getGpuFeatureStatus?: () => Promise<{ videoEncode: string }>;
         listScreenShareSources?: () => Promise<DesktopScreenShareSource[]>;
         listScreenShareAudioOutputs?: () => Promise<
           DesktopScreenShareAudioOutput[]

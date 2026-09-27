@@ -2,6 +2,46 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 
 import type { StorageContextValue } from "./context";
 
+export function normalizeHttpsUrl(value: string, label: string) {
+  const url = new URL(value.trim());
+  if (url.protocol !== "https:" || !url.hostname) {
+    throw new Error(`${label} must be a valid HTTPS URL`);
+  }
+  if (url.username || url.password) {
+    throw new Error(`${label} must not contain credentials`);
+  }
+  return url;
+}
+
+export async function persistNativeMtpConfig({
+  storage,
+  userId,
+  keyring,
+  omegaUrl,
+}: {
+  storage: Pick<StorageContextValue, "load">;
+  userId: number;
+  keyring: string;
+  omegaUrl?: string;
+}) {
+  if (!isTauri()) return;
+  const [storedOmegaUrl, forcedOmikronUrl, forcedOmikronPublicKey] =
+    await Promise.all([
+      omegaUrl ?? storage.load("omega_url"),
+      storage.load("forced_omikron_url"),
+      storage.load("forced_omikron_public_key"),
+    ]);
+  await invoke("mtp_store_credentials", {
+    config: {
+      userId,
+      keyring,
+      omegaUrl: storedOmegaUrl,
+      forcedOmikronUrl,
+      forcedOmikronPublicKey,
+    },
+  });
+}
+
 export function parseTuFileContent(rawFileContent: string): {
   userId: number;
   privateKey: string;
@@ -45,22 +85,7 @@ export async function persistMtpCredentials({
     ? `https://${domain}/`
     : await storage.load("omega_url");
   if (domain) await storage.save("omega_url", omegaUrl);
-
-  if (isTauri()) {
-    const [forcedOmikronUrl, forcedOmikronPublicKey] = await Promise.all([
-      storage.load("forced_omikron_url"),
-      storage.load("forced_omikron_public_key"),
-    ]);
-    await invoke("mtp_store_credentials", {
-      config: {
-        userId,
-        keyring,
-        omegaUrl,
-        forcedOmikronUrl,
-        forcedOmikronPublicKey,
-      },
-    });
-  }
+  await persistNativeMtpConfig({ storage, userId, keyring, omegaUrl });
 
   await storage.save("mtp_keyring", keyring, { secure: true });
   await storage.save("session_id", Date.now());

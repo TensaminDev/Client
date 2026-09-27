@@ -3,7 +3,6 @@
   "entry": [
     "src/index.{ts,tsx,js,jsx}",
     "src/main.{ts,tsx,js,jsx}",
-    "apps/pwa/src/serviceWorker.ts",
     "apps/tauri/render-version.ts",
     "packages/**/*.test.ts"
   ],

@@ -26,20 +26,24 @@ object MtpSecureStore {
 
   fun loadConfig(context: Context): String? {
     val payload = preferences(context).getString(CONFIG, null) ?: return null
-    return runCatching {
-      val bytes = Base64.decode(payload, Base64.NO_WRAP)
-      require(bytes.size > 12)
-      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-      cipher.init(
-        Cipher.DECRYPT_MODE,
-        getOrCreateKey(),
-        GCMParameterSpec(128, bytes.copyOfRange(0, 12)),
-      )
-      String(cipher.doFinal(bytes.copyOfRange(12, bytes.size)), Charsets.UTF_8)
-    }.getOrNull()
+    val bytes = Base64.decode(payload, Base64.NO_WRAP)
+    require(bytes.size > 12)
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(
+      Cipher.DECRYPT_MODE,
+      getOrCreateKey(),
+      GCMParameterSpec(128, bytes.copyOfRange(0, 12)),
+    )
+    return String(cipher.doFinal(bytes.copyOfRange(12, bytes.size)), Charsets.UTF_8)
   }
 
-  fun hasConfig(context: Context): Boolean = loadConfig(context) != null
+  fun hasConfig(context: Context): Boolean =
+    runCatching { loadConfig(context) != null }.getOrDefault(false)
+
+  fun clear(context: Context) {
+    preferences(context).edit().clear().commit()
+    KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(KEY_ALIAS)
+  }
 
   fun setEnabled(context: Context, enabled: Boolean) {
     preferences(context).edit().putBoolean(ENABLED, enabled).apply()

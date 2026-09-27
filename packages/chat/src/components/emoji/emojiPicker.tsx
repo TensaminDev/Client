@@ -15,7 +15,6 @@ export default function EmojiPicker({
       {emojis.map((emoji) => (
         <Button
           key={emoji}
-          aria-label={`Select ${emoji}`}
           className="h-10 w-10 p-0"
           onClick={() => onSelect(emoji)}
           type="button"

@@ -19,9 +19,10 @@ function soundUrl(sound: SoundName) {
   return `/sounds/${sound}.wav`;
 }
 
-export function playSound(sound: SoundName, loop = false) {
+export function playSound(sound: SoundName, loop = false, volume = 1) {
   const audio = new Audio(soundUrl(sound));
   audio.loop = loop;
+  audio.volume = Math.max(0, Math.min(1, volume));
   void audio.play().catch(() => undefined);
   return audio;
 }

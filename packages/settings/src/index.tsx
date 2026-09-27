@@ -5,14 +5,14 @@ import { settingsPages } from "./manifest";
 
 export { SettingsProfilesProvider, useSettingsProfiles } from "./profiles";
 export type { SettingsProfile } from "./profiles";
-export { SettingsProfileOnboarding } from "./profileOnboarding";
+export { SettingsProfileMenu } from "./profileMenu";
 
 export function createSettingsRoute(parentRoute: AnyRoute) {
   const settingsRoute = createRoute({
     getParentRoute: () => parentRoute,
     path: "settings",
     component: SettingsLayout,
-    staticData: { showMobileNavbar: true },
+    staticData: { showMobileNavbar: false },
   });
 
   return settingsRoute.addChildren(
@@ -21,7 +21,7 @@ export function createSettingsRoute(parentRoute: AnyRoute) {
         getParentRoute: () => settingsRoute,
         path: page.path,
         component: page.component,
-        staticData: { showMobileNavbar: true },
+        staticData: { showMobileNavbar: false },
       }),
     ),
   );

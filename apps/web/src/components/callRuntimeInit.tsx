@@ -31,14 +31,7 @@ function createCallTrayIcon(color: string, speaking: boolean) {
 export default function CallRuntimeInit() {
   const callInvitePopup = useInitializeCall();
   const { load } = useStorage();
-  const {
-    themeColor,
-    themePalette,
-    themePrimaryColor,
-    themePolarity,
-    themeTint,
-    themeCustomCss,
-  } = useTheme();
+  const { selectedTheme, resolvedPolarity } = useTheme();
   const [localUserId, setLocalUserId] = useState(-1);
   const [primaryColor, setPrimaryColor] = useState("");
   const inCall = useCall((state) => state.state === "open");
@@ -66,14 +59,7 @@ export default function CallRuntimeInit() {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [
-    themeColor,
-    themeCustomCss,
-    themePalette,
-    themePolarity,
-    themePrimaryColor,
-    themeTint,
-  ]);
+  }, [selectedTheme, resolvedPolarity]);
 
   useEffect(() => {
     const iconDataUrl = primaryColor

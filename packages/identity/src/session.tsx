@@ -23,7 +23,8 @@ interface SessionContextType {
     lastMessageAt: number,
   ) => void;
   insertContact: (userId: number) => void;
-  insertCall: (call: Calls[number]) => void;
+  upsertCall: (call: Calls[number]) => void;
+  removeCall: (callId: string) => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -35,13 +36,31 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const [contacts, setContacts] = useState<Contacts>([]);
   const [communities, setCommunities] = useState<Communities>([]);
   const [localCalls, setLocalCalls] = useState<Calls>([]);
+  const [removedCallIds, setRemovedCallIds] = useState<string[]>([]);
   const [accountId, setAccountId] = useState<number | null>(null);
   const calls = [
-    ...freshCalls,
-    ...localCalls.filter(
-      (call) => !freshCalls.some((fresh) => fresh.CallId === call.CallId),
+    ...localCalls,
+    ...freshCalls.filter(
+      (call) =>
+        !removedCallIds.includes(call.CallId) &&
+        !localCalls.some((local) => local.CallId === call.CallId),
     ),
   ];
+
+  useEffect(() => {
+    if (!contextReady) return;
+    setLocalCalls((previous) => previous.filter((call) =>
+      freshCalls.some((fresh) => fresh.CallId === call.CallId),
+    ));
+  }, [contextReady, freshCalls]);
+
+  useEffect(() => {
+    setRemovedCallIds((previous) =>
+      previous.filter((callId) =>
+        freshCalls.some((call) => call.CallId === callId),
+      ),
+    );
+  }, [freshCalls]);
 
   useEffect(() => {
     void load("user_id").then(setAccountId);
@@ -145,15 +164,24 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const insertCall = (call: Calls[number]) => {
-    setLocalCalls((prevCalls) => {
-      if (prevCalls.some((prevCall) => prevCall.CallId === call.CallId)) {
-        return prevCalls;
-      }
+  const upsertCall = useCallback((call: Calls[number]) => {
+    setRemovedCallIds((previous) =>
+      previous.filter((callId) => callId !== call.CallId),
+    );
+    setLocalCalls((previous) => [
+      call,
+      ...previous.filter((entry) => entry.CallId !== call.CallId),
+    ]);
+  }, []);
 
-      return [call, ...prevCalls];
-    });
-  };
+  const removeCall = useCallback((callId: string) => {
+    setRemovedCallIds((previous) =>
+      previous.includes(callId) ? previous : [...previous, callId],
+    );
+    setLocalCalls((previous) =>
+      previous.filter((call) => call.CallId !== callId),
+    );
+  }, []);
 
   return (
     <SessionContext.Provider
@@ -164,7 +192,8 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         moveUserIdToTop,
         setNotifications,
         insertContact,
-        insertCall,
+        upsertCall,
+        removeCall,
       }}
     >
       {children}

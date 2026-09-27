@@ -84,13 +84,13 @@
             hash = "sha256-/4n8F0YLJaLncefKL907P5l+en1CTjpgdFmLBF3gbiQ=";
           };
           mtpSource = pkgs.fetchzip {
-            url = "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-a135d0f/mtp-0.3.0.tgz";
-            hash = "sha256-+HXhjEmcoE9JPB0eb6vc8N5uiiEpjHQQk0YY+8EuO4o=";
+            url = "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-bb0f682/mtp-0.3.0.tgz";
+            hash = "sha256-/KJkTro+1LPxghIMEUePZEL3KBO2wjG27C+FCZ56lvg=";
           };
           mtpCargoDeps = pkgs.rustPlatform.fetchCargoVendor {
             src = mtpSource;
             sourceRoot = "source/.rust";
-            hash = "sha256-4xIxeOtoldHvBtDda1CBHWvUguoDG2m7QlPjl7n34fs=";
+            hash = "sha256-K4P/NZr5Y3zG3lrMxoenf9VMFz35V0vbRl7/7kycYuA=";
           };
           wasmBindgenCliSource = pkgs.fetchCrate {
             pname = "wasm-bindgen-cli";
@@ -121,7 +121,7 @@
               inherit (finalAttrs) pname version src;
               inherit pnpm;
               fetcherVersion = 4;
-              hash = "sha256-k9dKXVSXLVm1ffrQyaU6einpESh0LobjtDXXfqsrp3w=";
+              hash = "sha256-vQMHYyTgpTFxm+HACd/m30y6nWOyT79GMW8dK6UsRRw=";
             };
 
             nativeBuildInputs = with pkgs; [

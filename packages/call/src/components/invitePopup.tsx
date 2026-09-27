@@ -48,7 +48,6 @@ export default function InvitePopup({
               </Button>
               <Button
                 className="w-13 h-13!"
-                variant="subtleDefault"
                 onClick={() => onAccept(true)}
               >
                 <PhoneIncoming className="size-5" />

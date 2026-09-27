@@ -44,6 +44,15 @@ jobs:
         with:
           persist-credentials: false
       - run: git submodule update --init --recursive
+      - name: Align Tauri git dependencies
+        run: |
+          manifest=apps/tauri/src-tauri/Cargo.toml
+          build_revision=$(sed -nE 's/^tauri-build = .*rev = "([^"]+)".*/\1/p' "$manifest")
+          patch_revision=$(sed -nE '/^\[patch.crates-io.tauri\]/,/^rev = / s/^rev = "([^"]+)"/\1/p' "$manifest")
+          if [ "$build_revision" != "$patch_revision" ]; then
+            sed -i "/^\[patch.crates-io.tauri\]/,/^rev = / s/^rev = \".*\"/rev = \"$build_revision\"/" "$manifest"
+            nix develop .#tauri --command bash -lc 'cd apps/tauri/src-tauri && cargo update -p swift-rs'
+          fi
       - run: nix develop .#tauri --command bash -lc 'cd apps/tauri/src-tauri && cargo test'
 
   mobile:
@@ -55,6 +64,15 @@ jobs:
         with:
           persist-credentials: false
       - run: git submodule update --init --recursive
+      - name: Align Tauri git dependencies
+        run: |
+          manifest=apps/tauri/src-tauri/Cargo.toml
+          build_revision=$(sed -nE 's/^tauri-build = .*rev = "([^"]+)".*/\1/p' "$manifest")
+          patch_revision=$(sed -nE '/^\[patch.crates-io.tauri\]/,/^rev = / s/^rev = "([^"]+)"/\1/p' "$manifest")
+          if [ "$build_revision" != "$patch_revision" ]; then
+            sed -i "/^\[patch.crates-io.tauri\]/,/^rev = / s/^rev = \".*\"/rev = \"$build_revision\"/" "$manifest"
+            nix develop .#tauri --command bash -lc 'cd apps/tauri/src-tauri && cargo update -p swift-rs'
+          fi
       - run: nix develop .#tauri --command pnpm install --frozen-lockfile
       - run: nix develop .#tauri --command pnpm run build:packages
       - run: nix develop .#tauri --command pnpm --dir apps/tauri run build:mobile:ci

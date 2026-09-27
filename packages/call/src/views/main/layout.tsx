@@ -1,22 +1,19 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Actions from "../../components/actions";
-import TopBar from "../../components/top";
 import {
   setCallIsFullscreen,
   setScreenRef,
   triggerCallLayoutCalculation,
   useCall,
 } from "../../store";
-import { useIsMobile } from "@methanium/ui";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const screenRef = useRef<HTMLDivElement>(null);
-  const topBarRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
   const hideChromeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const [overlayInsets, setOverlayInsets] = useState({ top: 0, bottom: 0 });
+  const [overlayBottom, setOverlayBottom] = useState(0);
   const [isImmersiveChromeVisible, setIsImmersiveChromeVisible] =
     useState(false);
 
@@ -76,24 +73,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useLayoutEffect(() => {
-    const topBar = topBarRef.current;
     const actions = actionsRef.current;
 
-    if (!topBar || !actions) {
+    if (!actions) {
       return;
     }
 
-    const syncOverlayInsets = () => {
-      setOverlayInsets({
-        top: Math.ceil(topBar.getBoundingClientRect().height),
-        bottom: Math.ceil(actions.getBoundingClientRect().height),
-      });
-    };
+    const syncOverlayInset = () =>
+      setOverlayBottom(Math.ceil(actions.getBoundingClientRect().height));
 
-    syncOverlayInsets();
+    syncOverlayInset();
 
-    const observer = new ResizeObserver(syncOverlayInsets);
-    observer.observe(topBar);
+    const observer = new ResizeObserver(syncOverlayInset);
     observer.observe(actions);
 
     return () => {
@@ -130,8 +121,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setIsImmersiveChromeVisible(false);
   };
 
-  const isMobile = useIsMobile();
-
   return (
     <div
       ref={screenRef}
@@ -142,32 +131,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       onMouseMove={showImmersiveChrome}
       onMouseLeave={hideImmersiveChrome}
     >
-      {!isMobile && (
-        <div
-          ref={topBarRef}
-          className={`shrink-0 w-full z-40 transition-all duration-200 ${
-            isImmersiveFocusedView
-              ? immersiveChromeVisible
-                ? "opacity-100 translate-y-0 pointer-events-auto"
-                : "opacity-0 -translate-y-2 pointer-events-none"
-              : "opacity-100 translate-y-0"
-          }`}
-          style={{
-            position: usersInFocusedViewHidden ? "absolute" : "relative",
-            top: 0,
-            left: 0,
-          }}
-        >
-          <TopBar />
-        </div>
-      )}
       <div
         className="min-h-0 flex-1 w-full flex justify-center items-center overflow-hidden"
         style={
           usersInFocusedViewHidden && !isImmersiveFocusedView
             ? {
-                paddingTop: overlayInsets.top,
-                paddingBottom: overlayInsets.bottom,
+                paddingBottom: overlayBottom,
               }
             : undefined
         }

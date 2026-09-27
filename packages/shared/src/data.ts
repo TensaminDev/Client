@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ThemeDesign } from "@methanium/ui";
+import type { Theme, ThemeDesign } from "@methanium/ui";
 
 import {
   settingsStorageDefaults,
@@ -37,6 +37,50 @@ const blobId = z.string().refine((value) => {
   return length >= 1 && length <= 256;
 }, "BlobId must be between 1 and 256 UTF-8 bytes");
 const revision = z.number().int().nonnegative();
+const utf8Length = (value: string) =>
+  new TextEncoder().encode(value).byteLength;
+const assetId = z
+  .string()
+  .min(1)
+  .refine((value) => utf8Length(value) <= 256);
+const uploadId = z
+  .string()
+  .min(1)
+  .refine((value) => utf8Length(value) <= 128);
+const sha256 = protocolBytes.refine((value) => value.byteLength === 32);
+const sha256Response = protocolBytesResponse.refine(
+  (value) => value.byteLength === 32,
+);
+const syncedSetting = z.object({
+  SettingId: z.number().int().positive(),
+  SettingScope: z.enum(["user", "contact", "community"]),
+  SettingTarget: z.string(),
+  SettingsName: z.string().min(1),
+  Payload: z.string().refine((value) => utf8Length(value) <= 16 * 1024 * 1024),
+  VersionNumber: revision,
+});
+const userAssetMetadata = z.object({
+  AssetId: assetId,
+  Size: z.number().int().nonnegative(),
+  Sha256: sha256Response,
+  MimeType: z.string().min(1).max(255),
+  VersionNumber: revision,
+  CreatedAt: z.number(),
+  UpdatedAt: z.number(),
+});
+const userAssetUploadStatus = z.object({
+  UploadId: uploadId,
+  AssetId: assetId,
+  Size: z.number().int().nonnegative(),
+  Sha256: sha256Response,
+  MimeType: z.string().min(1).max(255),
+  Offset: z.number().int().nonnegative(),
+  State: z.enum(["uploading", "committed"]),
+  VersionNumber: revision.optional(),
+  CreatedAt: z.number(),
+  UpdatedAt: z.number(),
+  CommittedAt: z.number().optional(),
+});
 const userBlobMetadata = z.object({
   BlobId: blobId,
   VersionNumber: revision,
@@ -164,18 +208,19 @@ const authPayload = z.object({
     .array(
       z.object({
         CallId: z.string(),
+        OmikronId: z.number(),
         CallSecret: callSecretEnvelopeResponse.optional(),
         CallMembers: z.array(z.number()),
+        CallInvited: z.boolean().optional(),
+        SenderId: z.number().optional(),
+        CreatedAt: z.number().optional(),
       }),
     )
     .default([]),
 });
 
-const clientStateSync = authPayload.extend({
-  SessionId: z.number().int().positive(),
-  VersionNumber: z.number().int().nonnegative(),
-  CacheSchemaVersion: z.number().int().nonnegative(),
-  SyncMode: z.enum(["full", "delta"]),
+const accountStateSnapshot = authPayload.extend({
+  VersionNumber: revision,
   Messages: z.array(Message).default([]),
   DeletedMessageIds: z.array(z.number()).default([]),
   DeletedContactIds: z.array(z.number()).default([]),
@@ -191,6 +236,29 @@ const clientStateSync = authPayload.extend({
     .min(60_000)
     .max(31_536_000_000)
     .optional(),
+  UserStates: z
+    .array(
+      z
+        .object({
+          UserId: z.number().int().positive(),
+          UserState: z.enum([
+            "user_online",
+            "user_idle",
+            "user_dnd",
+            "user_wc",
+            "user_offline",
+            "iota_offline",
+            "user_borked",
+            "iota_online",
+            "iota_borked",
+          ]),
+        })
+        .nullable(),
+    )
+    .default([]),
+  MissingUserIds: z.array(z.number().int().positive()).default([]),
+  PresenceSnapshotComplete: z.boolean().default(false),
+  Settings: z.array(syncedSetting).default([]),
 });
 
 export type Contacts = z.infer<typeof authPayload.shape.Contacts>;
@@ -267,24 +335,19 @@ export const mtp = {
     request: z.object({}).optional(),
     response: authPayload,
   },
-  ClientConnected: {
+  AccountStateRequest: {
     request: z.object({
-      SessionId: z.number().int().positive(),
-      VersionNumber: z.number().int().nonnegative(),
-      CacheValid: z.boolean(),
-      CacheSchemaVersion: z.number().int().nonnegative(),
+      DeviceClass: z.enum(["desktop", "mobile", "web"]).optional(),
+      NotificationCapable: z.boolean().optional(),
     }),
-    response: clientStateSync,
+    response: accountStateSnapshot,
   },
-  ClientStateSync: {
+  AccountStateSnapshot: {
     request: z.object({}).optional(),
-    response: clientStateSync,
+    response: accountStateSnapshot,
   },
-  ClientStateAck: {
-    request: z.object({
-      SessionId: z.number().int().positive(),
-      VersionNumber: z.number().int().nonnegative(),
-    }),
+  AccountStateApplied: {
+    request: z.object({}),
     response: z.object({}),
   },
   UserBlobPut: {
@@ -304,16 +367,123 @@ export const mtp = {
     response: z.object({ Blobs: z.array(userBlobMetadata) }),
   },
   UserBlobDelete: {
-    request: z.object({ BlobId: blobId, ExpectedRevision: revision }),
+    request: z.object({
+      BlobId: blobId,
+      ExpectedRevision: revision.optional(),
+    }),
     response: z.object({ VersionNumber: revision.optional() }),
   },
   UserBlobChanged: {
     request: z.object({}).optional(),
-    response: userBlobMetadata
-      .pick({ BlobId: true, VersionNumber: true })
-      .extend({
-        Deleted: z.boolean(),
+    response: z.discriminatedUnion("Deleted", [
+      userBlobResponse.extend({ Deleted: z.literal(false) }),
+      userBlobMetadata.pick({ BlobId: true, VersionNumber: true }).extend({
+        Deleted: z.literal(true),
       }),
+    ]),
+  },
+  SyncedSettingSet: {
+    request: syncedSetting.pick({
+      SettingScope: true,
+      SettingTarget: true,
+      SettingsName: true,
+      Payload: true,
+    }),
+    response: syncedSetting,
+  },
+  SyncedSettingGet: {
+    request: syncedSetting.pick({
+      SettingScope: true,
+      SettingTarget: true,
+      SettingsName: true,
+    }),
+    response: syncedSetting,
+  },
+  SyncedSettingDelete: {
+    request: syncedSetting.pick({
+      SettingScope: true,
+      SettingTarget: true,
+      SettingsName: true,
+    }),
+    response: z.object({
+      SettingId: z.number().int().positive().optional(),
+      VersionNumber: revision.optional(),
+    }),
+  },
+  SyncedSettingsList: {
+    request: z.object({}).optional(),
+    response: z.object({ Settings: z.array(syncedSetting) }),
+  },
+  SyncedSettingChanged: {
+    request: z.object({}).optional(),
+    response: z.union([
+      syncedSetting,
+      z.object({
+        DeletedSettingIds: z.array(z.number().int().positive()),
+        VersionNumber: revision,
+      }),
+    ]),
+  },
+  UserAssetUploadStart: {
+    request: z.object({
+      UploadId: uploadId,
+      AssetId: assetId,
+      Size: z.number().int().nonnegative(),
+      Sha256: sha256,
+      MimeType: z.string().min(1).max(255),
+    }),
+    response: userAssetUploadStatus,
+  },
+  UserAssetUploadChunk: {
+    request: z.object({
+      UploadId: uploadId,
+      Offset: z.number().int().nonnegative(),
+      Blob: protocolBytes.refine(
+        (value) => value.byteLength > 0 && value.byteLength <= 8 * 1024 * 1024,
+      ),
+    }),
+    response: userAssetUploadStatus,
+  },
+  UserAssetUploadStatus: {
+    request: z.object({ UploadId: uploadId }),
+    response: userAssetUploadStatus,
+  },
+  UserAssetUploadCommit: {
+    request: z.object({ UploadId: uploadId }),
+    response: userAssetMetadata,
+  },
+  UserAssetUploadAbort: {
+    request: z.object({ UploadId: uploadId }),
+    response: z.object({ UploadId: uploadId }),
+  },
+  UserAssetGetChunk: {
+    request: z.object({
+      AssetId: assetId,
+      Offset: z.number().int().nonnegative(),
+      Amount: z
+        .number()
+        .int()
+        .positive()
+        .max(8 * 1024 * 1024),
+    }),
+    response: userAssetMetadata.extend({
+      Offset: z.number().int().nonnegative(),
+      Blob: protocolBytesResponse.refine(
+        (value) => value.byteLength <= 8 * 1024 * 1024,
+      ),
+    }),
+  },
+  UserAssetList: {
+    request: z.object({}).optional(),
+    response: z.object({ Assets: z.array(userAssetMetadata) }),
+  },
+  UserAssetDelete: {
+    request: z.object({ AssetId: assetId }),
+    response: userAssetMetadata.partial().required({ AssetId: true }),
+  },
+  UserAssetChanged: {
+    request: z.object({}).optional(),
+    response: userAssetMetadata.extend({ Deleted: z.boolean() }),
   },
   UserBlock: {
     request: z.object({ BlockedUserId: z.number().int().positive() }),
@@ -491,14 +661,24 @@ export const mtp = {
         SenderId: z.number(),
         LastMessageAt: z.number().optional(),
         Notifications: z.number().int().nonnegative().optional(),
+        SuppressNotification: z.boolean().optional(),
         Message: Message.extend({ SenderId: z.number().optional() }),
       })
-      .transform(({ SenderId, LastMessageAt, Notifications, Message }) => ({
-        SenderId,
-        LastMessageAt: LastMessageAt ?? Message.SendTime,
-        notifications: Notifications,
-        Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
-      })),
+      .transform(
+        ({
+          SenderId,
+          LastMessageAt,
+          Notifications,
+          SuppressNotification,
+          Message,
+        }) => ({
+          SenderId,
+          LastMessageAt: LastMessageAt ?? Message.SendTime,
+          notifications: Notifications,
+          suppressNotification: SuppressNotification ?? false,
+          Message: { ...Message, SenderId: Message.SenderId ?? SenderId },
+        }),
+      ),
   },
   ReadNotification: {
     request: z.object({
@@ -532,8 +712,11 @@ export const mtp = {
   MessageGet: {
     request: z.object({
       SendTime: z.number(),
+      ChatPartnerId: z.number().optional(),
     }),
-    response: Message,
+    response: Message.extend({ Offset: z.number().optional() }).transform(
+      ({ Offset, ...Message }) => ({ Message, Offset }),
+    ),
   },
   MessagesGet: {
     request: z.object({
@@ -576,38 +759,67 @@ export const mtp = {
       SendTime: z.number(),
     }),
   },
+  SessionActivitySet: {
+    request: z.object({
+      DeviceClass: z.enum(["desktop", "mobile", "web"]).optional(),
+      NotificationCapable: z.boolean().optional(),
+      Foreground: z.boolean().optional(),
+    }),
+    response: z.object({ Foreground: z.boolean().optional() }),
+  },
 
-  LoadTxtRecord: {
+  TAuthAuthorize: {
     request: z.object({
-      Path: z.string(),
+      AuthorizationRequest: z.string(),
+      Enabled: z.boolean(),
     }),
     response: z.object({
-      Content: z.string(),
+      AppId: z.string(),
+      AppName: z.string(),
+      Domain: z.string(),
+      RedirectUri: z.url(),
+      Scopes: z.array(z.string()),
+      State: z.string(),
+      Locator: z.string(),
+      AuthorizationCode: z.string().optional(),
     }),
   },
-  AuthenticateApp: {
-    request: z.object({
-      AppIdentifier: z.string(),
-    }),
-    response: z.object({
-      Challenge: z.base64(),
-    }),
+  TAuthGrantList: {
+    request: z.object({}),
+    response: z.object({ Json: z.string() }),
   },
-  CreateApp: {
-    request: z.object({
-      AppPublicKey: z.base64(),
-      AppIdentifier: z.string(),
-    }),
+  TAuthGrantRevoke: {
+    request: z.object({ AppId: z.string() }),
+    response: z.object({}),
+  },
+  TAuthGrantMetadataSet: {
+    request: z.object({ AppId: z.string(), Json: z.string() }),
     response: z.object({}),
   },
 
   // Calls
+  CallReserve: {
+    request: z.object({}),
+    response: z.object({ CallId: z.string(), OmikronId: z.number() }),
+  },
+  CallActivate: {
+    request: z.object({ CallId: z.string(), CallSecret: callSecretEnvelopeRequest }),
+    response: z.object({ CallToken: z.string(), CallEndpoint: z.string(), OmikronId: z.number(), CreatedAt: z.number() }),
+  },
+  CallEnded: {
+    request: z.object({}).optional(),
+    response: z.object({ CallId: z.string() }),
+  },
   CallToken: {
     request: z.object({
       CallId: z.string(),
+      CallSecret: callSecretEnvelopeRequest.optional(),
     }),
     response: z.object({
       CallToken: z.string(),
+      CallEndpoint: z.string(),
+      OmikronId: z.number(),
+      CreatedAt: z.number().optional(),
     }),
   },
   CallData: {
@@ -616,6 +828,8 @@ export const mtp = {
     }),
     response: z.object({
       UserIds: z.array(z.number()),
+      CreatedAt: z.number(),
+      CallSecret: callSecretEnvelopeResponse,
     }),
   },
   CallInvite: {
@@ -628,7 +842,43 @@ export const mtp = {
       CallId: z.string().optional(),
       CallSecret: callSecretEnvelopeResponse.optional(),
       SenderId: z.number().optional(),
+      ReceiverId: z.number().optional(),
+      OmikronId: z.number().optional(),
     }),
+  },
+  CallDisconnectUser: {
+    request: z.object({
+      CallId: z.string(),
+      UserId: z.number(),
+    }),
+    response: z.object({}),
+  },
+  CallTimeoutUser: {
+    request: z.object({
+      CallId: z.string(),
+      UserId: z.number(),
+      Untill: z.number(),
+    }),
+    response: z.object({
+      Timeout: z.number().optional(),
+    }),
+  },
+  CallSetAnonymousJoining: {
+    request: z.object({
+      CallId: z.string(),
+      Enabled: z.boolean(),
+    }),
+    response: z.object({
+      CallId: z.string().optional(),
+      Enabled: z.boolean().optional(),
+      Link: z.string().optional(),
+    }),
+  },
+  EndCall: {
+    request: z.object({
+      CallId: z.string(),
+    }),
+    response: z.object({}),
   },
   SetChatSecret: {
     request: z.object({
@@ -688,8 +938,9 @@ export interface Storage extends SettingsStorageDefaults {
   session_id: number;
   user_id: number;
   mtp_keyring: string;
+  mtp_reset_token: string;
+  pending_invitation_registration: string;
   onboarding_done: boolean;
-  onboarding_started: boolean;
   active_settings_profile_id: string;
   settings_profile_prompted_session_id: number;
   tauri_permissions_done: boolean;
@@ -702,6 +953,23 @@ export interface Storage extends SettingsStorageDefaults {
   forced_omikron_public_key: string | undefined;
   call_mute_range_start: number;
   call_mute_range_end: number;
+  call_microphone_device_id: string;
+  call_speaker_device_id: string;
+  call_noise_suppression_enabled: boolean;
+  call_noise_suppression_level: number;
+  call_echo_cancellation: boolean;
+  call_voice_isolation: boolean;
+  call_automatic_gain_control: boolean;
+  call_noise_gate_enabled: boolean;
+  call_event_sounds_enabled: boolean;
+  call_sound_volume: number;
+  call_screen_share_resolution: number;
+  call_screen_share_frame_rate: number;
+  call_screen_share_audio: boolean;
+  call_screen_share_volume: number;
+  call_screen_share_codec: "auto" | "vp8" | "vp9" | "h264" | "av1" | "h265";
+  call_camera_resolution: number;
+  call_camera_frame_rate: number;
   theme_color: string;
   theme_palette: Record<
     | "base00"
@@ -729,6 +997,8 @@ export interface Storage extends SettingsStorageDefaults {
   theme_custom_css: string;
   theme_parent: string;
   theme_design: ThemeDesign;
+  theme_selected_id: string;
+  theme_custom_themes: Theme[];
   chat_trusted_domains: string[];
   chat_picker_saved_media: string[];
   chat_picker_saved_media_groups: ChatPickerMediaGroup[];
@@ -745,8 +1015,9 @@ export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
   mtp_keyring: "",
+  mtp_reset_token: "",
+  pending_invitation_registration: "",
   onboarding_done: false,
-  onboarding_started: false,
   active_settings_profile_id: "",
   settings_profile_prompted_session_id: 0,
   tauri_permissions_done: false,
@@ -758,8 +1029,25 @@ export const storageDefaults: Storage = {
   omega_url: "https://omega.tensamin.net",
   forced_omikron_url: undefined,
   forced_omikron_public_key: undefined,
-  call_mute_range_start: -55,
-  call_mute_range_end: -45,
+  call_mute_range_start: -75,
+  call_mute_range_end: -65,
+  call_microphone_device_id: "default",
+  call_speaker_device_id: "default",
+  call_noise_suppression_enabled: true,
+  call_noise_suppression_level: 100,
+  call_echo_cancellation: true,
+  call_voice_isolation: false,
+  call_automatic_gain_control: false,
+  call_noise_gate_enabled: true,
+  call_event_sounds_enabled: true,
+  call_sound_volume: 100,
+  call_screen_share_resolution: 1080,
+  call_screen_share_frame_rate: 30,
+  call_screen_share_audio: false,
+  call_screen_share_volume: 100,
+  call_screen_share_codec: "auto",
+  call_camera_resolution: 1080,
+  call_camera_frame_rate: 30,
   theme_color: "",
   theme_palette: null,
   theme_primary_color: "",
@@ -769,14 +1057,12 @@ export const storageDefaults: Storage = {
   theme_custom_css: "",
   theme_parent: "tensamin",
   theme_design: {
-    density: 1,
-    borderWidth: 1,
-    shadowStrength: 0,
     fontScale: 1,
-    headingWeight: 600,
-    motion: 1,
     fontFamily: "public-sans",
+    monoFontFamily: "jetbrains-mono",
   },
+  theme_selected_id: "tensamin",
+  theme_custom_themes: [],
   chat_trusted_domains: [
     // Other platforms
     "cdn.discordapp.com",

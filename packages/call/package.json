@@ -10,7 +10,8 @@
     "./screen": "./src/screen.tsx",
     "./utils": "./src/utils.ts",
     "./sidebarBox": "./src/components/sidebarBox.tsx",
-    "./popout": "./src/components/popout.tsx"
+    "./popout": "./src/components/popout.tsx",
+    "./warningIndicator": "./src/components/warningIndicator.tsx"
   },
   "scripts": {
     "format": "pnpm exec prettier --write .",

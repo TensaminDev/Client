@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { toast as sonnerToast } from "@methanium/ui";
+import { isTauri } from "@tauri-apps/api/core";
 import { base64ToBytes, ConnectionState, MTPClient } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import {
@@ -8,24 +9,24 @@ import {
   type Communities,
   type Contacts,
 } from "@tensamin/shared/data";
+import { getAppFocused } from "@tensamin/shared/focus";
 import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 
 import {
   type BoundSendFn,
   MTPContext,
-  type MTPContextType,
   type ProtocolMessage,
   removeMissingContacts,
   updateContactNotifications,
   type SealedRelaySend,
   useMessageHandlers,
+  type MTPConnectionStatus,
 } from "./mtpContext";
 import {
   DISCOVERY_TIMEOUT,
   INITIAL_SYNC_TIMEOUT,
   RECONNECT_JITTER,
-  RECONNECT_LONG_INTERVAL,
   RECONNECT_TRIES,
   RETRY_INTERVAL,
   STATE_ACK_TIMEOUT,
@@ -86,65 +87,33 @@ function withDeadline<T>(
   });
 }
 
-async function completeInitialSynchronization(
+async function initializeAccountState(
   client: BrowserMtpClient,
-  subscribe: MTPContextType["subscribe"],
   signal: AbortSignal,
   syncTimeoutMs = INITIAL_SYNC_TIMEOUT,
-  ackTimeoutMs = STATE_ACK_TIMEOUT,
-): Promise<ProtocolMessage<"ClientStateSync">> {
-  // The server sends ClientStateSync automatically after every login.
-  const stateSync = new Promise<ProtocolMessage<"ClientStateSync">>(
-    (resolve, reject) => {
-      let unsubscribeStateSync = () => {};
-      let unsubscribeNoIota = () => {};
-      const cleanup = () => {
-        clearTimeout(timeout);
-        unsubscribeStateSync();
-        unsubscribeNoIota();
-        signal.removeEventListener("abort", onAbort);
-      };
-      const onAbort = () => {
-        cleanup();
-        reject(abortError(signal));
-      };
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error("Initial state synchronization timed out"));
-      }, syncTimeoutMs);
-      signal.addEventListener("abort", onAbort, { once: true });
-      if (signal.aborted) {
-        onAbort();
-        return;
-      }
-      unsubscribeStateSync = subscribe("ClientStateSync", (message) => {
-        cleanup();
-        resolve(message);
-      });
-      unsubscribeNoIota = subscribe("ErrorNoIota", () => {
-        cleanup();
-        reject(new Error("No Iota is currently connected"));
-      });
-    },
-  );
-  const [, state] = await Promise.all([
-    withDeadline(
-      client.auth(),
-      syncTimeoutMs,
-      "MTP authentication timed out",
-      signal,
-    ),
-    stateSync,
-  ]);
+): Promise<ProtocolMessage<"AccountStateSnapshot">> {
   await withDeadline(
-    client.request("ClientStateAck", {
-      SessionId: state.data.SessionId,
-      VersionNumber: state.data.VersionNumber,
-    }),
-    ackTimeoutMs,
-    "State acknowledgement timed out",
+    client.auth(),
+    syncTimeoutMs,
+    "MTP authentication timed out",
     signal,
   );
+  const deviceClass = isTauri()
+    ? "mobile"
+    : "tensaminDesktop" in window
+      ? "desktop"
+      : /Android|iPhone|iPad/i.test(navigator.userAgent)
+        ? "mobile"
+        : "web";
+  const state = (await withDeadline(
+    client.request("AccountStateRequest", {
+      DeviceClass: deviceClass,
+      NotificationCapable: true,
+    }),
+    syncTimeoutMs,
+    "Initial state synchronization timed out",
+    signal,
+  )) as ProtocolMessage<"AccountStateSnapshot">;
   if (signal.aborted) throw abortError(signal);
   return state;
 }
@@ -165,6 +134,31 @@ function protocolErrorDetails(error: unknown) {
   };
 }
 
+function protocolEventForLog(event: {
+  type?: unknown;
+  data?: unknown;
+}): unknown {
+  if (
+    (event.type === "UserBlobChanged" ||
+      event.type === "UserBlobGet" ||
+      event.type === "UserBlobPut") &&
+    event.data &&
+    typeof event.data === "object" &&
+    "Blob" in event.data
+  ) {
+    const data = event.data as { Blob?: unknown };
+    const { Blob: blob, ...metadata } = data;
+    return {
+      ...event,
+      data: {
+        ...metadata,
+        BlobBytes: blob instanceof Uint8Array ? blob.byteLength : undefined,
+      },
+    };
+  }
+  return event;
+}
+
 export function BrowserProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
@@ -175,42 +169,48 @@ export function BrowserProvider(props: {
   );
   const [identified, setIdentified] = useState(false);
   const [identifying, setIdentifying] = useState(false);
-  const [connectionToast, setConnectionToast] = useState<
-    | { kind: "reconnecting"; attempt: number }
-    | { kind: "failed"; description: string }
-    | null
-  >(null);
+  const [sessionEstablished, setSessionEstablished] = useState(false);
+  const [connectionStatus, setConnectionStatus] =
+    useState<MTPConnectionStatus | null>(null);
   const [freshCommunities, setFreshCommunities] = useState<Communities>([]);
   const [freshContacts, setFreshContacts] = useState<Contacts>([]);
   const [freshCalls, setFreshCalls] = useState<Calls>([]);
   const [clientState, setClientState] = useState<
-    ProtocolMessage<"ClientStateSync">["data"] | null
+    ProtocolMessage<"AccountStateSnapshot">["data"] | null
   >(null);
   const clientRef = useRef<BrowserMtpClient | null>(null);
+  const callControlRequestRef = useRef<
+    | ((
+        ownerOmikronId: number | undefined,
+        ...args: Parameters<BoundSendFn>
+      ) => ReturnType<BoundSendFn>)
+    | null
+  >(null);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
     useMessageHandlers();
   const connected = readyState === ConnectionState.Connected;
+  const retryConnectionRef = useRef(() => {});
 
   useEffect(() => {
-    if (!connectionToast) {
+    if (!connectionStatus) {
       sonnerToast.dismiss(CONNECTION_TOAST_ID);
       return;
     }
-    if (connectionToast.kind === "reconnecting") {
-      sonnerToast.loading(
-        `Reconnecting to server... (attempt ${connectionToast.attempt} of ${RECONNECT_TRIES})`,
-        { id: CONNECTION_TOAST_ID, duration: Infinity },
-      );
+    if (connectionStatus.kind === "reconnecting" || !sessionEstablished) {
       return;
     }
     sonnerToast.error("Connection failed", {
       id: CONNECTION_TOAST_ID,
-      description: connectionToast.description,
+      description: connectionStatus.description,
       icon: null,
       duration: Infinity,
       closeButton: true,
+      action: {
+        label: "Retry",
+        onClick: () => retryConnectionRef.current(),
+      },
     });
-  }, [connectionToast]);
+  }, [connectionStatus, sessionEstablished]);
 
   const [mtpUrl, setMtpUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -233,7 +233,8 @@ export function BrowserProvider(props: {
           setFreshContacts((contacts) =>
             removeMissingContacts(
               contacts,
-              response as ProtocolMessage<"GetStates">,
+              (response as ProtocolMessage<"GetStates">).data.MissingUserIds ??
+                [],
             ),
           );
         }
@@ -250,6 +251,18 @@ export function BrowserProvider(props: {
         throw error;
       }
     },
+    [],
+  );
+  const sendToCallOwner = useMemo(
+    () =>
+      async (
+        ownerOmikronId: number | undefined,
+        ...args: Parameters<BoundSendFn>
+      ) => {
+        const request = callControlRequestRef.current;
+        if (!request) throw new Error("mtp call control is not connected");
+        return request(ownerOmikronId, ...args);
+      },
     [],
   );
   const sendSealedRelay: SealedRelaySend = useMemo(
@@ -289,17 +302,16 @@ export function BrowserProvider(props: {
       const shortRetry = attempts <= RECONNECT_TRIES;
       if (!shortRetry) {
         log(0, "mtp", "red", "Reconnection attempts exhausted", error);
-        setConnectionToast({
+        setConnectionStatus({
           kind: "failed",
           description:
             error instanceof Error
-              ? `${error.message.split(":")[0]}. Retrying in the background.`
-              : "Connection lost. Retrying in the background.",
+              ? `${error.message.split(":")[0]}.`
+              : "Connection lost.",
         });
-      } else {
-        setConnectionToast({ kind: "reconnecting", attempt: attempts });
+        return;
       }
-      const baseDelay = shortRetry ? RETRY_INTERVAL : RECONNECT_LONG_INTERVAL;
+      setConnectionStatus({ kind: "reconnecting", attempt: attempts });
       const jitter = 1 + (Math.random() * 2 - 1) * RECONNECT_JITTER;
       reconnectScheduled = true;
       reconnectTimer = setTimeout(
@@ -308,7 +320,7 @@ export function BrowserProvider(props: {
           reconnectTimer = null;
           void connect();
         },
-        Math.round(baseDelay * jitter),
+        Math.round(RETRY_INTERVAL * jitter),
       );
     };
 
@@ -320,6 +332,7 @@ export function BrowserProvider(props: {
       let connectionReady = false;
       let detachSubscriptions = () => {};
       let unsubscribeNoIota = () => {};
+      const ownerClients = new Map<number, BrowserMtpClient>();
       const attemptAbort = new AbortController();
       const cleanup = () => {
         attemptAbort.abort(
@@ -327,6 +340,10 @@ export function BrowserProvider(props: {
         );
         unsubscribeNoIota();
         detachSubscriptions();
+        for (const ownerClient of ownerClients.values())
+          ownerClient.disconnect();
+        ownerClients.clear();
+        callControlRequestRef.current = null;
         client?.disconnect();
         if (clientRef.current === client) clientRef.current = null;
         if (generation === connectionGeneration) {
@@ -349,6 +366,7 @@ export function BrowserProvider(props: {
         const forcedOmikronPublicKey = await load("forced_omikron_public_key");
         let url = null;
         let omikronPublicKey = null;
+        let primaryOmikronId: number | undefined;
         if (forcedOmikronUrl && forcedOmikronPublicKey) {
           url = forcedOmikronUrl;
           omikronPublicKey = forcedOmikronPublicKey;
@@ -366,6 +384,7 @@ export function BrowserProvider(props: {
           if (!data.ok)
             throw new Error(`Omikron discovery failed: HTTP ${data.status}`);
           const omikronData = (await data.json()) as {
+            id: number;
             ip_address: string;
             port: number;
             public_key: string;
@@ -373,12 +392,14 @@ export function BrowserProvider(props: {
           if (
             !omikronData.ip_address ||
             !omikronData.port ||
+            !omikronData.id ||
             !omikronData.public_key
           ) {
             throw new Error("Invalid Omikron data");
           }
           url = `https://${omikronData.ip_address}:${omikronData.port}`;
           omikronPublicKey = omikronData.public_key;
+          primaryOmikronId = omikronData.id;
         }
         if (!url || !omikronPublicKey) {
           throw new Error("Missing Omikron URL or Public Key");
@@ -433,7 +454,7 @@ export function BrowserProvider(props: {
                     : event.direction === "send"
                       ? "> " + event.type
                       : event.type,
-                event,
+                protocolEventForLog(event),
               );
             }
           },
@@ -444,7 +465,97 @@ export function BrowserProvider(props: {
         }
         const activeClient = client;
         clientRef.current = activeClient;
+        callControlRequestRef.current = async (
+          ownerOmikronId,
+          type,
+          data,
+          options,
+        ) => {
+          if (ownerOmikronId == null || ownerOmikronId === primaryOmikronId) {
+            return activeClient.request(type, data, options);
+          }
+
+          let ownerClient = ownerClients.get(ownerOmikronId);
+          if (!ownerClient) {
+            const response = await fetch(
+              `${mtpUrl}api/get/omikron/${ownerOmikronId}`,
+              {
+                signal: attemptAbort.signal,
+              },
+            );
+            if (!response.ok) {
+              throw new Error(
+                `Call owner discovery failed: HTTP ${response.status}`,
+              );
+            }
+            const owner = (await response.json()) as {
+              id: number;
+              ip_address: string;
+              port: number;
+              public_key: string;
+            };
+            if (
+              owner.id !== ownerOmikronId ||
+              !owner.ip_address ||
+              !owner.port ||
+              !owner.public_key
+            ) {
+              throw new Error(
+                "Call owner discovery returned an invalid Omikron",
+              );
+            }
+            ownerClient = await createBrowserClient({
+              url: `https://${owner.ip_address}:${owner.port}`,
+              credentials: {
+                clientId: userId,
+                keyring: base64ToBytes(keyring),
+              },
+              hostPublicKey: { value: owner.public_key, encoding: "base64" },
+              descriptor: "client-call-control",
+              pings: true,
+              securityProfile: { protectedSignatureSuite: "dual" },
+              logger: (event) => {
+                if (event.type !== "Ping" && event.type !== "Pong") {
+                  log(
+                    2,
+                    "mtp",
+                    "purple",
+                    `call owner ${ownerOmikronId}: ${event.type}`,
+                  );
+                }
+              },
+            });
+            try {
+              await ownerClient.auth();
+            } catch (error) {
+              ownerClient.disconnect();
+              throw error;
+            }
+            ownerClients.set(ownerOmikronId, ownerClient);
+          }
+          return ownerClient.request(type, data, options);
+        };
         detachSubscriptions = attachSubscriptions(activeClient);
+        const unsubscribeForeground = activeClient.subscribe(
+          "SessionActivitySet",
+          (message) => {
+            if (clientRef.current !== activeClient || !message.id) return;
+            void activeClient
+              .send(
+                "SessionActivitySet",
+                { Foreground: getAppFocused() },
+                { id: message.id },
+              )
+              .catch((error) =>
+                log(1, "mtp", "yellow", "Foreground reply failed", error),
+              );
+          },
+        );
+        const detachMessages = detachSubscriptions;
+        detachSubscriptions = () => {
+          unsubscribeForeground();
+          detachMessages();
+        };
         unsubscribeNoIota = subscribe("ErrorNoIota", () => {
           if (clientRef.current !== activeClient || failed) return;
           failed = true;
@@ -455,22 +566,33 @@ export function BrowserProvider(props: {
         });
         setReadyState(activeClient.state);
         setIdentifying(true);
-        const finalResponse = await completeInitialSynchronization(
+        const finalResponse = await initializeAccountState(
           activeClient,
-          subscribe,
           attemptAbort.signal,
         );
         if (disposed || clientRef.current !== activeClient) return;
         setFreshContacts(finalResponse.data.Contacts);
+        if (finalResponse.data.PresenceSnapshotComplete) {
+          setFreshContacts((contacts) =>
+            removeMissingContacts(contacts, finalResponse.data.MissingUserIds),
+          );
+        }
         setFreshCommunities(finalResponse.data.Communities);
         setFreshCalls(finalResponse.data.Calls);
         setClientState(finalResponse.data);
+        await withDeadline(
+          activeClient.request("AccountStateApplied", {}),
+          STATE_ACK_TIMEOUT,
+          "Account state acknowledgement timed out",
+          attemptAbort.signal,
+        );
         connectionReady = true;
         setIdentifying(false);
         setIdentified(true);
+        setSessionEstablished(true);
         clearReconnectTimer();
         attempts = 0;
-        setConnectionToast(null);
+        setConnectionStatus(null);
         resolveConnectionRef.current?.();
       } catch (connectError) {
         if (disposed || generation !== connectionGeneration) {
@@ -494,15 +616,24 @@ export function BrowserProvider(props: {
       }
     }
 
+    retryConnectionRef.current = () => {
+      if (disposed) return;
+      clearReconnectTimer();
+      attempts = 0;
+      setConnectionStatus(null);
+      void connect();
+    };
     void connect();
     return () => {
       disposed = true;
+      retryConnectionRef.current = () => {};
       clearReconnectTimer();
       cleanupConnection();
       setReadyState(ConnectionState.Disconnected);
       setIdentified(false);
       setIdentifying(false);
-      setConnectionToast(null);
+      setSessionEstablished(false);
+      setConnectionStatus(null);
       sonnerToast.dismiss(CONNECTION_TOAST_ID);
     };
   }, [attachSubscriptions, load, mtpUrl, props.blockConnection, subscribe]);
@@ -526,7 +657,7 @@ export function BrowserProvider(props: {
     () =>
       subscribe("GetStates", (message) => {
         setFreshContacts((contacts) =>
-          removeMissingContacts(contacts, message),
+          removeMissingContacts(contacts, message.data.MissingUserIds ?? []),
         );
       }),
     [subscribe],
@@ -560,11 +691,11 @@ export function BrowserProvider(props: {
   }, [subscribe]);
 
   const loadingDescription = useMemo(() => {
-    if (!mtpUrl) return "Loading connection details";
+    if (!mtpUrl) return "Finding an Omikron...";
     if (readyState === ConnectionState.Connecting || !connected) {
-      return "Establishing transport channel";
+      return "Connecting to Omikron...";
     }
-    if (identifying || !identified) return "Waiting for authenticated session";
+    if (identifying || !identified) return "Authenticating...";
     return "Loading...";
   }, [connected, identified, identifying, readyState, mtpUrl]);
   const contextReady = connected && identified && mtpUrl !== null;
@@ -595,6 +726,7 @@ export function BrowserProvider(props: {
     <MTPContext.Provider
       value={{
         send: sendQueued,
+        sendCallControl: sendToCallOwner,
         sendSealedRelay,
         subscribe,
         addInterceptor,
@@ -605,7 +737,10 @@ export function BrowserProvider(props: {
         freshCalls,
         clientState,
         contextReady,
+        sessionEstablished,
         loadingDescription,
+        connectionStatus,
+        retryConnection: () => retryConnectionRef.current(),
       }}
     >
       {props.children}

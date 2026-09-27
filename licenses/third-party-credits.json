@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-09T22:09:04.466Z",
-  "packageCount": 52,
+  "generatedAt": "2026-09-25T19:09:26.051Z",
+  "packageCount": 49,
   "packages": [
     {
       "name": "@eslint/js",
@@ -14,19 +14,6 @@
       ],
       "licenseFolder": "licenses/@eslint_js@10.0.1",
       "sourcePackageDir": "apps/web/node_modules/@eslint/js"
-    },
-    {
-      "name": "@fontsource-variable/public-sans",
-      "version": "5.3.0",
-      "license": "OFL-1.1",
-      "homepage": "https://fontsource.org/fonts/public-sans",
-      "repository": "git+https://github.com/fontsource/font-files.git",
-      "description": "Self-host the Public Sans font in a neatly bundled NPM package.",
-      "files": [
-        "LICENSE"
-      ],
-      "licenseFolder": "licenses/@fontsource-variable_public-sans@5.3.0",
-      "sourcePackageDir": "apps/web/node_modules/@fontsource-variable/public-sans"
     },
     {
       "name": "@livekit/components-react",
@@ -43,7 +30,7 @@
     },
     {
       "name": "@methanium/ui",
-      "version": "0.0.28",
+      "version": "0.0.44",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
@@ -51,7 +38,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@methanium_ui@0.0.28",
+      "licenseFolder": "licenses/@methanium_ui@0.0.44",
       "sourcePackageDir": "apps/tauri/node_modules/@methanium/ui"
     },
     {
@@ -240,7 +227,7 @@
     },
     {
       "name": "@typescript-eslint/parser",
-      "version": "8.66.0",
+      "version": "8.67.0",
       "license": "MIT",
       "homepage": "https://typescript-eslint.io/packages/parser",
       "repository": "https://github.com/typescript-eslint/typescript-eslint.git",
@@ -248,7 +235,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@typescript-eslint_parser@8.66.0",
+      "licenseFolder": "licenses/@typescript-eslint_parser@8.67.0",
       "sourcePackageDir": "node_modules/@typescript-eslint/parser"
     },
     {
@@ -371,13 +358,13 @@
     },
     {
       "name": "fallow",
-      "version": "3.14.0",
+      "version": "3.17.0",
       "license": "MIT",
       "homepage": "https://docs.fallow.tools",
       "repository": "git+https://github.com/fallow-rs/fallow.git",
       "description": "Codebase intelligence for TypeScript and JavaScript. Free static analysis of code and styles, optional paid runtime intelligence (Fallow Runtime). Quality, risk, architecture, dependencies, duplication, and design-system drift for humans, CI, and the agents writing your code. Zero-config framework support.",
       "files": [],
-      "licenseFolder": "licenses/fallow@3.14.0",
+      "licenseFolder": "licenses/fallow@3.17.0",
       "sourcePackageDir": "node_modules/fallow"
     },
     {
@@ -420,28 +407,15 @@
       "sourcePackageDir": "apps/web/node_modules/lucide-react"
     },
     {
-      "name": "motion",
-      "version": "13.0.0",
-      "license": "MIT",
-      "homepage": null,
-      "repository": "https://github.com/motiondivision/motion",
-      "description": "An animation library for JavaScript and React.",
-      "files": [
-        "LICENSE.md"
-      ],
-      "licenseFolder": "licenses/motion@13.0.0",
-      "sourcePackageDir": "packages/chat/node_modules/motion"
-    },
-    {
       "name": "mtp",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
       "description": "MTP TypeScript SDK",
       "files": [],
-      "licenseFolder": "licenses/mtp@0.2.0",
-      "sourcePackageDir": "packages/mtp/node_modules/mtp"
+      "licenseFolder": "licenses/mtp@0.3.0",
+      "sourcePackageDir": "apps/web/node_modules/mtp"
     },
     {
       "name": "prettier",
@@ -627,7 +601,7 @@
     },
     {
       "name": "vitest",
-      "version": "4.1.10",
+      "version": "4.1.11",
       "license": "MIT",
       "homepage": "https://vitest.dev",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
@@ -635,7 +609,7 @@
       "files": [
         "LICENSE.md"
       ],
-      "licenseFolder": "licenses/vitest@4.1.10",
+      "licenseFolder": "licenses/vitest@4.1.11",
       "sourcePackageDir": "node_modules/vitest"
     },
     {

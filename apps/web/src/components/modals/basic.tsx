@@ -31,8 +31,8 @@ export function Basic({
     <Button
       render={<div />}
       nativeButton={false}
-      variant="outline"
-      className="relative outline-none! animate-in fade-in duration-300 h-auto w-full justify-start gap-2.5 rounded-xl min-h-12.5!"
+      variant="ghost"
+      className="relative outline-none! animate-in fade-in duration-300 h-auto w-full justify-start gap-2.5 rounded-xl min-h-11! px-1.5!"
     >
       <div className="relative shrink-0 overflow-visible">
         <Avatar>
@@ -60,11 +60,11 @@ export function Basic({
           </TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex w-full flex-col items-start justify-center text-[15px]">
+      <div className="flex h-full w-full flex-col items-start justify-center text-[15px]">
         <p>{display}</p>
         <p className="text-xs text-muted-foreground">{user.Status}</p>
       </div>
-      <div className="pr-1">{extra}</div>
+      <div className="pr-1 w-full h-full flex justify-end">{extra}</div>
     </Button>
   );
 }

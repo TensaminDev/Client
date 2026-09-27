@@ -29,10 +29,11 @@ function buildBalancedRows(itemCount: number, rows: number) {
   );
 }
 
-function calculateOptimalGridLayout(
+export function calculateOptimalGridLayout(
   containerWidth: number,
   containerHeight: number,
   itemCount: number,
+  gap = GRID_GAP,
 ): GridLayout {
   if (containerWidth <= 0 || containerHeight <= 0 || itemCount <= 0) {
     return {
@@ -55,9 +56,9 @@ function calculateOptimalGridLayout(
   for (let columns = 1; columns <= itemCount; columns++) {
     const rows = Math.ceil(itemCount / columns);
     const maxTileWidth =
-      (containerWidth - GRID_GAP * Math.max(columns - 1, 0)) / columns;
+      (containerWidth - gap * Math.max(columns - 1, 0)) / columns;
     const maxTileHeight =
-      (containerHeight - GRID_GAP * Math.max(rows - 1, 0)) / rows;
+      (containerHeight - gap * Math.max(rows - 1, 0)) / rows;
     const tileWidth = Math.min(maxTileWidth, maxTileHeight * TILE_ASPECT_RATIO);
     const tileHeight = tileWidth / TILE_ASPECT_RATIO;
 

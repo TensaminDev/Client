@@ -50,7 +50,6 @@ export default function MediaSourceCard({
   return (
     <button
       type="button"
-      aria-pressed={selected}
       onClick={onSelect}
       className={cn(
         "overflow-hidden rounded-xl border bg-card text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
