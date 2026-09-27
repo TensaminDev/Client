@@ -29,7 +29,13 @@ export default function ClearStorageButton({
         (["storage", "cache", "keys"] as const).map(clearDatabaseStore),
       );
       localStorage.clear();
-      location.reload();
+      // Reload the app entry point, not the current settings URL in a packaged app.
+      location.replace(
+        new URL(
+          location.protocol === "file:" ? location.pathname : "/",
+          location.href,
+        ),
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     }
