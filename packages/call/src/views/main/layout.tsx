@@ -132,6 +132,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       onMouseLeave={hideImmersiveChrome}
     >
       <div
+        data-call-stage
         className="min-h-0 flex-1 w-full flex justify-center items-center overflow-hidden"
         style={
           usersInFocusedViewHidden && !isImmersiveFocusedView
@@ -145,6 +146,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
       <div
         ref={actionsRef}
+        style={{
+          position: usersInFocusedViewHidden ? "absolute" : "relative",
+          left: 0,
+          viewTransitionName: "call-actions",
+        }}
         className={`shrink-0 pb-4.5 pt-3 bottom-0 w-full z-40 transition-all duration-200 ${
           isImmersiveFocusedView
             ? immersiveChromeVisible
@@ -152,10 +158,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               : "opacity-0 translate-y-2 pointer-events-none"
             : "opacity-100 translate-y-0"
         }`}
-        style={{
-          position: usersInFocusedViewHidden ? "absolute" : "relative",
-          left: 0,
-        }}
       >
         <Actions />
       </div>

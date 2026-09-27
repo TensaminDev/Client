@@ -1,6 +1,13 @@
 import type { RawMessage } from "../values";
 import { AlertTriangle, Check, CheckLine, RefreshCw } from "lucide-react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   type SelectedUser,
   useUser,
@@ -356,6 +363,33 @@ function MessageComponent({
       return groups;
     }, {}),
   );
+  const reactionButtons = useRef(new Map<string, HTMLButtonElement>());
+  const previousReactions = useRef<Map<string, number> | null>(null);
+  useLayoutEffect(() => {
+    const counts = new Map(
+      groupedReactions.map(([reaction, { count }]) => [reaction, count]),
+    );
+    if (
+      previousReactions.current &&
+      !matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      for (const [reaction, count] of counts) {
+        if (count > (previousReactions.current.get(reaction) ?? 0)) {
+          reactionButtons.current
+            .get(reaction)
+            ?.animate(
+              [
+                { transform: "scale(0.85)" },
+                { transform: "scale(1.13)", offset: 0.55 },
+                { transform: "scale(1)" },
+              ],
+              { duration: 260, easing: "ease-out" },
+            );
+        }
+      }
+    }
+    previousReactions.current = counts;
+  }, [groupedReactions]);
 
   function toggleReaction(reaction: string) {
     const reactedByMe = message.Reactions?.some(
@@ -550,8 +584,13 @@ function MessageComponent({
                         ([reaction, { count, reactedByMe }]) => (
                           <Button
                             key={reaction}
+                            ref={(element) => {
+                              if (element)
+                                reactionButtons.current.set(reaction, element);
+                              else reactionButtons.current.delete(reaction);
+                            }}
                             className={cn(
-                              "h-7 gap-2 rounded-lg py-3.5 px-1.5! border-[0.75px]!",
+                              "h-7 gap-2 rounded-lg py-3.5 px-1.5! border-[0.75px]! active:scale-95 motion-safe:transition-transform",
                               reactedByMe
                                 ? "border-(--primary-foreground-alt)/40! text-foreground! bg-(--primary)/30!"
                                 : "",

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Avatar,
@@ -171,10 +171,20 @@ function ScreenShareViewers() {
 function ScreenContent() {
   const view = useCall((state) => state.view);
 
-  return view === "preview" ? (
-    <Preview />
-  ) : (
-    <MainLayout>{view === "grid" ? <MainGrid /> : <MainFocused />}</MainLayout>
+  return (
+    <div
+      data-call-screen
+      className="h-full w-full"
+      style={{ viewTransitionName: "call-screen" }}
+    >
+      {view === "preview" ? (
+        <Preview />
+      ) : (
+        <MainLayout>
+          {view === "grid" ? <MainGrid /> : <MainFocused />}
+        </MainLayout>
+      )}
+    </div>
   );
 }
 
@@ -284,7 +294,7 @@ export default function Screen() {
   const view = useCall((state) => state.view);
   const { setTopPadding } = useNavbar();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setTopPadding(view !== "preview");
     return () => setTopPadding(null);
   }, [setTopPadding, view]);

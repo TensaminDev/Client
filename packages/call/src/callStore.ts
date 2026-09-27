@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { flushSync } from "react-dom";
 import { log, toast } from "@tensamin/shared/log";
 import { mtp, storageDefaults, type Storage } from "@tensamin/shared/data";
 import { playSound, stopSound } from "@tensamin/shared/sounds";
@@ -732,8 +733,63 @@ export function setCallRuntime(runtime: Runtime) {
 }
 
 // Switch between preview, grid, and focused call layouts.
+let activeCallViewTransition: ViewTransition | null = null;
+
+function updateCallView(update: () => void, kind: "join" | "layout") {
+  if (
+    typeof document === "undefined" ||
+    !document.querySelector("[data-call-screen]") ||
+    !document.startViewTransition ||
+    matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    useCall.getState().callIsPopout
+  ) {
+    update();
+    return null;
+  }
+
+  if (activeCallViewTransition) {
+    if (kind === "join") {
+      activeCallViewTransition.skipTransition();
+      activeCallViewTransition = null;
+    } else {
+      update();
+      return null;
+    }
+  }
+
+  document.documentElement.dataset.callTransition = kind;
+  const transition = document.startViewTransition(() => flushSync(update));
+  activeCallViewTransition = transition;
+  const timeout = window.setTimeout(
+    () => transition.skipTransition(),
+    kind === "join" ? 2500 : 750,
+  );
+  void transition.updateCallbackDone.then(
+    () => window.clearTimeout(timeout),
+    () => window.clearTimeout(timeout),
+  );
+  void transition.finished.then(
+    () => {
+      if (activeCallViewTransition !== transition) return;
+      activeCallViewTransition = null;
+      delete document.documentElement.dataset.callTransition;
+    },
+    () => {
+      if (activeCallViewTransition !== transition) return;
+      activeCallViewTransition = null;
+      delete document.documentElement.dataset.callTransition;
+    },
+  );
+  return transition.finished.catch(() => undefined);
+}
+
 export function setCallView(view: CallView) {
-  useCall.setState({ view });
+  const previous = useCall.getState().view;
+  if (previous === view) return;
+  updateCallView(
+    () => useCall.setState({ view }),
+    previous === "preview" && view === "grid" ? "join" : "layout",
+  );
 }
 
 export function setUsersInFocusedViewHidden(usersInFocusedViewHidden: boolean) {
@@ -960,12 +1016,16 @@ export function focusParticipant(
   participantId: number,
   type: "user" | "stream" = "user",
 ) {
-  useCall.setState({
-    focusedParticipantId: participantId,
-    lastFocusedParticipantId: participantId,
-    focusedParticipantType: type,
-    view: "focused",
-  });
+  updateCallView(
+    () =>
+      useCall.setState({
+        focusedParticipantId: participantId,
+        lastFocusedParticipantId: participantId,
+        focusedParticipantType: type,
+        view: "focused",
+      }),
+    "layout",
+  );
 }
 
 // Stop tracking a participant's shared screen and clean up related UI state.
@@ -1642,16 +1702,25 @@ async function connectPreparedCall(
     throw new Error("CallToken response did not include a LiveKit endpoint.");
   }
 
-  useCall.setState({
-    view: "grid",
-    callCreatedAt: token.CreatedAt ?? null,
-    callRoute: {
-      ownerOmikronId: token.OmikronId,
-      livekitUrl: token.CallEndpoint,
-    },
-    livekitToken: token.CallToken,
-  });
-  await openCallPage(callId);
+  const onCallPage =
+    typeof window !== "undefined" &&
+    (window.location.pathname === "/call" ||
+      window.location.hash.startsWith("#/call"));
+  const finishTransition = updateCallView(
+    () =>
+      useCall.setState({
+        view: "grid",
+        callCreatedAt: token.CreatedAt ?? null,
+        callRoute: {
+          ownerOmikronId: token.OmikronId,
+          livekitUrl: token.CallEndpoint,
+        },
+        livekitToken: token.CallToken,
+      }),
+    "join",
+  );
+  await finishTransition;
+  if (!onCallPage) await openCallPage(callId);
   if (!isCurrentCallAttempt(attemptGeneration)) return false;
   await connect(callId, token.CallToken, token.CallEndpoint, attemptGeneration);
   return isCurrentCallAttempt(attemptGeneration);
@@ -1910,7 +1979,10 @@ export async function respondToCallInvite(accepted: boolean) {
 let latestCallDataRequest = 0;
 export async function loadCallData(callId: string, ownerOmikronId?: number) {
   const request = ++latestCallDataRequest;
-  setCurrentCallData({ status: "loading" });
+  const call = useCall.getState();
+  if (call.currentCallData?.status !== "ready" || call.callId !== callId) {
+    setCurrentCallData({ status: "loading" });
+  }
 
   try {
     const response = await requireRuntime(

@@ -1,19 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Timer } from "lucide-react";
 import { Button } from "@methanium/ui";
-import { useUserFields } from "@tensamin/identity/context";
 import { useNavbar } from "@tensamin/shared/navbar";
 import { requestJoinCall, useCall } from "../store";
 import type { CurrentCallData } from "../state";
 import { PixelBlast } from "@methanium/ui";
-import ParticipantCard, {
-  ParticipantCardAvatar,
-  ParticipantNameplate,
-} from "../components/participantCard";
+import { PreviewParticipant } from "../components/participantCard";
 import { calculateOptimalGridLayout } from "./main/grid";
 import { displayCallId } from "../utils";
 
-const USER_FIELDS = ["UserId", "Display", "Avatar"] as const;
 const STATUS_MESSAGES: Record<CurrentCallData["status"], string | null> = {
   loading: null,
   ready: null,
@@ -21,20 +16,6 @@ const STATUS_MESSAGES: Record<CurrentCallData["status"], string | null> = {
   forbidden: "You do not have access to this call",
   error: "Unable to load call",
 };
-
-function Participant({ userId }: { userId: number }) {
-  const { data: user } = useUserFields(userId, USER_FIELDS);
-  return user ? (
-    <div className="relative aspect-video w-full">
-      <ParticipantCard user={user}>
-        <ParticipantCardAvatar user={user} />
-      </ParticipantCard>
-      <div className="absolute bottom-0 left-0 z-20 flex h-full w-full items-end p-2">
-        <ParticipantNameplate name={user.Display} />
-      </div>
-    </div>
-  ) : null;
-}
 
 export function formatDuration(milliseconds: number) {
   const seconds = Math.max(0, Math.floor(milliseconds / 1000));
@@ -56,6 +37,7 @@ export default function Preview() {
   const currentCallData = useCall((state) => state.currentCallData);
   const callId = useCall((state) => state.callId);
   const ownerOmikronId = useCall((state) => state.callRoute?.ownerOmikronId);
+  const callState = useCall((state) => state.state);
   const [now, setNow] = useState(0);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [joining, setJoining] = useState(false);
@@ -66,9 +48,14 @@ export default function Preview() {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = gridRef.current;
     if (!element) return;
+    const syncSize = () => {
+      const { width, height } = element.getBoundingClientRect();
+      setSize({ width, height });
+    };
+    syncSize();
     const observer = new ResizeObserver(([entry]) => {
       setSize({
         width: entry.contentRect.width,
@@ -95,14 +82,20 @@ export default function Preview() {
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden p-6">
-      <div className="absolute w-full h-full opacity-50">
+      <div
+        data-call-preview-background
+        className="absolute w-full h-full opacity-50"
+        style={{ viewTransitionName: "call-preview-background" }}
+      >
         <PixelBlast />
       </div>
       {currentCallData?.status === "ready" ? (
         <>
           {render(
             <div className="flex w-full items-center px-3 text-sm justify-between md:px-6">
-              <p className="invisible md:visible">{displayCallId(callId || "")}</p>
+              <p className="invisible md:visible">
+                {displayCallId(callId || "")}
+              </p>
               <p>
                 {formatDuration(Math.max(0, now - currentCallData.createdAt))}
               </p>
@@ -119,9 +112,10 @@ export default function Preview() {
                         style={{
                           width: Math.min(layout.tileWidth, 240 * 4),
                           height: Math.min(layout.tileHeight, 135 * 4),
+                          viewTransitionName: `call-user-${currentCallData.userIds[userIndex]}`,
                         }}
                       >
-                        <Participant
+                        <PreviewParticipant
                           userId={currentCallData.userIds[userIndex]}
                         />
                       </div>
@@ -132,12 +126,16 @@ export default function Preview() {
             </div>
             <Button
               size="lg"
+              style={{ viewTransitionName: "call-join-button" }}
               className="h-12 w-auto shrink-0 px-12 text-lg hover:bg-[color-mix(in_srgb,var(--primary)_85%,black)]! disabled:bg-[color-mix(in_srgb,var(--primary)_75%,black)]! disabled:opacity-100!"
               disabled={
-                !callId || currentCallData.userIds.length === 0 || joining
+                !callId ||
+                currentCallData.userIds.length === 0 ||
+                joining ||
+                callState !== "closed"
               }
               onClick={() => {
-                if (!callId) return;
+                if (!callId || callState !== "closed") return;
                 setJoining(true);
                 setJoinError(null);
                 void Promise.resolve(
@@ -149,13 +147,13 @@ export default function Preview() {
                     ownerOmikronId,
                   ),
                 )
-                  .catch((error) =>
+                  .catch((error) => {
                     setJoinError(
                       error instanceof Error
                         ? error.message
                         : "Unable to join call",
-                    ),
-                  )
+                    );
+                  })
                   .finally(() => setJoining(false));
               }}
             >

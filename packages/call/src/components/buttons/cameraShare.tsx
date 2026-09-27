@@ -18,7 +18,7 @@ export default function CameraShareButton({
 
   const button = (
     <Button
-      className={className}
+      className={`${className ?? ""} motion-safe:transition-colors motion-safe:duration-200`}
       variant={enabled ? "default" : "secondary"}
       onClick={() => {
         void (enabled ? stopCameraShare() : startCameraShare()).catch(

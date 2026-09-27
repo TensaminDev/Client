@@ -20,7 +20,10 @@ import { HeadphoneOff, MicOff, Monitor, Plus, Shield } from "lucide-react";
 import ContextMenu from "./contextMenu";
 import { useStorage } from "@tensamin/storage/context";
 import { getTrackPublicationBySource } from "../../participants";
-import ParticipantCard, { ParticipantCardAvatar, ParticipantNameplate } from "../participantCard";
+import ParticipantCard, {
+  ParticipantCardAvatar,
+  ParticipantNameplate,
+} from "../participantCard";
 
 const USER_FIELDS = ["UserId", "Avatar", "Display"] as const;
 
@@ -36,16 +39,29 @@ function Overlay({
   type,
   user,
   participant,
+  transitionOnly = false,
 }: {
   type: "user" | "stream";
   user: SelectedUser<typeof USER_FIELDS>;
   participant: Participant;
+  transitionOnly?: boolean;
 }) {
   const isAdmin = getRoomMetadata()?.admins.includes(user.UserId) === true;
   const isDeafened = participant.attributes["deafened"] === "true";
 
   return (
-    <div className="w-full h-auto flex items-center gap-1">
+    <div
+      className={cn(
+        "flex h-auto w-fit max-w-full items-center gap-1",
+        // Keep a destination for the focused overlay so it travels with its tile.
+        transitionOnly && "pointer-events-none opacity-0",
+      )}
+      data-call-focused-overlay={transitionOnly ? "" : undefined}
+      style={{
+        viewTransitionName: `call-overlay-${type}-${user.UserId}`,
+        viewTransitionClass: "call-overlay",
+      }}
+    >
       {type === "user" && (
         <>
           {!participant.isMicrophoneEnabled && (
@@ -191,13 +207,19 @@ export default function Base({
                     )}
                   </div>
                 )}
-                {view === "grid" ||
-                (view === "focused" && user.UserId !== focusedParticipantId) ? (
-                  <Overlay type={type} user={user} participant={participant} />
-                ) : null}
+                <Overlay
+                  type={type}
+                  user={user}
+                  participant={participant}
+                  transitionOnly={isFocusedInFocusedView}
+                />
               </>
             </div>
-            <ParticipantCard user={type === "user" ? user : undefined} fill={fill} flush={flush}>
+            <ParticipantCard
+              user={type === "user" ? user : undefined}
+              fill={fill}
+              flush={flush}
+            >
               {/* Detect video / user and place here */}
 
               {type === "stream" &&

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SpecialSwitch } from "@methanium/ui";
 
@@ -16,6 +16,9 @@ export default function List() {
   const items = category === "conversations" ? contacts : communities;
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const previousOrder = useRef<{ category: string; ids: number[] } | null>(
+    null,
+  );
 
   // TanStack Virtual is intentionally used here; React Compiler memoization is skipped.
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -23,7 +26,69 @@ export default function List() {
     count: items?.length || 0,
     estimateSize: () => 50,
     getScrollElement: () => scrollRef.current,
+    getItemKey: (index) =>
+      category === "conversations"
+        ? `conversation-${contacts[index]?.UserId ?? index}`
+        : `community-${index}`,
   });
+
+  useLayoutEffect(() => {
+    if (category !== "conversations") {
+      previousOrder.current = { category, ids: [] };
+      return;
+    }
+
+    const ids = contacts.map((contact) => contact.UserId);
+    const previous = previousOrder.current;
+    previousOrder.current = { category, ids };
+    if (
+      previous?.category !== category ||
+      previous.ids.length === 0 ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+
+    const oldPositions = new Map(previous.ids.map((id, index) => [id, index]));
+    const movedToTop = ids[0] !== previous.ids[0] && oldPositions.has(ids[0]);
+    scrollRef.current
+      ?.querySelectorAll<HTMLElement>("[data-contact-id]")
+      .forEach((row) => {
+        const id = Number(row.dataset.contactId);
+        const oldIndex = oldPositions.get(id);
+        const newIndex = ids.indexOf(id);
+        if (oldIndex === undefined) {
+          row.animate(
+            [
+              { opacity: 0, transform: "translateY(8px)" },
+              { opacity: 1, transform: "translateY(0)" },
+            ],
+            { duration: 220, easing: "ease-out" },
+          );
+        } else if (oldIndex !== newIndex) {
+          const offset = Math.max(
+            -220,
+            Math.min(220, (oldIndex - newIndex) * 50),
+          );
+          row.animate(
+            movedToTop && id === ids[0]
+              ? [
+                  { transform: `translateY(${offset}px)` },
+                  { transform: "translateY(-3px)", offset: 0.68 },
+                  { transform: "translateY(1px)", offset: 0.85 },
+                  { transform: "translateY(0)" },
+                ]
+              : [
+                  { transform: `translateY(${offset}px)` },
+                  { transform: "translateY(0)" },
+                ],
+            {
+              duration: movedToTop && id === ids[0] ? 230 : 170,
+              easing: "ease-out",
+            },
+          );
+        }
+      });
+  }, [category, contacts]);
 
   return (
     <div className="flex flex-col h-full">
@@ -57,7 +122,7 @@ export default function List() {
         >
           {items &&
             virtualizer.getVirtualItems().map((virtualItem) => {
-              const itemKey = `${category}-${virtualItem.index}`;
+              const itemKey = virtualItem.key;
 
               return (
                 <div
@@ -70,17 +135,25 @@ export default function List() {
                     transform: `translateY(${virtualItem.start}px)`,
                   }}
                 >
-                  {category === "conversations" ? (
-                    contacts?.[virtualItem.index] ? (
-                      <ConversationModal
-                        userId={contacts[virtualItem.index].UserId}
+                  <div
+                    data-contact-id={
+                      category === "conversations"
+                        ? contacts[virtualItem.index]?.UserId
+                        : undefined
+                    }
+                  >
+                    {category === "conversations" ? (
+                      contacts?.[virtualItem.index] ? (
+                        <ConversationModal
+                          userId={contacts[virtualItem.index].UserId}
+                        />
+                      ) : null
+                    ) : communities?.[virtualItem.index] ? (
+                      <CommunityModal
+                      //community={communities[virtualItem.index]}
                       />
-                    ) : null
-                  ) : communities?.[virtualItem.index] ? (
-                    <CommunityModal
-                    //community={communities[virtualItem.index]}
-                    />
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               );
             })}

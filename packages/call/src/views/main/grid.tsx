@@ -1,8 +1,9 @@
 import { RoomEvent } from "livekit-client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useCall, getRoom } from "../../store";
 import Base from "../../components/modals/base";
 import { cn, useIsMobile } from "@methanium/ui";
+import { PreviewParticipant } from "../../components/participantCard";
 
 const TILE_ASPECT_RATIO = 16 / 9;
 const GRID_GAP = 12;
@@ -89,12 +90,25 @@ export default function View() {
   const activeScreenShareParticipantIds = useCall(
     (state) => state.activeScreenShareParticipantIds,
   );
+  const currentCallData = useCall((state) => state.currentCallData);
+  const callState = useCall((state) => state.state);
   const containerRef = useRef<HTMLDivElement>(null);
+  const tileRefs = useRef(new Map<string, HTMLDivElement>());
+  const previousTiles = useRef<Set<string> | null>(null);
 
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [containerSize, setContainerSize] = useState(() => {
+    const stage = document.querySelector<HTMLElement>("[data-call-stage]");
+    const width = stage?.clientWidth ?? 0;
+    const height = stage?.clientHeight ?? 0;
+    const padding = matchMedia("(max-width: 767px)").matches ? 0 : 24;
+    return {
+      width: Math.max(0, width - 32 - padding),
+      height: Math.max(0, height - 32 - padding),
+    };
+  });
   const [participantVersion, setParticipantVersion] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = containerRef.current;
 
     if (!element) {
@@ -103,7 +117,17 @@ export default function View() {
 
     const syncContainerSize = () => {
       const { width, height } = element.getBoundingClientRect();
-      setContainerSize({ width, height });
+      const styles = getComputedStyle(element);
+      setContainerSize({
+        width:
+          width -
+          parseFloat(styles.paddingLeft) -
+          parseFloat(styles.paddingRight),
+        height:
+          height -
+          parseFloat(styles.paddingTop) -
+          parseFloat(styles.paddingBottom),
+      });
     };
 
     const observer = new ResizeObserver(([entry]) => {
@@ -160,10 +184,19 @@ export default function View() {
     // eslint-disable-next-line
   }, [participantVersion, room]);
 
-  const userIds = useMemo(
-    () => users.map((participant) => Number(participant.identity)),
-    [users],
-  );
+  const userIds = useMemo(() => {
+    const connectedIds = users.map((participant) =>
+      Number(participant.identity),
+    );
+    if (currentCallData?.status !== "ready") return connectedIds;
+    const connected = new Set(connectedIds);
+    return [
+      ...currentCallData.userIds.filter(
+        (id) => callState !== "open" || connected.has(id),
+      ),
+      ...connectedIds.filter((id) => !currentCallData.userIds.includes(id)),
+    ];
+  }, [users, callState, currentCallData]);
 
   const layout = useMemo(
     () =>
@@ -208,6 +241,25 @@ export default function View() {
     [activeScreenShareParticipantIds, userIds],
   );
 
+  useLayoutEffect(() => {
+    const current = new Set(tiles.map((tile) => tile.key));
+    if (
+      previousTiles.current &&
+      !document.documentElement.dataset.callTransition &&
+      !matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      for (const key of current) {
+        if (!previousTiles.current.has(key)) {
+          tileRefs.current.get(key)?.animate([{ opacity: 0 }, { opacity: 1 }], {
+            duration: 160,
+            easing: "ease-out",
+          });
+        }
+      }
+    }
+    previousTiles.current = current;
+  }, [tiles]);
+
   function getParticipantById(participantId: number) {
     if (Number(room.localParticipant.identity) === participantId) {
       return room.localParticipant;
@@ -240,16 +292,25 @@ export default function View() {
               return (
                 <div
                   key={tile.key}
+                  ref={(element) => {
+                    if (element) tileRefs.current.set(tile.key, element);
+                    else tileRefs.current.delete(tile.key);
+                  }}
                   className="flex items-center justify-center rounded-xl"
                   style={{
                     width: layout.tileWidth,
                     height: layout.tileHeight,
+                    viewTransitionName: `call-${tile.key.replace(":", "-")}`,
                   }}
                 >
-                  <Base
-                    type={tile.kind}
-                    participant={getParticipantById(tile.participantId)}
-                  />
+                  {getParticipantById(tile.participantId) ? (
+                    <Base
+                      type={tile.kind}
+                      participant={getParticipantById(tile.participantId)}
+                    />
+                  ) : tile.kind === "user" ? (
+                    <PreviewParticipant userId={tile.participantId} />
+                  ) : null}
                 </div>
               );
             })}
