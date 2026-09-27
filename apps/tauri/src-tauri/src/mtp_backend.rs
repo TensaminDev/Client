@@ -450,12 +450,14 @@ async fn supervise(generation: u64) {
                 });
 
                 for frame in prepared.buffered_frames {
-                    handle_push(generation, &notification_tx, frame).await;
+                    handle_push(generation, &notification_tx, &connection, frame).await;
                 }
 
                 while manager.is_current(generation) {
                     match connection.mtp.receive().await {
-                        Ok(frame) => handle_push(generation, &notification_tx, frame).await,
+                        Ok(frame) => {
+                            handle_push(generation, &notification_tx, &connection, frame).await
+                        }
                         Err(error) => {
                             let _guard = manager.start_lock.lock().expect("start lock poisoned");
                             if manager.is_current(generation) {
@@ -559,14 +561,16 @@ async fn connect(config: &MtpConfig) -> Result<PreparedConnection, String> {
     manager().log(2, "Native MTP authentication completed", None);
 
     let request_ids = RequestIdAllocator::new();
-    let request = CommunicationValue::new(communication_type("ClientStateSync")?)
-        .with_id(request_ids.next()?);
+    let request = CommunicationValue::new(CommunicationType::AccountStateRequest)
+        .with_id(request_ids.next()?)
+        .add_typed_default(DataType::DeviceClass, DataValue::Str("mobile".into()))
+        .add_typed_default(DataType::NotificationCapable, DataValue::Bool(true));
     let state = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&request, None))
         .await
         .map_err(|_| "account state request timed out".to_string())?
         .map_err(|error| format!("account state request failed: {error}"))?;
-    if !state.is_type(communication_type("ClientStateSync")?) {
-        return Err(format!("expected ClientStateSync, received {state}"));
+    if !state.is_type(CommunicationType::AccountStateSnapshot) {
+        return Err(format!("expected AccountStateSnapshot, received {state}"));
     }
     let (initial_state, ack) = prepare_initial_state_ack(&state, &request_ids)?;
     let response = tokio::time::timeout(INITIAL_SYNC_TIMEOUT, connection.request(&ack, None))
@@ -593,8 +597,8 @@ fn prepare_initial_state_ack(
 ) -> Result<(Value, CommunicationValue), String> {
     let initial_state = frame_data_to_json(state)?;
     validate_account_state_snapshot(&initial_state)?;
-    let ack =
-        CommunicationValue::new(communication_type("ClientStateAck")?).with_id(request_ids.next()?);
+    let ack = CommunicationValue::new(CommunicationType::AccountStateApplied)
+        .with_id(request_ids.next()?);
     Ok((initial_state, ack))
 }
 
@@ -837,9 +841,24 @@ async fn send_sealed_relay(request: SealedRelayRequest) -> Result<Value, String>
 async fn handle_push(
     generation: u64,
     notification_tx: &mpsc::Sender<CommunicationValue>,
+    connection: &Arc<ManagedConnection>,
     frame: CommunicationValue,
 ) {
     let manager = manager();
+    if frame.is_type(CommunicationType::SessionActivitySet) {
+        if let Some(id) = frame.id() {
+            let response = CommunicationValue::new(CommunicationType::SessionActivitySet)
+                .with_id(id)
+                .add_typed_default(
+                    DataType::Foreground,
+                    DataValue::Bool(manager.ui_visible.load(Ordering::SeqCst)),
+                );
+            if let Err(error) = connection.mtp.sender.send(&response).await {
+                eprintln!("failed to answer foreground query: {error}");
+            }
+        }
+        return;
+    }
     if let Ok(message) = frame_to_json(&frame) {
         manager.emit(MtpEvent::Message {
             generation,
@@ -1192,9 +1211,9 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        communication_type, container_value_by_name, decode_browser_base64, decode_sdk_bytes,
-        frame_to_json, jittered_retry_delay, json_to_frame, prepare_initial_state_ack,
-        RelayTargetDto, RequestIdAllocator,
+        container_value_by_name, decode_browser_base64, decode_sdk_bytes, frame_to_json,
+        jittered_retry_delay, json_to_frame, prepare_initial_state_ack, RelayTargetDto,
+        RequestIdAllocator,
     };
 
     #[test]
@@ -1290,7 +1309,7 @@ mod tests {
     }
 
     fn valid_initial_state() -> CommunicationValue {
-        CommunicationValue::new(communication_type("ClientStateSync").unwrap())
+        CommunicationValue::new(CommunicationType::AccountStateSnapshot)
             .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
             .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
             .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))
@@ -1307,14 +1326,14 @@ mod tests {
         let (state, ack) = prepare_initial_state_ack(&valid_initial_state(), &ids).unwrap();
 
         assert_eq!(state["SyncMode"], "full");
-        assert_eq!(ack.get_type_name(), Some("ClientStateAck"));
+        assert_eq!(ack.get_type_name(), Some("AccountStateApplied"));
         assert_eq!(ack.id(), Some(1));
     }
 
     #[test]
     fn malformed_initial_state_does_not_prepare_ack() {
         let ids = RequestIdAllocator::new();
-        let malformed = CommunicationValue::new(communication_type("ClientStateSync").unwrap())
+        let malformed = CommunicationValue::new(CommunicationType::AccountStateSnapshot)
             .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1));
 
         assert!(prepare_initial_state_ack(&malformed, &ids).is_err());
@@ -1328,7 +1347,7 @@ mod tests {
     #[test]
     fn malformed_nested_initial_state_does_not_prepare_ack() {
         let ids = RequestIdAllocator::new();
-        let malformed = CommunicationValue::new(communication_type("ClientStateSync").unwrap())
+        let malformed = CommunicationValue::new(CommunicationType::AccountStateSnapshot)
             .add_typed_default(DataType::SessionId, DataValue::UnsignedNumber(1))
             .add_typed_default(DataType::VersionNumber, DataValue::UnsignedNumber(0))
             .add_typed_default(DataType::CacheSchemaVersion, DataValue::UnsignedNumber(0))
@@ -1370,6 +1389,8 @@ pub fn mtp_store_credentials(config: MtpConfig) -> Result<(), String> {
     let config = validate_config(config)?;
     let serialized = serde_json::to_string(&config).map_err(|error| error.to_string())?;
     android_store_config(&serialized)?;
+    #[cfg(target_os = "android")]
+    android_set_enabled(true)?;
     if manager().is_enabled() {
         manager().configure_and_start(config);
     } else {

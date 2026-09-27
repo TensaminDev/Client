@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { toast as sonnerToast } from "@methanium/ui";
+import { isTauri } from "@tauri-apps/api/core";
 import { base64ToBytes, ConnectionState, MTPClient } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";
 import {
@@ -8,6 +9,7 @@ import {
   type Communities,
   type Contacts,
 } from "@tensamin/shared/data";
+import { getAppFocused } from "@tensamin/shared/focus";
 import { log } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 
@@ -29,7 +31,6 @@ import {
   RETRY_INTERVAL,
   STATE_ACK_TIMEOUT,
 } from "./values";
-import { useSessionActivity } from "./sessionActivity";
 
 type BrowserMtpClient = Awaited<ReturnType<typeof createBrowserClient>>;
 
@@ -97,8 +98,18 @@ async function initializeAccountState(
     "MTP authentication timed out",
     signal,
   );
+  const deviceClass = isTauri()
+    ? "mobile"
+    : "tensaminDesktop" in window
+      ? "desktop"
+      : /Android|iPhone|iPad/i.test(navigator.userAgent)
+        ? "mobile"
+        : "web";
   const state = (await withDeadline(
-    client.request("AccountStateRequest", {}),
+    client.request("AccountStateRequest", {
+      DeviceClass: deviceClass,
+      NotificationCapable: true,
+    }),
     syncTimeoutMs,
     "Initial state synchronization timed out",
     signal,
@@ -525,6 +536,26 @@ export function BrowserProvider(props: {
           return ownerClient.request(type, data, options);
         };
         detachSubscriptions = attachSubscriptions(activeClient);
+        const unsubscribeForeground = activeClient.subscribe(
+          "SessionActivitySet",
+          (message) => {
+            if (clientRef.current !== activeClient || !message.id) return;
+            void activeClient
+              .send(
+                "SessionActivitySet",
+                { Foreground: getAppFocused() },
+                { id: message.id },
+              )
+              .catch((error) =>
+                log(1, "mtp", "yellow", "Foreground reply failed", error),
+              );
+          },
+        );
+        const detachMessages = detachSubscriptions;
+        detachSubscriptions = () => {
+          unsubscribeForeground();
+          detachMessages();
+        };
         unsubscribeNoIota = subscribe("ErrorNoIota", () => {
           if (clientRef.current !== activeClient || failed) return;
           failed = true;
@@ -690,7 +721,6 @@ export function BrowserProvider(props: {
     },
     [interceptorsRef, mtpRef],
   );
-  useSessionActivity({ connected: contextReady, send: sendQueued });
 
   return (
     <MTPContext.Provider

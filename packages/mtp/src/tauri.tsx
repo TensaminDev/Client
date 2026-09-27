@@ -9,6 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   ConnectionState,
+  MTPClient,
   MTPProxyConnection,
   type MTPFrame,
   type MTPProxyAdapter,
@@ -32,7 +33,6 @@ import {
   type SealedRelaySend,
   useMessageHandlers,
 } from "./mtpContext";
-import { useSessionActivity } from "./sessionActivity";
 
 type NativeSnapshot = {
   generation: number;
@@ -118,6 +118,7 @@ export function TauriProvider(props: {
       return;
     }
     try {
+      await MTPClient.init();
       const state = await mtpSchemas.AccountStateSnapshot.response.parseAsync(
         next.state,
       );
@@ -240,6 +241,17 @@ export function TauriProvider(props: {
 
   useEffect(() => {
     if (props.blockConnection) return;
+    void invoke<string | null>("mtp_load_keyring")
+      .then((keyring) => {
+        if (keyring) return invoke("mtp_set_enabled", { enabled: true });
+      })
+      .catch((error) => {
+        log(0, "mtp", "red", "Failed to start native MTP service", error);
+      });
+  }, [props.blockConnection]);
+
+  useEffect(() => {
+    if (props.blockConnection) return;
     const updateVisibility = () => {
       void invoke("mtp_set_ui_visible", {
         visible: getAppFocused(),
@@ -292,10 +304,6 @@ export function TauriProvider(props: {
     [],
   );
   const connected = snapshot.readyState === ConnectionState.Connected;
-  useSessionActivity({
-    connected: connected && snapshot.identified,
-    send,
-  });
 
   return (
     <MTPContext.Provider

@@ -336,7 +336,10 @@ export const mtp = {
     response: authPayload,
   },
   AccountStateRequest: {
-    request: z.object({}),
+    request: z.object({
+      DeviceClass: z.enum(["desktop", "mobile", "web"]).optional(),
+      NotificationCapable: z.boolean().optional(),
+    }),
     response: accountStateSnapshot,
   },
   AccountStateSnapshot: {
@@ -758,11 +761,11 @@ export const mtp = {
   },
   SessionActivitySet: {
     request: z.object({
-      DeviceClass: z.enum(["desktop", "mobile", "web"]),
-      Foreground: z.boolean(),
-      NotificationCapable: z.boolean(),
+      DeviceClass: z.enum(["desktop", "mobile", "web"]).optional(),
+      NotificationCapable: z.boolean().optional(),
+      Foreground: z.boolean().optional(),
     }),
-    response: z.object({}),
+    response: z.object({ Foreground: z.boolean().optional() }),
   },
 
   TAuthAuthorize: {
