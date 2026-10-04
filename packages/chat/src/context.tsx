@@ -298,9 +298,6 @@ export default function Provider({ children }: { children: ReactNode }) {
   const { getFresh: getFreshUser, getRelayIota } = useUser();
   const { insertContact, moveUserIdToTop } = useSession();
 
-  const [error, setError] = useState("");
-  const [errorDescription, setErrorDescription] = useState("");
-
   const [liveMessagesByUser, setLiveMessagesByUser] = useState<
     Record<number, LiveMessage[]>
   >({});
@@ -669,8 +666,6 @@ export default function Provider({ children }: { children: ReactNode }) {
     let active = true;
     void (async () => {
       try {
-        setError("");
-        setErrorDescription("");
         const ownUserId = Number(await load("user_id"));
         let secret = await getChatSecretState(userIdValue);
 
@@ -694,8 +689,7 @@ export default function Provider({ children }: { children: ReactNode }) {
       } catch (err) {
         log(1, "chat", "red", "Failed to reconcile chat secret", err);
         if (active) {
-          setError(err instanceof Error ? err.name : "Unknown Error");
-          setErrorDescription(err instanceof Error ? err.message : String(err));
+          toast("error", err instanceof Error ? err.message : String(err));
           setCurrentChatSecretState({
             userId: userIdValue,
             value: null,
@@ -1356,8 +1350,6 @@ export default function Provider({ children }: { children: ReactNode }) {
           ownId,
           userId: userIdValue,
           inputBoxRef,
-          error,
-          errorDescription,
           composerValue,
           setComposerValue,
           replyTo,
@@ -1399,8 +1391,6 @@ type contextType = {
   ownId: number;
   userId: number;
   inputBoxRef: React.RefObject<HTMLDivElement | null>;
-  error: string;
-  errorDescription: string;
   composerValue: string;
   setComposerValue: (value: string) => void;
   replyTo: number | undefined;

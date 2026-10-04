@@ -8,6 +8,7 @@
     "./code": "./src/code.ts",
     "./clearStorageButton": "./src/clearStorageButton.tsx",
     "./errors": "./src/errors.ts",
+    "./errorToast": "./src/errorToast.tsx",
     "./focus": "./src/focus.ts",
     "./data": "./src/data.ts",
     "./desktopMedia": "./src/desktopMedia.tsx",

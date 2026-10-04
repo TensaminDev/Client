@@ -17,7 +17,6 @@ import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.content.LocusIdCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -32,8 +31,6 @@ object NativeMtpBridge {
   }
 
   @JvmStatic external fun nativeAttach(context: Context)
-  @JvmStatic external fun nativeStart(config: String)
-  @JvmStatic external fun nativeStop()
   @JvmStatic external fun nativeSetUiState(visible: Boolean)
   @JvmStatic external fun nativeLog(level: Int, message: String, details: String)
 
@@ -46,7 +43,6 @@ object NativeMtpBridge {
   fun storeConfig(context: Context, config: String) {
     try {
       MtpSecureStore.saveConfig(context, config)
-      if (MtpSecureStore.isEnabled(context)) startService(context)
       log(2, "Stored native MTP credentials")
     } catch (error: Throwable) {
       log(0, "Failed to store native MTP credentials", error)
@@ -55,8 +51,6 @@ object NativeMtpBridge {
   }
 
   fun clearConfig(context: Context) {
-    MtpSecureStore.setEnabled(context, false)
-    stopService(context)
     MtpSecureStore.clear(context)
   }
 
@@ -79,11 +73,6 @@ object NativeMtpBridge {
 
   fun hasConfig(context: Context): Boolean = MtpSecureStore.hasConfig(context)
 
-  fun setServiceEnabled(context: Context, enabled: Boolean) {
-    MtpSecureStore.setEnabled(context, enabled)
-    if (enabled && MtpSecureStore.hasConfig(context)) startService(context) else stopService(context)
-  }
-
   fun isIgnoringBatteryOptimizations(context: Context): Boolean =
     context.getSystemService(PowerManager::class.java)
       .isIgnoringBatteryOptimizations(context.packageName)
@@ -94,21 +83,6 @@ object NativeMtpBridge {
       Uri.parse("package:${context.packageName}"),
     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
-  }
-
-  fun startService(context: Context) {
-    ContextCompat.startForegroundService(
-      context,
-      Intent(context, MtpForegroundService::class.java),
-    )
-  }
-
-  fun stopService(context: Context) {
-    if (!context.stopService(Intent(context, MtpForegroundService::class.java))) nativeStop()
-  }
-
-  fun updateServiceStatus(context: Context, status: String) {
-    MtpForegroundService.updateNotification(context, status)
   }
 
   fun postMessageNotification(

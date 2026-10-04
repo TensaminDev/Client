@@ -7,6 +7,7 @@ import {
 } from "react";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { isTauri } from "@tauri-apps/api/core";
+import { log } from "@tensamin/shared/log";
 
 export const deeplinkContext = createContext<
   | {
@@ -36,18 +37,34 @@ export default function DeeplinkProvider({
     let mounted = true;
     let unlisten: (() => void) | undefined;
 
-    getCurrent().then((links) => {
-      if (mounted && links) {
-        setDeeplinks((prev) => [...prev, ...links]);
-      }
-    });
-
     onOpenUrl((links) => {
+      log(
+        0,
+        "deeplink",
+        "blue",
+        "Received links",
+        links.map((link) => {
+          try {
+            return new URL(link).hostname;
+          } catch {
+            return "malformed";
+          }
+        }),
+      );
       if (mounted) {
         setDeeplinks((prev) => [...prev, ...links]);
       }
     }).then((fn) => {
+      if (!mounted) {
+        fn();
+        return;
+      }
       unlisten = fn;
+      return getCurrent().then((links) => {
+        if (mounted && links) setDeeplinks((prev) => [...prev, ...links]);
+        if (links?.length)
+          log(0, "deeplink", "blue", "Loaded launch links", links.length);
+      });
     });
 
     return () => {

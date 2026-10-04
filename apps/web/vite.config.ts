@@ -64,6 +64,7 @@ export default defineConfig({
       "@tensamin/settings",
       "@tensamin/storage",
       "@tensamin/mtp",
+      "@tensamin/login",
       "@tensamin/identity",
       "@tensamin/tauri",
       "@tensamin/chat",
@@ -107,6 +108,7 @@ export default defineConfig({
       "@tensamin/crypto/context",
       "@tensamin/hotkeys",
       "@tensamin/mtp",
+      "@tensamin/login",
       "@tensamin/notifications",
       "@tensamin/onboarding",
       "@tensamin/shared",
@@ -158,7 +160,6 @@ export default defineConfig({
     deepFilterAssetHeaders(resolve(appDir, "public")),
     mtp({
       typeMaps: resolve(appDir, "../../mtp-type-maps/type-maps.yaml"),
-      outDir: ".mtp",
     }),
     {
       name: "workspace-realpath-resolution",

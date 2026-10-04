@@ -75,10 +75,23 @@ body,
   transition-property: translate !important;
 }
 
+:root {
+  --ui-safe-area-top: max(env(safe-area-inset-top, 0px), var(--android-safe-area-top, 0px));
+  --ui-safe-area-right: max(env(safe-area-inset-right, 0px), var(--android-safe-area-right, 0px));
+  --ui-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), var(--android-safe-area-bottom, 0px));
+  --ui-safe-area-left: max(env(safe-area-inset-left, 0px), var(--android-safe-area-left, 0px));
+}
+
 [data-safe-area-root] {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
+  padding-top: var(--ui-safe-area-top);
+  padding-right: var(--ui-safe-area-right);
+  padding-bottom: var(--ui-safe-area-bottom);
+  padding-left: var(--ui-safe-area-left);
+}
+
+/* CreateScreen already pads its fullscreen container using the same insets. */
+[data-safe-area-root]:has(.h-dvh.pt-\[var\(--ui-safe-area-top\)\]) {
+  padding: 0;
 }
 
 @media (min-width: 768px) {

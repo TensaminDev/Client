@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import LoginDeveloperMenu from "@tensamin/login/loginDeveloperMenu";
 import {
   Outlet,
   RouterProvider,
@@ -14,8 +15,8 @@ import "@methanium/ui/index.css";
 import NotFound from "@/routes/404";
 import Home from "@/routes/app/home";
 import AppShell from "@/routes/app/shell";
-import Login from "@/routes/screens/login";
-import Register from "@/features/register/register";
+import Login from "@tensamin/login/loginForm";
+import Register from "@tensamin/login/registerScreen";
 
 import { createSettingsRoute } from "@tensamin/settings";
 import ChatScreen from "@tensamin/chat/screen";
@@ -145,7 +146,13 @@ function LoginWrapper({ children }: { children: ReactNode }) {
     return <LoadingScreen title="Checking account" progress={4} />;
   }
 
-  return children;
+  return (
+    <>
+      {children}
+      {(location.pathname === "/login" ||
+        location.pathname === "/register") && <LoginDeveloperMenu />}
+    </>
+  );
 }
 
 function ThemePolarityBridge() {
@@ -211,17 +218,12 @@ function StoredThemeProvider({ children }: { children: ReactNode }) {
       load("theme_primary_color"),
       load("theme_palette"),
       load("theme_border_radius"),
-    ]).then(
-      async ([
-        id,
-        themes,
-      ]) => {
-        if (!active) return;
-        setCustomThemes(themes);
-        setSelection(id);
-        ready.current = true;
-      },
-    );
+    ]).then(async ([id, themes]) => {
+      if (!active) return;
+      setCustomThemes(themes);
+      setSelection(id);
+      ready.current = true;
+    });
     return () => {
       active = false;
     };
@@ -251,6 +253,25 @@ function StoredThemeProvider({ children }: { children: ReactNode }) {
 
 function RootShell() {
   const isMobile = useIsMobile();
+  useEffect(() => {
+    if (!isMobile) return;
+    const removeDragRegions = () => {
+      document
+        .querySelectorAll("[data-tauri-drag-region]")
+        .forEach((element) => {
+          element.removeAttribute("data-tauri-drag-region");
+        });
+    };
+    removeDragRegions();
+    const observer = new MutationObserver(removeDragRegions);
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["data-tauri-drag-region"],
+    });
+    return () => observer.disconnect();
+  }, [isMobile]);
 
   return (
     <DeeplinkContext>

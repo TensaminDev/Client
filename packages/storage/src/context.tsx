@@ -117,7 +117,16 @@ export default function StorageProvider(props: { children: ReactNode }) {
       const request = (async () => {
         try {
           if (key === "mtp_keyring" && isTauri()) {
-            const nativeValue = await invoke<string | null>("mtp_load_keyring");
+            const restored = await invoke<boolean>("mtp_restore_credentials");
+            const credentials = restored
+              ? await invoke<{ keyring: number[] }>(
+                  "plugin:mtp|mtp_export_credentials",
+                  { name: "mtp:credentials" },
+                )
+              : null;
+            const nativeValue = credentials
+              ? btoa(String.fromCharCode(...credentials.keyring))
+              : null;
             const value = (nativeValue ?? defaults[key]) as StorageSchema[K];
             if ((generations.current.get(key) ?? 0) === generation) {
               commit(key, value);

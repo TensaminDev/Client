@@ -1,4 +1,5 @@
 import { createContext, useCallback, useRef } from "react";
+import type { MTPClient } from "mtp";
 import type {
   MTPDataValueInput,
   MTPEncodedBytesInput,
@@ -79,6 +80,13 @@ export type MTPContextType = {
   sendSealedRelay: SealedRelaySend;
   subscribe: MTPSubscriptionFunction<typeof mtpSchemas>;
   addInterceptor: (interceptor: MTPInterceptor) => () => void;
+  /**
+   * Raw WASM client behind the authenticated "client" connection. Null on
+   * transports without an in-page client (native Tauri bridge). Needed by
+   * flows that must use capabilities the context does not wrap, such as
+   * protected password-management RPCs.
+   */
+  client: MTPClient | null;
   readyState: number;
   identified: boolean;
   freshContacts: Contacts;

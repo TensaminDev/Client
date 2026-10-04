@@ -6,6 +6,7 @@ import {
   requestPermission,
 } from "@tauri-apps/plugin-notification";
 import { BatteryCharging, Bell } from "lucide-react";
+import { toast } from "@tensamin/shared/log";
 
 export default function TauriPermissionsPage() {
   const [notificationsGranted, setNotificationsGranted] = useState(false);
@@ -14,20 +15,39 @@ export default function TauriPermissionsPage() {
   const [batteryAttempted, setBatteryAttempted] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    let refreshing = false;
     const refresh = () => {
+      if (
+        refreshing ||
+        document.visibilityState !== "visible" ||
+        location.href === "about:blank"
+      )
+        return;
+      refreshing = true;
       void Promise.all([
         isPermissionGranted(),
         invoke<boolean>("mtp_is_ignoring_battery_optimizations"),
-      ]).then(([notifications, battery]) => {
-        setNotificationsGranted(notifications);
-        setBatteryExempt(battery);
-      });
+      ])
+        .then(([notifications, battery]) => {
+          if (!active) return;
+          setNotificationsGranted(notifications);
+          setBatteryExempt(battery);
+        })
+        .catch(() => {
+          // Android can briefly report about:blank while replacing the WebView.
+          // The next visible refresh retries against the local app origin.
+        })
+        .finally(() => {
+          refreshing = false;
+        });
     };
     refresh();
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
     const interval = window.setInterval(refresh, 1_000);
     return () => {
+      active = false;
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
       window.clearInterval(interval);
@@ -39,7 +59,7 @@ export default function TauriPermissionsPage() {
       (notificationsGranted || notificationAttempted) &&
       (batteryExempt || batteryAttempted),
     onContinue: async () => {
-      await invoke("mtp_set_enabled", { enabled: true });
+      await invoke("plugin:mtp|mtp_set_background_enabled", { enabled: true });
     },
   });
 
@@ -62,9 +82,11 @@ export default function TauriPermissionsPage() {
           disabled={notificationsGranted}
           onClick={() => {
             setNotificationAttempted(true);
-            void requestPermission().then((permission) => {
-              setNotificationsGranted(permission === "granted");
-            });
+            void requestPermission()
+              .then((permission) => {
+                setNotificationsGranted(permission === "granted");
+              })
+              .catch((error: unknown) => toast("error", String(error)));
           }}
         >
           {notificationsGranted ? "Allowed" : "Allow notifications"}

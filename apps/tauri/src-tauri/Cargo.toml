@@ -24,19 +24,20 @@ serde_json = "1"
 base64 = "0.23"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 tokio = { version = "1", features = ["rt-multi-thread", "sync", "time"] }
-mtp = { git = "https://git.methanium.net/Methanium/mtp.git", rev = "bb0f682b735de5ebb36bb41dc699260578341828", features = ["client", "crypto"] }
+mtp = { path = "../../../../../mtp", features = ["client", "crypto"] }
+tauri-plugin-mtp = { path = "../../../../../mtp/plugins/tauri", features = ["tauri", "mobile"] }
 tauri-plugin-deep-link = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-log = "2"
 uuid = { version = "1", features = ["v4"] }
 
 [target.'cfg(target_os = "android")'.dependencies.tauri]
-version = "2"
+version = "=2.11.5"
 features = []
 default-features = true
 
 [target.'cfg(not(target_os = "android"))'.dependencies.tauri]
-version = "2"
+version = "=2.11.5"
 features = []
 default-features = true
 

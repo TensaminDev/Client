@@ -147,8 +147,6 @@ export default function Screen() {
     chatSecret,
     ownId,
     inputBoxRef,
-    error,
-    errorDescription,
     composerValue,
     setComposerValue,
   } = useChat();
@@ -683,13 +681,6 @@ export default function Screen() {
           <p className="text-muted-foreground text-lg w-80 text-center">
             You are not connected to an Omikron. Please check your internet
             connection and try again later
-          </p>
-        </div>
-      ) : error !== "" && errorDescription !== "" ? (
-        <div className="w-full h-full flex flex-col gap-2 items-center justify-center">
-          <p className="font-semibold text-xl">{error}</p>
-          <p className="text-muted-foreground text-lg w-80 text-center">
-            {errorDescription}
           </p>
         </div>
       ) : (

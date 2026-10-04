@@ -70,30 +70,35 @@ export function toast(
   type: "error" | "info" | "warn" | "success",
   message: string,
   description?: string,
+  options?: { duration?: number; closeButton?: boolean },
 ) {
   switch (type) {
     case "error":
       sonnerToast(message, {
         icon: <Ban size={size} />,
         description,
+        ...options,
       });
       break;
     case "info":
       sonnerToast(message, {
         icon: <Info size={size} />,
         description,
+        ...options,
       });
       break;
     case "warn":
       sonnerToast(message, {
         icon: <TriangleAlert size={size} />,
         description,
+        ...options,
       });
       break;
     case "success":
       sonnerToast(message, {
         icon: <Check size={size} />,
         description,
+        ...options,
       });
       break;
   }

@@ -1,9 +1,11 @@
 mod accessibility_backend;
 mod mtp_backend;
+mod mtp_plugin;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_mtp::init(mtp_plugin::manager()))
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(tauri_plugin_log::log::LevelFilter::Info)
@@ -19,14 +21,13 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             accessibility_backend::accessibility_get_initial_scale,
             accessibility_backend::accessibility_set_initial_scale,
-            mtp_backend::mtp_request,
             mtp_backend::mtp_send_sealed_relay,
             mtp_backend::mtp_status,
+            mtp_backend::mtp_frontend_options,
             mtp_backend::mtp_store_credentials,
             mtp_backend::mtp_clear_credentials,
             mtp_backend::mtp_has_credentials,
-            mtp_backend::mtp_load_keyring,
-            mtp_backend::mtp_set_enabled,
+            mtp_backend::mtp_restore_credentials,
             mtp_backend::mtp_set_ui_visible,
             mtp_backend::mtp_post_message_notification,
             mtp_backend::mtp_is_ignoring_battery_optimizations,

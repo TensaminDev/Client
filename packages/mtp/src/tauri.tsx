@@ -7,20 +7,15 @@ import {
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import {
-  ConnectionState,
-  MTPClient,
-  MTPProxyConnection,
-  type MTPFrame,
-  type MTPProxyAdapter,
-} from "mtp";
+import { ConnectionState, MTPClient } from "mtp";
+import { LoadingScreen } from "@methanium/ui";
 import {
   mtp as mtpSchemas,
   type Calls,
   type Communities,
   type Contacts,
 } from "@tensamin/shared/data";
-import { log } from "@tensamin/shared/log";
+import { log, toast } from "@tensamin/shared/log";
 import { getAppFocused, subscribeAppFocus } from "@tensamin/shared/focus";
 
 import {
@@ -42,30 +37,6 @@ type NativeSnapshot = {
   error?: string;
 };
 
-function createTauriAdapter() {
-  const subscriptions = new Map<string, Set<(message: MTPFrame) => void>>();
-  const adapter: MTPProxyAdapter = {
-    request: (type, data) =>
-      invoke<MTPFrame>("mtp_request", { typeName: type, data }),
-    subscribe(type, handler) {
-      const handlers = subscriptions.get(type) ?? new Set();
-      handlers.add(handler);
-      subscriptions.set(type, handlers);
-      return () => {
-        handlers.delete(handler);
-        if (handlers.size === 0) subscriptions.delete(type);
-      };
-    },
-  };
-  return {
-    adapter,
-    dispatch(message: MTPFrame) {
-      for (const handler of subscriptions.get(message.type) ?? [])
-        handler(message);
-    },
-  };
-}
-
 export function TauriProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
@@ -84,28 +55,53 @@ export function TauriProvider(props: {
   const generationRef = useRef(0);
   const { addInterceptor, attachSubscriptions, interceptorsRef, subscribe } =
     useMessageHandlers();
-  const [{ bridge, connection }] = useState(() => {
-    const bridge = createTauriAdapter();
-    return {
-      bridge,
-      connection: new MTPProxyConnection(bridge.adapter, {
+  const [connection, setConnection] = useState<MTPClient<
+    typeof mtpSchemas
+  > | null>(null);
+  const hasInitialState = clientState !== null;
+  useEffect(() => {
+    if (props.blockConnection || !hasInitialState) return;
+    let disposed = false;
+    let client: MTPClient<typeof mtpSchemas> | undefined;
+    void (async () => {
+      const options = await invoke<{
+        url: string;
+        descriptor: string;
+        hostPublicKey: number[];
+      }>("mtp_frontend_options");
+      client = await MTPClient.create({
+        ...options,
+        hostPublicKey: Uint8Array.from(options.hostPublicKey),
+        nativeName: "mtp:credentials",
         schemas: mtpSchemas,
         throwProtocolErrors: true,
-        onValidationError: (error) => {
-          log(1, "mtp", "red", "Failed to validate native MTP message", error);
-        },
-      }),
+      });
+      if (disposed) {
+        client.disconnect();
+        return;
+      }
+      await client.connect();
+      if (disposed) client.disconnect();
+      else setConnection(client);
+    })().catch((error) =>
+      log(0, "mtp", "red", "Native SDK attachment failed", error),
+    );
+    return () => {
+      disposed = true;
+      client?.disconnect();
+      setConnection(null);
     };
-  });
+  }, [props.blockConnection, hasInitialState]);
 
   // The native backend loads an AccountStateSnapshot after every login.
   const applySnapshot = useCallback(async (next: NativeSnapshot) => {
     if (next.generation < generationRef.current) return;
     generationRef.current = next.generation;
-    if (next.error)
+    if (next.error) {
       log(0, "android", "orange", "MTP connection failed", next.error);
+      toast("error", "Messaging connection failed", next.error);
+    }
     if (!next.identified) {
-      setClientState(null);
       setSnapshot(next);
       return;
     }
@@ -137,14 +133,8 @@ export function TauriProvider(props: {
     }
   }, []);
 
-  const dispatchMessage = useCallback(
-    (message: MTPFrame) => {
-      bridge.dispatch(message);
-    },
-    [bridge],
-  );
-
   useEffect(() => {
+    if (!connection) return;
     return attachSubscriptions(connection);
   }, [attachSubscriptions, connection]);
 
@@ -201,16 +191,11 @@ export function TauriProvider(props: {
       try {
         const nextUnlisten = await listen<
           | { kind: "state"; snapshot: NativeSnapshot }
-          | { kind: "message"; generation: number; message: MTPFrame }
           | { kind: "log"; level: number; message: string; details?: unknown }
-        >("mtp://event", ({ payload }) => {
+        >("tensamin://mtp", ({ payload }) => {
           if (disposed) return;
           if (payload.kind === "state") {
             void applySnapshot(payload.snapshot);
-          } else if (payload.kind === "message") {
-            if (payload.generation === generationRef.current) {
-              dispatchMessage(payload.message);
-            }
           } else {
             log(
               payload.level,
@@ -237,13 +222,21 @@ export function TauriProvider(props: {
       disposed = true;
       unlisten?.();
     };
-  }, [applySnapshot, dispatchMessage, props.blockConnection]);
+  }, [applySnapshot, props.blockConnection]);
 
   useEffect(() => {
     if (props.blockConnection) return;
-    void invoke<string | null>("mtp_load_keyring")
-      .then((keyring) => {
-        if (keyring) return invoke("mtp_set_enabled", { enabled: true });
+    void invoke<boolean>("mtp_restore_credentials")
+      .then(async (restored) => {
+        if (restored) {
+          await invoke("plugin:mtp|mtp_set_background_enabled", {
+            enabled: true,
+          });
+          await invoke("plugin:mtp|mtp_connect", {
+            name: "mtp:credentials",
+            mode: "connect",
+          });
+        }
       })
       .catch((error) => {
         log(0, "mtp", "red", "Failed to start native MTP service", error);
@@ -267,6 +260,7 @@ export function TauriProvider(props: {
 
   const send = useCallback<BoundSendFn>(
     async (type, data, options) => {
+      if (!connection) throw new Error("Native SDK is not attached");
       const response = await connection.request(type, data, options);
       if (response.type === "GetStates") {
         setFreshContacts((contacts) =>
@@ -313,14 +307,15 @@ export function TauriProvider(props: {
         sendSealedRelay,
         subscribe,
         addInterceptor,
+        client: connection,
         readyState: snapshot.readyState,
         identified: snapshot.identified,
         freshContacts,
         freshCommunities,
         freshCalls,
         clientState,
-        contextReady: connected && snapshot.identified,
-        sessionEstablished: connected && snapshot.identified,
+        contextReady: hasInitialState && connection !== null,
+        sessionEstablished: hasInitialState && connection !== null,
         connectionStatus: null,
         retryConnection: () => location.reload(),
         loadingDescription: connected
@@ -328,7 +323,11 @@ export function TauriProvider(props: {
           : "Establishing native transport channel",
       }}
     >
-      {props.children}
+      {props.blockConnection || connection ? (
+        props.children
+      ) : (
+        <LoadingScreen title="Attaching native messaging" progress={8} />
+      )}
     </MTPContext.Provider>
   );
 }

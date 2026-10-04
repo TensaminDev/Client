@@ -40,6 +40,18 @@ export async function persistNativeMtpConfig({
       forcedOmikronPublicKey,
     },
   });
+  // Connect through the plugin command so Android's encrypted durable store
+  // is written before provisioning reports successful local persistence.
+  // The native backend has already initialized the imported identity.
+  const connected = await invoke<boolean>("plugin:mtp|mtp_status", {
+    name: "mtp:credentials",
+  });
+  if (!connected) {
+    await invoke("plugin:mtp|mtp_connect", {
+      name: "mtp:credentials",
+      mode: "auth",
+    });
+  }
 }
 
 export function parseTuFileContent(rawFileContent: string): {
