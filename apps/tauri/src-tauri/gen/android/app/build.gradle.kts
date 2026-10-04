@@ -20,10 +20,11 @@ android {
     namespace = "net.tensamin.client"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "true"
-        applicationId = "net.tensamin.client"
+        applicationId = System.getenv("TENSAMIN_APP_ID") ?: "net.tensamin.client"
+        manifestPlaceholders["appLabel"] = System.getenv("TENSAMIN_PRODUCT_NAME") ?: "Tensamin"
         minSdk = 24
         targetSdk = 36
-        versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
+        versionCode = (System.getenv("TENSAMIN_ANDROID_VERSION_CODE") ?: tauriProperties.getProperty("tauri.android.versionCode", "1")).toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
     signingConfigs {
@@ -41,7 +42,7 @@ android {
     }
     buildTypes {
         getByName("debug") {
-            applicationIdSuffix = ".dev"
+            applicationIdSuffix = ""
             manifestPlaceholders["usesCleartextTraffic"] = "true"
             isDebuggable = true
             isJniDebuggable = true

@@ -58,7 +58,7 @@ async function fetchValidated<T>(
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${omega}${path}`, {
+    response = await fetch(new URL(path, normalizeOmegaOrigin(omega)), {
       signal: signal ?? AbortSignal.timeout(DISCOVERY_TIMEOUT_MS),
       headers: { accept: "application/json" },
     });

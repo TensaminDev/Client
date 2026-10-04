@@ -11,17 +11,17 @@
   "scripts": {
     "clean": "rm -rf dist release",
     "lint": "eslint src",
-    "build:web": "cd ../.. && pnpm run build:web",
-    "build": "tsc -p tsconfig.json && esbuild src/preload/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload/preload.cjs",
-    "dev:raw": "cd ../.. && pnpm run build:web && cd apps/electron && pnpm run build && electron . --verbose",
+    "build:web": "TENSAMIN_WEB_BASE=./ pnpm --dir ../.. run build:web",
+    "build": "pnpm --dir ../.. run gen-icons && tsc -p tsconfig.json && esbuild src/preload/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload/preload.cjs",
+    "dev:raw": "TENSAMIN_CHANNEL=dev pnpm run build:web && TENSAMIN_CHANNEL=dev pnpm run build && electron . --verbose",
     "dev": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#electron --command pnpm run dev:raw; else pnpm run dev:raw; fi",
-    "start:raw": "pnpm run build && electron .",
+    "start:raw": "pnpm run dev:raw",
     "start": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#electron --command pnpm run start:raw; else pnpm run start:raw; fi",
-    "package:raw": "cd ../.. && pnpm run build:web && cd apps/electron && pnpm run build && electron-builder --publish never",
+    "package:raw": "pnpm run build:web && pnpm run build && electron-builder --config electron-builder.config.cjs --publish never",
     "package": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#electron --command pnpm run package:raw; else pnpm run package:raw; fi",
-    "package:linux:raw": "cd ../.. && pnpm run build:web && cd apps/electron && pnpm run build && electron-builder --linux --publish never",
+    "package:linux:raw": "pnpm run build:web && pnpm run build && electron-builder --config electron-builder.config.cjs --linux --publish never",
     "package:linux": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#electron --command pnpm run package:linux:raw; else pnpm run package:linux:raw; fi",
-    "package:windows:raw": "cd ../.. && pnpm run build:web && cd apps/electron && pnpm run build && electron-builder --win --publish never",
+    "package:windows:raw": "pnpm run build:web && pnpm run build && electron-builder --config electron-builder.config.cjs --win --publish never",
     "package:windows": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#electron --command pnpm run package:windows:raw; else pnpm run package:windows:raw; fi",
     "checksum": "node scripts/generate-release-metadata.ts",
     "generate-signing-key": "node scripts/generate-signing-key.ts",
@@ -61,7 +61,8 @@
         "to": "icons",
         "filter": [
           "32x32.png",
-          "icon.png"
+          "icon.png",
+          "channel.json"
         ]
       }
     ],

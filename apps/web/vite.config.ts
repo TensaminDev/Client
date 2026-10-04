@@ -48,7 +48,7 @@ function deepFilterAssetHeaders(rootDir: string): Plugin {
 }
 
 export default defineConfig({
-  base: "./",
+  base: process.env.TENSAMIN_WEB_BASE ?? "/",
   clearScreen: false,
   resolve: {
     tsconfigPaths: true,

@@ -4,3 +4,4 @@ releases
 .direnv
 keystore.jks
 keystore.properties
+/.channel/

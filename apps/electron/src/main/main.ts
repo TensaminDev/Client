@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import {
@@ -35,8 +36,26 @@ let globalHotkeyBindings: DesktopGlobalHotkeyBinding[] = [];
 let globalHotkeysSuspended = false;
 const pendingDeepLinks: string[] = [];
 
-app.setName("tensamin");
-app.setPath("userData", join(app.getPath("appData"), "tensamin", "electron"));
+const channelConfig = JSON.parse(
+  readFileSync(
+    app.isPackaged
+      ? join(process.resourcesPath, "icons", "channel.json")
+      : resolve(__dirname, "../../build/icons/channel.json"),
+    "utf8",
+  ),
+) as { channel: string; appId: string; productName: string };
+app.setName(channelConfig.productName);
+app.setAppUserModelId(channelConfig.appId);
+app.setPath(
+  "userData",
+  join(
+    app.getPath("appData"),
+    channelConfig.channel === "stable"
+      ? "tensamin"
+      : `tensamin-${channelConfig.channel}`,
+    "electron",
+  ),
+);
 app.setAsDefaultProtocolClient("tensamin");
 
 function openDeepLink(value: string) {
