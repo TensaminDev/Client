@@ -87,7 +87,7 @@ export default defineConfig({
       interval: 100,
     },
   },
-  envPrefix: ["VITE_", "TAURI_ENV_*"],
+  envPrefix: ["VITE_", "TAURI_ENV_*", "TENSAMIN_CHANNEL"],
   optimizeDeps: {
     include: [
       "react-redux",

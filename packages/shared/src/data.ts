@@ -1186,6 +1186,23 @@ export interface Storage extends SettingsStorageDefaults {
   hotkey_overrides: Record<string, string | null>;
 }
 
+// Each release channel talks to its own omega VM. TENSAMIN_CHANNEL is
+// exposed to the client bundle by the web vite config; environments without
+// it (plain tsc, vitest, node) fall back to stable.
+const omegaUrls = {
+  stable: "https://omega.stable.tensamin.net",
+  canary: "https://omega.canary.tensamin.net",
+  dev: "https://omega.dev.tensamin.net",
+} as const;
+
+const omegaEnv = (
+  import.meta as ImportMeta & { env?: { TENSAMIN_CHANNEL?: string } }
+).env?.TENSAMIN_CHANNEL;
+const omegaChannelKey = omegaEnv ?? "";
+const omegaChannel = (
+  omegaChannelKey in omegaUrls ? omegaChannelKey : "stable"
+) as keyof typeof omegaUrls;
+
 export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
@@ -1201,7 +1218,7 @@ export const storageDefaults: Storage = {
   cached_communities: [],
   cache_contacts: 5,
   cache_messages_per_chat: 20,
-  omega_url: "https://omega.tensamin.net",
+  omega_url: omegaUrls[omegaChannel],
   forced_omikron_url: undefined,
   forced_omikron_public_key: undefined,
   call_mute_range_start: -75,
