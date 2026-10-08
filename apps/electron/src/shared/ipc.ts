@@ -41,31 +41,6 @@ export const secureStorageLimits = {
   maxValueBytes: 1024 * 1024,
 } as const;
 
-export type ReleaseArtifact = {
-  name: string;
-  platform: string;
-  arch: string;
-  url: string;
-  sha256: string;
-  size: number;
-};
-
-export type ReleaseMetadata = {
-  version: string;
-  tag: string;
-  publishedAt: string;
-  artifacts: ReleaseArtifact[];
-};
-
-export type UpdateCheckResult =
-  | { available: false; currentVersion: string; latestVersion: string }
-  | {
-      available: true;
-      currentVersion: string;
-      latestVersion: string;
-      artifact: ReleaseArtifact;
-    };
-
 export const ipcChannels = {
   listScreenShareSources: "desktopMedia:listScreenShareSources",
   listScreenShareAudioOutputs: "desktopMedia:listScreenShareAudioOutputs",
@@ -76,7 +51,6 @@ export const ipcChannels = {
   maximizeWindow: "window:maximize",
   closeWindow: "window:close",
   getVersion: "app:getVersion",
-  checkForUpdates: "updates:checkForUpdates",
   setCallStatus: "call:setStatus",
   getSecureStorageStatus: "secureStorage:getStatus",
   loadSecureStorage: "secureStorage:load",

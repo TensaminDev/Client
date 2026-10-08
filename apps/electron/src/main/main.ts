@@ -11,7 +11,6 @@ import {
   session,
   shell,
 } from "electron";
-import { checkForUpdates } from "./updates.js";
 import {
   ipcChannels,
   type DesktopCallStatus,
@@ -294,7 +293,6 @@ function registerIpc() {
     },
   );
   ipcMain.handle(ipcChannels.getVersion, () => app.getVersion());
-  ipcMain.handle(ipcChannels.checkForUpdates, checkForUpdates);
   ipcMain.handle(ipcChannels.getSecureStorageStatus, getSecureStorageStatus);
   ipcMain.handle(ipcChannels.loadSecureStorage, (_event, key: unknown) =>
     loadSecureStorage(key),
