@@ -37,13 +37,19 @@ if (channel === "dev") {
     join(root, "utils/icons/logo_outline.svg"),
     "utf8",
   );
-  svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#2563eb"/><svg x="70" y="60" width="372" height="392" viewBox="0 0 84.62632 89.263405">${outline.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "")}</svg></svg>`;
+  svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="-2.3185425 0 89.263405 89.263405">${outline
+    .replace(/^[\s\S]*?<svg[^>]*>/, "")
+    .replace(/<\/svg>\s*$/, "")
+    .replace(
+      'clip-path="url(#outline-shield)" fill="none"',
+      'clip-path="url(#outline-shield)" fill="#2563eb"',
+    )}</svg>`;
 }
 writeFileSync(join(output, "logo.svg"), svg);
 // Derive all raster sizes and adaptive Android layers from the channel SVG.
 writeFileSync(
   join(output, "background.svg"),
-  `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="${channel === "dev" ? "#2563eb" : channel === "canary" ? "#655600" : "#006560"}"/></svg>`,
+  `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="${channel === "dev" ? "none" : channel === "canary" ? "#655600" : "#006560"}"/></svg>`,
 );
 writeFileSync(
   join(output, "logo.json"),
@@ -60,7 +66,7 @@ writeFileSync(
           default: "logo.svg",
           android_fg: "logo.svg",
           android_bg: "background.svg",
-          android_fg_scale: 85,
+          android_fg_scale: channel === "dev" ? 100 : 85,
           android_monochrome: join(root, "utils/icons/logo_outline.svg"),
         },
   ),
