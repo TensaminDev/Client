@@ -3,6 +3,7 @@ import { settingsNavigation } from "./navigation";
 import SettingsIndex from "./pages/index";
 import Profile from "./pages/profile";
 import Security from "./pages/security";
+import Apps from "./pages/apps";
 import Chat from "./pages/chat";
 import Call from "./pages/call";
 import Cache from "./pages/cache";
@@ -15,6 +16,7 @@ import Legal from "./pages/legal";
 const pageComponents = {
   profile: Profile,
   security: Security,
+  apps: Apps,
   chat: Chat,
   call: Call,
   cache: Cache,

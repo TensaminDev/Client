@@ -26,7 +26,7 @@
   },
   "bundle": {
     "android": {
-      "debugApplicationIdSuffix": ".dev"
+      "debugApplicationIdSuffix": ""
     },
     "active": true,
     "targets": [],

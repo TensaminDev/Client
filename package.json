@@ -2,7 +2,6 @@
   "name": "tensamin",
   "version": "0.0.11",
   "private": true,
-  "packageManager": "pnpm@11.17.0",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -12,14 +11,18 @@
     "format": "pnpm exec prettier --write .",
     "lint": "node utils/scripts/lint-packages.ts",
     "check": "fallow && pnpm run lint",
+    "channel": "node utils/scripts/channel.ts",
+    "gen-icons": "node utils/scripts/channel-icons.ts",
+    "test": "vitest run --passWithNoTests",
+    "ci": "pnpm run lint && pnpm run test && pnpm run copy-licenses && pnpm run build:packages && pnpm run build:web && pnpm --dir apps/electron run build:web && pnpm --dir apps/electron run build",
     "copy-licenses": "node utils/scripts/copy-licenses.ts",
     "copy-releases": "node utils/scripts/copy-releases.ts",
     "pre-build": "pnpm run lint && pnpm run build:packages",
     "build:apps": "pnpm run copy-licenses && pnpm run pre-build && pnpm run build:mobile && pnpm run build:desktop && pnpm run copy-releases",
     "build:packages": "node utils/scripts/build-packages.ts",
     "update:packages": "node utils/scripts/update-packages.ts",
-    "dev": "cd apps/web && pnpm dev",
-    "build:web": "cd apps/web && pnpm run build",
+    "dev": "TENSAMIN_CHANNEL=dev pnpm run gen-icons && cd apps/web && pnpm dev",
+    "build:web": "pnpm run gen-icons && cd apps/web && pnpm run build",
     "preview:web": "cd apps/web && pnpm run preview",
     "dev:mobile": "pnpm run delete:mobile || true && cd apps/tauri && pnpm dev:mobile && pnpm run delete:mobile",
     "build:mobile": "cd apps/tauri && pnpm run build:mobile",
@@ -46,7 +49,7 @@
   },
   "dependencies": {
     "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.44/methanium-ui.tgz",
-    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-bb0f682/mtp-0.3.0.tgz",
+    "mtp": "https://git.methanium.net/methanium/mtp/releases/download/0.4.0-dev-abe39e0/mtp-0.4.0.tgz",
     "sonner": "^2.0.8"
   }
 }

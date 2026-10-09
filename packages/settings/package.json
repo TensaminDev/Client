@@ -20,6 +20,7 @@
     "@tensamin/call": "workspace:*",
     "@tensamin/hotkeys": "workspace:*",
     "@tensamin/mtp": "workspace:*",
+    "@tensamin/login": "workspace:*",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",
     "@tensamin/identity": "workspace:*",

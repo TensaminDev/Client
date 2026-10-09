@@ -134,31 +134,6 @@ function protocolErrorDetails(error: unknown) {
   };
 }
 
-function protocolEventForLog(event: {
-  type?: unknown;
-  data?: unknown;
-}): unknown {
-  if (
-    (event.type === "UserBlobChanged" ||
-      event.type === "UserBlobGet" ||
-      event.type === "UserBlobPut") &&
-    event.data &&
-    typeof event.data === "object" &&
-    "Blob" in event.data
-  ) {
-    const data = event.data as { Blob?: unknown };
-    const { Blob: blob, ...metadata } = data;
-    return {
-      ...event,
-      data: {
-        ...metadata,
-        BlobBytes: blob instanceof Uint8Array ? blob.byteLength : undefined,
-      },
-    };
-  }
-  return event;
-}
-
 export function BrowserProvider(props: {
   children: ReactNode;
   blockConnection?: boolean;
@@ -179,6 +154,9 @@ export function BrowserProvider(props: {
     ProtocolMessage<"AccountStateSnapshot">["data"] | null
   >(null);
   const clientRef = useRef<BrowserMtpClient | null>(null);
+  const [contextClient, setContextClient] = useState<BrowserMtpClient | null>(
+    null,
+  );
   const callControlRequestRef = useRef<
     | ((
         ownerOmikronId: number | undefined,
@@ -345,7 +323,10 @@ export function BrowserProvider(props: {
         ownerClients.clear();
         callControlRequestRef.current = null;
         client?.disconnect();
-        if (clientRef.current === client) clientRef.current = null;
+        if (clientRef.current === client) {
+          clientRef.current = null;
+          setContextClient(null);
+        }
         if (generation === connectionGeneration) {
           setReadyState(ConnectionState.Disconnected);
           setIdentified(false);
@@ -412,50 +393,23 @@ export function BrowserProvider(props: {
           descriptor: "client",
           pings: true,
           securityProfile: { protectedSignatureSuite: "dual" },
-          logger: (event) => {
-            if (event.type === "state") {
-              if (generation !== connectionGeneration) return;
-              const state = client?.state ?? ConnectionState.Disconnected;
-              setReadyState(state);
-              if (
-                (state === ConnectionState.Disconnected ||
-                  state === ConnectionState.Failed) &&
-                clientRef.current === client &&
-                !failed
-              ) {
-                failed = true;
-                const error = new Error("MTP connection lost");
-                attemptAbort.abort(error);
-                if (connectionReady) {
-                  cleanup();
-                  scheduleReconnect(error);
-                }
-              }
-            }
+          logging: { hiddenTypes: ["Ping", "Pong", "Relay"] },
+          onStateChange: (state) => {
+            if (generation !== connectionGeneration) return;
+            setReadyState(state);
             if (
-              event.type !== "Pong" &&
-              event.type !== "Ping" &&
-              event.type !== "Relay"
+              (state === ConnectionState.Disconnected ||
+                state === ConnectionState.Failed) &&
+              clientRef.current === client &&
+              !failed
             ) {
-              log(
-                2,
-                "mtp",
-                event.type === "state"
-                  ? "purple"
-                  : event.direction === "recv"
-                    ? "cyan"
-                    : event.direction === "send"
-                      ? "gray"
-                      : "blue",
-                event.type === "state"
-                  ? event.data
-                  : event.direction === "recv"
-                    ? "< " + event.type
-                    : event.direction === "send"
-                      ? "> " + event.type
-                      : event.type,
-                protocolEventForLog(event),
-              );
+              failed = true;
+              const error = new Error("MTP connection lost");
+              attemptAbort.abort(error);
+              if (connectionReady) {
+                cleanup();
+                scheduleReconnect(error);
+              }
             }
           },
         });
@@ -465,6 +419,7 @@ export function BrowserProvider(props: {
         }
         const activeClient = client;
         clientRef.current = activeClient;
+        setContextClient(activeClient);
         callControlRequestRef.current = async (
           ownerOmikronId,
           type,
@@ -514,16 +469,7 @@ export function BrowserProvider(props: {
               descriptor: "client-call-control",
               pings: true,
               securityProfile: { protectedSignatureSuite: "dual" },
-              logger: (event) => {
-                if (event.type !== "Ping" && event.type !== "Pong") {
-                  log(
-                    2,
-                    "mtp",
-                    "purple",
-                    `call owner ${ownerOmikronId}: ${event.type}`,
-                  );
-                }
-              },
+              logging: { hiddenTypes: ["Ping", "Pong"] },
             });
             try {
               await ownerClient.auth();
@@ -730,6 +676,7 @@ export function BrowserProvider(props: {
         sendSealedRelay,
         subscribe,
         addInterceptor,
+        client: contextClient,
         readyState,
         identified,
         freshContacts,

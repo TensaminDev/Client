@@ -18,7 +18,7 @@ export default function MuteButton({
   const button = (
     <Button
       variant={micEnabled ? "default" : "destructive"}
-      className={className}
+      className={`${className ?? ""} motion-safe:transition-colors motion-safe:duration-200`}
       onClick={() => void toggleMute()}
     >
       {micEnabled ? (

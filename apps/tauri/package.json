@@ -10,14 +10,14 @@
     }
   },
   "scripts": {
-    "dev:mobile:raw": "adb reverse tcp:3000 tcp:3000 && tauri android dev --host ${TAURI_DEV_HOST:-127.0.0.1}",
+    "dev:mobile:raw": "TENSAMIN_CHANNEL=dev pnpm --dir ../.. run gen-icons && adb reverse tcp:3000 tcp:3000 && TENSAMIN_CHANNEL=dev node ../../utils/scripts/channel.ts pnpm exec tauri android dev --host ${TAURI_DEV_HOST:-127.0.0.1}",
     "start-adb:mobile:raw": "adb devices",
-    "build:mobile:raw": "tauri android build",
-    "build:mobile:ci": "node render-version.ts && trap 'node render-version.ts --unrender' EXIT && tauri android build --debug",
+    "build:mobile:raw": "node ../../utils/scripts/channel.ts pnpm exec tauri android build",
+    "build:mobile:ci": "node render-version.ts && trap 'node render-version.ts --unrender' EXIT && node ../../utils/scripts/channel.ts pnpm exec tauri android build --debug",
     "dev:mobile": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#tauri --command pnpm run dev:mobile:raw; else pnpm run dev:mobile:raw; fi",
     "start-adb:mobile": "if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#tauri --command pnpm run start-adb:mobile:raw; else pnpm run start-adb:mobile:raw; fi",
     "build:mobile": "node render-version.ts && trap 'node render-version.ts --unrender' EXIT && if command -v nix >/dev/null 2>&1 && [ -z \"$IN_NIX_SHELL\" ]; then nix develop ../..#tauri --command pnpm run build:mobile:raw; else pnpm run build:mobile:raw; fi",
-    "gen-icons": "tauri icon ./logo.json && node scripts/sync-electron-icons.ts",
+    "gen-icons": "pnpm --dir ../.. run gen-icons",
     "format": "pnpm exec prettier --write .",
     "lint": "eslint src"
   },

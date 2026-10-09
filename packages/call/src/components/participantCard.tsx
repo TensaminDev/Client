@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage, cn } from "@methanium/ui";
+import { useUserFields } from "@tensamin/identity/context";
 import { useEffect, useState, type ReactNode } from "react";
 
 export function getAverageImageColor(src: string) {
@@ -21,7 +22,12 @@ export function getAverageImageColor(src: string) {
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
       try {
-        const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+        const { data } = context.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
         let red = 0;
         let green = 0;
         let blue = 0;
@@ -56,7 +62,11 @@ export function getAverageImageColor(src: string) {
   });
 }
 
-export function ParticipantCardAvatar({ user }: { user: { Avatar?: string; Display: string } }) {
+export function ParticipantCardAvatar({
+  user,
+}: {
+  user: { Avatar?: string; Display: string };
+}) {
   return (
     <Avatar style={{ width: "32cqh", height: "32cqh" }}>
       <AvatarImage src={user.Avatar} />
@@ -89,16 +99,25 @@ export default function ParticipantCard({
     void getAverageImageColor(user.Avatar).then((color) => {
       if (active) setAvatarBackgroundColor(color);
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [user?.Avatar]);
 
   return (
     <div
       className={cn(
         "absolute inset-0 z-10 flex items-center justify-center gap-2 border-(--border)/40 bg-card transition-all duration-150",
-        flush ? fill ? "rounded-none" : "rounded-none border-y" : "rounded-lg border",
+        flush
+          ? fill
+            ? "rounded-none"
+            : "rounded-none border-y"
+          : "rounded-lg border",
       )}
-      style={{ backgroundColor: user?.Avatar ? avatarBackgroundColor : undefined, containerType: "size" }}
+      style={{
+        backgroundColor: user?.Avatar ? avatarBackgroundColor : undefined,
+        containerType: "size",
+      }}
     >
       {children}
     </div>
@@ -111,4 +130,26 @@ export function ParticipantNameplate({ name }: { name: string }) {
       <p className="truncate text-sm">{name}</p>
     </div>
   );
+}
+
+export function PreviewParticipant({ userId }: { userId: number }) {
+  const { data: user } = useUserFields(userId, ["UserId", "Display", "Avatar"]);
+  return user ? (
+    <div className="relative aspect-video w-full">
+      <ParticipantCard user={user}>
+        <ParticipantCardAvatar user={user} />
+      </ParticipantCard>
+      <div className="absolute bottom-0 left-0 z-20 flex h-full w-full items-end p-2">
+        <div
+          className="flex w-fit max-w-full items-center gap-1"
+          style={{
+            viewTransitionName: `call-overlay-user-${userId}`,
+            viewTransitionClass: "call-overlay",
+          }}
+        >
+          <ParticipantNameplate name={user.Display} />
+        </div>
+      </div>
+    </div>
+  ) : null;
 }

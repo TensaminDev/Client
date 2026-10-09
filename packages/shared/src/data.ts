@@ -20,6 +20,165 @@ const bytesLike = z.union([
 
 const protocolBytes = z.instanceof(Uint8Array);
 
+const sessionUuid = z.uuidv4();
+const positiveId = z.number().int().positive();
+// WASM byte views may use ArrayBufferLike; keep request inputs compatible.
+const provisioningBytes = z.custom<Uint8Array>(
+  (value) => value instanceof Uint8Array,
+) as z.ZodType<Uint8Array>;
+const nonEmptyBytes = provisioningBytes.refine(
+  (value) => value.byteLength >= 1,
+);
+const base64Key = z.base64();
+const opaqueMessage = nonEmptyBytes;
+
+export const provisioningMethodSchema = z.enum([
+  "password",
+  "qr-contact-created",
+  "qr-owner-created",
+]);
+export const provisioningRoleSchema = z.enum(["contact", "owner"]);
+export const provisioningCreatedSchema = z.object({
+  Timestamp: z.number().positive().optional(),
+  Uuid: sessionUuid,
+  ProvisioningParticipantId: positiveId,
+  ProvisioningMethod: provisioningMethodSchema,
+  ProvisioningRole: provisioningRoleSchema,
+});
+export const provisioningPeerJoinedSchema = z.object({
+  Uuid: sessionUuid,
+  ProvisioningParticipantId: positiveId,
+  ProvisioningRole: provisioningRoleSchema,
+  PublicKey: base64Key,
+});
+export const provisioningAccountBoundSchema = z.object({
+  Uuid: sessionUuid,
+  UserId: positiveId,
+  Username: z.string().min(1).max(15),
+  IotaId: positiveId,
+  Principal: z.string().min(1),
+  PublicKey: base64Key,
+});
+export const provisioningCredentialSchema = z.object({
+  Uuid: sessionUuid,
+  ProvisioningMethod: provisioningMethodSchema,
+  UserId: positiveId,
+  IotaId: positiveId,
+  EncryptedCredential: nonEmptyBytes,
+  Sha256: provisioningBytes.refine((value) => value.byteLength === 32),
+});
+
+export const provisioning = {
+  ProvisioningCreate: {
+    request: z.object({
+      ProvisioningMethod: provisioningMethodSchema,
+      ProvisioningRole: provisioningRoleSchema,
+      PublicKey: base64Key,
+      Username: z.string().min(1).max(15).optional(),
+      UserId: positiveId.optional(),
+      Uuid: sessionUuid.optional(),
+    }),
+    response: provisioningCreatedSchema,
+  },
+  ProvisioningCreated: {
+    request: z.object({}).optional(),
+    response: provisioningCreatedSchema,
+  },
+  ProvisioningJoin: {
+    request: z.object({
+      Uuid: sessionUuid,
+      ProvisioningRole: provisioningRoleSchema,
+      PublicKey: base64Key,
+    }),
+    response: provisioningPeerJoinedSchema.extend({ ClientId: positiveId }),
+  },
+  ProvisioningPeerJoined: {
+    request: z.object({}).optional(),
+    response: provisioningPeerJoinedSchema,
+  },
+  ProvisioningBindAccount: {
+    request: z.object({
+      Uuid: sessionUuid,
+      Username: z.string().min(1).max(15).optional(),
+      UserId: positiveId.optional(),
+    }),
+    response: provisioningAccountBoundSchema,
+  },
+  ProvisioningAccountBound: {
+    request: z.object({}).optional(),
+    response: provisioningAccountBoundSchema,
+  },
+  QrProvisioningConfirm: {
+    request: z.object({ Uuid: sessionUuid }),
+    response: z.object({ Uuid: sessionUuid.optional() }),
+  },
+  // Omikron enriches the Iota-bound copy with participant/user/Iota/key fields.
+  PasswordProvisioningStart: {
+    request: z.object({ Uuid: sessionUuid, OpaqueMessage: opaqueMessage }),
+    response: z.object({ Uuid: sessionUuid, OpaqueMessage: opaqueMessage }),
+  },
+  PasswordProvisioningResponse: {
+    request: z.object({}).optional(),
+    response: z.object({ Uuid: sessionUuid, OpaqueMessage: opaqueMessage }),
+  },
+  // KE3 succeeds with a protected ProvisioningCredential frame; auth
+  // failures arrive as ErrorNotAuthenticated with the same frame ID.
+  PasswordProvisioningFinish: {
+    request: z.object({ Uuid: sessionUuid, OpaqueMessage: opaqueMessage }),
+    response: z.object({}).optional(),
+  },
+  // Validate protected payloads with provisioningCredentialSchema after opening.
+  ProvisioningCredential: {
+    request: provisioningCredentialSchema,
+    response: z.unknown(),
+  },
+  ProvisioningComplete: {
+    request: z.object({ Uuid: sessionUuid }),
+    response: z.object({}),
+  },
+  ProvisioningCancel: {
+    request: z.object({ Uuid: sessionUuid }),
+    response: z.object({ Uuid: sessionUuid.optional() }),
+  },
+  PasswordEnrollmentStart: {
+    request: z.object({ OpaqueMessage: opaqueMessage }),
+    response: z.object({}),
+  },
+  PasswordEnrollmentResponse: {
+    request: z.object({}).optional(),
+    response: z.object({ Uuid: sessionUuid, OpaqueMessage: opaqueMessage }),
+  },
+  PasswordEnrollmentFinish: {
+    request: z.object({
+      Uuid: sessionUuid,
+      OpaqueMessage: opaqueMessage,
+      EncryptedCredential: nonEmptyBytes,
+    }),
+    response: z.object({}),
+  },
+  PasswordEnrollmentStatus: {
+    request: z.object({}),
+    response: z.object({ Enabled: z.boolean() }),
+  },
+  PasswordEnrollmentDisable: {
+    request: z.object({}),
+    response: z.object({ Enabled: z.literal(false) }),
+  },
+} as const;
+
+export type ProvisioningMethod = z.infer<typeof provisioningMethodSchema>;
+export type ProvisioningRole = z.infer<typeof provisioningRoleSchema>;
+export type ProvisioningCreated = z.infer<typeof provisioningCreatedSchema>;
+export type ProvisioningPeerJoined = z.infer<
+  typeof provisioningPeerJoinedSchema
+>;
+export type ProvisioningAccountBound = z.infer<
+  typeof provisioningAccountBoundSchema
+>;
+export type ProvisioningCredential = z.infer<
+  typeof provisioningCredentialSchema
+>;
+
 function bytesFromProtocol(value: z.infer<typeof bytesLike>): Uint8Array {
   if (value instanceof Uint8Array) return value;
   if (Array.isArray(value)) return new Uint8Array(value);
@@ -331,6 +490,14 @@ export const userStateEntrySchema = z.object({
 });
 
 export const mtp = {
+  ...provisioning,
+  ProvisioningBindAccount: {
+    request: z.object({
+      Uuid: z.uuidv4(),
+      UserId: z.number().int().positive(),
+    }),
+    response: provisioningPeerJoinedSchema,
+  },
   IdentificationResponse: {
     request: z.object({}).optional(),
     response: authPayload,
@@ -803,8 +970,16 @@ export const mtp = {
     response: z.object({ CallId: z.string(), OmikronId: z.number() }),
   },
   CallActivate: {
-    request: z.object({ CallId: z.string(), CallSecret: callSecretEnvelopeRequest }),
-    response: z.object({ CallToken: z.string(), CallEndpoint: z.string(), OmikronId: z.number(), CreatedAt: z.number() }),
+    request: z.object({
+      CallId: z.string(),
+      CallSecret: callSecretEnvelopeRequest,
+    }),
+    response: z.object({
+      CallToken: z.string(),
+      CallEndpoint: z.string(),
+      OmikronId: z.number(),
+      CreatedAt: z.number(),
+    }),
   },
   CallEnded: {
     request: z.object({}).optional(),
@@ -1011,6 +1186,23 @@ export interface Storage extends SettingsStorageDefaults {
   hotkey_overrides: Record<string, string | null>;
 }
 
+// Each release channel talks to its own omega VM. TENSAMIN_CHANNEL is
+// exposed to the client bundle by the web vite config; environments without
+// it (plain tsc, vitest, node) fall back to stable.
+const omegaUrls = {
+  stable: "https://omega.stable.tensamin.net",
+  canary: "https://omega.canary.tensamin.net",
+  dev: "https://omega.dev.tensamin.net",
+} as const;
+
+const omegaEnv = (
+  import.meta as ImportMeta & { env?: { TENSAMIN_CHANNEL?: string } }
+).env?.TENSAMIN_CHANNEL;
+const omegaChannelKey = omegaEnv ?? "";
+const omegaChannel = (
+  omegaChannelKey in omegaUrls ? omegaChannelKey : "stable"
+) as keyof typeof omegaUrls;
+
 export const storageDefaults: Storage = {
   session_id: 0,
   user_id: 0,
@@ -1026,7 +1218,7 @@ export const storageDefaults: Storage = {
   cached_communities: [],
   cache_contacts: 5,
   cache_messages_per_chat: 20,
-  omega_url: "https://omega.tensamin.net",
+  omega_url: omegaUrls[omegaChannel],
   forced_omikron_url: undefined,
   forced_omikron_public_key: undefined,
   call_mute_range_start: -75,

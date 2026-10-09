@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootPackageJsonPath = path.resolve(__dirname, "../../package.json");
 const cargoTomlPath = path.resolve(__dirname, "./src-tauri/Cargo.toml");
 const tauriConfigPath = path.resolve(__dirname, "./src-tauri/tauri.conf.json");
+const cargoLockPath = path.resolve(__dirname, "./src-tauri/Cargo.lock");
 
 // Args
 const isUnrender = process.argv.includes("--unrender");
@@ -59,6 +60,14 @@ const tauriConfig = fs.readFileSync(tauriConfigPath, "utf8");
 const updatedTauriConfig = updateTauriConfig(tauriConfig);
 
 fs.writeFileSync(tauriConfigPath, updatedTauriConfig, "utf8");
+const cargoLock = fs.readFileSync(cargoLockPath, "utf8");
+fs.writeFileSync(
+  cargoLockPath,
+  cargoLock.replace(
+    /(\[\[package\]\]\nname = "tensamin"\nversion = ").*("\n)/,
+    `$1${targetVersion}$2`,
+  ),
+);
 
 // Finished
 if (isUnrender) {

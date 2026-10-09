@@ -184,6 +184,9 @@ export default function View() {
         <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
           <div
             ref={focusedTileRef}
+            style={{
+              viewTransitionName: `call-${focusedTileType}-${focusedParticipantId}`,
+            }}
             className={
               isImmersiveFocusedView
                 ? "h-full w-full overflow-hidden"
@@ -206,7 +209,13 @@ export default function View() {
             style={{ height: SECONDARY_ROW_HEIGHT_PX }}
           >
             {tiles.map((tile) => (
-              <div key={tile.key} className="h-full shrink-0 aspect-video">
+              <div
+                key={tile.key}
+                className="h-full shrink-0 aspect-video"
+                style={{
+                  viewTransitionName: `call-${tile.key.replace(":", "-")}`,
+                }}
+              >
                 <Base
                   type={tile.kind}
                   participant={getParticipantById(tile.participantId)}

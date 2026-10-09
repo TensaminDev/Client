@@ -75,10 +75,23 @@ body,
   transition-property: translate !important;
 }
 
+:root {
+  --ui-safe-area-top: max(env(safe-area-inset-top, 0px), var(--android-safe-area-top, 0px));
+  --ui-safe-area-right: max(env(safe-area-inset-right, 0px), var(--android-safe-area-right, 0px));
+  --ui-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), var(--android-safe-area-bottom, 0px));
+  --ui-safe-area-left: max(env(safe-area-inset-left, 0px), var(--android-safe-area-left, 0px));
+}
+
 [data-safe-area-root] {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
+  padding-top: var(--ui-safe-area-top);
+  padding-right: var(--ui-safe-area-right);
+  padding-bottom: var(--ui-safe-area-bottom);
+  padding-left: var(--ui-safe-area-left);
+}
+
+/* CreateScreen already pads its fullscreen container using the same insets. */
+[data-safe-area-root]:has(.h-dvh.pt-\[var\(--ui-safe-area-top\)\]) {
+  padding: 0;
 }
 
 @media (min-width: 768px) {
@@ -139,5 +152,85 @@ body,
   from {
     opacity: 0.85;
     transform: translateY(-10%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-call-transition]::view-transition-old(root) {
+    animation: none;
+  }
+
+  :root[data-call-transition]::view-transition-new(root) {
+    animation: none;
+  }
+
+  :root[data-call-transition]::view-transition-old(call-screen) {
+    animation: call-background-out 180ms ease-out both;
+  }
+
+  :root[data-call-transition]::view-transition-new(call-screen) {
+    animation: call-root-in 260ms ease-out both;
+  }
+
+  :root[data-call-transition]::view-transition-group(*) {
+    animation-duration: 270ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  :root[data-call-transition]::view-transition-old(.call-overlay):only-child {
+    animation: call-background-out 160ms ease-in both;
+  }
+
+  :root[data-call-transition]::view-transition-new(.call-overlay):only-child {
+    animation: call-root-in 190ms ease-out both;
+  }
+
+  :root[data-call-transition]::view-transition-old(call-preview-background) {
+    animation: call-background-out 700ms ease-out both;
+  }
+
+  :root[data-call-transition="join"]::view-transition-group(*) {
+    animation-duration: 620ms;
+  }
+
+  :root[data-call-transition="join"]::view-transition-old(call-screen) {
+    animation: call-background-out 420ms ease-out both;
+  }
+
+  :root[data-call-transition="join"]::view-transition-new(call-screen) {
+    animation: call-root-in 560ms ease-out both;
+  }
+
+  :root[data-call-transition="join"]::view-transition-old(
+      call-preview-background
+    ) {
+    animation: call-background-out 820ms ease-out both;
+  }
+
+  :root[data-call-transition="join"]::view-transition-new(call-actions) {
+    animation: call-actions-in 400ms 240ms ease-out both;
+  }
+
+  :root[data-call-transition="join"]::view-transition-old(call-join-button) {
+    animation: call-background-out 280ms ease-out both;
+  }
+}
+
+@keyframes call-background-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes call-root-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes call-actions-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
   }
 }

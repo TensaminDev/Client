@@ -50,9 +50,6 @@ const desktopApi = {
   app: {
     getVersion: () => ipcRenderer.invoke(ipcChannels.getVersion),
   },
-  updates: {
-    checkForUpdates: () => ipcRenderer.invoke(ipcChannels.checkForUpdates),
-  },
   call: {
     setStatus: (status: DesktopCallStatus) => {
       if (

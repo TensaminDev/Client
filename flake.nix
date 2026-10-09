@@ -1,9 +1,16 @@
 {
-  description = "Tensamin Client";
+  description = "Tensamin client development and verification";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    mtp-type-maps = {
+      url = "git+https://git.methanium.net/tensamin/mtp-type-maps?ref=main";
+      flake = false;
+    };
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -11,213 +18,217 @@
       self,
       nixpkgs,
       rust-overlay,
+      mtp-type-maps,
       ...
     }:
     let
-      systems = [
+      forSystems = nixpkgs.lib.genAttrs [
         "x86_64-linux"
         "aarch64-linux"
       ];
-      forAllSystems = nixpkgs.lib.genAttrs systems;
-      version = "0.0.11";
-    in
-    {
-      packages = forAllSystems (
+      project =
         system:
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ (import rust-overlay) ];
-            config = {
-              allowUnfree = true;
-              android_sdk.accept_license = true;
-            };
+            overlays = [ rust-overlay.overlays.default ];
           };
-          electronRuntimeLibs = with pkgs; [
-            alsa-lib
-            at-spi2-atk
-            at-spi2-core
-            atk
-            cairo
-            cups
-            dbus
-            expat
-            fontconfig
-            freetype
-            gdk-pixbuf
-            glib
-            gtk3
-            libdrm
-            libgbm
-            libglvnd
-            libnotify
-            libpulseaudio
-            libsecret
-            libuuid
-            libxkbcommon
-            mesa
-            nspr
-            nss
-            pango
-            pipewire
-            systemd
-            wayland
-            libX11
-            libXScrnSaver
-            libXcomposite
-            libXcursor
-            libXdamage
-            libXext
-            libXfixes
-            libXi
-            libXrandr
-            libXtst
-            libxcb
-          ];
-          electron = pkgs.electron;
-          electronArch = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "x64";
-          electronUnpackedDir = if electronArch == "arm64" then "linux-arm64-unpacked" else "linux-unpacked";
-          pnpm = pkgs.pnpm;
-          mtpTypeMaps = pkgs.fetchgit {
-            url = "https://git.methanium.net/tensamin/mtp-type-maps";
-            rev = "6e5122fe44f793c0e0d3229b3d34145ce17c2d31";
-            hash = "sha256-/4n8F0YLJaLncefKL907P5l+en1CTjpgdFmLBF3gbiQ=";
+          rust = pkgs.rust-bin.stable.latest.default.override { targets = [ "wasm32-unknown-unknown" ]; };
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = rust;
+            rustc = rust;
           };
-          mtpSource = pkgs.fetchzip {
-            url = "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-bb0f682/mtp-0.3.0.tgz";
-            hash = "sha256-/KJkTro+1LPxghIMEUePZEL3KBO2wjG27C+FCZ56lvg=";
+          mtp = pkgs.fetchurl {
+            url = builtins.head (
+              builtins.match ''.*mtp: "([^"]+)".*'' (builtins.readFile ./pnpm-workspace.yaml)
+            );
+            hash = "sha256-WRN9NMxKjJmF4e+Shu7/tAT7m4FZa+YZZ2MyZ8xV5co=";
           };
-          mtpCargoDeps = pkgs.rustPlatform.fetchCargoVendor {
-            src = mtpSource;
-            sourceRoot = "source/.rust";
-            hash = "sha256-K4P/NZr5Y3zG3lrMxoenf9VMFz35V0vbRl7/7kycYuA=";
+          mtpRust =
+            pkgs.runCommand "mtp-rust-source"
+              {
+                nativeBuildInputs = [
+                  pkgs.gnutar
+                  pkgs.gzip
+                ];
+              }
+              ''
+                mkdir -p "$out"
+                tar -xzf ${mtp} --strip-components=2 -C "$out" package/.rust
+              '';
+          cargoDeps = rustPlatform.fetchCargoVendor {
+            pname = "mtp-wasm";
+            version = "0.4.0";
+            src = mtpRust;
+            hash = "sha256-zfucKSWEIx3l1L9lTj1lidD/qE/HwueLBVJoND51MMU=";
           };
-          wasmBindgenCliSource = pkgs.fetchCrate {
-            pname = "wasm-bindgen-cli";
-            version = "0.2.127";
-            hash = "sha256-di+qBAdd7pENLiIB9CoZoab+W5xeDoByMREcCGTSzWo=";
-          };
-          wasmBindgenCli = pkgs.buildWasmBindgenCli {
-            src = wasmBindgenCliSource;
-            cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
-              src = wasmBindgenCliSource;
-              hash = "sha256-FTv2GZIAQs0ePdIZXIXil7JbZ6kIT05VG6vqC1qNFxQ=";
-            };
-          };
-          desktopItem = pkgs.makeDesktopItem {
-            name = "tensamin";
-            desktopName = "Tensamin";
-            exec = "tensamin";
-            icon = "tensamin";
-            startupWMClass = "Tensamin";
-            categories = [ "Network" ];
-          };
-          defaultPackage = pkgs.stdenv.mkDerivation (finalAttrs: {
+          pnpmDeps = pkgs.fetchPnpmDeps {
             pname = "tensamin";
-            inherit version;
+            version = "0.0.11";
             src = self;
-
-            pnpmDeps = pkgs.fetchPnpmDeps {
-              inherit (finalAttrs) pname version src;
-              inherit pnpm;
-              fetcherVersion = 4;
-              hash = "sha256-vQMHYyTgpTFxm+HACd/m30y6nWOyT79GMW8dK6UsRRw=";
-            };
-
+            pnpm = pkgs.pnpm;
+            fetcherVersion = 4;
+            hash = "sha256-DNlra8rVmKsjlpSaIBMDyqK49d06VXzwsrbfFiWqx4w=";
+          };
+          source = pkgs.runCommand "tensamin-source" { } ''
+            cp -r ${self} "$out"
+            chmod -R u+w "$out"
+            rm -rf "$out/mtp-type-maps"
+            cp -r ${mtp-type-maps} "$out/mtp-type-maps"
+          '';
+          common = {
+            version = "0.0.11";
+            src = source;
+            inherit pnpmDeps;
             nativeBuildInputs = with pkgs; [
-              copyDesktopItems
-              makeWrapper
-              nodejs_22
+              nodejs
               pnpm
               pnpmConfigHook
-              cargo
-              lld
-              rustc
+              makeWrapper
+              rust
               wasm-pack
-              wasmBindgenCli
+              wasm-bindgen-cli_0_2_127
               binaryen
+              lld
+              pkg-config
+              openssl
             ];
-
-            env.ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
-
-            postPatch = ''
-              rm -rf mtp-type-maps
-              ln -s ${mtpTypeMaps} mtp-type-maps
-
-              node -e '
-                const fs = require("fs");
-                const path = "apps/electron/package.json";
-                const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
-                pkg.version = "${version}";
-                fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
-              '
+            CARGO_NET_OFFLINE = "true";
+            ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
+            postConfigure = ''
+              export CARGO_HOME="$TMPDIR/cargo"
+              mkdir -p "$CARGO_HOME"
+              cp ${cargoDeps}/.cargo/config.toml "$CARGO_HOME/config.toml"
+              substituteInPlace "$CARGO_HOME/config.toml" --replace-fail '@vendor@' '${cargoDeps}'
             '';
-
-            buildPhase = ''
-              runHook preBuild
-
-              mkdir -p "$HOME/.cargo"
-              substitute ${mtpCargoDeps}/.cargo/config.toml "$HOME/.cargo/config.toml" \
-                --replace-fail @vendor@ ${mtpCargoDeps}
-
-              pnpm run copy-licenses
-              pnpm run build:packages
-              pnpm run build:web
-              pnpm --dir apps/tauri run gen-icons
-              pnpm --dir apps/electron run build
-              pnpm --dir apps/electron exec electron-builder --dir --linux --${electronArch} --publish never \
-                --config.electronDist=${electron.dist} \
-                --config.electronVersion=${electron.version}
-
-              runHook postBuild
-            '';
-
-            installPhase = ''
-              runHook preInstall
-
-              mkdir -p "$out/lib/tensamin" "$out/bin"
-              cp -r apps/electron/release/${electronUnpackedDir}/. "$out/lib/tensamin/"
-
-              makeWrapper "$out/lib/tensamin/tensamin" "$out/bin/tensamin" \
-                --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath electronRuntimeLibs}"
-
-              install -Dm644 apps/electron/build/icons/icon.png \
-                "$out/share/icons/hicolor/512x512/apps/tensamin.png"
-
-              runHook postInstall
-            '';
-
-            desktopItems = [ desktopItem ];
-
-            meta = {
-              description = "Tensamin desktop client";
-              homepage = "https://git.methanium.net/tensamin/client";
-              mainProgram = "tensamin";
-              platforms = pkgs.lib.platforms.linux;
+            passthru = {
+              inherit source;
+              inherit cargoDeps;
             };
-          });
+            meta.platforms = [
+              "x86_64-linux"
+              "aarch64-linux"
+            ];
+          };
         in
         {
-          default = defaultPackage;
-          tensamin = defaultPackage;
-          electron = defaultPackage;
-        }
-      );
-
-      devShells = forAllSystems (
+          packages = {
+            web = pkgs.stdenv.mkDerivation (
+              common
+              // {
+                pname = "tensamin-web";
+                buildPhase = ''
+                  runHook preBuild
+                  pnpm run build:web
+                  runHook postBuild
+                '';
+                installPhase = ''mkdir -p "$out"; cp -r apps/web/dist/. "$out/"'';
+              }
+            );
+            default = pkgs.stdenv.mkDerivation (
+              common
+              // {
+                pname = "tensamin";
+                buildPhase = ''
+                  runHook preBuild
+                  TENSAMIN_WEB_BASE=./ pnpm run build:web
+                  pnpm --dir apps/electron run build
+                  runHook postBuild
+                '';
+                installPhase = ''
+                  mkdir -p "$out/lib/tensamin" "$out/bin" "$out/lib/web/dist"
+                  cp -r apps/electron/dist apps/electron/package.json "$out/lib/tensamin/"
+                  cp -r apps/web/dist/. "$out/lib/web/dist/"
+                  makeWrapper ${pkgs.electron}/bin/electron "$out/bin/tensamin" \
+                    --add-flags "$out/lib/tensamin" \
+                    --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.pulseaudio ]} \
+                    --set ELECTRON_OZONE_PLATFORM_HINT auto
+                  if [ -d apps/electron/build/icons ]; then
+                    mkdir -p "$out/lib/tensamin/build"
+                    cp -r apps/electron/build/icons "$out/lib/tensamin/build/icons"
+                    install -Dm644 apps/electron/build/icons/icon.png "$out/share/icons/hicolor/512x512/apps/tensamin.png"
+                  fi
+                  mkdir -p "$out/share/applications"
+                  cp ${
+                    pkgs.makeDesktopItem {
+                      name = "tensamin";
+                      desktopName = "Tensamin";
+                      exec = "tensamin %U";
+                      icon = "tensamin";
+                      categories = [ "Network" ];
+                      mimeTypes = [ "x-scheme-handler/tensamin" ];
+                    }
+                  }/share/applications/* "$out/share/applications/"
+                '';
+                meta = common.meta // {
+                  mainProgram = "tensamin";
+                };
+              }
+            );
+            release-desktop = pkgs.writeShellScript "release-client-desktop" ''
+              set -euo pipefail
+              cd "''${RELEASE_WORK:?}"
+              pnpm install --frozen-lockfile
+              pnpm run ci
+              electron_arch=x64
+              [[ $RELEASE_ARCH != aarch64 ]] || electron_arch=arm64
+              package_name=tensamin
+              [[ $TENSAMIN_CHANNEL == stable ]] || package_name="tensamin-$TENSAMIN_CHANNEL"
+              pnpm --dir apps/electron exec electron-builder --config electron-builder.config.cjs \
+                --config.extraMetadata.version="0.0.$TENSAMIN_ANDROID_VERSION_CODE" \
+                --config.deb.packageName="$package_name" --config.rpm.packageName="$package_name" \
+                --linux --"$electron_arch" --publish never
+              pnpm run copy-releases
+              for asset in releases/*; do
+                [[ $(basename "$asset") == SHA256SUMS ]] && continue
+                name=$(basename "$asset")
+                [[ $name != electron-release-metadata.json ]] || name="electron-release-metadata-$RELEASE_ARCH.json"
+                cp "$asset" "$RELEASE_OUT/$name"
+              done
+            '';
+            release-android = pkgs.writeShellScript "release-client-android" ''
+              set -euo pipefail
+              cd "''${RELEASE_WORK:?}"
+              pnpm install --frozen-lockfile
+              : "''${ANDROID_KEYSTORE_BASE64:?}" "''${ANDROID_KEY_ALIAS:?}" "''${ANDROID_KEY_PASSWORD:?}" "''${ANDROID_STORE_PASSWORD:?}"
+              umask 077
+              printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release.keystore
+              printf 'storeFile=release.keystore\nkeyAlias=%s\nkeyPassword=%s\nstorePassword=%s\n' \
+                "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" "$ANDROID_STORE_PASSWORD" > keystore.properties
+              trap 'rm -f release.keystore keystore.properties' EXIT
+              cargo test --locked --manifest-path apps/tauri/src-tauri/Cargo.toml
+              pnpm run build:mobile
+              apk=apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+              cp "$apk" "$RELEASE_OUT/Tensamin-$TENSAMIN_RELEASE_TAG.apk"
+            '';
+          };
+        };
+    in
+    {
+      lib.mkPackages = system: (project system).packages;
+      packages = forSystems (system: {
+        inherit ((project system).packages)
+          default
+          web
+          release-desktop
+          release-android
+          ;
+      });
+      checks = forSystems (system: {
+        inherit ((project system).packages) default web;
+      });
+      devShells = forSystems (
         system:
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ (import rust-overlay) ];
+            overlays = [ rust-overlay.overlays.default ];
             config = {
               allowUnfree = true;
               android_sdk.accept_license = true;
             };
           };
-
           electronArch = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "x64";
-
           electronRuntimeLibs = with pkgs; [
             alsa-lib
             at-spi2-atk
@@ -259,13 +270,12 @@
             libXtst
             libxcb
           ];
-
           buildToolsVersion = "35.0.0";
           ndkVersion = "29.0.14206865";
           android = pkgs.androidenv.composeAndroidPackages {
             cmdLineToolsVersion = "8.0";
+            platformToolsVersion = "37.0.1";
             toolsVersion = "26.1.1";
-            platformToolsVersion = "35.0.2";
             buildToolsVersions = [ buildToolsVersion ];
             platformVersions = [
               "35"
@@ -281,6 +291,8 @@
             extensions = [
               "rust-src"
               "rust-analyzer"
+              "rustfmt"
+              "clippy"
             ];
             targets = [
               "aarch64-linux-android"
@@ -290,7 +302,6 @@
               "wasm32-unknown-unknown"
             ];
           };
-
           commonDeps = [
             rustToolchain
             pkgs.wasm-pack
@@ -318,13 +329,10 @@
         in
         rec {
           default = electron;
-
           electron = pkgs.mkShell {
             packages =
-              with pkgs;
-              [
-                nodejs_22
-                corepack_22
+              (with pkgs; [
+                nodejs
                 coreutils
                 pnpm
                 pkgs.electron
@@ -343,10 +351,9 @@
                 rsync
                 xz
                 p7zip
-              ]
+              ])
               ++ electronRuntimeLibs
               ++ commonDeps;
-
             shellHook = ''
               export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath electronRuntimeLibs}:$LD_LIBRARY_PATH"
               export ELECTRON_ENABLE_LOGGING=1
@@ -356,25 +363,21 @@
               export USE_SYSTEM_FPM=true
               export ELECTRON_BUILDER_7ZIP_PATH="${pkgs.p7zip}/bin/7za"
               export APPIMAGE_TOOLS_PATH="${appImageTools}"
-
-              alias electron-install='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm install'
-              alias electron-build-web='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" && pnpm run build:web'
+              alias electron-install='pnpm install'
+              alias electron-build-web='pnpm run build:web'
               alias electron-dev='pnpm run dev'
               alias electron-package='pnpm run package:linux'
               alias electron-validate='pnpm run validate'
             '';
           };
-
           tauri = pkgs.mkShell {
             buildInputs =
-              with pkgs;
-              [
+              (with pkgs; [
                 jdk17
                 gradle
                 pnpm
                 bun
                 nodejs
-                corepack_22
                 coreutils
                 pkg-config
                 git
@@ -389,66 +392,42 @@
                 openssl
                 librsvg
                 libayatana-appindicator
-              ]
-              ++ [
-                android.androidsdk
                 android-studio-tools
-              ]
+              ])
+              ++ [ android.androidsdk ]
               ++ commonDeps;
-
             shellHook = ''
               sdkSource="${android.androidsdk}/libexec/android-sdk"
-              if [ -d apps/tauri/src-tauri ]; then
-                projectRoot="$PWD/apps/tauri"
-              else
-                projectRoot="$PWD"
-              fi
+              projectRoot="$PWD/apps/tauri"
               androidHome="$projectRoot/.android"
               sdkRoot="$androidHome/sdk"
-
-              mkdir -p "$androidHome"
-              if [ -L "$sdkRoot" ]; then
-                rm -f "$sdkRoot"
-              fi
-              mkdir -p "$sdkRoot"
-
-              ln -sfn "$sdkSource/build-tools" "$sdkRoot/build-tools"
-              ln -sfn "$sdkSource/cmake" "$sdkRoot/cmake"
-              ln -sfn "$sdkSource/licenses" "$sdkRoot/licenses"
-              ln -sfn "$sdkSource/ndk" "$sdkRoot/ndk"
-              ln -sfn "$sdkSource/ndk-bundle" "$sdkRoot/ndk-bundle"
-              ln -sfn "$sdkSource/platforms" "$sdkRoot/platforms"
-              ln -sfn "$sdkSource/platform-tools" "$sdkRoot/platform-tools"
-              ln -sfn "$sdkSource/tools" "$sdkRoot/tools"
-
               mkdir -p "$sdkRoot/cmdline-tools"
-              ln -sfn "$sdkSource/cmdline-tools/8.0" "$sdkRoot/cmdline-tools/8.0"
-              ln -sfn "8.0" "$sdkRoot/cmdline-tools/latest"
-
+              for component in build-tools cmake licenses ndk ndk-bundle platforms platform-tools tools; do
+                if [ ! -e "$sdkRoot/$component" ] && [ ! -L "$sdkRoot/$component" ]; then
+                  ln -s "$sdkSource/$component" "$sdkRoot/$component"
+                fi
+              done
+              if [ ! -e "$sdkRoot/cmdline-tools/8.0" ]; then
+                ln -s "$sdkSource/cmdline-tools/8.0" "$sdkRoot/cmdline-tools/8.0"
+              fi
+              if [ ! -e "$sdkRoot/cmdline-tools/latest" ]; then
+                ln -s "8.0" "$sdkRoot/cmdline-tools/latest"
+              fi
               sdkRootAbs="$(realpath "$sdkRoot")"
               ndkRootAbs="''${sdkRootAbs}/ndk/${ndkVersion}"
-
               export PATH="''${sdkRootAbs}/cmdline-tools/latest/bin:''${sdkRootAbs}/platform-tools:''${ndkRootAbs}:${pkgs.android-studio-tools}/bin:$PATH"
-              export ANDROID_HOME="''${sdkRootAbs}"
-              export ANDROID_SDK_ROOT="''${sdkRootAbs}"
-              export ANDROID_NDK_ROOT="''${ndkRootAbs}"
+              export ANDROID_HOME="$sdkRootAbs"
+              export ANDROID_SDK_ROOT="$sdkRootAbs"
+              export ANDROID_NDK_ROOT="$ndkRootAbs"
               export ANDROID_NDK_HOME="$ANDROID_NDK_ROOT"
               export NDK_HOME="$ANDROID_NDK_ROOT"
               export NDK_PATH="$ANDROID_NDK_ROOT"
               export JAVA_HOME="${pkgs.jdk17}"
-
-              aapt2Path="''${sdkRootAbs}/build-tools/${buildToolsVersion}/aapt2"
-              if [ -x "$aapt2Path" ]; then
-                mkdir -p "$HOME/.gradle"
-                gradleProperties="$HOME/.gradle/gradle.properties"
-                touch "$gradleProperties"
-                if grep -q '^android\.aapt2FromMavenOverride=' "$gradleProperties"; then
-                  sed -i "s|^android\.aapt2FromMavenOverride=.*|android.aapt2FromMavenOverride=$aapt2Path|" "$gradleProperties"
-                else
-                  printf '\nandroid.aapt2FromMavenOverride=%s\n' "$aapt2Path" >> "$gradleProperties"
-                fi
-              fi
-
+              # Keep Gradle configuration inside the staged workspace.
+              export GRADLE_USER_HOME="$androidHome/gradle"
+              mkdir -p "$GRADLE_USER_HOME"
+              printf 'android.aapt2FromMavenOverride=%s\n' \
+                "$sdkRootAbs/build-tools/${buildToolsVersion}/aapt2" > "$GRADLE_USER_HOME/gradle.properties"
               adb devices
             '';
           };

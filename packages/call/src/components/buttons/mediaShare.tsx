@@ -44,6 +44,7 @@ const MediaShareTrigger = forwardRef<
       ref={ref}
       {...props}
       variant={isScreensharing ? "default" : "secondary"}
+      className={`${props.className ?? ""} motion-safe:transition-colors motion-safe:duration-200`}
     >
       {isScreensharing ? (
         <MonitorDot style={{ scale: `${iconSize ? iconSize + 100 : 100}%` }} />

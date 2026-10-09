@@ -6,6 +6,11 @@
     "main"
   ],
   "permissions": [
+    "mtp:default",
+    "mtp:encrypted-pipes",
+    "mtp:background-service",
+    "mtp:export-credentials",
+    "mtp:allow-mtp-stop",
     "opener:default",
     "deep-link:default",
     "notification:default",

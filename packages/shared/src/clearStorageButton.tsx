@@ -11,27 +11,36 @@ import {
   AlertDialogTrigger,
   Button,
 } from "@methanium/ui";
-import { useState } from "react";
 import { clearDatabaseStore } from "./indexedDb";
+import { toast } from "./log";
 
 export default function ClearStorageButton({
   className,
 }: {
   className?: string;
 }) {
-  const [error, setError] = useState("");
-
   async function clearStorage() {
     try {
-      if (isTauri()) await invoke("mtp_clear_credentials");
+      if (isTauri()) {
+        await invoke("plugin:mtp|mtp_clear_credentials", {
+          name: "mtp:credentials",
+        });
+        await invoke("mtp_clear_credentials");
+      }
       await window.tensaminDesktop?.secureStorage?.clear?.();
       await Promise.all(
         (["storage", "cache", "keys"] as const).map(clearDatabaseStore),
       );
       localStorage.clear();
-      location.reload();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      // Reload the app entry point, not the current settings URL in a packaged app.
+      location.replace(
+        new URL(
+          location.protocol === "file:" ? location.pathname : "/",
+          location.href,
+        ),
+      );
+    } catch (error) {
+      toast("error", error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -49,20 +58,18 @@ export default function ClearStorageButton({
           <AlertDialogHeader>
             <AlertDialogTitle>Clear all local data?</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes settings, cached messages, and credentials from this
-              device. You will need to log in again. Remote account data remains
-              untouched. This is essentially a factory reset.
+              This will clear settings, cached messages and credentials. You
+              will need to log in again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={clearStorage}>
-              Clear data and log out
+              Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </div>
   );
 }

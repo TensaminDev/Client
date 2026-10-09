@@ -9,4 +9,4 @@ allowBuilds:
   ref: false
 overrides:
   "@methanium/ui": "https://git.methanium.net/methanium/ui/releases/download/0.0.45/methanium-ui.tgz"
-  mtp: "https://git.methanium.net/methanium/mtp/releases/download/0.3.0-dev-bb0f682/mtp-0.3.0.tgz"
+  mtp: "https://git.methanium.net/methanium/mtp/releases/download/0.4.0-dev-ad48926/mtp-0.4.0.tgz"

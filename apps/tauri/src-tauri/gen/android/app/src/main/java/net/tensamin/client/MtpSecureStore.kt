@@ -14,7 +14,6 @@ object MtpSecureStore {
   private const val KEY_ALIAS = "tensamin-mtp-config"
   private const val PREFS = "tensamin-mtp"
   private const val CONFIG = "config"
-  private const val ENABLED = "enabled"
 
   fun saveConfig(context: Context, config: String) {
     val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -44,13 +43,6 @@ object MtpSecureStore {
     preferences(context).edit().clear().commit()
     KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(KEY_ALIAS)
   }
-
-  fun setEnabled(context: Context, enabled: Boolean) {
-    preferences(context).edit().putBoolean(ENABLED, enabled).apply()
-  }
-
-  fun isEnabled(context: Context): Boolean =
-    preferences(context).getBoolean(ENABLED, false)
 
   private fun preferences(context: Context) =
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

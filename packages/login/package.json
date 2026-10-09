@@ -1,0 +1,53 @@
+{
+  "name": "@tensamin/login",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./omega": "./src/omega.ts",
+    "./transport": "./src/transport.ts",
+    "./events": "./src/events.ts",
+    "./credential": "./src/credential.ts",
+    "./protection": "./src/protection.ts",
+    "./errors": "./src/errors.ts",
+    "./password/opaque": "./src/password/opaque.ts",
+    "./password/envelope": "./src/password/envelope.ts",
+    "./password/login": "./src/password/login.ts",
+    "./password/enrollment": "./src/password/enrollment.ts",
+    "./qr/credential": "./src/qr/credential.ts",
+    "./qr/deeplink": "./src/qr/deeplink.ts",
+    "./qr/contactCreated": "./src/qr/contactCreated.ts",
+    "./loginForm": "./src/ui/loginForm.tsx",
+    "./passwordSettings": "./src/ui/passwordSettings.tsx",
+    "./deviceLoginSettings": "./src/ui/deviceLoginSettings.tsx",
+    "./registerScreen": "./src/ui/registerScreen.tsx",
+    "./loginDeveloperMenu": "./src/ui/loginDeveloperMenu.tsx"
+  },
+  "scripts": {
+    "format": "pnpm exec prettier --write .",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests",
+    "build": "pnpm run test && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@methanium/ui": "*",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@structured-id/opaque": "1.0.5",
+    "@tanstack/react-router": "^1.170.21",
+    "@tauri-apps/api": "^2.11.1",
+    "@tensamin/mtp": "workspace:*",
+    "@tensamin/shared": "workspace:*",
+    "@tensamin/storage": "workspace:*",
+    "lucide-react": "^1.29.0",
+    "mtp": "*",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "@types/node": "^26.2.0"
+  }
+}

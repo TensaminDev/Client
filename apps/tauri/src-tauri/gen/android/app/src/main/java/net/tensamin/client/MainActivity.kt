@@ -24,6 +24,7 @@ class MainActivity : TauriActivity() {
   private var attachLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
   private var mediaWebView: WebView? = null
   private var pendingScreenAudio: Boolean? = null
+  @Volatile private var safeAreaJson = "{}"
 
   private val screenCaptureLauncher = registerForActivityResult(
     ActivityResultContracts.StartActivityForResult(),
@@ -68,13 +69,11 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    WindowCompat.setDecorFitsSystemWindows(window, true)
+    WindowCompat.setDecorFitsSystemWindows(window, false)
     window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
     super.onCreate(savedInstanceState)
     NativeMtpBridge.nativeAttach(applicationContext)
-    if (MtpSecureStore.isEnabled(this) && MtpSecureStore.hasConfig(this)) {
-      NativeMtpBridge.startService(this)
-    }
+    org.methanium.mtp.MtpService.attach(this)
     NativeAccessibilityBridge.nativeAttach(applicationContext)
     installKeyboardResizeWorkaround()
   }

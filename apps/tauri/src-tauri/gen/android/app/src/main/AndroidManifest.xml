@@ -16,14 +16,15 @@
     <uses-feature android:name="android.software.leanback" android:required="false" />
 
     <application
+        android:name=".TensaminApplication"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="${appLabel}"
         android:theme="@style/Theme.tensamin"
         android:usesCleartextTraffic="${usesCleartextTraffic}">
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:launchMode="singleTask"
-            android:label="@string/main_activity_title"
+            android:label="${appLabel}"
             android:name=".MainActivity"
             android:screenOrientation="portrait"
             android:exported="true">
@@ -54,25 +55,6 @@
             android:name=".MediaProjectionService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
-
-        <service
-            android:name=".MtpForegroundService"
-            android:exported="false"
-            android:stopWithTask="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Maintains the user-enabled encrypted messaging connection and receives incoming messages" />
-        </service>
-
-        <receiver
-            android:name=".MtpBootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
 
         <provider
           android:name="androidx.core.content.FileProvider"

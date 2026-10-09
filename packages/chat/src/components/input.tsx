@@ -288,14 +288,16 @@ export default function InputComponent({
     <div className="flex flex-col">
       {/* reply */}
       {replyTo !== undefined && (
-        <ReplyBox
-          edited={replyMessage?.Edited}
-          content={replyMessage?.Content}
-          loading={!replyMessage}
-          onDismiss={() => setReplyTo(undefined)}
-          userId={replyUserId ?? ownId}
-          variant="composer"
-        />
+        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-200">
+          <ReplyBox
+            edited={replyMessage?.Edited}
+            content={replyMessage?.Content}
+            loading={!replyMessage}
+            onDismiss={() => setReplyTo(undefined)}
+            userId={replyUserId ?? ownId}
+            variant="composer"
+          />
+        </div>
       )}
       <Card
         ref={inputBoxRef}
