@@ -2,6 +2,10 @@
   description = "Tensamin client development and verification";
 
   inputs = {
+    mtp-type-maps = {
+      url = "git+https://git.methanium.net/tensamin/mtp-type-maps?ref=main";
+      flake = false;
+    };
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
@@ -14,6 +18,7 @@
       self,
       nixpkgs,
       rust-overlay,
+      mtp-type-maps,
       ...
     }:
     let
@@ -65,9 +70,15 @@
             fetcherVersion = 4;
             hash = "sha256-DNlra8rVmKsjlpSaIBMDyqK49d06VXzwsrbfFiWqx4w=";
           };
+          source = pkgs.runCommand "tensamin-source" { } ''
+            cp -r ${self} "$out"
+            chmod -R u+w "$out"
+            rm -rf "$out/mtp-type-maps"
+            cp -r ${mtp-type-maps} "$out/mtp-type-maps"
+          '';
           common = {
             version = "0.0.11";
-            src = self;
+            src = source;
             inherit pnpmDeps;
             nativeBuildInputs = with pkgs; [
               nodejs
@@ -91,7 +102,7 @@
               substituteInPlace "$CARGO_HOME/config.toml" --replace-fail '@vendor@' '${cargoDeps}'
             '';
             passthru = {
-              source = self;
+              inherit source;
               inherit cargoDeps;
             };
             meta.platforms = [

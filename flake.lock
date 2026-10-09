@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "mtp-type-maps": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790572556,
+        "narHash": "sha256-ugNZR2Be9N9UjG0aVN8Yrk4hYOVC2edjtC9xBhbW35w=",
+        "ref": "main",
+        "rev": "4f18c7a0d9b04d38a77fbb011c4f0b21c25bf7bf",
+        "revCount": 28,
+        "type": "git",
+        "url": "https://git.methanium.net/tensamin/mtp-type-maps"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "https://git.methanium.net/tensamin/mtp-type-maps"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1791366222,
@@ -18,6 +35,7 @@
     },
     "root": {
       "inputs": {
+        "mtp-type-maps": "mtp-type-maps",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay"
       }
