@@ -49,7 +49,7 @@ writeFileSync(join(output, "logo.svg"), svg);
 // Derive all raster sizes and adaptive Android layers from the channel SVG.
 writeFileSync(
   join(output, "background.svg"),
-  `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="${channel === "dev" ? "none" : channel === "canary" ? "#655600" : "#006560"}"/></svg>`,
+  `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><defs><linearGradient id="background" x2="0" y2="1"><stop stop-color="#837002"/><stop offset="1" stop-color="#ebdf9e"/></linearGradient></defs><rect width="512" height="512" fill="${channel === "dev" ? "none" : channel === "canary" ? "url(#background)" : "#006560"}"/></svg>`,
 );
 writeFileSync(
   join(output, "logo.json"),
