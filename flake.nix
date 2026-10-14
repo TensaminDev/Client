@@ -3,7 +3,7 @@
 
   inputs = {
     mtp-type-maps = {
-      url = "git+https://git.methanium.net/tensamin/mtp-type-maps?ref=main";
+      url = "github:TensaminDev/MTP-Type-Maps/main";
       flake = false;
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -68,7 +68,7 @@
             src = self;
             pnpm = pkgs.pnpm;
             fetcherVersion = 4;
-            hash = "sha256-DNlra8rVmKsjlpSaIBMDyqK49d06VXzwsrbfFiWqx4w=";
+            hash = "sha256-OUDJ6tpNso02vUbfw/FUqrdHVxbqGcZAqNtv5Nr5LAo=";
           };
           source = pkgs.runCommand "tensamin-source" { } ''
             cp -r ${self} "$out"
