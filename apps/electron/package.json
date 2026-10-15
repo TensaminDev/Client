@@ -4,7 +4,7 @@
   "version": "0.0.3",
   "description": "Tensamin desktop client",
   "author": "methanium",
-  "homepage": "https://git.methanium.net/tensamin/client",
+  "homepage": "https://github.com/TensaminDev/Client",
   "desktopName": "Tensamin",
   "type": "module",
   "main": "dist/main/main.js",
