@@ -11,7 +11,7 @@ import {
   LoadingScreen,
   OnboardingFlow,
   type OnboardingStep,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import type { MTPConnectionStatus } from "@tensamin/mtp";
 import { useSettingsProfiles } from "@tensamin/settings/profiles";
@@ -25,7 +25,7 @@ export {
   useOnboardingStep,
   type OnboardingStep,
   type OnboardingStepControls,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 
 type OnboardingDecision = {
   onboarding: boolean;

@@ -1,4 +1,4 @@
-import { EditableList, LabeledSwitch } from "@methanium/ui";
+import { EditableList, LabeledSwitch } from "@nonanium/ui";
 import { useEffect, useState } from "react";
 
 import { storageDefaults, type Storage } from "@tensamin/shared/data";

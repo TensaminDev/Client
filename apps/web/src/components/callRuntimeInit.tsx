@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useTheme } from "@methanium/ui";
+import { useTheme } from "@nonanium/ui";
 import { useIsSpeaking } from "@tensamin/call/speakingState";
 import { useCall, useInitializeCall } from "@tensamin/call/store";
 import { useStorage } from "@tensamin/storage/context";

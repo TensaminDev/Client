@@ -1,4 +1,4 @@
-import { Button } from "@methanium/ui";
+import { Button } from "@nonanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
 import { useCallback, useEffect, useRef, useState } from "react";

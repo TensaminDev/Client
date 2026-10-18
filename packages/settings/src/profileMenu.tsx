@@ -13,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { parseTuFileContent } from "@tensamin/storage/credentials";

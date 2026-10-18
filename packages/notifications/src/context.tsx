@@ -9,7 +9,7 @@ import {
   useRef,
 } from "react";
 import { toast as sonnerToast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@methanium/ui";
+import { Avatar, AvatarFallback, AvatarImage } from "@nonanium/ui";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
   isPermissionGranted as isTauriNotificationPermissionGranted,

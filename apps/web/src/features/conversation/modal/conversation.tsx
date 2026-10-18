@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
   useIsMobile,
   Button,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useSession } from "@tensamin/identity/session";
 import { useRef, useState } from "react";

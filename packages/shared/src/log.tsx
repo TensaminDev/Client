@@ -1,4 +1,4 @@
-import { toast as sonnerToast } from "@methanium/ui";
+import { toast as sonnerToast } from "@nonanium/ui";
 import { Ban, Check, Info, TriangleAlert } from "lucide-react";
 
 /**

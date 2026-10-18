@@ -17,7 +17,7 @@ const { version } = packageJson;
 const releaseVersion = process.env.TENSAMIN_RELEASE_VERSION || version;
 const releaseTag = process.env.TENSAMIN_RELEASE_TAG || releaseVersion;
 const releasesDir = join("releases");
-const releaseAssetBaseUrl = process.env.FORGEJO_RELEASE_ASSET_BASE_URL;
+const releaseAssetBaseUrl = process.env.TENSAMIN_RELEASE_ASSET_BASE_URL;
 
 function sha256(filePath: string) {
   const hash = createHash("sha256");
@@ -107,7 +107,7 @@ const artifacts = await Promise.all(
         arch: archFor(name),
         url: releaseAssetBaseUrl
           ? `${releaseAssetBaseUrl.replace(/\/$/, "")}/${encodeURIComponent(name)}`
-          : `__FORGEJO_RELEASE_ASSET_URL__/${encodeURIComponent(name)}`,
+          : `__RELEASE_ASSET_URL__/${encodeURIComponent(name)}`,
         sha256: await sha256(filePath),
         size: statSync(filePath).size,
       };

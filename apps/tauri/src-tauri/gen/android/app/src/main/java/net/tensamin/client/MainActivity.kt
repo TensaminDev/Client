@@ -73,7 +73,7 @@ class MainActivity : TauriActivity() {
     window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
     super.onCreate(savedInstanceState)
     NativeMtpBridge.nativeAttach(applicationContext)
-    org.methanium.mtp.MtpService.attach(this)
+    org.nonanium.mtp.MtpService.attach(this)
     NativeAccessibilityBridge.nativeAttach(applicationContext)
     installKeyboardResizeWorkaround()
   }

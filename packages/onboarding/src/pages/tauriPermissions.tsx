@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, useOnboardingStep } from "@methanium/ui";
+import { Button, useOnboardingStep } from "@nonanium/ui";
 import { invoke } from "@tauri-apps/api/core";
 import {
   isPermissionGranted,

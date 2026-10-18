@@ -25,7 +25,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import MessageContextMenu from "./messageContextMenu";
 import Media from "./media/media";
 import { useStorage } from "@tensamin/storage/context";
@@ -33,7 +33,7 @@ import { requireRelaySuccess, useMTP } from "@tensamin/mtp";
 import { getMessage, useChat } from "../context";
 import { decryptChatText, encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
-import { Emoji, Input, normalizeShortcode, Text } from "@methanium/ui/markdown";
+import { Emoji, Input, normalizeShortcode, Text } from "@nonanium/ui/markdown";
 import { useRecordEmojiUse } from "./emoji/emojiRanks";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";

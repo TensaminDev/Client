@@ -10,7 +10,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   formatForDisplay,
   useHotkeyDefinitions,

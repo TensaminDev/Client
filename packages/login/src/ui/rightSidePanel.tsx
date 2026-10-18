@@ -1,4 +1,4 @@
-import { PixelBlast } from "@methanium/ui";
+import { PixelBlast } from "@nonanium/ui";
 
 export default function RightSidePanel() {
   return (
@@ -9,7 +9,7 @@ export default function RightSidePanel() {
       />
       <a
         className="flex flex-col pl-10 z-10 w-auto mr-auto"
-        href="https://shop.methanium.net"
+        href="https://shop.nonanium.net"
         target="_blank"
       >
         <p className="text-2xl font-semibold pb-3">Support us!</p>
@@ -20,7 +20,7 @@ export default function RightSidePanel() {
           our merch at
         </p>
         <p className="underline text-(--primary-foreground-alt)!">
-          https://shop.methanium.net/
+          https://shop.nonanium.net/
         </p>
       </a>
     </div>

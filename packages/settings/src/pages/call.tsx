@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
   Slider,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   canSwitchAudioOutput,
   getCallDevices,
@@ -62,7 +62,7 @@ function sliderValue(value: number | readonly number[], fallback: number) {
   return typeof value === "number" ? value : (value[0] ?? fallback);
 }
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@methanium/ui";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@nonanium/ui";
 import { AlertTriangle } from "lucide-react";
 
 function WarningIndicator({ warnings }: { warnings: string[] }) {

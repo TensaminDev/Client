@@ -13,7 +13,7 @@
     "build": "pnpm run test && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@methanium/ui": "*",
+    "@nonanium/ui": "*",
     "@tauri-apps/api": "^2.11.1",
     "@tensamin/shared": "workspace:*",
     "@tensamin/storage": "workspace:*",

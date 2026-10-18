@@ -17,7 +17,7 @@ import {
   getDatabaseEntry,
   setDatabaseEntry,
 } from "@tensamin/shared/indexedDb";
-import { ErrorScreen } from "@methanium/ui";
+import { ErrorScreen } from "@nonanium/ui";
 import { log } from "@tensamin/shared/log";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import StartupErrorScreen from "./startupError";

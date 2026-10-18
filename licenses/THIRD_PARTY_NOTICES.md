@@ -20,12 +20,52 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/@livekit_components-react@2.9.23`
 - Source package dir: `packages/call/node_modules/@livekit/components-react`
 
-## @methanium/ui@0.0.44
+## @noble/ciphers@2.4.0
+
+- License: MIT
+- Homepage: https://paulmillr.com/noble/
+- Repository: git+https://github.com/paulmillr/noble-ciphers.git
+- Description: Audited & minimal JS implementation of Salsa20, ChaCha and AES
+- Included files: LICENSE
+- Folder: `licenses/@noble_ciphers@2.4.0`
+- Source package dir: `packages/login/node_modules/@noble/ciphers`
+
+## @noble/curves@2.4.0
+
+- License: MIT
+- Homepage: https://paulmillr.com/noble/
+- Repository: git+https://github.com/paulmillr/noble-curves.git
+- Description: Audited & minimal JS implementation of elliptic curve cryptography
+- Included files: LICENSE
+- Folder: `licenses/@noble_curves@2.4.0`
+- Source package dir: `packages/login/node_modules/@noble/curves`
+
+## @noble/hashes@2.4.0
+
+- License: MIT
+- Homepage: https://paulmillr.com/noble/
+- Repository: git+https://github.com/paulmillr/noble-hashes.git
+- Description: Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt
+- Included files: LICENSE
+- Folder: `licenses/@noble_hashes@2.4.0`
+- Source package dir: `packages/login/node_modules/@noble/hashes`
+
+## @nonanium/ui@0.0.48
 
 - License: UNKNOWN
 - Included files: LICENSE
-- Folder: `licenses/@methanium_ui@0.0.44`
-- Source package dir: `apps/tauri/node_modules/@methanium/ui`
+- Folder: `licenses/@nonanium_ui@0.0.48`
+- Source package dir: `apps/tauri/node_modules/@nonanium/ui`
+
+## @structured-id/opaque@1.0.5
+
+- License: Apache-2.0
+- Homepage: https://github.com/structured-id/opaque/tree/main/packages/opaque#readme
+- Repository: https://github.com/structured-id/opaque.git
+- Description: OPAQUE (RFC 9807) client library with cryptographic password policy validation.
+- Included files: LICENSE
+- Folder: `licenses/@structured-id_opaque@1.0.5`
+- Source package dir: `packages/login/node_modules/@structured-id/opaque`
 
 ## @tailwindcss/vite@4.3.3
 
@@ -270,13 +310,13 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/fallow@3.17.0`
 - Source package dir: `node_modules/fallow`
 
-## globals@17.9.0
+## globals@17.11.0
 
 - License: MIT
 - Repository: sindresorhus/globals
 - Description: Global identifiers from different JavaScript environments
 - Included files: license
-- Folder: `licenses/globals@17.9.0`
+- Folder: `licenses/globals@17.11.0`
 - Source package dir: `apps/web/node_modules/globals`
 
 ## livekit-client@2.21.0
@@ -288,22 +328,22 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/livekit-client@2.21.0`
 - Source package dir: `packages/call/node_modules/livekit-client`
 
-## lucide-react@1.30.0
+## lucide-react@1.32.0
 
 - License: ISC
 - Homepage: https://lucide.dev
 - Repository: https://github.com/lucide-icons/lucide.git
 - Description: A Lucide icon library package for React applications.
 - Included files: LICENSE
-- Folder: `licenses/lucide-react@1.30.0`
+- Folder: `licenses/lucide-react@1.32.0`
 - Source package dir: `apps/web/node_modules/lucide-react`
 
-## mtp@0.3.0
+## mtp@0.4.0
 
 - License: UNKNOWN
 - Description: MTP TypeScript SDK
 - Included files: none found
-- Folder: `licenses/mtp@0.3.0`
+- Folder: `licenses/mtp@0.4.0`
 - Source package dir: `apps/web/node_modules/mtp`
 
 ## prettier@3.9.6
@@ -315,6 +355,16 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Included files: LICENSE
 - Folder: `licenses/prettier@3.9.6`
 - Source package dir: `node_modules/prettier`
+
+## qrcode@1.5.4
+
+- License: MIT
+- Homepage: http://github.com/soldair/node-qrcode
+- Repository: git://github.com/soldair/node-qrcode.git
+- Description: QRCode / 2d Barcode api with both server side and client side support using canvas
+- Included files: license
+- Folder: `licenses/qrcode@1.5.4`
+- Source package dir: `packages/login/node_modules/qrcode`
 
 ## react@19.2.8
 
@@ -366,14 +416,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/recharts@3.10.1`
 - Source package dir: `packages/call/node_modules/recharts`
 
-## sonner@2.0.7
+## sonner@2.0.8
 
 - License: MIT
 - Homepage: https://sonner.emilkowal.ski/
 - Repository: git+https://github.com/emilkowalski/sonner.git
 - Description: An opinionated toast component for React.
 - Included files: LICENSE.md
-- Folder: `licenses/sonner@2.0.7`
+- Folder: `licenses/sonner@2.0.8`
 - Source package dir: `packages/notifications/node_modules/sonner`
 
 ## tailwind-scrollbar-hide@4.0.0
@@ -416,14 +466,14 @@ Generated from pnpm-lock.yaml and installed packages in workspace node_modules f
 - Folder: `licenses/typescript@6.0.3`
 - Source package dir: `apps/electron/node_modules/typescript`
 
-## typescript-eslint@8.66.0
+## typescript-eslint@8.67.0
 
 - License: MIT
 - Homepage: https://typescript-eslint.io/packages/typescript-eslint
 - Repository: https://github.com/typescript-eslint/typescript-eslint.git
 - Description: Tooling which enables you to use TypeScript with ESLint
 - Included files: LICENSE
-- Folder: `licenses/typescript-eslint@8.66.0`
+- Folder: `licenses/typescript-eslint@8.67.0`
 - Source package dir: `apps/web/node_modules/typescript-eslint`
 
 ## use-sync-external-store@1.6.0

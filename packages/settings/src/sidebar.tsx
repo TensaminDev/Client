@@ -1,4 +1,4 @@
-import { Button, cn } from "@methanium/ui";
+import { Button, cn } from "@nonanium/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { settingsNavigation } from "./navigation";

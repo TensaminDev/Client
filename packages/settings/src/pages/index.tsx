@@ -1,6 +1,6 @@
 import { SettingsSidebar } from "../sidebar";
 import { useSettingsProfiles } from "../profiles";
-import { Button } from "@methanium/ui";
+import { Button } from "@nonanium/ui";
 import { SettingsProfileMenu } from "../profileMenu";
 
 export default function Page() {

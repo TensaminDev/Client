@@ -48,7 +48,7 @@ const artifacts = await Promise.all(
     name: basename(filePath),
     platform: platformFor(filePath),
     arch: archFor(filePath),
-    url: `__FORGEJO_RELEASE_ASSET_URL__/${encodeURIComponent(basename(filePath))}`,
+    url: `__RELEASE_ASSET_URL__/${encodeURIComponent(basename(filePath))}`,
     sha256: await sha256(filePath),
     size: statSync(filePath).size,
   })),

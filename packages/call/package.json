@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.23",
-    "@methanium/ui": "*",
+    "@nonanium/ui": "*",
     "@tanstack/react-router": "^1.170.21",
     "@tensamin/crypto": "workspace:*",
     "@tensamin/mtp": "workspace:*",

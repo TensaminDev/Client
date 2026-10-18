@@ -22,7 +22,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@methanium/ui": "*",
+    "@nonanium/ui": "*",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-deep-link": "~2.4.9",
     "@tensamin/shared": "workspace:*",

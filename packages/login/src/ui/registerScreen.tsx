@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Button, Checkbox, CreateScreen, Input, Label } from "@methanium/ui";
+import { Button, Checkbox, CreateScreen, Input, Label } from "@nonanium/ui";
 import { useRegistration } from "../register/useRegistration";
 import RightSidePanel from "./rightSidePanel";
 
@@ -94,7 +94,7 @@ export default function Register() {
             <LegalConsent
               id="accept-terms-of-service"
               document="Terms of Service"
-              href="https://legal.methanium.net/tensamin/terms-of-service/"
+              href="https://legal.nonanium.net/tensamin/terms-of-service/"
               lead="accept"
               checked={acceptedTerms}
               onAccepted={setAcceptedTerms}
@@ -102,7 +102,7 @@ export default function Register() {
             <LegalConsent
               id="accept-privacy-policy"
               document="Privacy Policy"
-              href="https://legal.methanium.net/tensamin/privacy-policy/"
+              href="https://legal.nonanium.net/tensamin/privacy-policy/"
               lead="agree to"
               checked={acceptedPrivacyPolicy}
               onAccepted={setAcceptedPrivacyPolicy}

@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   deleteDatabaseEntry,
   listDatabaseEntries,

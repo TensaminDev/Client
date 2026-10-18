@@ -1,4 +1,4 @@
-import { Text } from "@methanium/ui/markdown";
+import { Text } from "@nonanium/ui/markdown";
 import { useStorage } from "@tensamin/storage/context";
 import {
   Avatar,
@@ -13,7 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { toast } from "@tensamin/shared/log";
 import {
   Check,

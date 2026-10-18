@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage, cn } from "@methanium/ui";
+import { Avatar, AvatarFallback, AvatarImage, cn } from "@nonanium/ui";
 import { useUserFields } from "@tensamin/identity/context";
 import { useEffect, useState, type ReactNode } from "react";
 

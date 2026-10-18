@@ -10,7 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   generatedAt,
   packageCount,
@@ -39,7 +39,7 @@ export default function Page() {
       <div className="flex gap-2">
         <a
           className="underline"
-          href="https://legal.methanium.net/tensamin/privacy-policy/"
+          href="https://legal.nonanium.net/tensamin/privacy-policy/"
           rel="noreferrer"
           target="_blank"
         >
@@ -47,7 +47,7 @@ export default function Page() {
         </a>
         <a
           className="underline"
-          href="https://legal.methanium.net/tensamin/terms-of-service/"
+          href="https://legal.nonanium.net/tensamin/terms-of-service/"
           rel="noreferrer"
           target="_blank"
         >

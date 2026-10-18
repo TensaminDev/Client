@@ -7,7 +7,7 @@ import { toast } from "@tensamin/shared/log";
 import { qrLoginLink } from "../qr/deeplink";
 import { SessionTerminatedError } from "../errors";
 import { OperationTimeoutError } from "../events";
-import { Avatar, AvatarFallback, AvatarImage } from "@methanium/ui";
+import { Avatar, AvatarFallback, AvatarImage } from "@nonanium/ui";
 
 export default function QrLogin() {
   const storage = useStorage();

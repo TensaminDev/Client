@@ -1,4 +1,4 @@
-import { Input as MDInput } from "@methanium/ui/markdown";
+import { Input as MDInput } from "@nonanium/ui/markdown";
 import { useMTP } from "@tensamin/mtp";
 import { mtp } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
@@ -10,7 +10,7 @@ import {
   cn,
   Input,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   useUser,
   useUserFields,

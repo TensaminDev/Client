@@ -2,7 +2,7 @@ import { RoomEvent } from "livekit-client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useCall, getRoom } from "../../store";
 import Base from "../../components/modals/base";
-import { cn, useIsMobile } from "@methanium/ui";
+import { cn, useIsMobile } from "@nonanium/ui";
 import { PreviewParticipant } from "../../components/participantCard";
 
 const TILE_ASPECT_RATIO = 16 / 9;

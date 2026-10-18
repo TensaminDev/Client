@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { LoadingScreen } from "@methanium/ui";
+import { LoadingScreen } from "@nonanium/ui";
 
 import AppLayout from "./layout";
 import CallInit from "@/components/callRuntimeInit";

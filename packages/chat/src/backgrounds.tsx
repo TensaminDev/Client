@@ -22,7 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useTheme,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useMTP, createSettingsClient, type UserAsset } from "@tensamin/mtp";
 import { useStorage } from "@tensamin/storage/context";
 import { base64ToBytes, crypto, MTPProtocolError } from "mtp";

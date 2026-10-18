@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import type { ChatPickerMediaGroup } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
 import { Ellipsis, Star } from "lucide-react";

@@ -4,9 +4,12 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   client:
-    runs-on: nixos
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: tensamin/client
@@ -15,33 +18,35 @@ jobs:
         channel: [stable, canary, dev]
     env:
       TENSAMIN_CHANNEL: ${{ matrix.channel }}
-      TENSAMIN_ANDROID_VERSION_CODE: ${{ forgejo.run_number }}
+      TENSAMIN_ANDROID_VERSION_CODE: ${{ github.run_number }}
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
     steps:
-      - uses: https://data.forgejo.org/actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           path: tensamin/client
-      - uses: https://data.forgejo.org/actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          repository: methanium/mtp
+          repository: nonanium/mtp
           path: mtp
+      - uses: cachix/install-nix-action@v31
       - run: git submodule update --init --recursive
       - run: nix develop .#electron --command pnpm install --frozen-lockfile
       - run: nix develop .#electron --command pnpm run ci
       - run: nix develop .#tauri --command pnpm --dir apps/tauri run build:mobile:ci
 
   native:
-    runs-on: nixos
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: tensamin/client
     steps:
-      - uses: https://data.forgejo.org/actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           path: tensamin/client
-      - uses: https://data.forgejo.org/actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          repository: methanium/mtp
+          repository: nonanium/mtp
           path: mtp
+      - uses: cachix/install-nix-action@v31
       - run: git submodule update --init --recursive
       - run: nix develop .#tauri --command cargo test --locked --manifest-path apps/tauri/src-tauri/Cargo.toml

@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-router";
 
 import "./index.css";
-import "@methanium/ui/index.css";
+import "@nonanium/ui/index.css";
 
 import NotFound from "@/routes/404";
 import Home from "@/routes/app/home";
@@ -30,7 +30,7 @@ import {
   ThemeProvider,
   useTheme,
   type Theme,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import z from "zod";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -40,7 +40,7 @@ import { log } from "@tensamin/shared/log";
 
 import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { useIsMobile, Toaster, TooltipProvider } from "@methanium/ui";
+import { useIsMobile, Toaster, TooltipProvider } from "@nonanium/ui";
 import { HotkeysProvider } from "@tensamin/hotkeys";
 import StartupErrorScreen from "@tensamin/storage/startupError";
 import { storageDefaults } from "@tensamin/shared/data";

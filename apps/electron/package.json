@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.3",
   "description": "Tensamin desktop client",
-  "author": "methanium",
+  "author": "nonanium",
   "homepage": "https://github.com/TensaminDev/Client",
   "desktopName": "Tensamin",
   "type": "module",
@@ -75,7 +75,7 @@
       "icon": "build/icons",
       "executableName": "tensamin",
       "category": "Network",
-      "maintainer": "Methanium",
+      "maintainer": "Nonanium",
       "syncDesktopName": true,
       "desktop": {
         "entry": {

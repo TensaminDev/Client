@@ -7,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   ArrowLeft,
   EllipsisVertical,
@@ -18,16 +18,16 @@ import {
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCall } from "@tensamin/call/state";
 import Wrapper from "@tensamin/identity/wrapper";
-import { Skeleton } from "@methanium/ui";
+import { Skeleton } from "@nonanium/ui";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { displayCallId } from "@tensamin/call/utils";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { WindowControls as Controls } from "@methanium/ui";
+import { WindowControls as Controls } from "@nonanium/ui";
 import { useSession } from "@tensamin/identity/session";
 import { requestJoinCall } from "@tensamin/call/store";
 import { NavbarTarget } from "@tensamin/shared/navbar";

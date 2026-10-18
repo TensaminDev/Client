@@ -2,7 +2,7 @@
 name = "tensamin"
 version = "0.0.0"
 description = "Privacy focused messanger"
-authors = ["methanium"]
+authors = ["nonanium"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

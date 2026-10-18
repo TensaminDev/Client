@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { Diamond, MonitorDot, ScreenShare } from "lucide-react";
 import { toast } from "@tensamin/shared/log";
 import { storageDefaults } from "@tensamin/shared/data";

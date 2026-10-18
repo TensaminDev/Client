@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
   Textarea,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@tensamin/shared/log";

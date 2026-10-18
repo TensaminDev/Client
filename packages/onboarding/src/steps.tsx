@@ -2,7 +2,7 @@ import {
   Button,
   ThemeOnboardingPage,
   type OnboardingStep,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 
 export const onboardingSteps = (
   onSkip: () => Promise<void>,

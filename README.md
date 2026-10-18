@@ -15,7 +15,7 @@ Local `dev`, `dev:desktop`, and `dev:mobile` commands select dev automatically.
 to a command. Mobile build scripts already use it. Set
 `TENSAMIN_ANDROID_VERSION_CODE` to a positive integer up to 2100000000.
 Release automation must supply a value greater than the previous build for
-that application ID. Verification uses the Forgejo run number. Without an
+that application ID. Verification uses the GitHub Actions run number. Without an
 override, Android uses Tauri's version-derived code.
 
 Hosted web builds use `/`. Electron's `build:web` command uses `./`; callers

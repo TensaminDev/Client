@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Timer } from "lucide-react";
-import { Button } from "@methanium/ui";
+import { Button } from "@nonanium/ui";
 import { useNavbar } from "@tensamin/shared/navbar";
 import { requestJoinCall, useCall } from "../store";
 import type { CurrentCallData } from "../state";
-import { PixelBlast } from "@methanium/ui";
+import { PixelBlast } from "@nonanium/ui";
 import { PreviewParticipant } from "../components/participantCard";
 import { calculateOptimalGridLayout } from "./main/grid";
 import { displayCallId } from "../utils";

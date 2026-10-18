@@ -7,7 +7,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import type { ChatPickerMediaGroup } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
 import { ArrowLeft, Loader2, Search } from "lucide-react";

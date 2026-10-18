@@ -8,7 +8,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { ConnectionState, MTPClient } from "mtp";
-import { LoadingScreen } from "@methanium/ui";
+import { LoadingScreen } from "@nonanium/ui";
 import {
   mtp as mtpSchemas,
   type Calls,

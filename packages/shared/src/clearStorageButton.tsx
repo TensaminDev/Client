@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
   Button,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { clearDatabaseStore } from "./indexedDb";
 import { toast } from "./log";
 

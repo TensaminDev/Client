@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { toast } from "@tensamin/shared/log";
 import { Loader2 } from "lucide-react";
 import {

@@ -1,4 +1,4 @@
-import { cn } from "@methanium/ui";
+import { cn } from "@nonanium/ui";
 import { AppWindow, Camera, MonitorUp } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { MediaShareSource } from "../mediaShare";

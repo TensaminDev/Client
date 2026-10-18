@@ -1,4 +1,4 @@
-import { ThemeCustomizer } from "@methanium/ui";
+import { ThemeCustomizer } from "@nonanium/ui";
 
 export default function Page() {
   return (
@@ -6,7 +6,7 @@ export default function Page() {
       <ThemeCustomizer />
       <a
         className="mt-8 block max-w-md text-xs text-muted-foreground"
-        href="https://git.methanium.net/tensamin/client/issues/new"
+        href="https://github.com/TensaminDev/Client/issues/new"
         target="_blank"
         rel="noreferrer"
       >

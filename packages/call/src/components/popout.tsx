@@ -11,7 +11,7 @@ import {
   Card,
   cn,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { ScreenShareOff } from "lucide-react";
 import { useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking, useLastSpeakingParticipantId } from "../speakingState";

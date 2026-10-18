@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { toast } from "@tensamin/shared/log";
-import { cn } from "@methanium/ui";
+import { cn } from "@nonanium/ui";
 
 export function QrDisplay({
   className,

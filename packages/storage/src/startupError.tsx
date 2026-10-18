@@ -1,4 +1,4 @@
-import { Button, CreateScreen } from "@methanium/ui";
+import { Button, CreateScreen } from "@nonanium/ui";
 import ClearStorageButton from "@tensamin/shared/clearStorageButton";
 
 export default function StartupErrorScreen({

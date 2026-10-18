@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { normalizeHttpsUrl } from "@tensamin/storage/credentials";
 

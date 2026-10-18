@@ -14,7 +14,7 @@ import { storageDefaults, type Storage } from "@tensamin/shared/data";
 import { useStorage } from "@tensamin/storage/context";
 import { persistMtpCredentials } from "@tensamin/storage/credentials";
 import { useMTP } from "@tensamin/mtp";
-import { toast } from "@methanium/ui";
+import { toast } from "@nonanium/ui";
 import { Check } from "lucide-react";
 
 const PROFILE_PREFIX = "settings-profile:";

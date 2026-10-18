@@ -1,4 +1,4 @@
-import { Input, type InputController } from "@methanium/ui/markdown";
+import { Input, type InputController } from "@nonanium/ui/markdown";
 import {
   Card,
   CardHeader,
@@ -8,16 +8,16 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { Button } from "@methanium/ui";
+import { Button } from "@nonanium/ui";
 
 import { Plus, Laugh, FileVideo, SendHorizonal } from "lucide-react";
 import { useChat, useReplyMessage } from "../context";
 import { requireRelaySuccess, useMTP } from "@tensamin/mtp";
 import { log, toast } from "@tensamin/shared/log";
-import { cn, useIsMobile } from "@methanium/ui";
+import { cn, useIsMobile } from "@nonanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/identity/session";

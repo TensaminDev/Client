@@ -8,7 +8,7 @@ import {
   Input,
   Label,
   Switch,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { useMTP } from "@tensamin/mtp";
 import {

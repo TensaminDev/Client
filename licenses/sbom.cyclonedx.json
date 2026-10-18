@@ -3,7 +3,7 @@
   "specVersion": "1.5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-09-25T19:09:26.052Z",
+    "timestamp": "2026-10-18T09:09:00.280Z",
     "tools": [
       {
         "vendor": "OpenAI",
@@ -83,19 +83,159 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/%40methanium/ui@0.0.44",
-      "name": "@methanium/ui",
-      "version": "0.0.44",
-      "purl": "pkg:npm/%40methanium/ui@0.0.44",
+      "bomRef": "pkg:npm/%40noble/ciphers@2.4.0",
+      "name": "@noble/ciphers",
+      "version": "2.4.0",
+      "purl": "pkg:npm/%40noble/ciphers@2.4.0",
+      "description": "Audited & minimal JS implementation of Salsa20, ChaCha and AES",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://paulmillr.com/noble/"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/paulmillr/noble-ciphers.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@noble_ciphers@2.4.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/login/node_modules/@noble/ciphers"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40noble/curves@2.4.0",
+      "name": "@noble/curves",
+      "version": "2.4.0",
+      "purl": "pkg:npm/%40noble/curves@2.4.0",
+      "description": "Audited & minimal JS implementation of elliptic curve cryptography",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://paulmillr.com/noble/"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/paulmillr/noble-curves.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@noble_curves@2.4.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/login/node_modules/@noble/curves"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40noble/hashes@2.4.0",
+      "name": "@noble/hashes",
+      "version": "2.4.0",
+      "purl": "pkg:npm/%40noble/hashes@2.4.0",
+      "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://paulmillr.com/noble/"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/paulmillr/noble-hashes.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@noble_hashes@2.4.0"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/login/node_modules/@noble/hashes"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40nonanium/ui@0.0.48",
+      "name": "@nonanium/ui",
+      "version": "0.0.48",
+      "purl": "pkg:npm/%40nonanium/ui@0.0.48",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/@methanium_ui@0.0.44"
+          "value": "licenses/@nonanium_ui@0.0.48"
         },
         {
           "name": "local:sourcePackageDir",
-          "value": "apps/tauri/node_modules/@methanium/ui"
+          "value": "apps/tauri/node_modules/@nonanium/ui"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/%40structured-id/opaque@1.0.5",
+      "name": "@structured-id/opaque",
+      "version": "1.0.5",
+      "purl": "pkg:npm/%40structured-id/opaque@1.0.5",
+      "description": "OPAQUE (RFC 9807) client library with cryptographic password policy validation.",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/structured-id/opaque/tree/main/packages/opaque#readme"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/structured-id/opaque.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/@structured-id_opaque@1.0.5"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/login/node_modules/@structured-id/opaque"
         }
       ]
     },
@@ -951,10 +1091,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/globals@17.9.0",
+      "bomRef": "pkg:npm/globals@17.11.0",
       "name": "globals",
-      "version": "17.9.0",
-      "purl": "pkg:npm/globals@17.9.0",
+      "version": "17.11.0",
+      "purl": "pkg:npm/globals@17.11.0",
       "description": "Global identifiers from different JavaScript environments",
       "licenses": [
         {
@@ -972,7 +1112,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/globals@17.9.0"
+          "value": "licenses/globals@17.11.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1013,10 +1153,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/lucide-react@1.30.0",
+      "bomRef": "pkg:npm/lucide-react@1.32.0",
       "name": "lucide-react",
-      "version": "1.30.0",
-      "purl": "pkg:npm/lucide-react@1.30.0",
+      "version": "1.32.0",
+      "purl": "pkg:npm/lucide-react@1.32.0",
       "description": "A Lucide icon library package for React applications.",
       "licenses": [
         {
@@ -1038,7 +1178,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/lucide-react@1.30.0"
+          "value": "licenses/lucide-react@1.32.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1048,16 +1188,16 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/mtp@0.3.0",
+      "bomRef": "pkg:npm/mtp@0.4.0",
       "name": "mtp",
-      "version": "0.3.0",
-      "purl": "pkg:npm/mtp@0.3.0",
+      "version": "0.4.0",
+      "purl": "pkg:npm/mtp@0.4.0",
       "description": "MTP TypeScript SDK",
       "externalReferences": [],
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/mtp@0.3.0"
+          "value": "licenses/mtp@0.4.0"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1097,6 +1237,41 @@
         {
           "name": "local:sourcePackageDir",
           "value": "node_modules/prettier"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bomRef": "pkg:npm/qrcode@1.5.4",
+      "name": "qrcode",
+      "version": "1.5.4",
+      "purl": "pkg:npm/qrcode@1.5.4",
+      "description": "QRCode / 2d Barcode api with both server side and client side support using canvas",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "http://github.com/soldair/node-qrcode"
+        },
+        {
+          "type": "vcs",
+          "url": "git://github.com/soldair/node-qrcode.git"
+        }
+      ],
+      "properties": [
+        {
+          "name": "local:licenseFolder",
+          "value": "licenses/qrcode@1.5.4"
+        },
+        {
+          "name": "local:sourcePackageDir",
+          "value": "packages/login/node_modules/qrcode"
         }
       ]
     },
@@ -1277,10 +1452,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/sonner@2.0.7",
+      "bomRef": "pkg:npm/sonner@2.0.8",
       "name": "sonner",
-      "version": "2.0.7",
-      "purl": "pkg:npm/sonner@2.0.7",
+      "version": "2.0.8",
+      "purl": "pkg:npm/sonner@2.0.8",
       "description": "An opinionated toast component for React.",
       "licenses": [
         {
@@ -1302,7 +1477,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/sonner@2.0.7"
+          "value": "licenses/sonner@2.0.8"
         },
         {
           "name": "local:sourcePackageDir",
@@ -1452,10 +1627,10 @@
     },
     {
       "type": "library",
-      "bomRef": "pkg:npm/typescript-eslint@8.66.0",
+      "bomRef": "pkg:npm/typescript-eslint@8.67.0",
       "name": "typescript-eslint",
-      "version": "8.66.0",
-      "purl": "pkg:npm/typescript-eslint@8.66.0",
+      "version": "8.67.0",
+      "purl": "pkg:npm/typescript-eslint@8.67.0",
       "description": "Tooling which enables you to use TypeScript with ESLint",
       "licenses": [
         {
@@ -1477,7 +1652,7 @@
       "properties": [
         {
           "name": "local:licenseFolder",
-          "value": "licenses/typescript-eslint@8.66.0"
+          "value": "licenses/typescript-eslint@8.67.0"
         },
         {
           "name": "local:sourcePackageDir",

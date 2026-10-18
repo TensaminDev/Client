@@ -1,4 +1,4 @@
-import { Button } from "@methanium/ui";
+import { Button } from "@nonanium/ui";
 import { toast } from "@tensamin/shared/log";
 import { Camera, CameraOff } from "lucide-react";
 import { startCameraShare, stopCameraShare, useCall } from "../../store";

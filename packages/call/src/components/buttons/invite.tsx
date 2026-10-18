@@ -13,7 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import Wrapper from "@tensamin/identity/wrapper";
 import { Mail } from "lucide-react";
 import { sendCallInvite, useCall } from "../../store";

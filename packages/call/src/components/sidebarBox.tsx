@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import MediaShareButton from "./buttons/mediaShare";
 import MuteButton from "./buttons/mute";
 import DeafButton from "./buttons/deaf";

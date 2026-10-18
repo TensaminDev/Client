@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Theme, ThemeDesign } from "@methanium/ui";
+import type { Theme, ThemeDesign } from "@nonanium/ui";
 
 import {
   settingsStorageDefaults,

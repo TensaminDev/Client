@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
   SidebarProvider,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { ShieldAlert } from "lucide-react";
 import { useStorage } from "@tensamin/storage/context";
 import { NavbarProvider, useNavbar } from "@tensamin/shared/navbar";

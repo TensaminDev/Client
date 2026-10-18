@@ -5,8 +5,8 @@ import {
   Button,
   cn,
   Skeleton,
-} from "@methanium/ui";
-import { Text } from "@methanium/ui/markdown";
+} from "@nonanium/ui";
+import { Text } from "@nonanium/ui/markdown";
 import type { SelectedUser } from "@tensamin/identity/context";
 import Wrapper from "@tensamin/identity/wrapper";
 import { Forward, X } from "lucide-react";

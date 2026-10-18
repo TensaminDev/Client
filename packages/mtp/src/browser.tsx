@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { toast as sonnerToast } from "@methanium/ui";
+import { toast as sonnerToast } from "@nonanium/ui";
 import { isTauri } from "@tauri-apps/api/core";
 import { base64ToBytes, ConnectionState, MTPClient } from "mtp";
 import createAsyncQueue from "@tensamin/shared/asyncQueue";

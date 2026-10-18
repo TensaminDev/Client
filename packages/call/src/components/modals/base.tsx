@@ -3,7 +3,7 @@ import {
   ContextMenu as UIContextMenu,
   ContextMenuTrigger,
   cn,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   focusParticipant,
   getRoomMetadata,

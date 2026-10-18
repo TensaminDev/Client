@@ -1,4 +1,4 @@
-import { Sidebar as SidebarRoot, SidebarFooter } from "@methanium/ui";
+import { Sidebar as SidebarRoot, SidebarFooter } from "@nonanium/ui";
 
 import CallSidebarBox from "./callSidebarBox";
 import Communications from "./communications";

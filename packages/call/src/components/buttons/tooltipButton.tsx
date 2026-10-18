@@ -1,6 +1,6 @@
 import { cloneElement } from "react";
 import type { MouseEvent as ReactMouseEvent, ReactElement, Ref } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@methanium/ui";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@nonanium/ui";
 
 export type CallButtonProps = {
   className?: string;

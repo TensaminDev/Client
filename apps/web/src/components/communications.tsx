@@ -31,7 +31,7 @@ import {
   TabsList,
   TabsTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useChat } from "@tensamin/chat/context";
 import { useUser, type User } from "@tensamin/identity/context";

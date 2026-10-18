@@ -1,7 +1,7 @@
 import Communications, {
   AddConversationButton,
 } from "@/components/communications";
-import { Button, useIsMobile } from "@methanium/ui";
+import { Button, useIsMobile } from "@nonanium/ui";
 import { useNavbar } from "@tensamin/shared/navbar";
 
 export default function Page() {

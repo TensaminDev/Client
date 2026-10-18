@@ -1,5 +1,5 @@
 import { LeaveIcon } from "@livekit/components-react";
-import { Button } from "@methanium/ui";
+import { Button } from "@nonanium/ui";
 import { leaveCall, useCall } from "../../store";
 import { log, toast } from "@tensamin/shared/log";
 import {

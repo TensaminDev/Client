@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useUserFields } from "@tensamin/identity/context";
 import { useNavbar } from "@tensamin/shared/navbar";
 import { RoomEvent } from "livekit-client";

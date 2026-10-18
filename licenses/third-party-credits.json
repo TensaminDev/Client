@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-25T19:09:26.051Z",
-  "packageCount": 49,
+  "generatedAt": "2026-10-18T09:09:00.278Z",
+  "packageCount": 54,
   "packages": [
     {
       "name": "@eslint/js",
@@ -29,8 +29,47 @@
       "sourcePackageDir": "packages/call/node_modules/@livekit/components-react"
     },
     {
-      "name": "@methanium/ui",
-      "version": "0.0.44",
+      "name": "@noble/ciphers",
+      "version": "2.4.0",
+      "license": "MIT",
+      "homepage": "https://paulmillr.com/noble/",
+      "repository": "git+https://github.com/paulmillr/noble-ciphers.git",
+      "description": "Audited & minimal JS implementation of Salsa20, ChaCha and AES",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@noble_ciphers@2.4.0",
+      "sourcePackageDir": "packages/login/node_modules/@noble/ciphers"
+    },
+    {
+      "name": "@noble/curves",
+      "version": "2.4.0",
+      "license": "MIT",
+      "homepage": "https://paulmillr.com/noble/",
+      "repository": "git+https://github.com/paulmillr/noble-curves.git",
+      "description": "Audited & minimal JS implementation of elliptic curve cryptography",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@noble_curves@2.4.0",
+      "sourcePackageDir": "packages/login/node_modules/@noble/curves"
+    },
+    {
+      "name": "@noble/hashes",
+      "version": "2.4.0",
+      "license": "MIT",
+      "homepage": "https://paulmillr.com/noble/",
+      "repository": "git+https://github.com/paulmillr/noble-hashes.git",
+      "description": "Audited & minimal 0-dependency JS implementation of SHA, RIPEMD, BLAKE, HMAC, HKDF, PBKDF & Scrypt",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@noble_hashes@2.4.0",
+      "sourcePackageDir": "packages/login/node_modules/@noble/hashes"
+    },
+    {
+      "name": "@nonanium/ui",
+      "version": "0.0.48",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
@@ -38,8 +77,21 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/@methanium_ui@0.0.44",
-      "sourcePackageDir": "apps/tauri/node_modules/@methanium/ui"
+      "licenseFolder": "licenses/@nonanium_ui@0.0.48",
+      "sourcePackageDir": "apps/tauri/node_modules/@nonanium/ui"
+    },
+    {
+      "name": "@structured-id/opaque",
+      "version": "1.0.5",
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/structured-id/opaque/tree/main/packages/opaque#readme",
+      "repository": "https://github.com/structured-id/opaque.git",
+      "description": "OPAQUE (RFC 9807) client library with cryptographic password policy validation.",
+      "files": [
+        "LICENSE"
+      ],
+      "licenseFolder": "licenses/@structured-id_opaque@1.0.5",
+      "sourcePackageDir": "packages/login/node_modules/@structured-id/opaque"
     },
     {
       "name": "@tailwindcss/vite",
@@ -369,7 +421,7 @@
     },
     {
       "name": "globals",
-      "version": "17.9.0",
+      "version": "17.11.0",
       "license": "MIT",
       "homepage": null,
       "repository": "sindresorhus/globals",
@@ -377,7 +429,7 @@
       "files": [
         "license"
       ],
-      "licenseFolder": "licenses/globals@17.9.0",
+      "licenseFolder": "licenses/globals@17.11.0",
       "sourcePackageDir": "apps/web/node_modules/globals"
     },
     {
@@ -395,7 +447,7 @@
     },
     {
       "name": "lucide-react",
-      "version": "1.30.0",
+      "version": "1.32.0",
       "license": "ISC",
       "homepage": "https://lucide.dev",
       "repository": "https://github.com/lucide-icons/lucide.git",
@@ -403,18 +455,18 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/lucide-react@1.30.0",
+      "licenseFolder": "licenses/lucide-react@1.32.0",
       "sourcePackageDir": "apps/web/node_modules/lucide-react"
     },
     {
       "name": "mtp",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "license": "UNKNOWN",
       "homepage": null,
       "repository": null,
       "description": "MTP TypeScript SDK",
       "files": [],
-      "licenseFolder": "licenses/mtp@0.3.0",
+      "licenseFolder": "licenses/mtp@0.4.0",
       "sourcePackageDir": "apps/web/node_modules/mtp"
     },
     {
@@ -429,6 +481,19 @@
       ],
       "licenseFolder": "licenses/prettier@3.9.6",
       "sourcePackageDir": "node_modules/prettier"
+    },
+    {
+      "name": "qrcode",
+      "version": "1.5.4",
+      "license": "MIT",
+      "homepage": "http://github.com/soldair/node-qrcode",
+      "repository": "git://github.com/soldair/node-qrcode.git",
+      "description": "QRCode / 2d Barcode api with both server side and client side support using canvas",
+      "files": [
+        "license"
+      ],
+      "licenseFolder": "licenses/qrcode@1.5.4",
+      "sourcePackageDir": "packages/login/node_modules/qrcode"
     },
     {
       "name": "react",
@@ -497,7 +562,7 @@
     },
     {
       "name": "sonner",
-      "version": "2.0.7",
+      "version": "2.0.8",
       "license": "MIT",
       "homepage": "https://sonner.emilkowal.ski/",
       "repository": "git+https://github.com/emilkowalski/sonner.git",
@@ -505,7 +570,7 @@
       "files": [
         "LICENSE.md"
       ],
-      "licenseFolder": "licenses/sonner@2.0.7",
+      "licenseFolder": "licenses/sonner@2.0.8",
       "sourcePackageDir": "packages/notifications/node_modules/sonner"
     },
     {
@@ -562,7 +627,7 @@
     },
     {
       "name": "typescript-eslint",
-      "version": "8.66.0",
+      "version": "8.67.0",
       "license": "MIT",
       "homepage": "https://typescript-eslint.io/packages/typescript-eslint",
       "repository": "https://github.com/typescript-eslint/typescript-eslint.git",
@@ -570,7 +635,7 @@
       "files": [
         "LICENSE"
       ],
-      "licenseFolder": "licenses/typescript-eslint@8.66.0",
+      "licenseFolder": "licenses/typescript-eslint@8.67.0",
       "sourcePackageDir": "apps/web/node_modules/typescript-eslint"
     },
     {

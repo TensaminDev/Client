@@ -21,7 +21,7 @@ import {
 } from "./values";
 import Wrapper from "@tensamin/identity/wrapper";
 import { useMTP } from "@tensamin/mtp";
-import { useTheme } from "@methanium/ui";
+import { useTheme } from "@nonanium/ui";
 import { GlobeOff, PartyPopper } from "lucide-react";
 import { chatBackgroundStyle, useChatBackground } from "./backgrounds";
 import { toast } from "@tensamin/shared/log";

@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   toast as persistentToast,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   LocalAudioTrack,
   DisconnectReason,

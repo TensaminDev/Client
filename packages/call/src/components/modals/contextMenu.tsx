@@ -4,7 +4,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   Slider,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   disconnectUser,
   getParticipantVolume,

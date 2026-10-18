@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { SpecialSwitch } from "@methanium/ui";
+import { SpecialSwitch } from "@nonanium/ui";
 
 import ConversationModal from "../modal/conversation";
 import CommunityModal from "../modal/community";

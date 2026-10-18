@@ -1,4 +1,4 @@
-import { Button } from "@methanium/ui";
+import { Button } from "@nonanium/ui";
 import { toggleMute, useCall } from "../../store";
 import { Mic, MicOff } from "lucide-react";
 import {

@@ -1,4 +1,4 @@
-import { Button, Label, Slider } from "@methanium/ui";
+import { Button, Label, Slider } from "@nonanium/ui";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";

@@ -1,11 +1,11 @@
-import { Button, cn, useIsMobile } from "@methanium/ui";
+import { Button, cn, useIsMobile } from "@nonanium/ui";
 import {
   Input,
   Label,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import { log, toast } from "@tensamin/shared/log";
 import { File, Info, Loader2 } from "lucide-react";
@@ -21,7 +21,7 @@ import { fetchAccountIdentity, normalizeOmegaOrigin } from "../omega";
 import { useTuFileInput } from "../tuFileInput";
 import { loginWithPassword } from "../password/login";
 import QrLogin from "./qrLogin";
-import { CreateScreen } from "@methanium/ui";
+import { CreateScreen } from "@nonanium/ui";
 import RightSidePanel from "./rightSidePanel";
 
 const formSchema = z.object({

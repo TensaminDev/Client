@@ -7,8 +7,8 @@ import {
   TooltipTrigger,
   TooltipContent,
   Button,
-} from "@methanium/ui";
-import { Skeleton } from "@methanium/ui";
+} from "@nonanium/ui";
+import { Skeleton } from "@nonanium/ui";
 import { getStatusColor } from "@tensamin/shared/data";
 
 export function Basic({

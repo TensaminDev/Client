@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
   useIsMobile,
   cn,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import { useEffect, useRef, useState } from "react";
 import MuteButton from "./buttons/mute";
 import MediaShareButton from "./buttons/mediaShare";

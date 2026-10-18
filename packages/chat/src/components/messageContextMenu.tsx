@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   useIsMobile,
-} from "@methanium/ui";
+} from "@nonanium/ui";
 import {
   Clipboard,
   Ellipsis,
@@ -43,7 +43,7 @@ import type {
   Ref,
 } from "react";
 import { useChat } from "../context";
-import { Emoji } from "@methanium/ui/markdown";
+import { Emoji } from "@nonanium/ui/markdown";
 import EmojiPicker from "./emoji/emojiPicker";
 import { getRecentEmojis, useEmojiRanks } from "./emoji/emojiRanks";
 
