@@ -68,7 +68,10 @@
             src = self;
             pnpm = pkgs.pnpm;
             fetcherVersion = 4;
-            hash = "sha256-3exLYxGbMs7LcZs2SLbIh4EAkGpmdlG5dytm400DVsM=";
+            hash = {
+              x86_64-linux = "sha256-3exLYxGbMs7LcZs2SLbIh4EAkGpmdlG5dytm400DVsM=";
+              aarch64-linux = "sha256-mjejPaOf5TjkcJ42+L9S2yn99HRWPKIFdJsOdc4+iC8=";
+            }.${system};
           };
           source = pkgs.runCommand "tensamin-source" { } ''
             cp -r ${self} "$out"
