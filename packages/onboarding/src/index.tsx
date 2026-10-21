@@ -6,8 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import {
-  Button,
-  CreateScreen,
+  ErrorScreen,
   LoadingScreen,
   OnboardingFlow,
   type OnboardingStep,
@@ -19,7 +18,6 @@ import { isTauri } from "@tauri-apps/api/core";
 
 import { onboardingSteps } from "./steps";
 import TauriPermissionsPage from "./pages/tauriPermissions";
-import { GlobeOff } from "lucide-react";
 
 export {
   useOnboardingStep,
@@ -100,20 +98,12 @@ function StartupLoader({
 
   if (connectionStatus?.kind === "failed" && !sessionEstablished) {
     return (
-      <CreateScreen className="px-5 text-center flex flex-col gap-10 justify-center items-center">
-        <GlobeOff size={80} />
-        <div className="flex flex-col gap-3">
-          <p className="text-foreground font-semibold text-xl">
-            Connection failed
-          </p>
-          <p className="text-muted-foreground text-md w-80 text-center">
-            {connectionStatus.description}
-          </p>
-        </div>
-        <Button className="w-full max-w-xs" onClick={retryConnection}>
-          Retry
-        </Button>
-      </CreateScreen>
+      <ErrorScreen
+        error="Connection failed"
+        description={connectionStatus.description}
+        onRetry={retryConnection}
+        statusLink={false}
+      />
     );
   }
 

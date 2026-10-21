@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Timer } from "lucide-react";
-import { Button } from "@nonanium/ui";
+import { Button, ErrorScreen } from "@nonanium/ui";
 import { useNavbar } from "@tensamin/shared/navbar";
 import { requestJoinCall, useCall } from "../store";
 import type { CurrentCallData } from "../state";
@@ -12,7 +11,7 @@ import { displayCallId } from "../utils";
 const STATUS_MESSAGES: Record<CurrentCallData["status"], string | null> = {
   loading: null,
   ready: null,
-  "not-found": "Call Expired",
+  "not-found": "Call expired",
   forbidden: "You do not have access to this call",
   error: "Unable to load call",
 };
@@ -167,10 +166,21 @@ export default function Preview() {
           </div>
         </>
       ) : message ? (
-        <div className="relative flex items-center gap-3 rounded-xl bg-card/90 p-5 text-2xl">
-          {currentCallData?.status === "not-found" && <Timer aria-hidden />}
-          <p>{message}</p>
-        </div>
+        <ErrorScreen
+          error={
+            currentCallData?.status === "error"
+              ? "Unable to load call"
+              : message
+          }
+          description={
+            currentCallData?.status === "error"
+              ? currentCallData.message
+              : undefined
+          }
+          fullScreen={false}
+          statusLink={false}
+          className="relative rounded-xl bg-card/90"
+        />
       ) : null}
     </div>
   );

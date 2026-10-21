@@ -1,4 +1,8 @@
+import "@tensamin/shared/console";
 import { createRoot } from "react-dom/client";
+import DeveloperMenu, {
+  DeveloperMenuHint,
+} from "@tensamin/shared/developerMenu";
 import LoginDeveloperMenu from "@tensamin/login/loginDeveloperMenu";
 import {
   Outlet,
@@ -27,6 +31,8 @@ import DeeplinkContext from "@tensamin/tauri/deeplinkHandler";
 
 import {
   LoadingScreen,
+  ErrorScreen,
+  ErrorScreenProvider,
   ThemeProvider,
   useTheme,
   type Theme,
@@ -42,7 +48,7 @@ import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@nonanium/ui";
 import { HotkeysProvider } from "@tensamin/hotkeys";
-import StartupErrorScreen from "@tensamin/storage/startupError";
+import ClearStorageButton from "@tensamin/shared/clearStorageButton";
 import { storageDefaults } from "@tensamin/shared/data";
 
 let nextNavigationDirection: "forward" | "back" = "forward";
@@ -131,9 +137,13 @@ function LoginWrapper({ children }: { children: ReactNode }) {
 
   if (loginError) {
     return (
-      <StartupErrorScreen
+      <ErrorScreen
         error="Failed to load login state"
         description={loginError.message}
+        // eslint-disable-next-line tensamin/no-window-location-reload -- Reload the failed startup state rather than navigating within it.
+        onRetry={() => window.location.reload()}
+        actions={<ClearStorageButton />}
+        statusLink={false}
       />
     );
   }
@@ -299,9 +309,13 @@ function RootShell() {
 const rootRoute = createRootRoute({
   component: RootShell,
   errorComponent: ({ error }: { error: Error }) => (
-    <StartupErrorScreen
+    <ErrorScreen
       description={error.message}
-      error={"Unknown Error: " + error.name}
+      error={"Unknown error: " + error.name}
+      // eslint-disable-next-line tensamin/no-window-location-reload -- Restart providers after an unrecoverable render failure.
+      onRetry={() => window.location.reload()}
+      actions={<ClearStorageButton />}
+      statusLink={false}
     />
   ),
 });
@@ -411,4 +425,11 @@ declare module "@tanstack/react-router" {
   }
 }
 
-createRoot(wrapper).render(<RouterProvider router={router} />);
+createRoot(wrapper).render(
+  <>
+    <DeveloperMenu />
+    <ErrorScreenProvider footer={<DeveloperMenuHint />}>
+      <RouterProvider router={router} />
+    </ErrorScreenProvider>
+  </>,
+);

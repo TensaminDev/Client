@@ -1,12 +1,12 @@
-/**
- * Executes Page.
- * @param none This function has no parameters.
- * @returns unknown.
- */
+import { ErrorScreen } from "@nonanium/ui";
+
 export default function Page() {
   return (
-    <div className="w-full h-full flex items-center justify-center text-4xl font-bold">
-      Page not found (404)
-    </div>
+    <ErrorScreen
+      error="Page not found (404)"
+      description="This page does not exist."
+      fullScreen={false}
+      statusLink={false}
+    />
   );
 }

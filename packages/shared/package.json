@@ -7,6 +7,8 @@
     "./asyncQueue": "./src/asyncQueue.ts",
     "./code": "./src/code.ts",
     "./clearStorageButton": "./src/clearStorageButton.tsx",
+    "./console": "./src/console.ts",
+    "./developerMenu": "./src/developerMenu.tsx",
     "./errors": "./src/errors.ts",
     "./errorToast": "./src/errorToast.tsx",
     "./focus": "./src/focus.ts",

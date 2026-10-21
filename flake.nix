@@ -199,6 +199,7 @@
               printf 'storeFile=release.keystore\nkeyAlias=%s\nkeyPassword=%s\nstorePassword=%s\n' \
                 "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" "$ANDROID_STORE_PASSWORD" > keystore.properties
               trap 'rm -f release.keystore keystore.properties' EXIT
+              pnpm run gen-icons
               cargo test --locked --manifest-path apps/tauri/src-tauri/Cargo.toml
               pnpm run build:mobile
               apk=apps/tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk

@@ -20,7 +20,7 @@ import {
 import { ErrorScreen } from "@nonanium/ui";
 import { log } from "@tensamin/shared/log";
 import { invoke, isTauri } from "@tauri-apps/api/core";
-import StartupErrorScreen from "./startupError";
+import ClearStorageButton from "@tensamin/shared/clearStorageButton";
 import {
   decodeSecureValue,
   encodeSecureValue,
@@ -274,13 +274,22 @@ export default function StorageProvider(props: { children: ReactNode }) {
   );
 
   if (error !== "" && errorDescription !== "") {
-    return <StartupErrorScreen error={error} description={errorDescription} />;
+    return (
+      <ErrorScreen
+        error={error}
+        description={errorDescription}
+        // eslint-disable-next-line tensamin/no-window-location-reload -- Storage initialization must restart before the router can render.
+        onRetry={() => window.location.reload()}
+        actions={<ClearStorageButton />}
+        statusLink={false}
+      />
+    );
   }
 
   if (!isIndexedDBSupported) {
     return (
       <ErrorScreen
-        error="Unsupported Browser"
+        error="Unsupported browser"
         description="Your browser does not support IndexedDB, which is required for this application to function."
       />
     );

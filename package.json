@@ -21,8 +21,8 @@
     "build:apps": "pnpm run copy-licenses && pnpm run pre-build && pnpm run build:mobile && pnpm run build:desktop && pnpm run copy-releases",
     "build:packages": "node utils/scripts/build-packages.ts",
     "update:packages": "node utils/scripts/update-packages.ts",
-    "dev": "TENSAMIN_CHANNEL=dev pnpm run gen-icons && cd apps/web && pnpm dev",
-    "build:web": "pnpm run gen-icons && cd apps/web && pnpm run build",
+    "dev": "TENSAMIN_CHANNEL=dev pnpm --dir apps/web run dev",
+    "build:web": "pnpm --dir apps/web run build",
     "preview:web": "cd apps/web && pnpm run preview",
     "dev:mobile": "pnpm run delete:mobile || true && cd apps/tauri && pnpm dev:mobile && pnpm run delete:mobile",
     "build:mobile": "cd apps/tauri && pnpm run build:mobile",
@@ -48,7 +48,7 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
-    "@nonanium/ui": "https://github.com/nonanium/UI/releases/download/0.0.48/nonanium-ui.tgz",
+    "@nonanium/ui": "https://github.com/nonanium/UI/releases/download/0.1.3/nonanium-ui.tgz",
     "mtp": "https://github.com/nonanium/MTP/releases/download/0.4.0-dev-b678361/mtp-0.4.0.tgz",
     "sonner": "^2.0.8"
   }
