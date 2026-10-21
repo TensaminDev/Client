@@ -163,6 +163,14 @@ export default function InputComponent({
       ...(replyTo && { ReplyId: replyTo }),
     });
 
+    if (!preserveContent) {
+      setValue("");
+    }
+
+    if (replyTo) {
+      setReplyTo(undefined);
+    }
+
     log(3, "chat", "purple", "Live message added, encrypting...");
 
     const encryptedContent = await encryptChatText(
@@ -217,17 +225,9 @@ export default function InputComponent({
       return;
     }
 
-    if (replyTo) {
-      setReplyTo(undefined);
-    }
-
     log(3, "chat", "purple", "Message sent");
 
     moveUserIdToTop(userId);
-
-    if (!preserveContent) {
-      setValue("");
-    }
   }
 
   function handleGifPopoverResizeStart(
