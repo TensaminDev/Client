@@ -434,7 +434,7 @@ function MessageComponent({
           <>
             <div
               className={cn(
-                "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap break-all transition-colors duration-200 ease-in-out",
+                "group hover:bg-muted/50 select-text! relative justify-start flex gap-1 items-center w-full px-2 whitespace-pre-wrap wrap-break-word transition-colors duration-200 ease-in-out",
                 {
                   "bg-(--destructive)/10 text-destructive-foreground hover:bg-(--destructive)/15":
                     actuallyFailed,
@@ -447,25 +447,21 @@ function MessageComponent({
             >
               <>
                 {grouped ? (
-                  <p className="w-9 self-start pt-[5px] text-xs group-hover:visible invisible text-muted-foreground">
+                  <p className="w-9 shrink-0 self-start pt-[5px] text-xs group-hover:visible invisible text-muted-foreground">
                     {new Date(message.SendTime).toLocaleString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </p>
                 ) : (
-                  <Avatar className="mr-1 mb-auto mt-1 w-10">
+                  <Avatar className="mr-1 mb-auto mt-1 size-8">
                     <AvatarImage src={user.Avatar} />
                     <AvatarFallback>
                       {user.Display.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 )}
-                <div
-                  className={cn("flex flex-col group w-full", {
-                    "min-w-0 flex-1": editing,
-                  })}
-                >
+                <div className="flex flex-col group min-w-0 flex-1">
                   {!grouped && (
                     <div className="flex items-center gap-1">
                       <p className="font-semibold">{user.Display}</p>

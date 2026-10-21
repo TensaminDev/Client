@@ -10,6 +10,7 @@ import {
   cn,
   Input,
   useIsMobile,
+  Label,
 } from "@nonanium/ui";
 import {
   useUser,
@@ -160,39 +161,46 @@ export default function Page() {
             </p>
           </div>
         </div>
-        <Input
-          className="w-full"
-          onChange={(event) =>
-            updateDraftUser((previous) => ({
-              ...previous,
-              Display: event.target.value,
-            }))
-          }
-          placeholder="Display Name"
-          value={draftUser.Display || ""}
-        />
-        <Input
-          className="w-full"
-          onChange={(event) =>
-            updateDraftUser((previous) => ({
-              ...previous,
-              Username: event.target.value,
-            }))
-          }
-          placeholder="Username"
-          value={draftUser.Username || ""}
-        />
-        <MDInput
-          className="bg-card p-1.5 px-2.5 rounded-lg border"
-          paddingY="4px"
-          paddingX="10px"
-          fontSize=".9rem"
-          placeholder="About Me"
-          setValue={(value) =>
-            updateDraftUser((previous) => ({ ...previous, About: value }))
-          }
-          value={draftUser.About || ""}
-        />
+        <div className="flex flex-col gap-2">
+          <Label>Display Name</Label>
+          <Input
+            className="w-full"
+            onChange={(event) =>
+              updateDraftUser((previous) => ({
+                ...previous,
+                Display: event.target.value,
+              }))
+            }
+            placeholder="Display Name"
+            value={draftUser.Display || ""}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Username</Label>
+          <Input
+            className="w-full"
+            onChange={(event) =>
+              updateDraftUser((previous) => ({
+                ...previous,
+                Username: event.target.value,
+              }))
+            }
+            placeholder="Username"
+            value={draftUser.Username || ""}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>About Me</Label>
+          <MDInput
+            className="px-2.5 py-0.9 transition-all flex justify-center items-center rounded-lg bg-input/30 hover:bg-input/50! selected:bg-input/50!"
+            fontSize="var(--text-sm)"
+            placeholder="I like coffee"
+            setValue={(value) =>
+              updateDraftUser((previous) => ({ ...previous, About: value }))
+            }
+            value={draftUser.About || ""}
+          />
+        </div>
         <Button
           onClick={async () => {
             const { Avatar, ...draftUsersWithoutAvatar } = draftUser;
