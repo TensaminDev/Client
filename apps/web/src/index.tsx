@@ -48,7 +48,6 @@ import { useStorage } from "@tensamin/storage/context";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useIsMobile, Toaster, TooltipProvider } from "@nonanium/ui";
 import { HotkeysProvider } from "@tensamin/hotkeys";
-import ClearStorageButton from "@tensamin/shared/clearStorageButton";
 import { storageDefaults } from "@tensamin/shared/data";
 
 let nextNavigationDirection: "forward" | "back" = "forward";
@@ -142,7 +141,6 @@ function LoginWrapper({ children }: { children: ReactNode }) {
         description={loginError.message}
         // eslint-disable-next-line tensamin/no-window-location-reload -- Reload the failed startup state rather than navigating within it.
         onRetry={() => window.location.reload()}
-        actions={<ClearStorageButton />}
         statusLink={false}
       />
     );
@@ -314,7 +312,6 @@ const rootRoute = createRootRoute({
       error={"Unknown error: " + error.name}
       // eslint-disable-next-line tensamin/no-window-location-reload -- Restart providers after an unrecoverable render failure.
       onRetry={() => window.location.reload()}
-      actions={<ClearStorageButton />}
       statusLink={false}
     />
   ),

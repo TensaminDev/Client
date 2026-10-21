@@ -20,7 +20,6 @@ import {
 import { ErrorScreen } from "@nonanium/ui";
 import { log } from "@tensamin/shared/log";
 import { invoke, isTauri } from "@tauri-apps/api/core";
-import ClearStorageButton from "@tensamin/shared/clearStorageButton";
 import {
   decodeSecureValue,
   encodeSecureValue,
@@ -280,7 +279,6 @@ export default function StorageProvider(props: { children: ReactNode }) {
         description={errorDescription}
         // eslint-disable-next-line tensamin/no-window-location-reload -- Storage initialization must restart before the router can render.
         onRetry={() => window.location.reload()}
-        actions={<ClearStorageButton />}
         statusLink={false}
       />
     );
