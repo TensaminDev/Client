@@ -247,13 +247,16 @@ export function BrowserProvider(props: {
     () => async (type, data, options) => {
       const client = clientRef.current;
       if (!client) throw new Error("mtp is not connected");
-      await client.sendSealedRelay(type, data, {
+      const response = await client.requestSealedRelay(type, data, {
         nextHop: options.nextHop,
         finalRecipientId: options.finalRecipientId,
         metadataRecipients: options.metadataRecipients,
         contentRecipients: options.contentRecipients,
       });
-      return { type: "RelaySent", data: {} };
+      return {
+        type: response.type,
+        data: response.data as Record<string, unknown>,
+      };
     },
     [],
   );
@@ -261,6 +264,7 @@ export function BrowserProvider(props: {
   const resolveConnectionRef = useRef(() => {});
   useEffect(() => {
     if (!mtpUrl) return;
+    const omegaBaseUrl = `${mtpUrl.replace(/\/+$/, "")}/`;
     let attempts = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let reconnectScheduled = false;
@@ -353,12 +357,15 @@ export function BrowserProvider(props: {
           omikronPublicKey = forcedOmikronPublicKey;
         } else {
           log(2, "mtp", "purple", "Fetching Omikron data.");
-          const data = await fetch(`${mtpUrl}api/get/omikron/${userId}`, {
-            signal: AbortSignal.any([
-              attemptAbort.signal,
-              AbortSignal.timeout(DISCOVERY_TIMEOUT),
-            ]),
-          });
+          const data = await fetch(
+            new URL(`api/get/omikron/${userId}`, omegaBaseUrl),
+            {
+              signal: AbortSignal.any([
+                attemptAbort.signal,
+                AbortSignal.timeout(DISCOVERY_TIMEOUT),
+              ]),
+            },
+          );
           if (data.status === 404) {
             throw new Error("No Omikron assignment is currently available");
           }
@@ -433,7 +440,7 @@ export function BrowserProvider(props: {
           let ownerClient = ownerClients.get(ownerOmikronId);
           if (!ownerClient) {
             const response = await fetch(
-              `${mtpUrl}api/get/omikron/${ownerOmikronId}`,
+              new URL(`api/get/omikron/${ownerOmikronId}`, omegaBaseUrl),
               {
                 signal: attemptAbort.signal,
               },

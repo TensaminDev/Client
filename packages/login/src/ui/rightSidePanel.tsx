@@ -1,9 +1,9 @@
-import { PixelBlast } from "@nonanium/ui";
+import OptionalPixelBlast from "@tensamin/shared/pixelBlast";
 
 export default function RightSidePanel() {
   return (
     <div className="relative hidden 2xl:flex! flex-col justify-center w-300 border-l-2 bg-(--primary)/4">
-      <PixelBlast
+      <OptionalPixelBlast
         transparent
         className="absolute w-full h-full opacity-65 z-0"
       />

@@ -3,7 +3,7 @@ import { Button, ErrorScreen } from "@nonanium/ui";
 import { useNavbar } from "@tensamin/shared/navbar";
 import { requestJoinCall, useCall } from "../store";
 import type { CurrentCallData } from "../state";
-import { PixelBlast } from "@nonanium/ui";
+import OptionalPixelBlast from "@tensamin/shared/pixelBlast";
 import { PreviewParticipant } from "../components/participantCard";
 import { calculateOptimalGridLayout } from "./main/grid";
 import { displayCallId } from "../utils";
@@ -86,7 +86,7 @@ export default function Preview() {
         className="absolute w-full h-full opacity-50"
         style={{ viewTransitionName: "call-preview-background" }}
       >
-        <PixelBlast />
+        <OptionalPixelBlast />
       </div>
       {currentCallData?.status === "ready" ? (
         <>

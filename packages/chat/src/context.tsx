@@ -29,32 +29,16 @@ import { useSession } from "@tensamin/identity/session";
 import { useUser } from "@tensamin/identity/context";
 import { createCache, type ChatDraft } from "@tensamin/cache";
 import { secureValueCodec } from "@tensamin/storage/secure";
-import { MTPProtocolError } from "mtp";
+import {
+  getChatSecretResponse,
+  publishInitialChatSecret,
+  reconcileChatSecret,
+} from "./chatSecret";
 
 export const context = createContext<contextType | undefined>(undefined);
 
 const queryClient = new QueryClient();
 const CHAT_SECRET_VERSION = 1;
-
-async function getChatSecretResponse(
-  send: ReturnType<typeof useMTP>["send"],
-  data: {
-    UserId: string;
-    ChatId: string;
-    SecretId: string;
-    VersionNumber?: number;
-  },
-) {
-  try {
-    const response = await send("GetChatSecret", data);
-    return response.type === "ErrorNotSet" ? null : response;
-  } catch (error) {
-    if (error instanceof MTPProtocolError && error.type === "ErrorNotSet") {
-      return null;
-    }
-    throw error;
-  }
-}
 
 function bytesFromProtocol(value: unknown): Uint8Array {
   if (value instanceof Uint8Array) return value;
@@ -517,10 +501,6 @@ export default function Provider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      if (response.type.startsWith("Error")) {
-        throw new Error(`GetChatSecret failed: ${response.type}`);
-      }
-
       const data = response.data as Record<string, unknown>;
       return {
         value: await unwrapChatSecret({
@@ -545,18 +525,6 @@ export default function Provider({ children }: { children: ReactNode }) {
     [getChatSecretState],
   );
 
-  const waitForChatSecret = useCallback(
-    async (peerId: number, version: number): Promise<Uint8Array> => {
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const secret = await getChatSecret(peerId, version);
-        if (secret) return secret;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-      throw new Error("Iota did not commit the requested chat secret version");
-    },
-    [getChatSecret],
-  );
-
   const createInitialChatSecret = useCallback(
     (
       peerId: number,
@@ -567,11 +535,16 @@ export default function Provider({ children }: { children: ReactNode }) {
 
       const initialization = (async (): Promise<Uint8Array | null> => {
         const ownUserId = Number(await load("user_id"));
-        if (ownUserId !== Math.min(ownUserId, peerId)) return null;
-
         if (shouldCheckExisting) {
           const existing = await getChatSecret(peerId, CHAT_SECRET_VERSION);
           if (existing) return existing;
+        }
+        const [ownIota, peerIota] = await Promise.all([
+          getRelayIota(ownUserId),
+          getRelayIota(peerId),
+        ]);
+        if (ownUserId > peerId && ownIota.IotaId !== peerIota.IotaId) {
+          return null;
         }
         const chatId = deriveChatId(ownUserId, peerId);
         const secretId = deriveChatSecretId(chatId);
@@ -595,48 +568,44 @@ export default function Provider({ children }: { children: ReactNode }) {
           secretId,
           version: CHAT_SECRET_VERSION,
         });
-        const [ownIota, peerIota] = await Promise.all([
-          getRelayIota(ownUserId),
-          getRelayIota(peerId),
-        ]);
-
-        requireRelaySuccess(
-          await sendSealedRelay(
-            "SetChatSecret",
-            {
-              ChatId: chatId,
-              SecretId: secretId,
-              VersionNumber: CHAT_SECRET_VERSION,
-              WrappingScheme: ownWrapped.wrappingScheme,
-              CreatedAt: Date.now(),
-              Recipients: [
-                {
-                  UserId: String(ownUserId),
-                  EncryptedSecret: protocolBytes(ownWrapped.encryptedSecret),
-                  KemCiphertext: protocolBytes(ownWrapped.kemCiphertext),
-                },
-                {
-                  UserId: String(peerId),
-                  EncryptedSecret: protocolBytes(peerWrapped.encryptedSecret),
-                  KemCiphertext: protocolBytes(peerWrapped.kemCiphertext),
-                },
-              ],
-            },
-            {
-              nextHop: { kind: "iota", id: ownIota.IotaId },
-              finalRecipientId: peerId,
-              metadataRecipients: [
-                { value: ownIota.PublicKey, encoding: "base64" },
-                { value: peerIota.PublicKey, encoding: "base64" },
-              ],
-              contentRecipients: [
-                { value: ownIota.PublicKey, encoding: "base64" },
-                { value: peerIota.PublicKey, encoding: "base64" },
-              ],
-            },
-          ),
-        );
-        return await waitForChatSecret(peerId, CHAT_SECRET_VERSION);
+        return publishInitialChatSecret({
+          publish: () =>
+            sendSealedRelay(
+              "SetChatSecret",
+              {
+                ChatId: chatId,
+                SecretId: secretId,
+                VersionNumber: CHAT_SECRET_VERSION,
+                WrappingScheme: ownWrapped.wrappingScheme,
+                CreatedAt: Date.now(),
+                Recipients: [
+                  {
+                    UserId: String(ownUserId),
+                    EncryptedSecret: protocolBytes(ownWrapped.encryptedSecret),
+                    KemCiphertext: protocolBytes(ownWrapped.kemCiphertext),
+                  },
+                  {
+                    UserId: String(peerId),
+                    EncryptedSecret: protocolBytes(peerWrapped.encryptedSecret),
+                    KemCiphertext: protocolBytes(peerWrapped.kemCiphertext),
+                  },
+                ],
+              },
+              {
+                nextHop: { kind: "iota", id: ownIota.IotaId },
+                finalRecipientId: peerId,
+                metadataRecipients: [
+                  { value: ownIota.PublicKey, encoding: "base64" },
+                  { value: peerIota.PublicKey, encoding: "base64" },
+                ],
+                contentRecipients: [
+                  { value: ownIota.PublicKey, encoding: "base64" },
+                  { value: peerIota.PublicKey, encoding: "base64" },
+                ],
+              },
+            ),
+          getSecret: () => getChatSecret(peerId, CHAT_SECRET_VERSION),
+        });
       })();
       secretInitializationsRef.current.set(String(peerId), initialization);
       const clearInitialization = () => {
@@ -650,14 +619,7 @@ export default function Provider({ children }: { children: ReactNode }) {
       void initialization.then(clearInitialization, clearInitialization);
       return initialization;
     },
-    [
-      getChatSecret,
-      getRelayIota,
-      getFreshUser,
-      load,
-      sendSealedRelay,
-      waitForChatSecret,
-    ],
+    [getChatSecret, getRelayIota, getFreshUser, load, sendSealedRelay],
   );
 
   useEffect(() => {
@@ -667,17 +629,41 @@ export default function Provider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const ownUserId = Number(await load("user_id"));
-        let secret = await getChatSecretState(userIdValue);
-
-        if (!secret && ownUserId === Math.min(ownUserId, userIdValue)) {
-          const value = await createInitialChatSecret(userIdValue, false);
-          secret = value ? { value, version: CHAT_SECRET_VERSION } : null;
-        }
-
-        for (let attempt = 0; active && !secret && attempt < 20; attempt += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          secret = await getChatSecretState(userIdValue);
-        }
+        const secret = await reconcileChatSecret({
+          ownUserId,
+          peerId: userIdValue,
+          getSecret: () => getChatSecretState(userIdValue),
+          initialize: async () => {
+            const value = await createInitialChatSecret(userIdValue, false);
+            return value ? { value, version: CHAT_SECRET_VERSION } : null;
+          },
+          requestInitialization: async () => {
+            const [ownIota, peerIota] = await Promise.all([
+              getRelayIota(ownUserId),
+              getRelayIota(userIdValue),
+            ]);
+            if (!active) return;
+            requireRelaySuccess(
+              await sendSealedRelay(
+                "AddConversation",
+                { ChatPartnerId: userIdValue },
+                {
+                  nextHop: { kind: "iota", id: ownIota.IotaId },
+                  finalRecipientId: userIdValue,
+                  metadataRecipients: [
+                    { value: ownIota.PublicKey, encoding: "base64" },
+                    { value: peerIota.PublicKey, encoding: "base64" },
+                  ],
+                  contentRecipients: [
+                    { value: ownIota.PublicKey, encoding: "base64" },
+                    { value: peerIota.PublicKey, encoding: "base64" },
+                  ],
+                },
+              ),
+            );
+          },
+          isActive: () => active,
+        });
 
         if (active && secret) {
           setCurrentChatSecretState({
@@ -706,7 +692,9 @@ export default function Provider({ children }: { children: ReactNode }) {
     contextReady,
     createInitialChatSecret,
     getChatSecretState,
+    getRelayIota,
     load,
+    sendSealedRelay,
     userIdValue,
   ]);
 

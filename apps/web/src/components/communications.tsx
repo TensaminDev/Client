@@ -255,9 +255,7 @@ function ConversationForm({ onSuccess }: { onSuccess: () => void }) {
       );
       requireRelaySuccess(response);
       insertContact(user.data.UserId);
-      if (userId < user.data.UserId) {
-        await ensureChatSecret(user.data.UserId);
-      }
+      await ensureChatSecret(user.data.UserId);
       onSuccess();
     } catch (error) {
       if (error instanceof RelayRejectedError) {

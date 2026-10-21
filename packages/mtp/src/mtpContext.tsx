@@ -48,7 +48,7 @@ export class RelayRejectedError extends Error {
 }
 
 export function requireRelaySuccess(response: SealedRelayResult): void {
-  if (response.type !== "Success" && response.type !== "RelaySent") {
+  if (response.type !== "Success") {
     throw new RelayRejectedError(response.type);
   }
 }
