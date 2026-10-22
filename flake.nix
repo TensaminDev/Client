@@ -69,8 +69,8 @@
             pnpm = pkgs.pnpm;
             fetcherVersion = 4;
             hash = {
-              x86_64-linux = "sha256-3exLYxGbMs7LcZs2SLbIh4EAkGpmdlG5dytm400DVsM=";
-              aarch64-linux = "sha256-mjejPaOf5TjkcJ42+L9S2yn99HRWPKIFdJsOdc4+iC8=";
+              x86_64-linux = "sha256-ao33HTibvbYdTG4JcHbn11MpKHz3zStNIvxRKwvloug=";
+              aarch64-linux = "sha256-ao33HTibvbYdTG4JcHbn11MpKHz3zStNIvxRKwvloug=";
             }.${system};
           };
           source = pkgs.runCommand "tensamin-source" { } ''
