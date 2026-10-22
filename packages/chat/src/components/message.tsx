@@ -34,7 +34,7 @@ import { getMessage, useChat } from "../context";
 import { decryptChatText, encryptChatText } from "@tensamin/crypto/chatSecret";
 import { log, toast } from "@tensamin/shared/log";
 import { Emoji, Input, normalizeShortcode, Text } from "@nonanium/ui/markdown";
-import { useRecordEmojiUse } from "./emoji/emojiRanks";
+import { useRecordEmojiUse } from "./emojiRanks";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { cancelMessageEditHotkey } from "../hotkeys";

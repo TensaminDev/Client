@@ -15,6 +15,7 @@ import {
   DrawerContent,
   DrawerDescription,
   DrawerTitle,
+  EmojiPicker,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -29,7 +30,6 @@ import {
   Ellipsis,
   Forward,
   Laugh,
-  Plus,
   Pen,
   Pin,
   Reply,
@@ -44,8 +44,7 @@ import type {
 } from "react";
 import { useChat } from "../context";
 import { Emoji } from "@nonanium/ui/markdown";
-import EmojiPicker from "./emoji/emojiPicker";
-import { getRecentEmojis, useEmojiRanks } from "./emoji/emojiRanks";
+import { getRecentEmojis, useEmojiRanks } from "./emojiRanks";
 
 async function copyText(text: string) {
   await navigator.clipboard.writeText(text);
@@ -154,28 +153,18 @@ function getMobileMenuComponents({
 function ReactionItems({
   Item,
   emojis,
-  onMore,
   onSelect,
 }: {
   Item: MenuComponents["Item"];
   emojis: string[];
-  onMore: () => void;
   onSelect: (emoji: string) => void;
 }) {
-  return (
-    <>
-      {emojis.map((emoji) => (
-        <Item key={emoji} onClick={() => onSelect(emoji)}>
-          <Emoji className="w-4.5 h-4.5" shortcode={emoji} />
-          <span>{emoji}</span>
-        </Item>
-      ))}
-      <Item onClick={onMore}>
-        <Plus className="size-4.5" />
-        <span>More reactions</span>
-      </Item>
-    </>
-  );
+  return emojis.map((emoji) => (
+    <Item key={emoji} onClick={() => onSelect(emoji)}>
+      <Emoji className="w-4.5 h-4.5" shortcode={emoji} />
+      <span>{emoji}</span>
+    </Item>
+  ));
 }
 
 let shiftPressed = false;
@@ -314,7 +303,7 @@ function MiniMessageMenu({
     <div
       className={`absolute right-4 -top-3 z-10 transition-opacity duration-50 ${fadeOut ? "opacity-0" : "opacity-100"}`}
     >
-      <Card className="flex flex-row justify-end gap-0! rounded-lg! p-px! shadow-lg">
+      <Card className="border! flex flex-row justify-end gap-0.5! rounded-lg! p-0.5! shadow-lg">
         {quickReactions.map((emoji) => (
           <MiniMenuTooltip
             key={emoji}
@@ -442,7 +431,6 @@ function MessageMenuContent({
               <ReactionItems
                 Item={Item}
                 emojis={reactionEmojis}
-                onMore={() => void onAddReaction?.()}
                 onSelect={onReact}
               />
             </SubContent>
@@ -654,10 +642,6 @@ export default function MessageContextMenu({
               <ReactionItems
                 Item={reactionDrawerComponents.Item}
                 emojis={menuReactions}
-                onMore={() => {
-                  setReactionDrawerOpen(false);
-                  setPickerVisibility(true);
-                }}
                 onSelect={selectReaction}
               />
             </div>
@@ -670,7 +654,9 @@ export default function MessageContextMenu({
               Choose an emoji to react with.
             </DrawerDescription>
             <div className="p-3">
-              <EmojiPicker onSelect={selectReaction} />
+              <EmojiPicker
+                onEmojiSelect={({ shortcode }) => selectReaction(shortcode)}
+              />
             </div>
           </DrawerContent>
         </Drawer>
@@ -720,7 +706,10 @@ export default function MessageContextMenu({
         />
       </ContextMenu>
       <PopoverContent className="w-auto p-0">
-        <EmojiPicker onSelect={selectReaction} />
+        <EmojiPicker
+          className="w-[410px] h-[390px]!"
+          onEmojiSelect={({ shortcode }) => selectReaction(shortcode)}
+        />
       </PopoverContent>
     </Popover>
   );

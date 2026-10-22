@@ -5,6 +5,7 @@ import {
   Drawer,
   DrawerContent,
   DrawerTrigger,
+  EmojiPicker,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -21,12 +22,11 @@ import { cn, useIsMobile } from "@nonanium/ui";
 import { encryptChatText } from "@tensamin/crypto/chatSecret";
 
 import { useSession } from "@tensamin/identity/session";
-import { useEmojiRanks, useRecordEmojiUse } from "./emoji/emojiRanks";
+import { useEmojiRanks, useRecordEmojiUse } from "./emojiRanks";
 import ReplyBox from "./replyBox";
 import { useHotkey } from "@tensamin/hotkeys";
 import { editLastMessageHotkey } from "../hotkeys";
 import { useUser } from "@tensamin/identity/context";
-import EmojiPicker from "./emoji/emojiPicker";
 import GifPicker from "./media/gifPicker";
 
 export default function InputComponent({
@@ -302,7 +302,7 @@ export default function InputComponent({
       <Card
         ref={inputBoxRef}
         className={cn(
-          "rounded-none border-1! border-b-0! border-(--input)! pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
+          "rounded-none border-1! border-b-0! border-(--input)/50! pt-0 pb-[env(safe-area-inset-bottom)] mx-2",
           isMobile ? "border-x-0! w-full mx-0 px-2" : "rounded-t-xl",
         )}
       >
@@ -353,9 +353,10 @@ export default function InputComponent({
                     </Button>
                   )}
                 />
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 mr-2">
                   <EmojiPicker
-                    onSelect={(shortcode) => {
+                    className="w-[400px]"
+                    onEmojiSelect={({ shortcode }) => {
                       setValue(`${value}${shortcode} `);
                       recordUse(shortcode);
                       setEmojiPopoverOpen(false);
@@ -398,7 +399,7 @@ export default function InputComponent({
                   />
                   <PopoverContent
                     ref={gifPopoverRef}
-                    className="relative h-130 w-120 min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden"
+                    className="relative h-130 w-120 min-h-80 max-h-180 min-w-80 max-w-180 overflow-hidden border!"
                     onTouchMoveCapture={(event) => event.stopPropagation()}
                     onWheelCapture={(event) => event.stopPropagation()}
                     style={{
