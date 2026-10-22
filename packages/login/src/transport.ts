@@ -3,6 +3,7 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import * as mtpRaw from "mtp/raw";
 import { mtp as appSchemas } from "@tensamin/shared/data";
 import { provisioning } from "@tensamin/shared/data";
+import { logMTP } from "@tensamin/shared/log";
 import { ProvisioningUnavailableError } from "./errors";
 import { DUAL_SIGNATURE_SUITE, PROVISIONING_DESCRIPTOR } from "./protection";
 import type { ProvisioningLifecycle } from "./events";
@@ -76,7 +77,7 @@ export async function connectProvisioningClient({
         protectedSignatureSuite: DUAL_SIGNATURE_SUITE,
         protectedSignaturePolicy: DUAL_SIGNATURE_SUITE,
       },
-      logging: { hiddenTypes: ["Ping", "Pong"] },
+      logger: logMTP,
     });
     await (signal
       ? raceAbort(client.connectUnauthenticated(), signal)

@@ -10,7 +10,7 @@ import {
   type Contacts,
 } from "@tensamin/shared/data";
 import { getAppFocused } from "@tensamin/shared/focus";
-import { log } from "@tensamin/shared/log";
+import { log, logMTP } from "@tensamin/shared/log";
 import { useStorage } from "@tensamin/storage/context";
 
 import {
@@ -400,7 +400,7 @@ export function BrowserProvider(props: {
           descriptor: "client",
           pings: true,
           securityProfile: { protectedSignatureSuite: "dual" },
-          logging: { hiddenTypes: ["Ping", "Pong", "Relay"] },
+          logger: (event) => logMTP(event, ["Ping", "Pong", "Relay"]),
           onStateChange: (state) => {
             if (generation !== connectionGeneration) return;
             setReadyState(state);
@@ -476,7 +476,7 @@ export function BrowserProvider(props: {
               descriptor: "client-call-control",
               pings: true,
               securityProfile: { protectedSignatureSuite: "dual" },
-              logging: { hiddenTypes: ["Ping", "Pong"] },
+              logger: logMTP,
             });
             try {
               await ownerClient.auth();

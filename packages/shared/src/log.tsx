@@ -1,5 +1,6 @@
 import { toast as sonnerToast } from "@nonanium/ui";
 import { Ban, Check, Info, TriangleAlert } from "lucide-react";
+import type { MTPLogEvent } from "mtp";
 
 /**
  * Log Levels
@@ -57,6 +58,34 @@ export function log(
   } finally {
     console.groupEnd();
   }
+}
+
+export function logMTP(
+  event: MTPLogEvent,
+  hiddenTypes: readonly string[] = ["Ping", "Pong"],
+) {
+  if (hiddenTypes.includes(event.type)) return;
+  const direction =
+    event.direction === "send"
+      ? "Send "
+      : event.direction === "recv"
+        ? "Receive "
+        : "";
+  const details: unknown[] = [];
+  if (event.hint === "error") details.push(event.error);
+  if (event.data !== undefined) details.push(event.data);
+  if ("relay" in event && event.relay) details.push(event.relay);
+  log(
+    event.hint === "info" ? (event.direction ? 3 : 2) : 1,
+    "mtp",
+    event.hint === "error"
+      ? "red"
+      : event.hint === "warning"
+        ? "orange"
+        : "white",
+    `${direction}${event.type}`,
+    ...details,
+  );
 }
 
 const size = 20;
