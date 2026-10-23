@@ -5,11 +5,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 
-/**
- * File picker plus window-wide drag-and-drop for `.tu` credential files.
- * UI state only; the dropped file is handed to the provided callback.
- */
 export function useTuFileInput(
   onFile: (file: globalThis.File) => Promise<void>,
 ) {
@@ -18,10 +15,12 @@ export function useTuFileInput(
   const [filePickerOpen, setFilePickerOpen] = useState(false);
 
   const openFilePicker = useCallback(() => {
-    setFilePickerOpen(true);
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => uploadRef.current?.click()),
-    );
+    if (!uploadRef.current) return;
+
+    flushSync(() => setFilePickerOpen(true));
+    requestAnimationFrame(() => {
+      setTimeout(() => uploadRef.current?.click(), 0);
+    });
   }, []);
 
   const handleFileInputChange = useCallback(

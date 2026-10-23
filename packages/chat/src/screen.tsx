@@ -785,8 +785,7 @@ export default function Screen() {
                           !startsNewMessages &&
                           !message.ReplyId &&
                           lastMessage.SenderId === message.SenderId &&
-                          Math.round(lastMessage.SendTime / 10000) ===
-                            Math.round(message.SendTime / 10000);
+                          message.SendTime - lastMessage.SendTime < 5 * 60_000;
 
                         return (
                           <Wrapper

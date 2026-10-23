@@ -13,6 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+  DrawerTrigger,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -355,7 +361,7 @@ function MobileCommunicationsHeader() {
 
         return (
           <>
-            <div className="flex md:h-12 items-center justify-between gap-2">
+            <div className="flex min-h-11 items-center justify-between gap-2 px-1.5">
               <div className="flex min-w-0 items-center gap-2.5">
                 <Avatar>
                   <AvatarImage src={avatar} />
@@ -363,32 +369,41 @@ function MobileCommunicationsHeader() {
                     {display.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <p className="truncate text-[17px] font-medium">{display}</p>
+                <p className="truncate text-[15px] font-medium">{display}</p>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={({ onClick }) => (
-                    <Button onClick={onClick} variant="ghost">
-                      <Ellipsis />
-                    </Button>
-                  )}
-                />
-                <DropdownMenuContent align="end">
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem onClick={() => setStatusOpen(true)}>
-                      Set Status
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setAddOpen(true)}>
-                      Add Chat
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button variant="ghost" aria-label="Open Home actions">
+                    <Ellipsis />
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent>
+                  <DrawerTitle className="sr-only">Home actions</DrawerTitle>
+                  <DrawerDescription className="sr-only">
+                    Update your status, add a chat, or open settings.
+                  </DrawerDescription>
+                  <div className="flex flex-col p-2">
+                    <DrawerClose
+                      className="rounded-md px-2 py-2 text-left text-md hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                      onClick={() => setStatusOpen(true)}
+                    >
+                      Set status
+                    </DrawerClose>
+                    <DrawerClose
+                      className="rounded-md px-2 py-2 text-left text-md hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+                      onClick={() => setAddOpen(true)}
+                    >
+                      Add chat
+                    </DrawerClose>
+                    <DrawerClose
+                      className="rounded-md px-2 py-2 text-left text-md hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
                       onClick={() => void navigate({ to: "/settings" })}
                     >
                       Settings
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    </DrawerClose>
+                  </div>
+                </DrawerContent>
+              </Drawer>
             </div>
             {statusOpen && (
               <StatusDialog user={user} open onOpenChange={setStatusOpen} />

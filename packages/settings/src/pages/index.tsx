@@ -8,7 +8,7 @@ export default function Page() {
   return (
     <div className="h-full md:hidden! flex flex-col">
       <SettingsSidebar mobile />
-      <div className="mt-auto flex flex-col gap-2 pb-[var(--ui-safe-area-bottom)]">
+      <div className="mt-auto flex flex-col gap-2">
         {syncError && (
           <div className="flex flex-wrap items-center gap-2 text-sm text-destructive">
             <span>Local changes are not synced. {syncError}</span>

@@ -4,6 +4,8 @@ import {
   CardHeader,
   Drawer,
   DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
   DrawerTrigger,
   EmojiPicker,
   Popover,
@@ -12,6 +14,7 @@ import {
 } from "@nonanium/ui";
 import { useStorage } from "@tensamin/storage/context";
 import React, { useCallback, useEffect, useState, useRef } from "react";
+import { flushSync } from "react-dom";
 import { Button } from "@nonanium/ui";
 
 import { Plus, Laugh, FileVideo, SendHorizonal } from "lucide-react";
@@ -154,6 +157,11 @@ export default function InputComponent({
 
     log(3, "chat", "purple", "Message send init, adding live message ...");
 
+    if (!preserveContent) {
+      // Sync the editor before rendering the live message, not after it.
+      flushSync(() => setValue(""));
+    }
+
     const reference = addLiveMessage({
       NotEncrypted: true,
       SendTime: time,
@@ -163,10 +171,6 @@ export default function InputComponent({
       MessageState: "awaiting",
       ...(replyTo && { ReplyId: replyTo }),
     });
-
-    if (!preserveContent) {
-      setValue("");
-    }
 
     if (replyTo) {
       setReplyTo(undefined);
@@ -285,6 +289,21 @@ export default function InputComponent({
   const { ownId, replyMessage, replyUserId } = useReplyMessage();
 
   const isMobile = useIsMobile();
+  const emojiPicker = (
+    <EmojiPicker
+      className={
+        isMobile
+          ? "max-w-none h-[min(400px,70dvh)] border-0 rounded-none"
+          : "w-[400px]"
+      }
+      onEmojiSelect={({ shortcode }) => {
+        setValue(`${value}${shortcode} `);
+        recordUse(shortcode);
+        focusComposerAfterEmojiSelect.current = true;
+        setEmojiPopoverOpen(false);
+      }}
+    />
+  );
   return (
     <div className="flex flex-col">
       {/* reply */}
@@ -339,41 +358,62 @@ export default function InputComponent({
               </div>
             </div>
             <div className="flex gap-1">
-              <Popover
-                open={emojiPopoverOpen}
-                onOpenChange={setEmojiPopoverOpen}
-              >
-                <PopoverTrigger
-                  render={({ onClick }) => (
-                    <Button
-                      onClick={onClick}
-                      className="w-9 h-9! p-0"
-                      variant="ghost"
-                    >
+              {isMobile ? (
+                <Drawer
+                  open={emojiPopoverOpen}
+                  onOpenChange={setEmojiPopoverOpen}
+                >
+                  <DrawerTrigger asChild>
+                    <Button className="w-9 h-9! p-0" variant="ghost">
                       <Laugh size={20} />
                     </Button>
-                  )}
-                />
-                <PopoverContent
-                  className="w-auto p-0 mr-2"
-                  finalFocus={() => {
-                    if (!focusComposerAfterEmojiSelect.current) return true;
-                    focusComposerAfterEmojiSelect.current = false;
-                    composerRef.current?.focus();
-                    return false;
-                  }}
-                >
-                  <EmojiPicker
-                    className="w-[400px]"
-                    onEmojiSelect={({ shortcode }) => {
-                      setValue(`${value}${shortcode} `);
-                      recordUse(shortcode);
-                      focusComposerAfterEmojiSelect.current = true;
-                      setEmojiPopoverOpen(false);
+                  </DrawerTrigger>
+                  <DrawerContent
+                    onCloseAutoFocus={(event) => {
+                      if (!focusComposerAfterEmojiSelect.current) return;
+                      event.preventDefault();
+                      focusComposerAfterEmojiSelect.current = false;
+                      composerRef.current?.focus();
                     }}
+                  >
+                    <DrawerTitle className="sr-only">
+                      Choose an emoji
+                    </DrawerTitle>
+                    <DrawerDescription className="sr-only">
+                      Select an emoji to insert into your message.
+                    </DrawerDescription>
+                    <div className="pt-3">{emojiPicker}</div>
+                  </DrawerContent>
+                </Drawer>
+              ) : (
+                <Popover
+                  open={emojiPopoverOpen}
+                  onOpenChange={setEmojiPopoverOpen}
+                >
+                  <PopoverTrigger
+                    render={({ onClick }) => (
+                      <Button
+                        onClick={onClick}
+                        className="w-9 h-9! p-0"
+                        variant="ghost"
+                      >
+                        <Laugh size={20} />
+                      </Button>
+                    )}
                   />
-                </PopoverContent>
-              </Popover>
+                  <PopoverContent
+                    className="w-auto p-0 mr-2"
+                    finalFocus={() => {
+                      if (!focusComposerAfterEmojiSelect.current) return true;
+                      focusComposerAfterEmojiSelect.current = false;
+                      composerRef.current?.focus();
+                      return false;
+                    }}
+                  >
+                    {emojiPicker}
+                  </PopoverContent>
+                </Popover>
+              )}
               {isMobile ? (
                 <Drawer open={gifPopoverOpen} onOpenChange={setGifPopoverOpen}>
                   <DrawerTrigger asChild>

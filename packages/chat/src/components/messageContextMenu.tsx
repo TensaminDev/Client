@@ -45,9 +45,15 @@ import type {
 import { useChat } from "../context";
 import { Emoji } from "@nonanium/ui/markdown";
 import { getRecentEmojis, useEmojiRanks } from "./emojiRanks";
+import { toast } from "@tensamin/shared/log";
 
 async function copyText(text: string) {
-  await navigator.clipboard.writeText(text);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("success", "Copied to clipboard");
+  } catch (error) {
+    toast("error", "Failed to copy", String(error));
+  }
 }
 
 type MenuComponents = {
@@ -96,7 +102,13 @@ function getMobileMenuComponents({
 }): MenuComponents {
   return {
     Content: ({ className, children }) => (
-      <DrawerContent>
+      <DrawerContent
+        onCloseAutoFocus={(event) => {
+          if (document.activeElement?.closest(".cm-content")) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DrawerTitle className="sr-only">{title}</DrawerTitle>
         <DrawerDescription className="sr-only">{description}</DrawerDescription>
         <div className={cn("p-3!", className)}>{children}</div>
@@ -105,9 +117,9 @@ function getMobileMenuComponents({
     Group: ({ children }) => <div>{children}</div>,
     Item: ({ children, className, disabled, onClick, variant = "default" }) => {
       async function handleClick() {
-        await onClick?.();
         blurActiveElement();
         onClose();
+        await onClick?.();
       }
 
       return (

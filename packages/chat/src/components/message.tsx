@@ -74,6 +74,23 @@ function MessageComponent({
         : "opacity-100";
   const messageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!editing) return;
+
+    const frame = requestAnimationFrame(() => {
+      const input =
+        messageRef.current?.querySelector<HTMLElement>(".cm-content");
+      if (!input) return;
+
+      input.focus({ preventScroll: true });
+      const range = document.createRange();
+      range.selectNodeContents(input);
+      window.getSelection()?.removeAllRanges();
+      window.getSelection()?.addRange(range);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [editing]);
+
+  useEffect(() => {
     if (!isLiveMessage) return;
 
     const frame = requestAnimationFrame(() => {
