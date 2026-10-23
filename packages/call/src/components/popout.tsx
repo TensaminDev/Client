@@ -12,7 +12,7 @@ import {
   cn,
   useIsMobile,
 } from "@nonanium/ui";
-import { ScreenShareOff } from "lucide-react";
+import { ArrowLeft, ScreenShareOff } from "lucide-react";
 import { useUserFields } from "@tensamin/identity/context";
 import { useIsSpeaking, useLastSpeakingParticipantId } from "../speakingState";
 import { getAverageImageColor } from "./participantCard";
@@ -253,6 +253,7 @@ function MobileCallPill({
 }
 
 export function Popout({ participant }: { participant: Participant }) {
+  const callId = useCall((state) => state.callId);
   const screenSharePublication = getTrackPublicationBySource(
     participant,
     Track.Source.ScreenShare,
@@ -543,17 +544,32 @@ export function Popout({ participant }: { participant: Participant }) {
           isOverlayVisible ? "opacity-100" : "opacity-0",
         )}
       >
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/55 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/65 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/55 to-transparent rounded-2xl" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/65 to-transparent rounded-2xl" />
       </div>
       <div
         className={cn(
-          "absolute bottom-3 right-3 z-50 transition-all duration-200",
+          "absolute bottom-3 px-3 z-50 flex gap-2 transition-all duration-200 flex justify-between w-full",
           isOverlayVisible
             ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 translate-y-2 pointer-events-none",
         )}
       >
+        <div className="bg-[#070707] h-10 rounded-lg">
+          <Button
+            className="w-full h-full border-0!"
+            variant="outline"
+            disabled={!callId}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (callId) void openCallPage(callId);
+            }}
+          >
+            <ArrowLeft />
+            Go Back
+          </Button>
+        </div>
         <div className="bg-[#070707] h-10 w-14 rounded-lg">
           <Button
             className="w-full h-full border-0!"

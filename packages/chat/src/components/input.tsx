@@ -56,6 +56,7 @@ export default function InputComponent({
   const gifPopoverRef = useRef<HTMLDivElement>(null);
   const [gifPopoverOpen, setGifPopoverOpen] = useState(false);
   const [emojiPopoverOpen, setEmojiPopoverOpen] = useState(false);
+  const focusComposerAfterEmojiSelect = useRef(false);
   const recordUse = useRecordEmojiUse();
   const { ranks: emojiFrequencies } = useEmojiRanks();
   const [gifPopoverSize, setGifPopoverSize] = useState<{
@@ -353,12 +354,21 @@ export default function InputComponent({
                     </Button>
                   )}
                 />
-                <PopoverContent className="w-auto p-0 mr-2">
+                <PopoverContent
+                  className="w-auto p-0 mr-2"
+                  finalFocus={() => {
+                    if (!focusComposerAfterEmojiSelect.current) return true;
+                    focusComposerAfterEmojiSelect.current = false;
+                    composerRef.current?.focus();
+                    return false;
+                  }}
+                >
                   <EmojiPicker
                     className="w-[400px]"
                     onEmojiSelect={({ shortcode }) => {
                       setValue(`${value}${shortcode} `);
                       recordUse(shortcode);
+                      focusComposerAfterEmojiSelect.current = true;
                       setEmojiPopoverOpen(false);
                     }}
                   />

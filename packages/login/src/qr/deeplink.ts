@@ -3,11 +3,11 @@ const sessionId =
 
 export function qrLoginLink(id: string): string {
   if (!sessionId.test(id)) throw new Error("Invalid temporary login ID");
-  return `tensamin://qr-login?session=${id}`;
+  return `tensamin://qr-login?session=${id.toUpperCase()}`;
 }
 
 export function qrLoginId(input: string): string {
-  if (sessionId.test(input)) return input;
+  if (sessionId.test(input)) return input.toLowerCase();
   const url = new URL(input);
   const id = url.searchParams.get("session") ?? "";
   if (
@@ -22,5 +22,5 @@ export function qrLoginId(input: string): string {
     !sessionId.test(id)
   )
     throw new Error("Invalid QR login link");
-  return id;
+  return id.toLowerCase();
 }

@@ -540,8 +540,7 @@ export default function MessageContextMenu({
     void onReact(emoji);
     setActiveMiniMenu(null);
     setReactionDrawerOpen(false);
-    setPickerOpen(false);
-    setPickerClosing(false);
+    setPickerVisibility(false);
   }
   function selectMiniReaction(emoji: string) {
     void onReact(emoji);

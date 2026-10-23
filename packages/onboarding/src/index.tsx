@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   ErrorScreen,
   LoadingScreen,
@@ -16,7 +10,6 @@ import type { MTPConnectionStatus } from "@tensamin/mtp";
 import { useSettingsProfiles } from "@tensamin/settings/profiles";
 import { isTauri } from "@tauri-apps/api/core";
 
-import { onboardingSteps } from "./steps";
 import TauriPermissionsPage from "./pages/tauriPermissions";
 
 export {
@@ -27,19 +20,8 @@ export {
 
 type OnboardingDecision = {
   onboarding: boolean;
-  theme: boolean;
   tauriPermissions: boolean;
 };
-
-function createDecision(
-  flags: NonNullable<ReturnType<typeof useOnboardingFlags>>,
-  themePromptCompleted: boolean,
-): OnboardingDecision {
-  return {
-    ...flags,
-    theme: flags.onboarding && !themePromptCompleted,
-  };
-}
 
 function useOnboardingFlags() {
   const { load } = useStorage();
@@ -127,13 +109,6 @@ function StartupLoader({
   );
 }
 
-async function completeTheme(
-  needed: boolean,
-  completeThemePrompt: () => Promise<void>,
-) {
-  if (needed) await completeThemePrompt();
-}
-
 async function saveOnboardingCompletion(
   decision: OnboardingDecision,
   save: ReturnType<typeof useStorage>["save"],
@@ -142,29 +117,8 @@ async function saveOnboardingCompletion(
   if (decision.tauriPermissions) await save("tauri_permissions_done", true);
 }
 
-function createOnboardingSteps({
-  decision,
-  themeSkipped,
-  setThemeSkipped,
-  completeThemePrompt,
-  finish,
-}: {
-  decision: OnboardingDecision;
-  themeSkipped: boolean;
-  setThemeSkipped(value: boolean): void;
-  completeThemePrompt(): Promise<void>;
-  finish(themeAlreadyComplete?: boolean): Promise<void>;
-}) {
+function createOnboardingSteps(decision: OnboardingDecision) {
   const steps: OnboardingStep[] = [];
-  if (decision.theme && !themeSkipped) {
-    steps.push(
-      ...onboardingSteps(async () => {
-        await completeThemePrompt();
-        if (decision.tauriPermissions) setThemeSkipped(true);
-        else await finish(true);
-      }),
-    );
-  }
   if (decision.tauriPermissions) {
     steps.push({
       id: "tauri-permissions",
@@ -181,46 +135,24 @@ function createOnboardingSteps({
 function ActiveOnboarding({
   children,
   decision,
-  themePromptCompleted,
-  completeThemePrompt,
-  onRelease,
 }: {
   children: ReactNode;
   decision: OnboardingDecision;
-  themePromptCompleted: boolean;
-  completeThemePrompt(): Promise<void>;
-  onRelease(): void;
 }) {
   const { save } = useStorage();
   const [complete, setComplete] = useState(false);
-  const [themeSkipped, setThemeSkipped] = useState(false);
 
-  const finish = useCallback(
-    async (themeAlreadyComplete = false) => {
-      setComplete(true);
-      onRelease();
-      await completeTheme(
-        !themeAlreadyComplete && decision.theme && !themePromptCompleted,
-        completeThemePrompt,
-      );
-      await saveOnboardingCompletion(decision, save);
-    },
-    [completeThemePrompt, decision, onRelease, save, themePromptCompleted],
-  );
+  const finish = useCallback(async () => {
+    setComplete(true);
+    await saveOnboardingCompletion(decision, save);
+  }, [decision, save]);
 
-  const steps = createOnboardingSteps({
-    decision,
-    themeSkipped,
-    setThemeSkipped,
-    completeThemePrompt,
-    finish,
-  });
+  const steps = createOnboardingSteps(decision);
 
   useEffect(() => {
-    if (steps.length !== 0 || complete) return;
-    if (decision.onboarding) void finish(true);
-    else onRelease();
-  }, [complete, decision.onboarding, finish, onRelease, steps.length]);
+    if (steps.length !== 0 || complete || !decision.onboarding) return;
+    void finish();
+  }, [complete, decision.onboarding, finish, steps.length]);
 
   if (complete || steps.length === 0) {
     return <>{children}</>;
@@ -249,26 +181,10 @@ export default function OnboardingGate({
   connectionStatus: MTPConnectionStatus | null;
   retryConnection(): void;
 }) {
-  const { save } = useStorage();
-  const {
-    loaded: settingsLoaded,
-    themePromptCompleted,
-    completeThemePrompt,
-  } = useSettingsProfiles();
+  const { loaded: settingsLoaded } = useSettingsProfiles();
   const flags = useOnboardingFlags();
   const decision =
-    flags === null || !connectionReady || !settingsLoaded
-      ? null
-      : createDecision(flags, themePromptCompleted);
-  const [released, setReleased] = useState(false);
-  const scheduled = useRef(false);
-  const release = useCallback(() => setReleased(true), []);
-
-  useEffect(() => {
-    if (!released || themePromptCompleted || scheduled.current) return;
-    scheduled.current = true;
-    void save("onboarding_done", false);
-  }, [released, save, themePromptCompleted]);
+    flags === null || !connectionReady || !settingsLoaded ? null : flags;
 
   if (!sessionEstablished) {
     return (
@@ -298,14 +214,5 @@ export default function OnboardingGate({
     );
   }
 
-  return (
-    <ActiveOnboarding
-      decision={decision}
-      themePromptCompleted={themePromptCompleted}
-      completeThemePrompt={completeThemePrompt}
-      onRelease={release}
-    >
-      {children}
-    </ActiveOnboarding>
-  );
+  return <ActiveOnboarding decision={decision}>{children}</ActiveOnboarding>;
 }

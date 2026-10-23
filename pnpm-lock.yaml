@@ -270,6 +270,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.170.21
         version: 1.170.23(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tanstack/react-virtual':
+        specifier: ^3.14.21
+        version: 3.14.21(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tensamin/crypto':
         specifier: workspace:*
         version: link:../crypto
