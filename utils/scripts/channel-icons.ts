@@ -46,10 +46,18 @@ if (channel === "dev") {
     )}</svg>`;
 }
 writeFileSync(join(output, "logo.svg"), svg);
+if (channel === "canary") {
+  // Adaptive foregrounds need the same 50% logo area as stable's android.png.
+  const foreground = svg.replace(/viewBox="([^"]+)"/, (_, viewBox: string) => {
+    const [x, y, width, height] = viewBox.split(/\s+/).map(Number);
+    return `viewBox="${x - width / 2} ${y - height / 2} ${width * 2} ${height * 2}"`;
+  });
+  writeFileSync(join(output, "android.svg"), foreground);
+}
 // Derive all raster sizes and adaptive Android layers from the channel SVG.
 writeFileSync(
   join(output, "background.svg"),
-  `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><defs><linearGradient id="background" x2="0" y2="1"><stop stop-color="#837002"/><stop offset="1" stop-color="#ebdf9e"/></linearGradient></defs><rect width="512" height="512" fill="${channel === "dev" ? "none" : channel === "canary" ? "url(#background)" : "#006560"}"/></svg>`,
+  `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><defs><linearGradient id="background" x2="0%" y2="100%"><stop stop-color="#837002"/><stop offset="1" stop-color="#ebdf9e"/></linearGradient></defs><rect width="512" height="512" fill="${channel === "dev" ? "none" : channel === "canary" ? "url(#background)" : "#006560"}"/></svg>`,
 );
 writeFileSync(
   join(output, "logo.json"),
@@ -64,10 +72,13 @@ writeFileSync(
         }
       : {
           default: "logo.svg",
-          android_fg: "logo.svg",
+          android_fg: channel === "canary" ? "android.svg" : "logo.svg",
           android_bg: "background.svg",
-          android_fg_scale: channel === "dev" ? 100 : 85,
-          android_monochrome: join(root, "utils/icons/logo_outline.svg"),
+          android_fg_scale: 100,
+          android_monochrome:
+            channel === "canary"
+              ? join(tauri, "monochrome.png")
+              : join(root, "utils/icons/logo_outline.svg"),
         },
   ),
 );
